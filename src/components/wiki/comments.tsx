@@ -1,9 +1,10 @@
 "use client"
+import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-const comments = [
+const initialComments = [
     {
         id: 1,
         user: "Alex Smith",
@@ -21,6 +22,23 @@ const comments = [
 ];
 
 export default function Comments() {
+  const [comments, setComments] = useState(initialComments);
+  const [newComment, setNewComment] = useState("");
+
+  const handleCommentSubmit = () => {
+    if (newComment.trim()) {
+      const commentToAdd = {
+        id: Date.now(),
+        user: "Authorized User",
+        avatar: "https://picsum.photos/seed/1/40/40",
+        time: "Just now",
+        text: newComment,
+      };
+      setComments([...comments, commentToAdd]);
+      setNewComment("");
+    }
+  };
+
   return (
     <div className="mt-8">
       <h3 className="text-xl font-bold mb-4">Comments & Notes</h3>
@@ -42,8 +60,13 @@ export default function Comments() {
         ))}
       </div>
       <div className="mt-6">
-        <Textarea placeholder="Add a comment or note..." className="mb-2" />
-        <Button>Submit</Button>
+        <Textarea 
+          placeholder="Add a comment or note..." 
+          className="mb-2"
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+        />
+        <Button onClick={handleCommentSubmit}>Submit</Button>
       </div>
     </div>
   );

@@ -24,42 +24,44 @@ const sectionItems = [
 
 export default function DefinitionTreeNode({ node, selectedId, onSelect, level }: DefinitionTreeNodeProps) {
   const isSelected = node.id === selectedId;
+  const hasChildren = node.children && node.children.length > 0;
 
   return (
     <Collapsible defaultOpen={level < 2}>
-      <CollapsibleTrigger asChild>
-        <div className="flex items-center w-full group/item">
+      <div className="flex items-center w-full group/item">
+        <CollapsibleTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
-            className={cn("w-full justify-start text-left", isSelected && "bg-accent text-accent-foreground")}
+            className={cn("w-full justify-start text-left", isSelected && !hasChildren && "bg-accent text-accent-foreground")}
             style={{ paddingLeft: `${level * 1}rem` }}
             onClick={() => onSelect(node.id)}
           >
-            {node.children && node.children.length > 0 ? (
+            {hasChildren ? (
                  <ChevronRight className="h-4 w-4 mr-2 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-90" />
             ) : <span className="w-4 h-4 mr-2 shrink-0"></span> }
-            {node.children && node.children.length > 0 ? (
+            {hasChildren ? (
                 <Folder className="h-4 w-4 mr-2 text-primary" />
             ) : (
                 <File className="h-4 w-4 mr-2 text-muted-foreground" />
             )}
             <span className="truncate">{node.name}</span>
           </Button>
-        </div>
-      </CollapsibleTrigger>
+        </CollapsibleTrigger>
+      </div>
       <CollapsibleContent>
         <div className="space-y-1">
-          {node.children?.map(child => (
-            <DefinitionTreeNode
-              key={child.id}
-              node={child}
-              selectedId={selectedId}
-              onSelect={onSelect}
-              level={level + 1}
-            />
-          ))}
-          {(!node.children || node.children.length === 0) && (
+          {hasChildren ? (
+            node.children?.map(child => (
+              <DefinitionTreeNode
+                key={child.id}
+                node={child}
+                selectedId={selectedId}
+                onSelect={onSelect}
+                level={level + 1}
+              />
+            ))
+          ) : (
            <div className="space-y-1" style={{ paddingLeft: `${(level + 1) * 1}rem` }}>
               {sectionItems.map(item => {
                 const Icon = item.icon;
