@@ -1,20 +1,12 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, File, Folder, Book, Code, Lightbulb, Pilcrow, History } from 'lucide-react';
+import { ChevronRight, File, Folder } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const sectionItems = [
-    { key: 'description', label: 'Description', icon: Book },
-    { key: 'technical-details', label: 'Technical Details', icon: Code },
-    { key: 'examples', label: 'Examples', icon: Lightbulb },
-    { key: 'usage', label: 'Usage', icon: Pilcrow },
-    { key: 'revisions', label: 'Version History', icon: History },
-];
 
 function isParent(node: Definition, selectedId: string): boolean {
     if (!node.children) {
@@ -35,23 +27,19 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId !== null && node.id === selectedId;
   const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
-  const showSections = isSelected && !hasChildren;
-
-  const [isNodeExpanded, setIsNodeExpanded] = useState(false);
+  
+  const [isNodeExpanded, setIsNodeExpanded] = useState(isParentOfSelected);
 
   useEffect(() => {
-    if (isParentOfSelected) {
-      setIsNodeExpanded(true);
-    }
-  }, [isParentOfSelected]);
+    setIsNodeExpanded(isParentOfSelected || isSelected);
+  }, [isParentOfSelected, isSelected]);
+
   
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSelect(node.id);
     if (hasChildren) {
       setIsNodeExpanded(prev => !prev);
-    } else {
-       setIsNodeExpanded(true); // Always expand leaf nodes on select
     }
   };
 
@@ -62,15 +50,12 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   
   const Icon = hasChildren ? Folder : File;
 
-  const isExpandable = hasChildren || !hasChildren;
+  const isExpandable = hasChildren;
 
   return (
     <Collapsible open={isNodeExpanded} onOpenChange={setIsNodeExpanded}>
         <div 
-            className={cn(
-                "flex items-center w-full group/item rounded-md",
-                isSelected && "bg-accent/30"
-            )}
+            className="flex items-center w-full group/item rounded-md"
             style={{ paddingLeft: `${level * 1.5}rem` }}
         >
             <CollapsibleTrigger asChild>
@@ -82,7 +67,10 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
             <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start text-left h-8 hover:bg-accent/50 p-0"
+                className={cn(
+                    "w-full justify-start text-left h-8 hover:bg-accent/50 p-0",
+                    isSelected && "bg-accent/50"
+                )}
                 onClick={handleNodeSelect}
             >
                 <Icon className={cn("h-4 w-4 mr-2", hasChildren ? "text-primary" : "text-muted-foreground")} />
@@ -102,28 +90,6 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                         level={level + 1}
                     />
                     ))}
-                </div>
-            )}
-            {showSections && (
-                <div className="space-y-1 py-1" style={{ paddingLeft: `${(level + 2) * 1.5}rem` }}>
-                    {sectionItems.map(item => {
-                        const SectionIcon = item.icon;
-                        return (
-                            <Button
-                                key={item.key}
-                                variant="ghost"
-                                size="sm"
-                                className="w-full justify-start text-left h-8 hover:bg-accent/50"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onSelect(node.id, `section-${item.key}`);
-                                }}
-                            >
-                                <SectionIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                                <span className="truncate">{item.label}</span>
-                            </Button>
-                        )
-                    })}
                 </div>
             )}
         </CollapsibleContent>

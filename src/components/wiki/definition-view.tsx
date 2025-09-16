@@ -4,7 +4,7 @@ import type { Definition, Revision } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Comments from './comments';
 import { Pencil } from 'lucide-react';
 import DefinitionActions from './definition-actions';
@@ -39,66 +39,54 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         ))}
       </div>
 
-      <Accordion type="multiple" defaultValue={['description', 'revisions']} className="w-full">
-        <AccordionItem value="description" id="section-description">
-          <AccordionTrigger className="text-lg font-semibold">Description</AccordionTrigger>
-          <AccordionContent>
+      <Tabs defaultValue="description" className="w-full mt-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="description">Description</TabsTrigger>
+          <TabsTrigger value="technical-details">Technical Details</TabsTrigger>
+          <TabsTrigger value="examples">Examples</TabsTrigger>
+          <TabsTrigger value="usage">Usage</TabsTrigger>
+          <TabsTrigger value="revisions">Version History</TabsTrigger>
+        </TabsList>
+        <TabsContent value="description" id="section-description" className="mt-4">
             <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
-          </AccordionContent>
-        </AccordionItem>
-        
-        <AccordionItem value="technical-details" id="section-technical-details">
-          <AccordionTrigger className="text-lg font-semibold">Technical Details</AccordionTrigger>
-          <AccordionContent>
-            <div className="prose prose-sm max-w-none prose-code:font-code" dangerouslySetInnerHTML={{ __html: definition.technicalDetails }} />
-          </AccordionContent>
-        </AccordionItem>
-        
-        <AccordionItem value="examples" id="section-examples">
-          <AccordionTrigger className="text-lg font-semibold">Example</AccordionTrigger>
-          <AccordionContent>
-            <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.examples }} />
-          </AccordionContent>
-        </AccordionItem>
-        
-        <AccordionItem value="usage" id="section-usage">
-          <AccordionTrigger className="text-lg font-semibold">Usage</AccordionTrigger>
-          <AccordionContent>
-            <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.usage }} />
-          </AccordionContent>
-        </AccordionItem>
-        
-        <AccordionItem value="revisions" id="section-revisions">
-          <AccordionTrigger className="text-lg font-semibold">Version History</AccordionTrigger>
-          <AccordionContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Ticket ID</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Developer</TableHead>
-                  <TableHead>Description</TableHead>
+        </TabsContent>
+        <TabsContent value="technical-details" id="section-technical-details" className="mt-4">
+          <div className="prose prose-sm max-w-none prose-code:font-code" dangerouslySetInnerHTML={{ __html: definition.technicalDetails }} />
+        </TabsContent>
+        <TabsContent value="examples" id="section-examples" className="mt-4">
+          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.examples }} />
+        </TabsContent>
+        <TabsContent value="usage" id="section-usage" className="mt-4">
+          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.usage }} />
+        </TabsContent>
+        <TabsContent value="revisions" id="section-revisions" className="mt-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ticket ID</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Developer</TableHead>
+                <TableHead>Description</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {definition.revisions.map((rev: Revision) => (
+                <TableRow key={rev.ticketId}>
+                  <TableCell className="font-medium">{rev.ticketId}</TableCell>
+                  <TableCell>{rev.date}</TableCell>
+                  <TableCell>{rev.developer}</TableCell>
+                  <TableCell>{rev.description}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {definition.revisions.map((rev: Revision) => (
-                  <TableRow key={rev.ticketId}>
-                    <TableCell className="font-medium">{rev.ticketId}</TableCell>
-                    <TableCell>{rev.date}</TableCell>
-                    <TableCell>{rev.developer}</TableCell>
-                    <TableCell>{rev.description}</TableCell>
+              ))}
+                {definition.revisions.length === 0 && (
+                  <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">No revision history.</TableCell>
                   </TableRow>
-                ))}
-                 {definition.revisions.length === 0 && (
-                    <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground">No revision history.</TableCell>
-                    </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+              )}
+            </TableBody>
+          </Table>
+        </TabsContent>
+      </Tabs>
 
       <Comments />
     </article>
