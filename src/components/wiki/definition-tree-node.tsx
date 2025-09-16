@@ -63,7 +63,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
             style={{ paddingLeft: `${level * 1}rem` }}
         >
             <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent dark:hover:bg-transparent" onClick={handleTriggerClick}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent dark:hover:bg-transparent text-black dark:text-white" onClick={handleTriggerClick}>
                     <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isNodeExpanded && "rotate-90")} />
                 </Button>
             </CollapsibleTrigger>
@@ -78,7 +78,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                 onClick={handleNodeSelect}
             >
                 <Icon className={cn("h-4 w-4 mr-2", hasChildren ? "text-blue-500" : "text-muted-foreground")} />
-                <span className="truncate">{node.name}</span>
+                <span className="truncate text-black dark:text-white">{node.name}</span>
             </Button>
         </div>
       
