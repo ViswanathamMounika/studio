@@ -19,6 +19,7 @@ export default function Home() {
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
+  const [searchQuery, setSearchQuery] = useState("");
 
 
   const selectedDefinition = useMemo(() => {
@@ -98,20 +99,51 @@ export default function Home() {
     }
   };
 
+  const filteredDefinitions = useMemo(() => {
+    const filterItems = (items: Definition[], query: string): Definition[] => {
+        if (!query) {
+            return items;
+        }
+
+        const lowerCaseQuery = query.toLowerCase();
+
+        return items.reduce((acc: Definition[], item) => {
+            const children = item.children ? filterItems(item.children, query) : [];
+
+            const nameMatch = item.name.toLowerCase().includes(lowerCaseQuery);
+            const keywordsMatch = item.keywords.some(k => k.toLowerCase().includes(lowerCaseQuery));
+            const descriptionMatch = item.description.toLowerCase().includes(lowerCaseQuery);
+            const technicalDetailsMatch = item.technicalDetails.toLowerCase().includes(lowerCaseQuery);
+            const examplesMatch = item.examples.toLowerCase().includes(lowerCaseQuery);
+            const usageMatch = item.usage.toLowerCase().includes(lowerCaseQuery);
+
+            if (nameMatch || keywordsMatch || descriptionMatch || technicalDetailsMatch || examplesMatch || usageMatch || children.length > 0) {
+                acc.push({ ...item, children });
+            }
+
+            return acc;
+        }, []);
+    };
+
+    return filterItems(definitions, searchQuery);
+  }, [definitions, searchQuery]);
+
   const visibleDefinitions = useMemo(() => {
-    const filter = (items: Definition[]) => {
+    const itemsToFilter = searchQuery ? filteredDefinitions : definitions;
+    
+    const filterArchived = (items: Definition[]) => {
       return items.filter(item => !item.isArchived || showArchived).map(item => ({
         ...item,
-        children: item.children ? filter(item.children) : []
+        children: item.children ? filterArchived(item.children) : []
       }))
     }
 
     if (showArchived) {
-      return definitions;
+      return itemsToFilter;
     }
 
-    return filter(definitions);
-  }, [definitions, showArchived]);
+    return filterArchived(itemsToFilter);
+  }, [definitions, filteredDefinitions, showArchived, searchQuery]);
 
 
   return (
@@ -136,7 +168,13 @@ export default function Home() {
             <div className="p-4 border-b">
                 <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input type="search" placeholder="Search definitions..." className="w-full rounded-lg bg-secondary pl-8" />
+                    <Input 
+                      type="search" 
+                      placeholder="Search definitions..." 
+                      className="w-full rounded-lg bg-secondary pl-8"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
             </div>
             <div className="overflow-y-auto flex-1 p-4">
