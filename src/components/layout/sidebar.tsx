@@ -46,7 +46,7 @@ export default function AppSidebar({ showArchived, setShowArchived }: AppSidebar
     <>
       <SidebarHeader>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold">MPM Definitions</span>
+          <span className="text-lg font-semibold">MPM Core</span>
         </div>
       </SidebarHeader>
       <SidebarContent>

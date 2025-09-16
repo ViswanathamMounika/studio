@@ -160,7 +160,7 @@ export default function Home() {
                 <SidebarTrigger className="hidden sm:flex h-7 w-7">
                   <Menu />
                 </SidebarTrigger>
-                <h1 className="text-xl font-bold tracking-tight">MPM Definitions</h1>
+                <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
               </div>
         </AppHeader>
         <main className="flex-1 flex overflow-hidden">
