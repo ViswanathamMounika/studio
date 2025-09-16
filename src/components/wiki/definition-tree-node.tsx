@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 type DefinitionTreeNodeProps = {
   node: Definition;
   selectedId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, sectionId?: string) => void;
   level: number;
 };
 
@@ -36,7 +36,9 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
             style={{ paddingLeft: `${level * 1}rem` }}
             onClick={() => onSelect(node.id)}
           >
-            <ChevronRight className="h-4 w-4 mr-2 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+            {node.children && node.children.length > 0 ? (
+                 <ChevronRight className="h-4 w-4 mr-2 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+            ) : <span className="w-4 h-4 mr-2 shrink-0"></span> }
             {node.children && node.children.length > 0 ? (
                 <Folder className="h-4 w-4 mr-2 text-primary" />
             ) : (
@@ -57,6 +59,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
               level={level + 1}
             />
           ))}
+          {(!node.children || node.children.length === 0) && (
            <div className="space-y-1" style={{ paddingLeft: `${(level + 1) * 1}rem` }}>
               {sectionItems.map(item => {
                 const Icon = item.icon;
@@ -67,8 +70,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                         size="sm"
                         className="w-full justify-start text-left"
                         onClick={() => {
-                            onSelect(node.id);
-                            // TODO: scroll to section
+                            onSelect(node.id, `section-${item.key}`);
                         }}
                     >
                        <Icon className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -77,6 +79,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                 )
               })}
            </div>
+          )}
         </div>
       </CollapsibleContent>
     </Collapsible>

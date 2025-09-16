@@ -7,7 +7,7 @@ import DefinitionTreeNode from './definition-tree-node';
 type DefinitionTreeProps = {
   definitions: Definition[];
   selectedId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, sectionId?: string) => void;
 };
 
 export default function DefinitionTree({ definitions, selectedId, onSelect }: DefinitionTreeProps) {

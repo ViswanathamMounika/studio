@@ -40,35 +40,35 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
       </div>
 
       <Accordion type="multiple" defaultValue={['description', 'revisions']} className="w-full">
-        <AccordionItem value="description">
+        <AccordionItem value="description" id="section-description">
           <AccordionTrigger className="text-lg font-semibold">Description</AccordionTrigger>
           <AccordionContent>
             <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
           </AccordionContent>
         </AccordionItem>
         
-        <AccordionItem value="technical-details">
+        <AccordionItem value="technical-details" id="section-technical-details">
           <AccordionTrigger className="text-lg font-semibold">Technical Details</AccordionTrigger>
           <AccordionContent>
             <div className="prose prose-sm max-w-none prose-code:font-code" dangerouslySetInnerHTML={{ __html: definition.technicalDetails }} />
           </AccordionContent>
         </AccordionItem>
         
-        <AccordionItem value="examples">
+        <AccordionItem value="examples" id="section-examples">
           <AccordionTrigger className="text-lg font-semibold">Example</AccordionTrigger>
           <AccordionContent>
             <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.examples }} />
           </AccordionContent>
         </AccordionItem>
         
-        <AccordionItem value="usage">
+        <AccordionItem value="usage" id="section-usage">
           <AccordionTrigger className="text-lg font-semibold">Usage</AccordionTrigger>
           <AccordionContent>
             <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.usage }} />
           </AccordionContent>
         </AccordionItem>
         
-        <AccordionItem value="revisions">
+        <AccordionItem value="revisions" id="section-revisions">
           <AccordionTrigger className="text-lg font-semibold">Version History</AccordionTrigger>
           <AccordionContent>
             <Table>

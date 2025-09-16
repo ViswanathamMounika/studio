@@ -21,9 +21,17 @@ export default function Home() {
     return findDefinition(definitions, selectedDefinitionId);
   }, [definitions, selectedDefinitionId]);
 
-  const handleSelectDefinition = (id: string) => {
+  const handleSelectDefinition = (id: string, sectionId?: string) => {
     setIsEditing(false);
     setSelectedDefinitionId(id);
+    if (sectionId) {
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 0);
+    }
   };
 
   const handleSave = (updatedDefinition: Definition) => {
@@ -116,7 +124,7 @@ export default function Home() {
               onSelect={handleSelectDefinition}
             />
           </div>
-          <div className="w-3/4 overflow-y-auto p-6">
+          <div className="w-3/4 overflow-y-auto p-6" id="definition-content">
             {isEditing && selectedDefinition ? (
               <DefinitionEdit
                 definition={selectedDefinition}
