@@ -30,6 +30,20 @@ const ToolbarButton = ({ children, onClick, active }: { children: React.ReactNod
 const FONT_COLORS = ['#000000', '#EF4444', '#3B82F6', '#22C55E', '#F59E0B', '#A855F7', '#6366F1', '#EC4899'];
 const BACKGROUND_COLORS = ['#FBBF24', '#F87171', '#60A5FA', '#4ADE80', '#A78BFA', '#F472B6', '#34D399', '#93C5FD'];
 
+const ColorPalette = ({ colors, onSelect }: { colors: string[], onSelect: (color: string) => void }) => (
+    <div className="grid grid-cols-4 gap-2">
+        {colors.map(color => (
+            <button
+                key={color}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => onSelect(color)}
+                className="h-6 w-6 rounded-full border cursor-pointer hover:ring-2 hover:ring-ring"
+                style={{ backgroundColor: color }}
+            />
+        ))}
+    </div>
+);
+
 
 export default function WysiwygEditor({ value, onChange, className, placeholder }: WysiwygEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
@@ -85,11 +99,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                         <Button variant="ghost" size="icon" className="h-8 w-8">A</Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-2">
-                        <div className="grid grid-cols-4 gap-1">
-                            {FONT_COLORS.map(color => (
-                                <button key={color} onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('foreColor', color)} className="h-6 w-6 rounded-full border" style={{ backgroundColor: color }} />
-                            ))}
-                        </div>
+                        <ColorPalette colors={FONT_COLORS} onSelect={(color) => execCommand('foreColor', color)} />
                     </PopoverContent>
                 </Popover>
 
@@ -100,11 +110,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-2">
-                        <div className="grid grid-cols-4 gap-1">
-                            {BACKGROUND_COLORS.map(color => (
-                                <button key={color} onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('backColor', color)} className="h-6 w-6 rounded-full border" style={{ backgroundColor: color }} />
-                            ))}
-                        </div>
+                        <ColorPalette colors={BACKGROUND_COLORS} onSelect={(color) => execCommand('backColor', color)} />
                     </PopoverContent>
                 </Popover>
 
