@@ -9,8 +9,9 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Menu } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import { Logo } from '@/components/icons';
+import { Input } from '@/components/ui/input';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
@@ -132,12 +133,20 @@ export default function Home() {
               </div>
         </AppHeader>
         <main className="flex-1 flex overflow-hidden">
-          <div className="group-data-[state=collapsed]:-ml-64 sm:group-data-[state=collapsed]:-ml-0 w-1/3 xl:w-1/4 border-r overflow-y-auto p-4 shrink-0 transition-all duration-200">
-            <DefinitionTree
-              definitions={visibleDefinitions}
-              selectedId={selectedDefinitionId}
-              onSelect={handleSelectDefinition}
-            />
+          <div className="group-data-[state=collapsed]:-ml-64 sm:group-data-[state=collapsed]:-ml-0 w-1/3 xl:w-1/4 border-r shrink-0 transition-all duration-200 flex flex-col">
+            <div className="p-4 border-b">
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input type="search" placeholder="Search definitions..." className="w-full rounded-lg bg-secondary pl-8" />
+                </div>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4">
+                <DefinitionTree
+                definitions={visibleDefinitions}
+                selectedId={selectedDefinitionId}
+                onSelect={handleSelectDefinition}
+                />
+            </div>
           </div>
           <div className="w-full lg:w-2/3 xl:w-3/4 overflow-y-auto p-6" id="definition-content">
             {isEditing && selectedDefinition ? (
