@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -36,42 +36,44 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   const isSelected = node.id === selectedId;
   const isParentOfSelected = selectedId ? isParent(node, selectedId) : false;
 
-  // Expand if it's a parent of the selected node, but not if it's the selected node itself unless it has children.
-  const [isExpanded, setIsExpanded] = useState(isParentOfSelected);
+  // Keep track of expansion state locally
+  const [isNodeExpanded, setIsNodeExpanded] = useState(isParentOfSelected);
+
+  // If selection changes, update expansion state
+  useEffect(() => {
+    setIsNodeExpanded(isParentOfSelected || isSelected);
+  }, [selectedId, node.id, isParentOfSelected, isSelected]);
 
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSelect(node.id);
-    if (!hasChildren) {
-      setIsExpanded(prev => !prev);
-    }
+    setIsNodeExpanded(prev => !prev);
   };
-
-  const handleTriggerClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsExpanded(prev => !prev);
-  }
   
   const Icon = hasChildren ? Folder : File;
 
+  const isExpandable = hasChildren || !hasChildren;
+
   return (
-    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+    <Collapsible open={isNodeExpanded} onOpenChange={setIsNodeExpanded}>
         <div 
             className={cn(
                 "flex items-center w-full group/item rounded-md",
-                isSelected && "bg-accent/30"
             )}
         >
             <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start text-left bg-transparent hover:bg-transparent"
+                className={cn(
+                    "w-full justify-start text-left hover:bg-accent/50",
+                    isSelected && "bg-accent/30"
+                )}
                 style={{ paddingLeft: `${level * 1.5}rem` }}
                 onClick={handleNodeSelect}
             >
-                <CollapsibleTrigger asChild onClick={handleTriggerClick}>
-                    <span className='h-full px-2 -ml-2'>
-                        <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200", isExpanded && "rotate-90")} />
+                <CollapsibleTrigger asChild>
+                    <span className='h-full px-2 -ml-2' onClick={(e) => e.stopPropagation()}>
+                        <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200", isNodeExpanded && "rotate-90", !isExpandable && "invisible")} />
                     </span>
                 </CollapsibleTrigger>
                 
@@ -82,7 +84,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
         </div>
         
         <CollapsibleContent>
-            {hasChildren ? (
+            {hasChildren && (
                 <div className="space-y-1 mt-1">
                     {node.children?.map(child => (
                     <DefinitionTreeNode
@@ -94,7 +96,8 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                     />
                     ))}
                 </div>
-            ) : (
+            )}
+            {!hasChildren && (
                 <div className="space-y-1 py-1" style={{ paddingLeft: `${(level + 1) * 1.5}rem` }}>
                     {sectionItems.map(item => {
                         const SectionIcon = item.icon;
@@ -103,7 +106,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                                 key={item.key}
                                 variant="ghost"
                                 size="sm"
-                                className="w-full justify-start text-left h-8"
+                                className="w-full justify-start text-left h-8 hover:bg-accent/50"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onSelect(node.id, `section-${item.key}`);
