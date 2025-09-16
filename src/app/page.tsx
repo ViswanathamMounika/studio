@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useMemo } from 'react';
-import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import DefinitionTree from '@/components/wiki/definition-tree';
@@ -9,13 +9,15 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
+import { Menu } from 'lucide-react';
+import { Logo } from '@/components/icons';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>('1.1.1');
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('description');
 
 
   const selectedDefinition = useMemo(() => {
@@ -27,15 +29,16 @@ export default function Home() {
     setIsEditing(false);
     setSelectedDefinitionId(id);
     if (sectionId) {
-      setExpandedSection(sectionId);
+      const tabValue = sectionId.replace('section-', '');
+      setActiveTab(tabValue);
       setTimeout(() => {
         const element = document.getElementById(sectionId);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, 0);
+      }, 100);
     } else {
-        setExpandedSection(null);
+        setActiveTab('description');
     }
   };
 
@@ -115,10 +118,21 @@ export default function Home() {
       <Sidebar>
         <AppSidebar showArchived={showArchived} setShowArchived={setShowArchived} />
       </Sidebar>
-      <SidebarInset className="flex flex-col min-h-screen">
-        <AppHeader />
+      <SidebarInset>
+        <AppHeader>
+             <SidebarTrigger className="sm:hidden">
+                <Menu />
+              </SidebarTrigger>
+              <div className="flex items-center gap-2">
+                <SidebarTrigger className="hidden sm:flex h-7 w-7">
+                  <Menu />
+                </SidebarTrigger>
+                <Logo className="w-6 h-6 text-primary" />
+                <h1 className="text-xl font-bold tracking-tight">MedPoint Wiki</h1>
+              </div>
+        </AppHeader>
         <main className="flex-1 flex overflow-hidden">
-          <div className="w-1/3 xl:w-1/4 border-r overflow-y-auto p-4 shrink-0 sm:block hidden">
+          <div className="group-data-[state=collapsed]:-ml-64 sm:group-data-[state=collapsed]:-ml-0 w-1/3 xl:w-1/4 border-r overflow-y-auto p-4 shrink-0 transition-all duration-200">
             <DefinitionTree
               definitions={visibleDefinitions}
               selectedId={selectedDefinitionId}
@@ -138,6 +152,8 @@ export default function Home() {
                 onEdit={() => setIsEditing(true)}
                 onDuplicate={handleDuplicate}
                 onArchive={handleArchive}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
               />
             ) : (
               <div className="flex items-center justify-center h-full">

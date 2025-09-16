@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from 'react';
 import type { Definition, Revision } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,9 +16,16 @@ type DefinitionViewProps = {
   onEdit: () => void;
   onDuplicate: (id: string) => void;
   onArchive: (id: string, archive: boolean) => void;
+  activeTab: string;
+  onTabChange: (tab: string) => void;
 };
 
-export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive }: DefinitionViewProps) {
+export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, activeTab, onTabChange }: DefinitionViewProps) {
+    useEffect(() => {
+        // Reset to the description tab when the definition changes
+        onTabChange('description');
+    }, [definition, onTabChange]);
+
   return (
     <article className="prose prose-sm max-w-none">
       <div className="flex justify-between items-start">
@@ -40,7 +48,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         ))}
       </div>
 
-      <Tabs defaultValue="description" className="w-full mt-6">
+      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="description">Description</TabsTrigger>
           <TabsTrigger value="technical-details">Technical Details</TabsTrigger>
