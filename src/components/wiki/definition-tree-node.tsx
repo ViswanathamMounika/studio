@@ -7,8 +7,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from "@/components/ui/button";
 import { ChevronRight, File, Folder, Book, Code, Lightbulb, Pilcrow, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { initialDefinitions, findDefinition } from '@/lib/data';
-
 
 const sectionItems = [
     { key: 'description', label: 'Description', icon: Book },
@@ -33,13 +31,13 @@ function isParent(node: Definition, selectedId: string): boolean {
     return false;
 }
 
-
 export default function DefinitionTreeNode({ node, selectedId, onSelect, level }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number }) {
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = node.id === selectedId;
   const isParentOfSelected = selectedId ? isParent(node, selectedId) : false;
 
-  const [isExpanded, setIsExpanded] = useState(level < 1 || isParentOfSelected);
+  // Expand if it's a parent of the selected node, but not if it's the selected node itself unless it has children.
+  const [isExpanded, setIsExpanded] = useState(isParentOfSelected);
 
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -53,16 +51,22 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
     e.stopPropagation();
     setIsExpanded(prev => !prev);
   }
+  
+  const Icon = hasChildren ? Folder : File;
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-      <div className="rounded-md">
-        <div className="flex items-center w-full group/item">
+        <div 
+            className={cn(
+                "flex items-center w-full group/item rounded-md",
+                isSelected && "bg-accent/30"
+            )}
+        >
             <Button
                 variant="ghost"
                 size="sm"
-                className={cn("w-full justify-start text-left", isSelected && "bg-accent/30 hover:bg-accent/40")}
-                style={{ paddingLeft: `${level * 1}rem` }}
+                className="w-full justify-start text-left bg-transparent hover:bg-transparent"
+                style={{ paddingLeft: `${level * 1.5}rem` }}
                 onClick={handleNodeSelect}
             >
                 <CollapsibleTrigger asChild onClick={handleTriggerClick}>
@@ -71,57 +75,48 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                     </span>
                 </CollapsibleTrigger>
                 
-                {hasChildren ? (
-                    <Folder className="h-4 w-4 mr-2 text-primary" />
-                ): (
-                    <File className="h-4 w-4 mr-2 text-muted-foreground" />
-                )}
+                <Icon className={cn("h-4 w-4 mr-2", hasChildren ? "text-primary" : "text-muted-foreground")} />
                 
                 <span className="truncate">{node.name}</span>
             </Button>
         </div>
         
-        {!hasChildren && (
-            <CollapsibleContent>
-                <div className="space-y-1 py-1" style={{ paddingLeft: `${(level + 1.5) * 1}rem` }}>
+        <CollapsibleContent>
+            {hasChildren ? (
+                <div className="space-y-1 mt-1">
+                    {node.children?.map(child => (
+                    <DefinitionTreeNode
+                        key={child.id}
+                        node={child}
+                        selectedId={selectedId}
+                        onSelect={onSelect}
+                        level={level + 1}
+                    />
+                    ))}
+                </div>
+            ) : (
+                <div className="space-y-1 py-1" style={{ paddingLeft: `${(level + 1) * 1.5}rem` }}>
                     {sectionItems.map(item => {
-                    const Icon = item.icon;
-                    return (
-                        <Button
-                            key={item.key}
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start text-left h-8"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onSelect(node.id, `section-${item.key}`);
-                            }}
-                        >
-                            <Icon className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span className="truncate">{item.label}</span>
-                        </Button>
-                    )
+                        const SectionIcon = item.icon;
+                        return (
+                            <Button
+                                key={item.key}
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-left h-8"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelect(node.id, `section-${item.key}`);
+                                }}
+                            >
+                                <SectionIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                                <span className="truncate">{item.label}</span>
+                            </Button>
+                        )
                     })}
                 </div>
-            </CollapsibleContent>
-        )}
-      </div>
-
-      {hasChildren && (
-        <CollapsibleContent>
-            <div className="space-y-1 mt-1">
-                {node.children?.map(child => (
-                <DefinitionTreeNode
-                    key={child.id}
-                    node={child}
-                    selectedId={selectedId}
-                    onSelect={onSelect}
-                    level={level + 1}
-                />
-                ))}
-            </div>
+            )}
         </CollapsibleContent>
-      )}
     </Collapsible>
   );
 }
