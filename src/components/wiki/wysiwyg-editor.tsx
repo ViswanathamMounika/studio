@@ -79,6 +79,13 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         }
     };
 
+    const handleImage = () => {
+        const url = prompt('Enter the Image URL');
+        if (url) {
+            execCommand('insertImage', url);
+        }
+    };
+
     const applyFontSize = (size: string) => {
         execCommand('fontSize', size);
     };
@@ -148,7 +155,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
                 <ToolbarButton onClick={handleLink}><Link className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => {}}><Image className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={handleImage}><Image className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => {}}><Table className="h-4 w-4" /></ToolbarButton>
             </div>
             <div

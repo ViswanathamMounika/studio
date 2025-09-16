@@ -8,12 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import WysiwygEditor from './wysiwyg-editor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type DefinitionEditProps = {
   definition: Definition;
   onSave: (definition: Definition) => void;
   onCancel: () => void;
 };
+
+const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management'];
 
 export default function DefinitionEdit({ definition, onSave, onCancel }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
@@ -71,7 +74,18 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
             </div>
             <div>
               <Label htmlFor="module">Module</Label>
-              <Input id="module" value={module} onChange={(e) => setModule(e.target.value)} />
+              <Select value={module} onValueChange={setModule}>
+                <SelectTrigger id="module">
+                  <SelectValue placeholder="Select a module" />
+                </SelectTrigger>
+                <SelectContent>
+                  {modules.map((mod) => (
+                    <SelectItem key={mod} value={mod}>
+                      {mod}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div>
