@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import WysiwygEditor from './wysiwyg-editor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '../ui/textarea';
 
 type DefinitionEditProps = {
   definition: Definition;
@@ -113,7 +112,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
               <CardTitle>Technical Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <Textarea value={technicalDetails} onChange={e => setTechnicalDetails(e.target.value)} rows={5} className="font-code" />
+            <WysiwygEditor content={technicalDetails} onChange={setTechnicalDetails} />
           </CardContent>
       </Card>
 
@@ -124,11 +123,11 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
           <CardContent className="space-y-4">
              <div>
                 <Label>Examples</Label>
-                <Textarea value={examples} onChange={e => setExamples(e.target.value)} rows={5}/>
+                <WysiwygEditor content={examples} onChange={setExamples} />
             </div>
             <div>
                 <Label>Usage</Label>
-                <Textarea value={usage} onChange={e => setUsage(e.target.value)} rows={5}/>
+                <WysiwygEditor content={usage} onChange={setUsage} />
             </div>
           </CardContent>
       </Card>
