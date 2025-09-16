@@ -40,8 +40,7 @@ export default function Comments() {
   };
 
   return (
-    <div className="mt-8">
-      <h3 className="text-xl font-bold mb-4">Comments & Notes</h3>
+    <div className="mt-2">
       <div className="space-y-6">
         {comments.map(comment => (
             <div key={comment.id} className="flex items-start gap-4">

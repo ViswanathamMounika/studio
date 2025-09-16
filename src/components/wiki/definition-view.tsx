@@ -55,7 +55,10 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-6">
+            <CardHeader>
+              <CardTitle>Comments & Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
               <Comments />
             </CardContent>
           </Card>

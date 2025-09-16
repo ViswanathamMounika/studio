@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useMemo } from 'react';
-import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import DefinitionTree from '@/components/wiki/definition-tree';
@@ -9,13 +9,14 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Menu } from 'lucide-react';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>('1.1.1');
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
 
   const selectedDefinition = useMemo(() => {
     if (!selectedDefinitionId) return null;
@@ -26,12 +27,15 @@ export default function Home() {
     setIsEditing(false);
     setSelectedDefinitionId(id);
     if (sectionId) {
+      setExpandedSection(sectionId);
       setTimeout(() => {
         const element = document.getElementById(sectionId);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }, 0);
+    } else {
+        setExpandedSection(null);
     }
   };
 
