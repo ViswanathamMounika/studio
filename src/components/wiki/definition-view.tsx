@@ -183,7 +183,20 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                         <TableBody>
                             {selectedTable.rows.map((row, rowIndex) => (
                                 <TableRow key={rowIndex}>
-                                    {row.map((cell, cellIndex) => <TableCell key={cellIndex}>{cell}</TableCell>)}
+                                    {row.map((cell, cellIndex) => {
+                                        const header = selectedTable.headers[cellIndex];
+                                        if (selectedTable.id === 'auth-status-codes' && header === 'Is Final Status?') {
+                                            const isActive = cell === 'Yes';
+                                            return (
+                                                <TableCell key={cellIndex}>
+                                                    <Badge variant={isActive ? 'success' : 'secondary'}>
+                                                        {isActive ? 'Active' : 'Inactive'}
+                                                    </Badge>
+                                                </TableCell>
+                                            );
+                                        }
+                                        return <TableCell key={cellIndex}>{cell}</TableCell>
+                                    })}
                                 </TableRow>
                             ))}
                         </TableBody>
