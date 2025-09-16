@@ -57,13 +57,13 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
     <Collapsible open={isNodeExpanded} onOpenChange={setIsNodeExpanded}>
         <div 
             className={cn(
-                "flex items-center w-full group/item rounded-md",
+                "flex items-center w-full group/item rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50",
                 isSelected && "bg-blue-100 dark:bg-blue-900/50"
             )}
             style={{ paddingLeft: `${level * 1}rem` }}
         >
             <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/50" onClick={handleTriggerClick}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent dark:hover:bg-transparent" onClick={handleTriggerClick}>
                     <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isNodeExpanded && "rotate-90")} />
                 </Button>
             </CollapsibleTrigger>
