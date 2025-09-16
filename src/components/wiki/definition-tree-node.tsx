@@ -39,10 +39,12 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   const [isNodeExpanded, setIsNodeExpanded] = useState(isParentOfSelected);
 
   useEffect(() => {
-    if (isParentOfSelected) {
+    if (isParentOfSelected && selectedId !== node.id) {
         setIsNodeExpanded(true);
+    } else if (!isParentOfSelected) {
+        setIsNodeExpanded(false);
     }
-  }, [isParentOfSelected, selectedId]);
+  }, [isParentOfSelected, selectedId, node.id]);
 
   
   const handleNodeSelect = (e: React.MouseEvent) => {
@@ -59,7 +61,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   };
   
   const Icon = hasChildren ? Folder : File;
-  const showSubItemChevron = !hasChildren || isSelected;
+  const showSubItemChevron = isSelected;
 
   return (
     <Collapsible open={isNodeExpanded} onOpenChange={setIsNodeExpanded}>
@@ -78,8 +80,8 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
               </CollapsibleTrigger>
             ) : (
                 <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/50" onClick={handleTriggerClick} disabled={!isSelected}>
-                        <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isSelected && isNodeExpanded ? "rotate-90" : "opacity-0")} />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/50" onClick={handleTriggerClick} disabled={!showSubItemChevron}>
+                        <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", showSubItemChevron && isNodeExpanded ? "rotate-90" : "" , !showSubItemChevron ? 'opacity-0' : '')} />
                     </Button>
                 </CollapsibleTrigger>
             )}
@@ -113,7 +115,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
               </div>
           )}
           {isSelected && (
-            <div className="space-y-1 mt-1" style={{ paddingLeft: `${(level + 2)}rem` }}>
+            <div className="space-y-1 mt-1 pl-4" style={{ paddingLeft: `${(level + 2)}rem` }}>
                 <SectionLink icon={<FileText className="h-4 w-4" />} label="Description" onClick={() => onSelect(node.id, 'section-description')} />
                 <SectionLink icon={<Code2 className="h-4 w-4" />} label="Technical Details" onClick={() => onSelect(node.id, 'section-technical-details')} />
                 <SectionLink icon={<Lightbulb className="h-4 w-4" />} label="Examples" onClick={() => onSelect(node.id, 'section-examples')} />
