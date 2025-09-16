@@ -26,12 +26,26 @@ const ToolbarButton = ({ children, onClick, active }: { children: React.ReactNod
     </Button>
 )
 
-// More distinct colors
-const FONT_COLORS = ['#000000', '#EF4444', '#3B82F6', '#22C55E', '#F59E0B', '#A855F7', '#6366F1', '#EC4899'];
-const BACKGROUND_COLORS = ['#FBBF24', '#F87171', '#60A5FA', '#4ADE80', '#A78BFA', '#F472B6', '#34D399', '#93C5FD'];
+
+const FONT_COLORS = [
+    '#000000', '#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#F9FAFB',
+    '#B91C1C', '#DC2626', '#EF4444', '#F87171', '#FCA5A5', '#FEE2E2',
+    '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE',
+    '#15803D', '#16A34A', '#22C55E', '#4ADE80', '#86EFAC', '#BBF7D0',
+    '#B45309', '#D97706', '#F59E0B', '#FBBF24', '#FCD34D', '#FEF3C7',
+    '#7E22CE', '#9333EA', '#A855F7', '#C084FC', '#D8B4FE', '#F3E8FF',
+    '#DB2777', '#EC4899', '#F472B6', '#F9A8D4', '#FBCFE8', '#FCE7F3'
+];
+
+const BACKGROUND_COLORS = [
+    '#FEE2E2', '#FFE4E6', '#FFF4ED', '#FEF3C7', '#F7FEE7', '#ECFDF5',
+    '#EFF6FF', '#F5F3FF', '#FAFAF9', '#FFFFFF',
+    '#FCA5A5', '#F9A8D4', '#FCD34D', '#FBBF24', '#A7F3D0', '#93C5FD',
+    '#C4B5FD', '#D1D5DB', '#FED7AA', '#FDE68A', '#A7F3D0', '#BFDBFE'
+];
 
 const ColorPalette = ({ colors, onSelect }: { colors: string[], onSelect: (color: string) => void }) => (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-6 gap-2">
         {colors.map(color => (
             <button
                 key={color}
