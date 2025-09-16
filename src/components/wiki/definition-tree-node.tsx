@@ -24,7 +24,7 @@ function isParent(node: Definition, selectedId: string): boolean {
         if (child.id === selectedId) {
             return true;
         }
-        if (isParent(child, selectedId)) {
+        if (child.children && isParent(child, selectedId)) {
             return true;
         }
     }
@@ -33,20 +33,30 @@ function isParent(node: Definition, selectedId: string): boolean {
 
 export default function DefinitionTreeNode({ node, selectedId, onSelect, level }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number }) {
   const hasChildren = node.children && node.children.length > 0;
-  const isSelected = node.id === selectedId;
-  const isParentOfSelected = selectedId ? isParent(node, selectedId) : false;
+  const isSelected = selectedId !== null && node.id === selectedId;
+  const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
+  const showSections = isSelected && !hasChildren;
 
-  // Keep track of expansion state locally
-  const [isNodeExpanded, setIsNodeExpanded] = useState(isParentOfSelected);
+  const [isNodeExpanded, setIsNodeExpanded] = useState(false);
 
-  // If selection changes, update expansion state
   useEffect(() => {
-    setIsNodeExpanded(isParentOfSelected || isSelected);
-  }, [selectedId, node.id, isParentOfSelected, isSelected]);
-
+    if (isParentOfSelected) {
+      setIsNodeExpanded(true);
+    }
+  }, [isParentOfSelected]);
+  
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSelect(node.id);
+    if (hasChildren) {
+      setIsNodeExpanded(prev => !prev);
+    } else {
+       setIsNodeExpanded(true); // Always expand leaf nodes on select
+    }
+  };
+
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsNodeExpanded(prev => !prev);
   };
   
@@ -59,26 +69,23 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
         <div 
             className={cn(
                 "flex items-center w-full group/item rounded-md",
+                isSelected && "bg-accent/30"
             )}
+            style={{ paddingLeft: `${level * 1.5}rem` }}
         >
+            <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/50" onClick={handleTriggerClick}>
+                    <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isNodeExpanded && "rotate-90", !isExpandable && "invisible")} />
+                </Button>
+            </CollapsibleTrigger>
+            
             <Button
                 variant="ghost"
                 size="sm"
-                className={cn(
-                    "w-full justify-start text-left hover:bg-accent/50",
-                    isSelected && "bg-accent/30"
-                )}
-                style={{ paddingLeft: `${level * 1.5}rem` }}
+                className="w-full justify-start text-left h-8 hover:bg-accent/50 p-0"
                 onClick={handleNodeSelect}
             >
-                <CollapsibleTrigger asChild>
-                    <span className='h-full px-2 -ml-2' onClick={(e) => e.stopPropagation()}>
-                        <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200", isNodeExpanded && "rotate-90", !isExpandable && "invisible")} />
-                    </span>
-                </CollapsibleTrigger>
-                
                 <Icon className={cn("h-4 w-4 mr-2", hasChildren ? "text-primary" : "text-muted-foreground")} />
-                
                 <span className="truncate">{node.name}</span>
             </Button>
         </div>
@@ -97,8 +104,8 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                     ))}
                 </div>
             )}
-            {!hasChildren && (
-                <div className="space-y-1 py-1" style={{ paddingLeft: `${(level + 1) * 1.5}rem` }}>
+            {showSections && (
+                <div className="space-y-1 py-1" style={{ paddingLeft: `${(level + 2) * 1.5}rem` }}>
                     {sectionItems.map(item => {
                         const SectionIcon = item.icon;
                         return (
