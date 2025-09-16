@@ -32,10 +32,10 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         // Reset to the description tab when the definition changes
         if(activeTab === 'examples' || activeTab === 'usage') {
             onTabChange('examples-usage');
-        } else {
+        } else if (activeTab !== 'description' && activeTab !== 'technical-details' && activeTab !== 'revisions') {
             onTabChange('description');
         }
-    }, [definition, onTabChange]);
+    }, [definition, onTabChange, activeTab]);
 
     const [selectedTable, setSelectedTable] = useState<SupportingTable | null>(null);
 
@@ -45,7 +45,12 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         <div className="flex justify-between items-start">
             <div>
             <p className="text-sm text-muted-foreground">{definition.module}</p>
-            <h2 className="text-3xl font-bold mt-0">{definition.name}</h2>
+            <div className="flex items-center gap-4">
+                <h2 className="text-3xl font-bold mt-0">{definition.name}</h2>
+                <Badge variant={definition.isArchived ? 'destructive' : 'outline'}>
+                    {definition.isArchived ? 'Archived' : 'Active'}
+                </Badge>
+            </div>
             </div>
             <div className="flex items-center gap-2">
                 <Button onClick={onEdit}>
