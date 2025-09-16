@@ -3,6 +3,7 @@
 import type { Definition, Revision } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Comments from './comments';
@@ -48,44 +49,64 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
           <TabsTrigger value="revisions">Version History</TabsTrigger>
         </TabsList>
         <TabsContent value="description" id="section-description" className="mt-4">
-            <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
-            <Comments />
+          <Card>
+            <CardContent className="p-6">
+              <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
+              <Comments />
+            </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value="technical-details" id="section-technical-details" className="mt-4">
-          <div className="prose prose-sm max-w-none prose-code:font-code" dangerouslySetInnerHTML={{ __html: definition.technicalDetails }} />
+          <Card>
+            <CardContent className="p-6">
+              <div className="prose prose-sm max-w-none prose-code:font-code" dangerouslySetInnerHTML={{ __html: definition.technicalDetails }} />
+            </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value="examples" id="section-examples" className="mt-4">
-          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.examples }} />
+          <Card>
+            <CardContent className="p-6">
+              <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.examples }} />
+            </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value="usage" id="section-usage" className="mt-4">
-          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.usage }} />
+          <Card>
+            <CardContent className="p-6">
+              <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.usage }} />
+            </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value="revisions" id="section-revisions" className="mt-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ticket ID</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Developer</TableHead>
-                <TableHead>Description</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {definition.revisions.map((rev: Revision) => (
-                <TableRow key={rev.ticketId}>
-                  <TableCell className="font-medium">{rev.ticketId}</TableCell>
-                  <TableCell>{rev.date}</TableCell>
-                  <TableCell>{rev.developer}</TableCell>
-                  <TableCell>{rev.description}</TableCell>
-                </TableRow>
-              ))}
-                {definition.revisions.length === 0 && (
+          <Card>
+            <CardContent className="p-6">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">No revision history.</TableCell>
+                    <TableHead>Ticket ID</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Developer</TableHead>
+                    <TableHead>Description</TableHead>
                   </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {definition.revisions.map((rev: Revision) => (
+                    <TableRow key={rev.ticketId}>
+                      <TableCell className="font-medium">{rev.ticketId}</TableCell>
+                      <TableCell>{rev.date}</TableCell>
+                      <TableCell>{rev.developer}</TableCell>
+                      <TableCell>{rev.description}</TableCell>
+                    </TableRow>
+                  ))}
+                    {definition.revisions.length === 0 && (
+                      <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground">No revision history.</TableCell>
+                      </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </article>

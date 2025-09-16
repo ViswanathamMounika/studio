@@ -8,7 +8,6 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,12 +23,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
 
-export default function AppHeader() {
+export default function AppHeader({ children }: { children?: React.ReactNode }) {
   const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-      <SidebarTrigger className="sm:hidden" />
+      {children}
       <div className="flex items-center gap-2">
         <Logo className="w-6 h-6 text-primary" />
         <h1 className="text-xl font-bold tracking-tight">MedPoint Wiki</h1>

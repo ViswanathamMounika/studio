@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useMemo } from 'react';
-import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import DefinitionTree from '@/components/wiki/definition-tree';
@@ -9,6 +9,7 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
+import { PanelLeft } from 'lucide-react';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
@@ -92,20 +93,30 @@ export default function Home() {
   const visibleDefinitions = useMemo(() => {
     const filterArchived = (items: Definition[]): Definition[] => {
       return items.reduce((acc, def) => {
-        if (def.isArchived === showArchived) {
-          const children = def.children ? filterArchived(def.children) : [];
-          acc.push({ ...def, children });
-        } else if (def.children) {
-          const children = filterArchived(def.children);
-          if (children.length > 0) {
+        const children = def.children ? filterArchived(def.children) : [];
+        const isVisible = !def.isArchived || showArchived;
+
+        if (isVisible) {
+           acc.push({ ...def, children });
+        } else if (children.length > 0) {
             acc.push({ ...def, children });
-          }
         }
         return acc;
       }, [] as Definition[]);
     };
 
-    return filterArchived(definitions);
+    const filter = (items: Definition[]) => {
+      return items.filter(item => !item.isArchived || showArchived).map(item => ({
+        ...item,
+        children: item.children ? filter(item.children) : []
+      }))
+    }
+
+    if (showArchived) {
+      return definitions;
+    }
+
+    return filter(definitions);
   }, [definitions, showArchived]);
 
 
@@ -115,16 +126,25 @@ export default function Home() {
         <AppSidebar showArchived={showArchived} setShowArchived={setShowArchived} />
       </Sidebar>
       <SidebarInset className="flex flex-col min-h-screen">
-        <AppHeader />
+        <AppHeader>
+          <SidebarTrigger className="sm:hidden">
+            <PanelLeft />
+          </SidebarTrigger>
+        </AppHeader>
         <main className="flex-1 flex overflow-hidden">
-          <div className="w-1/4 border-r overflow-y-auto p-4">
+          <div className="hidden sm:flex items-center gap-2 border-r p-2 shrink-0">
+             <SidebarTrigger>
+              <PanelLeft />
+            </SidebarTrigger>
+          </div>
+          <div className="w-1/3 xl:w-1/4 border-r overflow-y-auto p-4 shrink-0 sm:block hidden">
             <DefinitionTree
               definitions={visibleDefinitions}
               selectedId={selectedDefinitionId}
               onSelect={handleSelectDefinition}
             />
           </div>
-          <div className="w-3/4 overflow-y-auto p-6" id="definition-content">
+          <div className="w-full lg:w-2/3 xl:w-3/4 overflow-y-auto p-6" id="definition-content">
             {isEditing && selectedDefinition ? (
               <DefinitionEdit
                 definition={selectedDefinition}
