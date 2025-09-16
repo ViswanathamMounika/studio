@@ -67,14 +67,14 @@ export const initialDefinitions: Definition[] = [
               <p>The date on which a final decision is made for an authorization request. This is a critical field for tracking service level agreements (SLAs) and reporting purposes.</p>
               
               <h4 class="font-bold mt-4 mb-2" style="color: red;">Relevant Term(s)</h4>
-              <p><strong>UMWF (Y/N)</strong> – Was the auth worked in the UM Workflow Utility?</p>
+              <p><strong style="color: blue;">UMWF (Y/N)</strong> – Was the auth worked in the UM Workflow Utility?</p>
               <ul class="list-disc pl-6">
                 <li>Y: If the auth STATUS was changed to or from Wand PRIORITY was NEVER changed to 1W</li>
               </ul>
               
               <h4 class="font-bold mt-4 mb-2" style="color: red;">Logic Used</h4>
 
-              <h5 class="font-bold mt-3 mb-1">Approved – (Auth Status 1)</h5>
+              <h5 class="font-bold mt-3 mb-1" style="color: blue;">Approved – (Auth Status 1)</h5>
               <p>If UMWF = Y</p>
               <ul class="list-disc pl-6">
                 <li>If auth has MD NOTE then DECISION DATE = MD NOTE DATE</li>
@@ -90,13 +90,13 @@ export const initialDefinitions: Definition[] = [
                 <li>If none of the above are true then DECISION DATE = Date Auth moved to status 1</li>
               </ul>
               
-              <h5 class="font-bold mt-3 mb-1">Modified – (Auth Status 2)</h5>
+              <h5 class="font-bold mt-3 mb-1" style="color: red;">Modified – (Auth Status 2)</h5>
               <ul class="list-disc pl-6">
                 <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
                 <li>If no MD Note then DECISION DATE = Date auth moved to status 2</li>
               </ul>
               
-              <h5 class="font-bold mt-3 mb-1">Denied – (Auth Status 3)</h5>
+              <h5 class="font-bold mt-3 mb-1" style="color: red;">Denied – (Auth Status 3)</h5>
               <ul class="list-disc pl-6">
                   <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
                   <li>If no MD Note then DECISION DATE = Date auth moved to status 3</li>
