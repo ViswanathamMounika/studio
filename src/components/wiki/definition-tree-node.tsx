@@ -28,11 +28,13 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   const isSelected = selectedId !== null && node.id === selectedId;
   const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
   
-  const [isNodeExpanded, setIsNodeExpanded] = useState(isParentOfSelected && !isSelected);
+  const [isNodeExpanded, setIsNodeExpanded] = useState(isParentOfSelected);
 
   useEffect(() => {
-    setIsNodeExpanded(isParentOfSelected || (isSelected && hasChildren));
-  }, [isParentOfSelected, isSelected, hasChildren]);
+    if (isParentOfSelected) {
+        setIsNodeExpanded(true);
+    }
+  }, [isParentOfSelected]);
 
   
   const handleNodeSelect = (e: React.MouseEvent) => {
@@ -50,8 +52,6 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   
   const Icon = hasChildren ? Folder : File;
 
-  const isExpandable = hasChildren || (isSelected && !hasChildren);
-
   return (
     <Collapsible open={isNodeExpanded} onOpenChange={setIsNodeExpanded}>
       <div 
@@ -59,19 +59,22 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
               "flex items-center w-full group/item rounded-md",
               isSelected && "bg-accent/50"
           )}
-          style={{ paddingLeft: `${level * 1.5}rem` }}
+          style={{ paddingLeft: `${level * 1}rem` }}
       >
-          <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/50" onClick={handleTriggerClick}>
-                  <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isNodeExpanded && "rotate-90", !isExpandable && "invisible")} />
-              </Button>
-          </CollapsibleTrigger>
+          {hasChildren && (
+            <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/50" onClick={handleTriggerClick}>
+                    <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isNodeExpanded && "rotate-90")} />
+                </Button>
+            </CollapsibleTrigger>
+          )}
           
           <Button
               variant="ghost"
               size="sm"
               className={cn(
-                  "w-full justify-start text-left h-8 p-0 hover:bg-transparent", // remove hover effect from button since parent has it
+                  "w-full justify-start text-left h-8 hover:bg-transparent",
+                  !hasChildren && 'ml-8',
                   isSelected && "bg-transparent"
               )}
               onClick={handleNodeSelect}
@@ -95,8 +98,8 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                   ))}
               </div>
           )}
-          {isSelected && !hasChildren && (
-            <div className="space-y-1 mt-1 pl-4" style={{ paddingLeft: `${(level + 1) * 1.5}rem` }}>
+          {isSelected && (
+            <div className="space-y-1 mt-1" style={{ paddingLeft: `${(level + 2.5)}rem` }}>
                 <button onClick={() => onSelect(node.id, 'section-description')} className="w-full text-left p-1 px-2 rounded-md hover:bg-accent/50 text-sm text-muted-foreground">Description</button>
                 <button onClick={() => onSelect(node.id, 'section-technical-details')} className="w-full text-left p-1 px-2 rounded-md hover:bg-accent/50 text-sm text-muted-foreground">Technical Details</button>
                 <button onClick={() => onSelect(node.id, 'section-examples')} className="w-full text-left p-1 px-2 rounded-md hover:bg-accent/50 text-sm text-muted-foreground">Examples</button>
