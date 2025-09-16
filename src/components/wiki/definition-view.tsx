@@ -30,9 +30,9 @@ const supportingTablesData: Record<string, SupportingTable> = {
 export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, activeTab, onTabChange }: DefinitionViewProps) {
     useEffect(() => {
         // Reset to the description tab when the definition changes
-        if(activeTab === 'examples' || activeTab === 'usage') {
+        if (activeTab === 'examples' || activeTab === 'usage') {
             onTabChange('examples-usage');
-        } else if (activeTab !== 'description' && activeTab !== 'technical-details' && activeTab !== 'revisions') {
+        } else if (activeTab !== 'description' && activeTab !== 'technical-details' && activeTab !== 'revisions' && activeTab !== 'examples-usage') {
             onTabChange('description');
         }
     }, [definition, onTabChange, activeTab]);
@@ -186,12 +186,16 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                     {row.map((cell, cellIndex) => {
                                         const header = selectedTable.headers[cellIndex];
                                         if (selectedTable.id === 'auth-status-codes' && header === 'Is Final Status?') {
-                                            const isActive = cell === 'Yes';
+                                            if (cell === 'Yes') {
+                                                return (
+                                                    <TableCell key={cellIndex}>
+                                                        <Badge variant={'success'}>Active</Badge>
+                                                    </TableCell>
+                                                );
+                                            }
                                             return (
                                                 <TableCell key={cellIndex}>
-                                                    <Badge variant={isActive ? 'success' : 'secondary'}>
-                                                        {isActive ? 'Active' : 'Inactive'}
-                                                    </Badge>
+                                                    <Badge variant={'secondary'}>Inactive</Badge>
                                                 </TableCell>
                                             );
                                         }

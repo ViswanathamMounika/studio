@@ -63,16 +63,16 @@ export const initialDefinitions: Definition[] = [
             module: 'Authorizations',
             keywords: ['authorization', 'decision date', 'approved', 'denied'],
             description: `
-              <h4 class="font-bold mt-4 mb-2">Description</h4>
+              <h4 class="font-bold mt-4 mb-2" style="color: red;">Description</h4>
               <p>The date on which a final decision is made for an authorization request. This is a critical field for tracking service level agreements (SLAs) and reporting purposes.</p>
               
-              <h4 class="font-bold mt-4 mb-2">Relevant Term(s)</h4>
+              <h4 class="font-bold mt-4 mb-2" style="color: red;">Relevant Term(s)</h4>
               <p><strong>UMWF (Y/N)</strong> – Was the auth worked in the UM Workflow Utility?</p>
               <ul class="list-disc pl-6">
                 <li>Y: If the auth STATUS was changed to or from Wand PRIORITY was NEVER changed to 1W</li>
               </ul>
               
-              <h4 class="font-bold mt-4 mb-2">Logic Used</h4>
+              <h4 class="font-bold mt-4 mb-2" style="color: red;">Logic Used</h4>
 
               <h5 class="font-bold mt-3 mb-1">Approved – (Auth Status 1)</h5>
               <p>If UMWF = Y</p>
