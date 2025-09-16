@@ -1,3 +1,4 @@
+
 import type { Definition, SupportingTable } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
@@ -62,22 +63,57 @@ export const initialDefinitions: Definition[] = [
             module: 'Authorizations',
             keywords: ['authorization', 'decision date', 'approved', 'denied'],
             description: `
+              <h4 class="font-bold mt-4 mb-2">Description</h4>
               <p>The date on which a final decision is made for an authorization request. This is a critical field for tracking service level agreements (SLAs) and reporting purposes.</p>
-              <h4 class="font-bold mt-4 mb-2">Relevant Terms</h4>
-              <ul>
-                <li><strong>Approval:</strong> The authorization request is approved as submitted.</li>
-                <li><strong>Modification:</strong> The request is approved, but with changes to the service, quantity, or duration.</li>
-                <li><strong>Denial:</strong> The request is not approved.</li>
-                <li><strong>Canceled/Carve-Out:</strong> The request is withdrawn or determined to be the responsibility of another entity.</li>
+              
+              <h4 class="font-bold mt-4 mb-2">Relevant Term(s)</h4>
+              <p><strong>UMWF (Y/N)</strong> – Was the auth worked in the UM Workflow Utility?</p>
+              <ul class="list-disc pl-6">
+                <li>Y: If the auth STATUS was changed to or from Wand PRIORITY was NEVER changed to 1W</li>
               </ul>
+              
               <h4 class="font-bold mt-4 mb-2">Logic Used</h4>
-              <p>The decision date is captured from the final status update event in the authorization workflow. The logic considers the following final states:</p>
-              <ol>
-                  <li>Approved</li>
-                  <li>Modified</li>
-                  <li>Denied</li>
-                  <li>Canceled/Carve Outs</li>
-              </ol>
+
+              <h5 class="font-bold mt-3 mb-1">Approved – (Auth Status 1)</h5>
+              <p>If UMWF = Y</p>
+              <ul class="list-disc pl-6">
+                <li>If auth has MD NOTE then DECISION DATE = MD NOTE DATE</li>
+                <li>If auth has CERTIFICATION ISSUE DATE then DECISION DATE = CERTIFICATION ISSUE DATE</li>
+                <li>If auth has AUTH ACTION DATE with valid TIME then DECISION DATE = Auth Action Date</li>
+                <li>If AUTH ACTION DATE time is all 0’s then DECISION DATE = Date Auth moved to status 1</li>
+              </ul>
+              <p>If UMWF = N</p>
+              <ul class="list-disc pl-6">
+                <li>If auth has MD NOTE then DECISION DATE = MD NOTE DATE</li>
+                <li>If LOB Code = 2 and AUTH TYPE = URGENT and has OPN or OPC REVIEW note then DECISION DATE = OPN/OPC Note Create Date</li>
+                <li>If HPCODE = LCMC, MCMC, HCMC, ABCDSNP, BSDSNP, CHDSNP, IEDSNP, HNDSNP, LACDSNP, MOLDSNP, SCANFSNP, WCDSNP) and AUTH TYPE = URGENT and has OPN/OPC REVIEW note then DECISION DATE = OPN/OPC Note Create Date</li>
+                <li>If none of the above are true then DECISION DATE = Date Auth moved to status 1</li>
+              </ul>
+              
+              <h5 class="font-bold mt-3 mb-1">Modified – (Auth Status 2)</h5>
+              <ul class="list-disc pl-6">
+                <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
+                <li>If no MD Note then DECISION DATE = Date auth moved to status 2</li>
+              </ul>
+              
+              <h5 class="font-bold mt-3 mb-1">Denied – (Auth Status 3)</h5>
+              <ul class="list-disc pl-6">
+                  <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
+                  <li>If no MD Note then DECISION DATE = Date auth moved to status 3</li>
+              </ul>
+
+              <h5 class="font-bold mt-3 mb-1">Canceled – (Auth Status 6)</h5>
+              <ul class="list-disc pl-6">
+                  <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
+                  <li>If no MD Note then DECISION DATE = Date auth moved to status 6</li>
+              </ul>
+
+              <h5 class="font-bold mt-3 mb-1">Carve Outs – (Auth Status C)</h5>
+              <ul class="list-disc pl-6">
+                  <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
+                  <li>If Auth went to status V or X then DECISION DATE = date the auth first moved to status V or X</li>
+                  <li>If no MD Note or V or X status then DECISION DATE = Date auth moved to status C</li>
+              </ul>
             `,
             technicalDetails: `
               <p>The decision date is stored in the <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> table.</p>
@@ -201,3 +237,5 @@ export function findDefinition(definitions: Definition[], id: string): Definitio
   }
   return null;
 }
+
+    
