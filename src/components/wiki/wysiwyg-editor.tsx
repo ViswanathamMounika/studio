@@ -69,13 +69,13 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                         <Button variant="ghost" className="h-8">Font Size</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('1'); }}>Extra Small</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('2'); }}>Small</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('3'); }}>Normal</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('4'); }}>Medium</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('5'); }}>Large</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('6'); }}>Extra Large</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('7'); }}>Huge</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('1'); }}>10px</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('2'); }}>13px</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('3'); }}>16px</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('4'); }}>18px</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('5'); }}>24px</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('6'); }}>32px</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('7'); }}>48px</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
 
