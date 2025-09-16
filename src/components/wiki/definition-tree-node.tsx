@@ -25,7 +25,7 @@ function isParent(node: Definition, selectedId: string): boolean {
 const SectionLink = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) => (
     <button onClick={onClick} className="w-full text-left p-1 px-2 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 text-sm flex items-center gap-2">
         {icon}
-        <span>{label}</span>
+        <span className="text-black dark:text-white">{label}</span>
     </button>
 );
 
@@ -72,8 +72,8 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                 variant="ghost"
                 size="sm"
                 className={cn(
-                    "w-full justify-start text-left h-8 hover:bg-transparent pl-0",
-                    isSelected && "bg-transparent"
+                    "w-full justify-start text-left h-8 hover:bg-transparent dark:hover:bg-transparent pl-0 text-black dark:text-white",
+                    isSelected && "bg-transparent dark:bg-transparent"
                 )}
                 onClick={handleNodeSelect}
             >
