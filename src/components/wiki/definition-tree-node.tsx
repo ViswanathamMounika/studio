@@ -23,7 +23,7 @@ function isParent(node: Definition, selectedId: string): boolean {
 }
 
 const SectionLink = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) => (
-    <button onClick={onClick} className="w-full text-left p-1 px-2 rounded-md hover:bg-accent/50 text-sm text-muted-foreground flex items-center gap-2">
+    <button onClick={onClick} className="w-full text-left p-1 px-2 rounded-md hover:bg-accent/50 text-sm text-foreground flex items-center gap-2">
         {icon}
         <span>{label}</span>
     </button>

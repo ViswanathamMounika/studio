@@ -38,8 +38,9 @@ const FONT_COLORS = [
 ];
 
 const BACKGROUND_COLORS = [
+    '#FFFFFF', '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF',
     '#FEE2E2', '#FFE4E6', '#FFF4ED', '#FEF3C7', '#F7FEE7', '#ECFDF5',
-    '#EFF6FF', '#F5F3FF', '#FAFAF9', '#FFFFFF',
+    '#EFF6FF', '#F5F3FF', '#FAFAF9',
     '#FCA5A5', '#F9A8D4', '#FCD34D', '#FBBF24', '#A7F3D0', '#93C5FD',
     '#C4B5FD', '#D1D5DB', '#FED7AA', '#FDE68A', '#A7F3D0', '#BFDBFE'
 ];
@@ -93,6 +94,23 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     const handleInsertList = (type: 'insertOrderedList' | 'insertUnorderedList') => {
         execCommand(type);
     }
+    
+    const handleInsertTable = () => {
+        const rows = prompt("Enter number of rows", "2");
+        const cols = prompt("Enter number of columns", "2");
+        if (rows && cols) {
+            let table = '<table style="border-collapse: collapse; width: 100%;">';
+            for (let i = 0; i < parseInt(rows); i++) {
+                table += '<tr>';
+                for (let j = 0; j < parseInt(cols); j++) {
+                    table += '<td style="border: 1px solid #ccc; padding: 8px;">&nbsp;</td>';
+                }
+                table += '</tr>';
+            }
+            table += '</table>';
+            execCommand('insertHTML', table);
+        }
+    };
 
     return (
         <div className="border rounded-md">
@@ -156,7 +174,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 
                 <ToolbarButton onClick={handleLink}><Link className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={handleImage}><Image className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => {}}><Table className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={handleInsertTable}><Table className="h-4 w-4" /></ToolbarButton>
             </div>
             <div
                 ref={editorRef}
