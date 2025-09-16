@@ -42,18 +42,14 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   useEffect(() => {
     if (isFolderNode) {
       setIsNodeExpanded(isParentOfSelected);
-    } else {
-      // For leaf nodes, we don't auto-expand anymore on selection.
-      // It should only expand via user interaction (clicking the trigger).
-      if (!isSelected) {
-        setIsNodeExpanded(false);
-      }
     }
-  }, [isParentOfSelected, isSelected, isFolderNode]);
+    // Only auto-expand parents of the selected node, not the node itself unless user clicks
+  }, [isParentOfSelected, isFolderNode]);
   
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSelect(node.id);
+     // Don't toggle expansion on select, only on trigger click
   };
 
   const handleTriggerClick = (e: React.MouseEvent) => {
@@ -105,7 +101,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                   />
                   ))}
               </div>
-          ) : isSelected ? (
+          ) : isNodeExpanded ? ( // Only show sub-modules if the node is expanded
             <div className="space-y-1 mt-1" style={{ paddingLeft: `${(level + 2.5)}rem` }}>
                 <SectionLink icon={<FileText className="h-4 w-4" />} label="Description" onClick={() => onSelect(node.id, 'section-description')} />
                 <SectionLink icon={<Code2 className="h-4 w-4" />} label="Technical Details" onClick={() => onSelect(node.id, 'section-technical-details')} />
