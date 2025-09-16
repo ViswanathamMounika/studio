@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useRef } from "react";
-import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, Image, Table, Pilcrow, AlignLeft, AlignCenter, AlignRight, AlignJustify, Minus } from "lucide-react"
+import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, Image, Table, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react"
 import { Button } from "../ui/button"
 import { Separator } from "../ui/separator"
 import { cn } from "@/lib/utils";
@@ -69,6 +69,10 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         execCommand('fontSize', size);
     };
 
+    const handleInsertList = (type: 'insertOrderedList' | 'insertUnorderedList') => {
+        execCommand(type);
+    }
+
     return (
         <div className="border rounded-md">
             <div className="p-2 border-b flex flex-wrap items-center gap-1">
@@ -124,8 +128,8 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
 
                 <Separator orientation="vertical" className="h-6 mx-1" />
 
-                <ToolbarButton onClick={() => execCommand('insertUnorderedList')}><List className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('insertOrderedList')}><ListOrdered className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => handleInsertList('insertUnorderedList')}><List className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => handleInsertList('insertOrderedList')}><ListOrdered className="h-4 w-4" /></ToolbarButton>
                 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
