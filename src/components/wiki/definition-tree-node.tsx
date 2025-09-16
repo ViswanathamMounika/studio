@@ -27,9 +27,9 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   const hasChildren = node.children && node.children.length > 0;
 
   return (
-    <Collapsible defaultOpen={level < 2}>
-      <div className="flex items-center w-full group/item">
-        <CollapsibleTrigger asChild>
+    <Collapsible defaultOpen={level < 2 || isSelected}>
+      <div className={cn("rounded-md", isSelected && !hasChildren ? "bg-accent text-accent-foreground" : "")}>
+        <div className="flex items-center w-full group/item">
           <Button
             variant="ghost"
             size="sm"
@@ -38,7 +38,9 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
             onClick={() => onSelect(node.id)}
           >
             {hasChildren ? (
-                 <ChevronRight className="h-4 w-4 mr-2 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                 <CollapsibleTrigger asChild>
+                    <ChevronRight className="h-4 w-4 mr-2 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                 </CollapsibleTrigger>
             ) : <span className="w-4 h-4 mr-2 shrink-0"></span> }
             {hasChildren ? (
                 <Folder className="h-4 w-4 mr-2 text-primary" />
@@ -47,43 +49,45 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
             )}
             <span className="truncate">{node.name}</span>
           </Button>
-        </CollapsibleTrigger>
-      </div>
-      <CollapsibleContent>
-        <div className="space-y-1">
-          {hasChildren ? (
-            node.children?.map(child => (
-              <DefinitionTreeNode
-                key={child.id}
-                node={child}
-                selectedId={selectedId}
-                onSelect={onSelect}
-                level={level + 1}
-              />
-            ))
-          ) : (
-           <div className="space-y-1" style={{ paddingLeft: `${(level + 1) * 1}rem` }}>
-              {sectionItems.map(item => {
+        </div>
+        {isSelected && !hasChildren && (
+            <div className="space-y-1 pb-1" style={{ paddingLeft: `${(level + 1) * 1}rem` }}>
+                {sectionItems.map(item => {
                 const Icon = item.icon;
                 return (
                     <Button
                         key={item.key}
                         variant="ghost"
                         size="sm"
-                        className="w-full justify-start text-left"
+                        className="w-full justify-start text-left h-8"
                         onClick={() => {
                             onSelect(node.id, `section-${item.key}`);
                         }}
                     >
-                       <Icon className="h-4 w-4 mr-2 text-muted-foreground" />
-                       <span className="truncate">{item.label}</span>
+                        <Icon className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="truncate">{item.label}</span>
                     </Button>
                 )
-              })}
-           </div>
-          )}
-        </div>
-      </CollapsibleContent>
+                })}
+            </div>
+        )}
+      </div>
+
+      {hasChildren && (
+        <CollapsibleContent>
+            <div className="space-y-1 mt-1">
+                {node.children?.map(child => (
+                <DefinitionTreeNode
+                    key={child.id}
+                    node={child}
+                    selectedId={selectedId}
+                    onSelect={onSelect}
+                    level={level + 1}
+                />
+                ))}
+            </div>
+        </CollapsibleContent>
+      )}
     </Collapsible>
   );
 }
