@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -27,59 +27,70 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   const hasChildren = node.children && node.children.length > 0;
   const isParentOfSelected = hasChildren && node.children.some(child => child.id === selectedId);
 
+  // A node is a "section parent" if it's a leaf in the main definition tree (no children definitions)
+  const isSectionParent = !hasChildren;
+
+  const [sectionsOpen, setSectionsOpen] = useState(isSelected);
+
+  const handleNodeSelect = () => {
+    onSelect(node.id);
+    if(isSectionParent) {
+      setSectionsOpen(prev => !prev);
+    }
+  }
+
   return (
-    <Collapsible defaultOpen={level < 1 || isParentOfSelected}>
-      <div className={cn("rounded-md", isSelected ? "bg-accent text-accent-foreground" : "")}>
-        <div className="flex items-center w-full group/item">
-            {hasChildren ? (
-                <CollapsibleTrigger asChild className='w-full'>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn("w-full justify-start text-left", isSelected && "bg-accent text-accent-foreground")}
-                        style={{ paddingLeft: `${level * 1}rem` }}
-                        onClick={() => onSelect(node.id)}
-                    >
-                        <ChevronRight className="h-4 w-4 mr-2 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-90" />
-                        <Folder className="h-4 w-4 mr-2 text-primary" />
-                        <span className="truncate">{node.name}</span>
-                    </Button>
-                </CollapsibleTrigger>
-            ) : (
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn("w-full justify-start text-left", isSelected && "bg-accent text-accent-foreground")}
-                    style={{ paddingLeft: `${level * 1}rem` }}
-                    onClick={() => onSelect(node.id)}
-                >
-                    <span className="w-4 h-4 mr-2 shrink-0"></span>
-                    <File className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span className="truncate">{node.name}</span>
-                </Button>
-            )}
-        </div>
+    <Collapsible open={hasChildren ? undefined : sectionsOpen} onOpenChange={isSectionParent ? setSectionsOpen: undefined} defaultOpen={level < 1 || isParentOfSelected || (isSelected && isSectionParent)}>
+        <div className={cn("rounded-md", isSelected ? "bg-accent/20" : "")}>
+          <div className="flex items-center w-full group/item">
+              <CollapsibleTrigger asChild>
+                  <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn("w-full justify-start text-left", isSelected && "bg-accent/30 hover:bg-accent/40")}
+                      style={{ paddingLeft: `${level * 1}rem` }}
+                      onClick={handleNodeSelect}
+                  >
+                      {hasChildren || isSectionParent ? (
+                          <ChevronRight className="h-4 w-4 mr-2 shrink-0 transition-transform duration-200" />
+                      ) : (
+                          <span className="w-4 h-4 mr-2 shrink-0"></span>
+                      )}
+
+                      {hasChildren ? (
+                           <Folder className="h-4 w-4 mr-2 text-primary" />
+                      ): (
+                           <File className="h-4 w-4 mr-2 text-muted-foreground" />
+                      )}
+                      
+                      <span className="truncate">{node.name}</span>
+                  </Button>
+              </CollapsibleTrigger>
+          </div>
         
-        {isSelected && !hasChildren && (
-            <div className="space-y-1 pb-1" style={{ paddingLeft: `${(level + 1.5) * 1}rem` }}>
-                {sectionItems.map(item => {
-                const Icon = item.icon;
-                return (
-                    <Button
-                        key={item.key}
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start text-left h-8"
-                        onClick={() => {
-                            onSelect(node.id, `section-${item.key}`);
-                        }}
-                    >
-                        <Icon className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="truncate">{item.label}</span>
-                    </Button>
-                )
-                })}
-            </div>
+        {isSectionParent && (
+            <CollapsibleContent>
+                <div className="space-y-1 py-1" style={{ paddingLeft: `${(level + 1.5) * 1}rem` }}>
+                    {sectionItems.map(item => {
+                    const Icon = item.icon;
+                    return (
+                        <Button
+                            key={item.key}
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-left h-8"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onSelect(node.id, `section-${item.key}`);
+                            }}
+                        >
+                            <Icon className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <span className="truncate">{item.label}</span>
+                        </Button>
+                    )
+                    })}
+                </div>
+            </CollapsibleContent>
         )}
       </div>
 
