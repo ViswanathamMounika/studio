@@ -103,7 +103,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
               <CardTitle>Description</CardTitle>
           </CardHeader>
           <CardContent>
-            <WysiwygEditor content={description} onChange={setDescription} />
+            <WysiwygEditor value={description} onChange={setDescription} />
           </CardContent>
       </Card>
 
@@ -112,7 +112,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
               <CardTitle>Technical Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <WysiwygEditor content={technicalDetails} onChange={setTechnicalDetails} />
+            <WysiwygEditor value={technicalDetails} onChange={setTechnicalDetails} />
           </CardContent>
       </Card>
 
@@ -123,11 +123,11 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
           <CardContent className="space-y-4">
              <div>
                 <Label>Examples</Label>
-                <WysiwygEditor content={examples} onChange={setExamples} />
+                <WysiwygEditor value={examples} onChange={setExamples} />
             </div>
             <div>
                 <Label>Usage</Label>
-                <WysiwygEditor content={usage} onChange={setUsage} />
+                <WysiwygEditor value={usage} onChange={setUsage} />
             </div>
           </CardContent>
       </Card>

@@ -1,13 +1,16 @@
 "use client"
 
+import React, { useRef } from "react";
 import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, Image, Table, Pilcrow } from "lucide-react"
 import { Button } from "../ui/button"
 import { Separator } from "../ui/separator"
-import { Textarea } from "../ui/textarea"
+import { cn } from "@/lib/utils";
 
 type WysiwygEditorProps = {
-    content: string;
+    value: string;
     onChange: (content: string) => void;
+    className?: string;
+    placeholder?: string;
 }
 
 const ToolbarButton = ({ children }: { children: React.ReactNode }) => (
@@ -16,7 +19,13 @@ const ToolbarButton = ({ children }: { children: React.ReactNode }) => (
     </Button>
 )
 
-export default function WysiwygEditor({ content, onChange }: WysiwygEditorProps) {
+export default function WysiwygEditor({ value, onChange, className, placeholder }: WysiwygEditorProps) {
+    const editorRef = useRef<HTMLDivElement>(null);
+
+    const handleInput = (event: React.FormEvent<HTMLDivElement>) => {
+        onChange(event.currentTarget.innerHTML);
+    };
+
     return (
         <div className="border rounded-md">
             <div className="p-2 border-b flex flex-wrap items-center gap-1">
@@ -34,11 +43,16 @@ export default function WysiwygEditor({ content, onChange }: WysiwygEditorProps)
                 <ToolbarButton><Image className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton><Table className="h-4 w-4" /></ToolbarButton>
             </div>
-            <Textarea
-                value={content}
-                onChange={(e) => onChange(e.target.value)}
-                className="w-full min-h-[300px] rounded-t-none border-0 focus-visible:ring-0 resize-y"
-                placeholder="Enter the definition description..."
+            <div
+                ref={editorRef}
+                contentEditable
+                onInput={handleInput}
+                dangerouslySetInnerHTML={{ __html: value }}
+                className={cn(
+                    "prose prose-sm max-w-none w-full min-h-[300px] p-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-b-md",
+                    className
+                )}
+                placeholder={placeholder || "Enter content..."}
             />
         </div>
     )
