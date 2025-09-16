@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -6,13 +7,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from "@/components/ui/button";
 import { ChevronRight, File, Folder, Book, Code, Lightbulb, Pilcrow, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { initialDefinitions, findDefinition } from '@/lib/data';
 
-type DefinitionTreeNodeProps = {
-  node: Definition;
-  selectedId: string | null;
-  onSelect: (id: string, sectionId?: string) => void;
-  level: number;
-};
 
 const sectionItems = [
     { key: 'description', label: 'Description', icon: Book },
@@ -22,53 +18,70 @@ const sectionItems = [
     { key: 'revisions', label: 'Version History', icon: History },
 ];
 
-export default function DefinitionTreeNode({ node, selectedId, onSelect, level }: DefinitionTreeNodeProps) {
-  const isSelected = node.id === selectedId;
-  const hasChildren = node.children && node.children.length > 0;
-  const isParentOfSelected = hasChildren && node.children.some(child => child.id === selectedId);
-
-  // A node is a "section parent" if it's a leaf in the main definition tree (no children definitions)
-  const isSectionParent = !hasChildren;
-
-  const [sectionsOpen, setSectionsOpen] = useState(isSelected);
-
-  const handleNodeSelect = () => {
-    onSelect(node.id);
-    if(isSectionParent) {
-      setSectionsOpen(prev => !prev);
+function isParent(node: Definition, selectedId: string): boolean {
+    if (!node.children) {
+        return false;
     }
+    for (const child of node.children) {
+        if (child.id === selectedId) {
+            return true;
+        }
+        if (isParent(child, selectedId)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+export default function DefinitionTreeNode({ node, selectedId, onSelect, level }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number }) {
+  const hasChildren = node.children && node.children.length > 0;
+  const isSelected = node.id === selectedId;
+  const isParentOfSelected = selectedId ? isParent(node, selectedId) : false;
+
+  const [isExpanded, setIsExpanded] = useState(level < 1 || isParentOfSelected);
+
+  const handleNodeSelect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect(node.id);
+    if (!hasChildren) {
+      setIsExpanded(prev => !prev);
+    }
+  };
+
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(prev => !prev);
   }
 
   return (
-    <Collapsible open={hasChildren ? undefined : sectionsOpen} onOpenChange={isSectionParent ? setSectionsOpen: undefined} defaultOpen={level < 1 || isParentOfSelected || (isSelected && isSectionParent)}>
-        <div className={cn("rounded-md", isSelected ? "bg-accent/20" : "")}>
-          <div className="flex items-center w-full group/item">
-              <CollapsibleTrigger asChild>
-                  <Button
-                      variant="ghost"
-                      size="sm"
-                      className={cn("w-full justify-start text-left", isSelected && "bg-accent/30 hover:bg-accent/40")}
-                      style={{ paddingLeft: `${level * 1}rem` }}
-                      onClick={handleNodeSelect}
-                  >
-                      {hasChildren || isSectionParent ? (
-                          <ChevronRight className="h-4 w-4 mr-2 shrink-0 transition-transform duration-200" />
-                      ) : (
-                          <span className="w-4 h-4 mr-2 shrink-0"></span>
-                      )}
-
-                      {hasChildren ? (
-                           <Folder className="h-4 w-4 mr-2 text-primary" />
-                      ): (
-                           <File className="h-4 w-4 mr-2 text-muted-foreground" />
-                      )}
-                      
-                      <span className="truncate">{node.name}</span>
-                  </Button>
-              </CollapsibleTrigger>
-          </div>
+    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+      <div className="rounded-md">
+        <div className="flex items-center w-full group/item">
+            <Button
+                variant="ghost"
+                size="sm"
+                className={cn("w-full justify-start text-left", isSelected && "bg-accent/30 hover:bg-accent/40")}
+                style={{ paddingLeft: `${level * 1}rem` }}
+                onClick={handleNodeSelect}
+            >
+                <CollapsibleTrigger asChild onClick={handleTriggerClick}>
+                    <span className='h-full px-2 -ml-2'>
+                        <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200", isExpanded && "rotate-90")} />
+                    </span>
+                </CollapsibleTrigger>
+                
+                {hasChildren ? (
+                    <Folder className="h-4 w-4 mr-2 text-primary" />
+                ): (
+                    <File className="h-4 w-4 mr-2 text-muted-foreground" />
+                )}
+                
+                <span className="truncate">{node.name}</span>
+            </Button>
+        </div>
         
-        {isSectionParent && (
+        {!hasChildren && (
             <CollapsibleContent>
                 <div className="space-y-1 py-1" style={{ paddingLeft: `${(level + 1.5) * 1}rem` }}>
                     {sectionItems.map(item => {
