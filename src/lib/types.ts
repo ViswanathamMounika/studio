@@ -5,6 +5,11 @@ export interface Revision {
   description: string;
 }
 
+export interface SupportingTableRef {
+    id: string;
+    name: string;
+}
+
 export interface Definition {
   id: string;
   name: string;
@@ -16,5 +21,13 @@ export interface Definition {
   usage: string;
   revisions: Revision[];
   isArchived: boolean;
+  supportingTables: SupportingTableRef[];
   children?: Definition[];
+}
+
+export interface SupportingTable {
+    id: string;
+    name: string;
+    headers: string[];
+    rows: string[][];
 }

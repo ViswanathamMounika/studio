@@ -4,9 +4,8 @@ import React, { useState, useEffect } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, File, Folder, FileText, Code2, Lightbulb, Pilcrow, History } from 'lucide-react';
+import { ChevronRight, File, Folder, FileText, Code2, Lightbulb, Pilcrow, History, TestTubeDiagonal, BookText } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
 
 function isParent(node: Definition, selectedId: string): boolean {
     if (!node.children) {
@@ -35,21 +34,16 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId !== null && node.id === selectedId;
   const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
-  const isFolderNode = hasChildren;
-
+  
   const [isNodeExpanded, setIsNodeExpanded] = useState(false);
 
   useEffect(() => {
-    if (isFolderNode) {
-      setIsNodeExpanded(isParentOfSelected);
-    }
-    // Only auto-expand parents of the selected node, not the node itself unless user clicks
-  }, [isParentOfSelected, isFolderNode]);
+    setIsNodeExpanded(isParentOfSelected);
+  }, [isParentOfSelected]);
   
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSelect(node.id);
-     // Don't toggle expansion on select, only on trigger click
   };
 
   const handleTriggerClick = (e: React.MouseEvent) => {
@@ -101,12 +95,11 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                   />
                   ))}
               </div>
-          ) : isNodeExpanded ? ( // Only show sub-modules if the node is expanded
-            <div className="space-y-1 mt-1" style={{ paddingLeft: `${(level + 2.5)}rem` }}>
+          ) : isSelected && isNodeExpanded ? (
+            <div className="space-y-1 mt-1" style={{ paddingLeft: `${(level + 3)}rem` }}>
                 <SectionLink icon={<FileText className="h-4 w-4" />} label="Description" onClick={() => onSelect(node.id, 'section-description')} />
                 <SectionLink icon={<Code2 className="h-4 w-4" />} label="Technical Details" onClick={() => onSelect(node.id, 'section-technical-details')} />
-                <SectionLink icon={<Lightbulb className="h-4 w-4" />} label="Examples" onClick={() => onSelect(node.id, 'section-examples')} />
-                <SectionLink icon={<Pilcrow className="h-4 w-4" />} label="Usage" onClick={() => onSelect(node.id, 'section-usage')} />
+                <SectionLink icon={<BookText className="h-4 w-4" />} label="Examples & Usage" onClick={() => onSelect(node.id, 'section-examples-usage')} />
                 <SectionLink icon={<History className="h-4 w-4" />} label="Version History" onClick={() => onSelect(node.id, 'section-revisions')} />
             </div>
           ) : null}

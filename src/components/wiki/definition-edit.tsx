@@ -119,22 +119,19 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
 
       <Card>
           <CardHeader>
-              <CardTitle>Examples</CardTitle>
+              <CardTitle>Examples & Usage</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Textarea value={examples} onChange={e => setExamples(e.target.value)} rows={5}/>
+          <CardContent className="space-y-4">
+             <div>
+                <Label>Examples</Label>
+                <Textarea value={examples} onChange={e => setExamples(e.target.value)} rows={5}/>
+            </div>
+            <div>
+                <Label>Usage</Label>
+                <Textarea value={usage} onChange={e => setUsage(e.target.value)} rows={5}/>
+            </div>
           </CardContent>
       </Card>
-
-      <Card>
-          <CardHeader>
-              <CardTitle>Usage</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea value={usage} onChange={e => setUsage(e.target.value)} rows={5}/>
-          </CardContent>
-      </Card>
-
     </div>
   );
 }

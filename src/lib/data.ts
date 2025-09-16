@@ -1,4 +1,33 @@
-import type { Definition } from './types';
+import type { Definition, SupportingTable } from './types';
+
+export const authorizationStatusCodes: SupportingTable = {
+    id: 'auth-status-codes',
+    name: 'Authorization Status Codes',
+    headers: ['Code', 'Description', 'Is Final Status?'],
+    rows: [
+        ['APP', 'Approved', 'Yes'],
+        ['MOD', 'Modified', 'Yes'],
+        ['DEN', 'Denied', 'Yes'],
+        ['CAN', 'Canceled', 'Yes'],
+        ['PND', 'Pending', 'No'],
+        ['REV', 'In Review', 'No'],
+    ]
+};
+
+export const cmsComplianceMatrix: SupportingTable = {
+    id: 'cms-compliance',
+    name: 'CMS Compliance Matrix',
+    headers: ['State', 'Requirement ID', 'Turnaround Time (Days)', 'Applies To'],
+    rows: [
+        ['CA', 'CA-UM-01', '5', 'Standard (Non-Urgent)'],
+        ['CA', 'CA-UM-02', '2', 'Urgent'],
+        ['NY', 'NY-UM-A', '7', 'Standard (Non-Urgent)'],
+        ['NY', 'NY-UM-B', '3', 'Urgent'],
+        ['TX', 'TX-MCR-112', '14', 'Standard (Non-Urgent)'],
+        ['TX', 'TX-MCR-113', '1', 'Urgent'],
+    ]
+};
+
 
 export const initialDefinitions: Definition[] = [
   {
@@ -12,6 +41,7 @@ export const initialDefinitions: Definition[] = [
     usage: '',
     revisions: [],
     isArchived: false,
+    supportingTables: [],
     children: [
       {
         id: '1.1',
@@ -24,6 +54,7 @@ export const initialDefinitions: Definition[] = [
         usage: '',
         revisions: [],
         isArchived: false,
+        supportingTables: [],
         children: [
           {
             id: '1.1.1',
@@ -76,6 +107,10 @@ WHERE auth_id = :authId;</code></pre>
               },
             ],
             isArchived: false,
+            supportingTables: [
+                { id: 'auth-status-codes', name: 'Authorization Status Codes' },
+                { id: 'cms-compliance', name: 'CMS Compliance Matrix' },
+            ],
           },
           {
             id: '1.1.2',
@@ -88,6 +123,7 @@ WHERE auth_id = :authId;</code></pre>
             usage: '<p>Ensures consistent application of benefits and rules based on service categories rather than individual procedure codes.</p>',
             revisions: [],
             isArchived: false,
+            supportingTables: [],
           },
         ],
       },
@@ -102,6 +138,7 @@ WHERE auth_id = :authId;</code></pre>
         usage: '',
         revisions: [],
         isArchived: false,
+        supportingTables: [],
         children: [
             {
                 id: '1.2.1',
@@ -114,6 +151,7 @@ WHERE auth_id = :authId;</code></pre>
                 usage: '<p>Used for payment processing, generating Explanations of Payment (EOPs), and financial reporting.</p>',
                 revisions: [],
                 isArchived: true,
+                supportingTables: [],
             }
         ]
       }
@@ -130,6 +168,7 @@ WHERE auth_id = :authId;</code></pre>
     usage: '',
     revisions: [],
     isArchived: false,
+    supportingTables: [],
     children: [
       {
         id: '2.1',
@@ -142,6 +181,7 @@ WHERE auth_id = :authId;</code></pre>
         usage: '<p>This is the primary data source for pricing claims from contracted providers.</p>',
         revisions: [],
         isArchived: false,
+        supportingTables: [],
       },
     ],
   },

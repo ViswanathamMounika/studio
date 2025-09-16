@@ -129,7 +129,7 @@ export default function Home() {
                   <Menu />
                 </SidebarTrigger>
                 <Logo className="w-6 h-6 text-primary" />
-                <h1 className="text-xl font-bold tracking-tight">MedPoint Wiki</h1>
+                <h1 className="text-xl font-bold tracking-tight">MPM Definitions</h1>
               </div>
         </AppHeader>
         <main className="flex-1 flex overflow-hidden">
