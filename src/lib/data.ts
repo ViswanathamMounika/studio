@@ -102,13 +102,13 @@ export const initialDefinitions: Definition[] = [
                   <li>If no MD Note then DECISION DATE = Date auth moved to status 3</li>
               </ul>
 
-              <h5 class="font-bold mt-3 mb-1">Canceled – (Auth Status 6)</h5>
+              <h5 class="font-bold mt-3 mb-1" style="color: red;">Canceled – (Auth Status 6)</h5>
               <ul class="list-disc pl-6">
                   <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
                   <li>If no MD Note then DECISION DATE = Date auth moved to status 6</li>
               </ul>
 
-              <h5 class="font-bold mt-3 mb-1">Carve Outs – (Auth Status C)</h5>
+              <h5 class="font-bold mt-3 mb-1" style="color: red;">Carve Outs – (Auth Status C)</h5>
               <ul class="list-disc pl-6">
                   <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
                   <li>If Auth went to status V or X then DECISION DATE = date the auth first moved to status V or X</li>
