@@ -9,7 +9,7 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { PanelLeft } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
@@ -91,20 +91,6 @@ export default function Home() {
   };
 
   const visibleDefinitions = useMemo(() => {
-    const filterArchived = (items: Definition[]): Definition[] => {
-      return items.reduce((acc, def) => {
-        const children = def.children ? filterArchived(def.children) : [];
-        const isVisible = !def.isArchived || showArchived;
-
-        if (isVisible) {
-           acc.push({ ...def, children });
-        } else if (children.length > 0) {
-            acc.push({ ...def, children });
-        }
-        return acc;
-      }, [] as Definition[]);
-    };
-
     const filter = (items: Definition[]) => {
       return items.filter(item => !item.isArchived || showArchived).map(item => ({
         ...item,
@@ -126,17 +112,8 @@ export default function Home() {
         <AppSidebar showArchived={showArchived} setShowArchived={setShowArchived} />
       </Sidebar>
       <SidebarInset className="flex flex-col min-h-screen">
-        <AppHeader>
-          <SidebarTrigger className="sm:hidden">
-            <PanelLeft />
-          </SidebarTrigger>
-        </AppHeader>
+        <AppHeader />
         <main className="flex-1 flex overflow-hidden">
-          <div className="hidden sm:flex items-center gap-2 border-r p-2 shrink-0">
-             <SidebarTrigger>
-              <PanelLeft />
-            </SidebarTrigger>
-          </div>
           <div className="w-1/3 xl:w-1/4 border-r overflow-y-auto p-4 shrink-0 sm:block hidden">
             <DefinitionTree
               definitions={visibleDefinitions}

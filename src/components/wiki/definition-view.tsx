@@ -48,10 +48,14 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
           <TabsTrigger value="usage">Usage</TabsTrigger>
           <TabsTrigger value="revisions">Version History</TabsTrigger>
         </TabsList>
-        <TabsContent value="description" id="section-description" className="mt-4">
+        <TabsContent value="description" id="section-description" className="mt-4 space-y-4">
           <Card>
             <CardContent className="p-6">
               <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
               <Comments />
             </CardContent>
           </Card>
