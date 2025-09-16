@@ -37,26 +37,23 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
   const isFolderNode = hasChildren;
 
-  const [isNodeExpanded, setIsNodeExpanded] = useState(isParentOfSelected);
+  const [isNodeExpanded, setIsNodeExpanded] = useState(false);
 
   useEffect(() => {
-    // Only auto-expand folders that are parents of the selected node
     if (isFolderNode) {
       setIsNodeExpanded(isParentOfSelected);
     } else {
-      // Collapse leaf nodes by default unless they are selected
-      setIsNodeExpanded(isSelected);
+      // For leaf nodes, we don't auto-expand anymore on selection.
+      // It should only expand via user interaction (clicking the trigger).
+      if (!isSelected) {
+        setIsNodeExpanded(false);
+      }
     }
   }, [isParentOfSelected, isSelected, isFolderNode]);
   
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSelect(node.id);
-    if (!isFolderNode) {
-        setIsNodeExpanded(true); // Expand to show sections on select
-    } else {
-        setIsNodeExpanded(prev => !prev);
-    }
   };
 
   const handleTriggerClick = (e: React.MouseEvent) => {
@@ -75,20 +72,11 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
             )}
             style={{ paddingLeft: `${level * 1}rem` }}
         >
-            {(!hasChildren || isSelected) && (
-                <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/50" onClick={handleTriggerClick}>
-                        <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", (isNodeExpanded) && "rotate-90")} />
-                    </Button>
-                </CollapsibleTrigger>
-            )}
-             {hasChildren && !isSelected && (
-                <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/50" onClick={handleTriggerClick}>
-                        <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", (isNodeExpanded) && "rotate-90")} />
-                    </Button>
-                </CollapsibleTrigger>
-            )}
+            <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/50" onClick={handleTriggerClick}>
+                    <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isNodeExpanded && "rotate-90")} />
+                </Button>
+            </CollapsibleTrigger>
             
             <Button
                 variant="ghost"
