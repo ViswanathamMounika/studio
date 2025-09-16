@@ -49,6 +49,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         </TabsList>
         <TabsContent value="description" id="section-description" className="mt-4">
             <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
+            <Comments />
         </TabsContent>
         <TabsContent value="technical-details" id="section-technical-details" className="mt-4">
           <div className="prose prose-sm max-w-none prose-code:font-code" dangerouslySetInnerHTML={{ __html: definition.technicalDetails }} />
@@ -87,8 +88,6 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
           </Table>
         </TabsContent>
       </Tabs>
-
-      <Comments />
     </article>
   );
 }
