@@ -26,8 +26,9 @@ const ToolbarButton = ({ children, onClick, active }: { children: React.ReactNod
     </Button>
 )
 
-const FONT_COLORS = ['#000000', '#FF0000', '#0000FF', '#008000', '#FFFF00', '#FFA500', '#800080', '#FFFFFF'];
-const BACKGROUND_COLORS = ['#FFFFFF', '#F3F4F6', '#FEF2F2', '#EFF6FF', '#F0FDF4', '#FFFBEB', '#FAF5FF', '#D1D5DB'];
+// More distinct colors
+const FONT_COLORS = ['#000000', '#EF4444', '#3B82F6', '#22C55E', '#F59E0B', '#A855F7', '#6366F1', '#EC4899'];
+const BACKGROUND_COLORS = ['#FBBF24', '#F87171', '#60A5FA', '#4ADE80', '#A78BFA', '#F472B6', '#34D399', '#93C5FD'];
 
 
 export default function WysiwygEditor({ value, onChange, className, placeholder }: WysiwygEditorProps) {
