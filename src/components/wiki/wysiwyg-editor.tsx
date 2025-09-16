@@ -13,8 +13,8 @@ type WysiwygEditorProps = {
     placeholder?: string;
 }
 
-const ToolbarButton = ({ children }: { children: React.ReactNode }) => (
-    <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+const ToolbarButton = ({ children, onClick }: { children: React.ReactNode, onClick: () => void }) => (
+    <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => e.preventDefault()} onClick={onClick}>
         {children}
     </Button>
 )
@@ -26,22 +26,34 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         onChange(event.currentTarget.innerHTML);
     };
 
+    const execCommand = (command: string, value?: string) => {
+        document.execCommand(command, false, value);
+        editorRef.current?.focus();
+    };
+    
+    const handleLink = () => {
+        const url = prompt('Enter the URL');
+        if (url) {
+            execCommand('createLink', url);
+        }
+    };
+
     return (
         <div className="border rounded-md">
             <div className="p-2 border-b flex flex-wrap items-center gap-1">
-                <ToolbarButton><Bold className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton><Italic className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton><Underline className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton><Strikethrough className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('bold')}><Bold className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('italic')}><Italic className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('underline')}><Underline className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('strikethrough')}><Strikethrough className="h-4 w-4" /></ToolbarButton>
                 <Separator orientation="vertical" className="h-6 mx-1" />
-                <ToolbarButton><Pilcrow className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('formatBlock', 'p')}><Pilcrow className="h-4 w-4" /></ToolbarButton>
                 <Separator orientation="vertical" className="h-6 mx-1" />
-                <ToolbarButton><List className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton><ListOrdered className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('insertUnorderedList')}><List className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('insertOrderedList')}><ListOrdered className="h-4 w-4" /></ToolbarButton>
                 <Separator orientation="vertical" className="h-6 mx-1" />
-                <ToolbarButton><Link className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton><Image className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton><Table className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={handleLink}><Link className="h-4 w-4" /></ToolbarButton>
+                <Button variant="ghost" size="icon" className="h-8 w-8" disabled><Image className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" disabled><Table className="h-4 w-4" /></Button>
             </div>
             <div
                 ref={editorRef}
