@@ -132,7 +132,7 @@ export default function Home() {
               </div>
         </AppHeader>
         <main className="flex-1 flex overflow-hidden">
-          <div className="group-data-[state=collapsed]:-ml-64 sm:group-data-[state=collapsed]:-ml-0 w-1/3 xl:w-1/4 border-r shrink-0 transition-all duration-200 flex flex-col">
+          <div className="group-data-[state=collapsed]:-ml-64 sm:group-data-[state=collapsed]:-ml-0 w-1/4 xl:w-1/5 border-r shrink-0 transition-all duration-200 flex flex-col">
             <div className="p-4 border-b">
                 <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -147,7 +147,7 @@ export default function Home() {
                 />
             </div>
           </div>
-          <div className="w-full lg:w-2/3 xl:w-3/4 overflow-y-auto p-6" id="definition-content">
+          <div className="w-full lg:w-3/4 xl:w-4/5 overflow-y-auto p-6" id="definition-content">
             {isEditing && selectedDefinition ? (
               <DefinitionEdit
                 definition={selectedDefinition}
