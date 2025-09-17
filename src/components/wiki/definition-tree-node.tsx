@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from "@/components/ui/button";
 import { ChevronRight, File, Folder, FileText, Code2, BookText, History, Bookmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 function isParent(node: Definition, selectedId: string): boolean {
     if (!node.children) {
@@ -31,7 +32,7 @@ const SectionLink = ({ icon, label, onClick }: { icon: React.ReactNode, label: s
 );
 
 
-export default function DefinitionTreeNode({ node, selectedId, onSelect, level }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number }) {
+export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean }) {
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId !== null && node.id === selectedId;
   const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
@@ -55,6 +56,10 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   
   const Icon = hasChildren ? Folder : FileText;
 
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <Collapsible open={isNodeExpanded} onOpenChange={setIsNodeExpanded}>
         <div 
@@ -64,6 +69,14 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
             )}
             style={{ paddingLeft: `${level * 1}rem` }}
         >
+            <div onClick={handleCheckboxClick} className="p-2">
+                <Checkbox
+                    id={`select-${node.id}`}
+                    checked={isSelectedForExport}
+                    onCheckedChange={(checked) => onToggleSelection(node.id, !!checked)}
+                    className="mr-2"
+                />
+            </div>
             {hasChildren ? (
                 <CollapsibleTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent" onClick={handleTriggerClick}>
@@ -106,11 +119,13 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                       selectedId={selectedId}
                       onSelect={onSelect}
                       level={level + 1}
+                      onToggleSelection={onToggleSelection}
+                      isSelectedForExport={isSelectedForExport}
                   />
                   ))}
               </div>
           ) : isSelected && isNodeExpanded && !hasChildren ? (
-            <div className="space-y-1 mt-1" style={{ paddingLeft: `${(level + 3)}rem` }}>
+            <div className="space-y-1 mt-1" style={{ paddingLeft: `${(level + 4)}rem` }}>
                 <SectionLink icon={<FileText className="h-4 w-4" />} label="Description" onClick={() => onSelect(node.id, 'description')} />
                 <SectionLink icon={<Code2 className="h-4 w-4" />} label="Technical Details" onClick={() => onSelect(node.id, 'technical-details')} />
                 <SectionLink icon={<BookText className="h-4 w-4" />} label="Examples & Usage" onClick={() => onSelect(node.id, 'examples-usage')} />

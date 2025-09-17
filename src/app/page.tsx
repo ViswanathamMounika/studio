@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo } from 'react';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
@@ -9,7 +10,7 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Filter, Menu, Search } from 'lucide-react';
+import { Filter, Menu, Search, Download } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -28,7 +29,84 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('description');
   const [searchQuery, setSearchQuery] = useState("");
   const { isMounted, bookmarks, toggleBookmark, isBookmarked } = useBookmarks();
+  const [selectedForExport, setSelectedForExport] = useState<string[]>([]);
 
+  const getAllDefinitionIds = (items: Definition[]): string[] => {
+    let ids: string[] = [];
+    for (const item of items) {
+        ids.push(item.id);
+        if (item.children) {
+            ids = [...ids, ...getAllDefinitionIds(item.children)];
+        }
+    }
+    return ids;
+  };
+
+  const allDefinitionIds = useMemo(() => getAllDefinitionIds(definitions), [definitions]);
+  const areAllSelected = selectedForExport.length > 0 && allDefinitionIds.every(id => selectedForExport.includes(id));
+  const isAnySelected = selectedForExport.length > 0;
+
+  const handleSelectAllForExport = (checked: boolean) => {
+    if (checked) {
+        setSelectedForExport(allDefinitionIds);
+    } else {
+        setSelectedForExport([]);
+    }
+  };
+
+  const toggleSelectionForExport = (id: string, checked: boolean) => {
+    const getChildrenIds = (item: Definition): string[] => {
+        let ids = [item.id];
+        if (item.children) {
+            item.children.forEach(child => {
+                ids = [...ids, ...getChildrenIds(child)];
+            });
+        }
+        return ids;
+    };
+    const definition = findDefinition(definitions, id);
+    if (!definition) return;
+    
+    const idsToToggle = getChildrenIds(definition);
+    
+    setSelectedForExport(prev => {
+        if (checked) {
+            return [...new Set([...prev, ...idsToToggle])];
+        } else {
+            return prev.filter(selectedId => !idsToToggle.includes(selectedId));
+        }
+    });
+  };
+
+  const handleExport = () => {
+    const getSelectedDefinitions = (items: Definition[], selectedIds: string[]): Definition[] => {
+        const results: Definition[] = [];
+        items.forEach(item => {
+            const isSelected = selectedIds.includes(item.id);
+            if (isSelected) {
+                // If parent is selected, we take the whole object
+                results.push(item);
+            } else if (item.children) {
+                // If parent is not selected, check children
+                const selectedChildren = getSelectedDefinitions(item.children, selectedIds);
+                if (selectedChildren.length > 0) {
+                    // If some children are selected, create a new parent that only contains them
+                    results.push({ ...item, children: selectedChildren });
+                }
+            }
+        });
+        return results;
+    };
+
+    const definitionsToExport = getSelectedDefinitions(definitions, selectedForExport);
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(definitionsToExport, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "definitions-export.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
 
   const selectedDefinition = useMemo(() => {
     if (!selectedDefinitionId) return null;
@@ -269,12 +347,32 @@ export default function Home() {
                   </DropdownMenuContent>
                 </DropdownMenu>
             </div>
+            <div className="p-4 border-b">
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                        <Checkbox 
+                          id="select-all" 
+                          checked={areAllSelected} 
+                          onCheckedChange={handleSelectAllForExport} 
+                          className="mr-2"
+                        />
+                        <Label htmlFor="select-all" className="font-semibold text-lg">MPM Definitions</Label>
+                    </div>
+                    {isAnySelected && (
+                        <Button variant="outline" size="sm" onClick={handleExport}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Export ({selectedForExport.length})
+                        </Button>
+                    )}
+                </div>
+            </div>
             <div className="overflow-y-auto flex-1 p-4">
-                <p className="font-semibold text-lg mb-2">MPM Definitions</p>
                 <DefinitionTree
                 definitions={visibleDefinitions}
                 selectedId={selectedDefinitionId}
                 onSelect={handleSelectDefinition}
+                onToggleSelection={toggleSelectionForExport}
+                selectedForExport={selectedForExport}
                 />
             </div>
           </div>
