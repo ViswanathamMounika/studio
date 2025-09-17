@@ -94,7 +94,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                             <DialogTrigger key={table.id} asChild>
                                 <button 
                                     onClick={() => setSelectedTable(supportingTablesData[table.id])}
-                                    className="w-full flex items-center justify-between p-3 border rounded-md hover:bg-accent transition-colors"
+                                    className="w-full flex items-center justify-between p-3 border rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                                 >
                                     <span>{table.name}</span>
                                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
