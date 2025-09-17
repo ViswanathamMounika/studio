@@ -118,18 +118,26 @@ export default function RevisionComparisonDialog({
                 </div>
 
                  <div className="col-span-2"><Separator className="my-4" /></div>
-            </div>
 
-            <div className="p-1 space-y-6">
-                <DiffView title="Description" text1={snapshotA.description} text2={snapshotB.description} />
-                <Separator className="my-4" />
-                <DiffView title="Technical Details" text1={snapshotA.technicalDetails} text2={snapshotB.technicalDetails} />
-                <Separator className="my-4" />
-                <DiffView title="Examples" text1={snapshotA.examples} text2={snapshotB.examples} />
-                <Separator className="my-4" />
-                <DiffView title="Usage" text1={snapshotA.usage} text2={snapshotB.usage} />
-            </div>
+                {/* Diffs */}
+                <div className="space-y-4">
+                    <h4 className="font-semibold text-lg">Description</h4>
+                    <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.description }} />
+                    <h4 className="font-semibold text-lg">Technical Details</h4>
+                    <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.technicalDetails }} />
+                    <h4 className="font-semibold text-lg">Examples</h4>
+                    <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.examples }} />
+                    <h4 className="font-semibold text-lg">Usage</h4>
+                    <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.usage }} />
+                </div>
+                <div className="space-y-4">
+                    <DiffView title="Description" text1={snapshotA.description} text2={snapshotB.description} />
+                    <DiffView title="Technical Details" text1={snapshotA.technicalDetails} text2={snapshotB.technicalDetails} />
+                    <DiffView title="Examples" text1={snapshotA.examples} text2={snapshotB.examples} />
+                    <DiffView title="Usage" text1={snapshotA.usage} text2={snapshotB.usage} />
+                </div>
 
+            </div>
         </ScrollArea>
       </DialogContent>
     </Dialog>
