@@ -217,25 +217,7 @@ const definition111_rev4 = {
       <pre class="bg-muted p-2 rounded-md font-code text-sm overflow-x-auto"><code class="language-sql">SELECT COALESCE(modifdate, denieddate, apprvdate, canceldate, carvoutdate) as decision_date 
 FROM vw_authactiontime 
 WHERE auth_id = :authId;</code></pre>
-      <p>The view consolidates various action dates for an authorization:</p>
-      <table class="w-full my-2 border">
-        <thead class="bg-muted"><tr><th class="p-2 text-left">Column Name</th><th class="p-2 text-left">Description</th></tr></thead>
-        <tbody>
-          <tr><td class="p-2 border-t">modifdate</td><td class="p-2 border-t">The date the authorization was last modified.</td></tr>
-          <tr><td class="p-2 border-t">denieddate</td><td class="p-2 border-t">The date the authorization was denied.</td></tr>
-          <tr><td class="p-2 border-t">apprvdate</td><td class="p-2 border-t">The date the authorization was approved.</td></tr>
-          <tr><td class="p-2 border-t">canceldate</td><td class="p-2 border-t">The date the authorization was canceled.</td></tr>
-          <tr><td class="p-2 border-t">carvoutdate</td><td class="p-2 border-t">The date the carve-out was processed.</td></tr>
-        </tbody>
-      </table>
       <p>Logic falls back to <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> if the view returns null. In some cases, the <a href="#" data-supporting-table-id="timestamp-changed">timestamp_changed</a> table is consulted.</p>
-      <table class="w-full my-2 border">
-        <thead class="bg-muted"><tr><th class="p-2 text-left">Column Name</th><th class="p-2 text-left">Description</th></tr></thead>
-        <tbody>
-          <tr><td class="p-2 border-t">columnname</td><td class="p-2 border-t">The name of the column that was changed.</td></tr>
-          <tr><td class="p-2 border-t">timestamp_changed</td><td class="p-2 border-t">The date and time the change occurred.</td></tr>
-        </tbody>
-      </table>
     `,
     supportingTables: [
         { id: 'auth-status-codes', name: 'Authorization Status Codes' },
@@ -402,4 +384,5 @@ export function findDefinition(definitions: Definition[], id: string): Definitio
     
 
     
+
 
