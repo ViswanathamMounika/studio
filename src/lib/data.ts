@@ -1,4 +1,5 @@
 
+
 import type { Definition, SupportingTable } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
