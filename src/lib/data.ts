@@ -36,10 +36,13 @@ export const timestampChangedTable: SupportingTable = {
     id: 'timestamp-changed',
     name: 'timestamp_changed table',
     description: 'Tracks when a specific column was last changed for a given record.',
-    headers: ['Column Name', 'Description'],
+    headers: ['timestamp_changed'],
     rows: [
-        ['columnname', 'The name of the column that was changed.'],
-        ['timestamp_changed', 'The date and time the change occurred.'],
+        ['2023-10-26 10:00:00.000'],
+        ['2023-10-25 14:30:00.000'],
+        ['2023-10-24 09:15:00.000'],
+        ['2023-10-23 18:00:00.000'],
+        ['2023-10-22 11:45:00.000'],
     ]
 }
 
@@ -385,6 +388,7 @@ export function findDefinition(definitions: Definition[], id: string): Definitio
     
 
     
+
 
 
 
