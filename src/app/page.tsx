@@ -1,7 +1,7 @@
 
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import DefinitionTree from '@/components/wiki/definition-tree';
@@ -296,137 +296,137 @@ export default function Home() {
   }
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <AppSidebar />
-      </Sidebar>
-      <SidebarInset>
-        <AppHeader
-            isExportMode={isExportMode}
-            setIsExportMode={setIsExportMode}
-            handleExport={handleExport}
-            selectedCount={selectedForExport.length}
-        >
-             <SidebarTrigger className="sm:hidden">
-                <Menu />
-              </SidebarTrigger>
-              <div className="flex items-center gap-2">
-                <SidebarTrigger className="hidden sm:flex h-7 w-7">
-                  <Menu />
-                </SidebarTrigger>
-                <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
-              </div>
-        </AppHeader>
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 flex overflow-hidden">
-            <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col">
-              <div className="p-4 border-b flex items-center gap-2">
-                  <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        type="search" 
-                        placeholder="Search definitions..." 
-                        className="w-full rounded-lg bg-secondary pl-8"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" className="shrink-0 hover:bg-primary/10">
-                        <Filter className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuLabel>Filters</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                        <Checkbox
-                          id="show-archived"
-                          className="mr-2"
-                          checked={showArchived}
-                          onCheckedChange={setShowArchived}
-                        />
-                        <Label htmlFor="show-archived" className="font-normal">Show Archived</Label>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                         <Checkbox
-                          id="show-bookmarked"
-                          className="mr-2"
-                          checked={showBookmarked}
-                          onCheckedChange={setShowBookmarked}
-                        />
-                        <Label htmlFor="show-bookmarked" className="font-normal">Show Bookmarked</Label>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-              </div>
-              <div className="p-4 border-b">
-                  <div className="flex items-center justify-between mb-2">
-                      {isExportMode ? (
-                          <>
-                              <div className="flex items-center">
-                                  <Checkbox 
-                                  id="select-all" 
-                                  checked={areAllSelected} 
-                                  onCheckedChange={handleSelectAllForExport} 
-                                  className="mr-2"
-                                  />
-                                  <Label htmlFor="select-all" className="font-semibold text-base">Select All</Label>
-                              </div>
-                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelExport}>
-                                  <X className="h-4 w-4" />
-                              </Button>
-                          </>
-                      ) : (
-                          <>
-                               <Label className="font-semibold text-lg">MPM Definitions</Label>
-                          </>
-                      )}
-                  </div>
-              </div>
-              <div className="overflow-y-auto flex-1 p-4">
-                  <DefinitionTree
-                  definitions={visibleDefinitions}
-                  selectedId={selectedDefinitionId}
-                  onSelect={handleSelectDefinition}
-                  onToggleSelection={toggleSelectionForExport}
-                  selectedForExport={selectedForExport}
+      <>
+          <Sidebar>
+            <AppSidebar />
+          </Sidebar>
+          <SidebarInset>
+              <AppHeader
                   isExportMode={isExportMode}
-                  />
-              </div>
-            </div>
-            <div className="w-full lg:w-3/4 xl:w-4/5 overflow-y-auto p-6" id="definition-content">
-              {isEditing && selectedDefinition ? (
-                <DefinitionEdit
-                  definition={selectedDefinition}
-                  onSave={handleSave}
-                  onCancel={() => setIsEditing(false)}
-                />
-              ) : selectedDefinition ? (
-                <DefinitionView
-                  definition={selectedDefinition}
-                  onEdit={() => setIsEditing(true)}
-                  onDuplicate={handleDuplicate}
-                  onArchive={handleArchive}
-                  onDelete={handleDelete}
-                  onToggleBookmark={toggleBookmark}
-                  activeTab={activeTab}
-                  onTabChange={setActiveTab}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-muted-foreground">
-                    Select a definition to view its details.
-                  </p>
+                  setIsExportMode={setIsExportMode}
+                  handleExport={handleExport}
+                  selectedCount={selectedForExport.length}
+              >
+                  <SidebarTrigger className="sm:hidden">
+                      <Menu />
+                  </SidebarTrigger>
+                  <div className="flex items-center gap-2">
+                      <SidebarTrigger className="hidden sm:flex h-7 w-7">
+                      <Menu />
+                      </SidebarTrigger>
+                      <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
+                  </div>
+              </AppHeader>
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex overflow-hidden">
+                  <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col">
+                    <div className="p-4 border-b flex items-center gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                              type="search" 
+                              placeholder="Search definitions..." 
+                              className="w-full rounded-lg bg-secondary pl-8"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon" className="shrink-0 hover:bg-primary/10">
+                              <Filter className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuLabel>Filters</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                              <Checkbox
+                                id="show-archived"
+                                className="mr-2"
+                                checked={showArchived}
+                                onCheckedChange={setShowArchived}
+                              />
+                              <Label htmlFor="show-archived" className="font-normal">Show Archived</Label>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                              <Checkbox
+                                id="show-bookmarked"
+                                className="mr-2"
+                                checked={showBookmarked}
+                                onCheckedChange={setShowBookmarked}
+                              />
+                              <Label htmlFor="show-bookmarked" className="font-normal">Show Bookmarked</Label>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                    <div className="p-4 border-b">
+                        <div className="flex items-center justify-between mb-2">
+                            {isExportMode ? (
+                                <>
+                                    <div className="flex items-center">
+                                        <Checkbox 
+                                        id="select-all" 
+                                        checked={areAllSelected} 
+                                        onCheckedChange={handleSelectAllForExport} 
+                                        className="mr-2"
+                                        />
+                                        <Label htmlFor="select-all" className="font-semibold text-base">Select All</Label>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelExport}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Label className="font-semibold text-lg">MPM Definitions</Label>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    <div className="overflow-y-auto flex-1 p-4">
+                        <DefinitionTree
+                        definitions={visibleDefinitions}
+                        selectedId={selectedDefinitionId}
+                        onSelect={handleSelectDefinition}
+                        onToggleSelection={toggleSelectionForExport}
+                        selectedForExport={selectedForExport}
+                        isExportMode={isExportMode}
+                        />
+                    </div>
+                  </div>
+                  <div className="w-full lg:w-3/4 xl:w-4/5 overflow-y-auto p-6" id="definition-content">
+                    {isEditing && selectedDefinition ? (
+                      <DefinitionEdit
+                        definition={selectedDefinition}
+                        onSave={handleSave}
+                        onCancel={() => setIsEditing(false)}
+                      />
+                    ) : selectedDefinition ? (
+                      <DefinitionView
+                        definition={selectedDefinition}
+                        onEdit={() => setIsEditing(true)}
+                        onDuplicate={handleDuplicate}
+                        onArchive={handleArchive}
+                        onDelete={handleDelete}
+                        onToggleBookmark={toggleBookmark}
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">
+                          Select a definition to view its details.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </SidebarInset>
-      <Toaster />
-    </SidebarProvider>
+              </div>
+          </SidebarInset>
+          <Toaster />
+      </>
   );
 }
 
