@@ -14,9 +14,10 @@ import { Logo } from '@/components/icons';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useBookmarks } from '@/hooks/use-bookmarks';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
@@ -228,18 +229,24 @@ export default function Home() {
                   <DropdownMenuContent>
                     <DropdownMenuLabel>Filters</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuCheckboxItem
-                      checked={showArchived}
-                      onCheckedChange={setShowArchived}
-                    >
-                      Show Archived
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={showBookmarked}
-                      onCheckedChange={setShowBookmarked}
-                    >
-                      Show Bookmarked
-                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <Checkbox
+                        id="show-archived"
+                        className="mr-2"
+                        checked={showArchived}
+                        onCheckedChange={setShowArchived}
+                      />
+                      <Label htmlFor="show-archived" className="font-normal">Show Archived</Label>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                       <Checkbox
+                        id="show-bookmarked"
+                        className="mr-2"
+                        checked={showBookmarked}
+                        onCheckedChange={setShowBookmarked}
+                      />
+                      <Label htmlFor="show-bookmarked" className="font-normal">Show Bookmarked</Label>
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
             </div>
