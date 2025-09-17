@@ -44,10 +44,10 @@ export default function AnalyticsModal({ open, onOpenChange }: AnalyticsModalPro
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topSearches} layout="vertical" margin={{ left: 30, right: 30 }}>
+                <BarChart data={topSearches} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
+                  <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
                   <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
                   <Legend />
                   <Bar dataKey="count" name="Search Count" fill="hsl(var(--primary))" />
@@ -61,13 +61,13 @@ export default function AnalyticsModal({ open, onOpenChange }: AnalyticsModalPro
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topViews} layout="vertical" margin={{ left: 30, right: 30 }}>
+                <BarChart data={topViews} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
                   <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
                   <Legend />
-                  <Bar dataKey="count" name="View Count" fill="hsl(var(--primary))" />
+                  <Bar dataKey="count" name="View Count" fill="hsl(var(--accent))" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
