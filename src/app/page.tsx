@@ -10,7 +10,7 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Filter, Menu, Search, Download } from 'lucide-react';
+import { Filter, Menu, Search, Download, X } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -30,6 +30,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const { isMounted, bookmarks, toggleBookmark, isBookmarked } = useBookmarks();
   const [selectedForExport, setSelectedForExport] = useState<string[]>([]);
+  const [isExportMode, setIsExportMode] = useState(false);
 
   const getAllDefinitionIds = (items: Definition[]): string[] => {
     let ids: string[] = [];
@@ -106,6 +107,8 @@ export default function Home() {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+    setIsExportMode(false);
+    setSelectedForExport([]);
   };
 
   const selectedDefinition = useMemo(() => {
@@ -282,6 +285,10 @@ export default function Home() {
     return itemsWithBookmarks;
   }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked, bookmarks]);
 
+  const handleCancelExport = () => {
+    setIsExportMode(false);
+    setSelectedForExport([]);
+  };
 
   if (!isMounted) {
     return null; // or a loading spinner
@@ -349,20 +356,35 @@ export default function Home() {
             </div>
             <div className="p-4 border-b">
                 <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                        <Checkbox 
-                          id="select-all" 
-                          checked={areAllSelected} 
-                          onCheckedChange={handleSelectAllForExport} 
-                          className="mr-2"
-                        />
-                        <Label htmlFor="select-all" className="font-semibold text-lg">MPM Definitions</Label>
-                    </div>
-                    {isAnySelected && (
-                        <Button variant="outline" size="sm" onClick={handleExport}>
-                            <Download className="mr-2 h-4 w-4" />
-                            Export ({selectedForExport.length})
-                        </Button>
+                    {isExportMode ? (
+                        <>
+                            <div className="flex items-center">
+                                <Checkbox 
+                                id="select-all" 
+                                checked={areAllSelected} 
+                                onCheckedChange={handleSelectAllForExport} 
+                                className="mr-2"
+                                />
+                                <Label htmlFor="select-all" className="font-semibold text-base">Select All</Label>
+                            </div>
+                             <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={handleExport} disabled={!isAnySelected}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Export ({selectedForExport.length})
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelExport}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                             <Label className="font-semibold text-lg">MPM Definitions</Label>
+                             <Button variant="outline" size="sm" onClick={() => setIsExportMode(true)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Export
+                            </Button>
+                        </>
                     )}
                 </div>
             </div>
@@ -373,6 +395,7 @@ export default function Home() {
                 onSelect={handleSelectDefinition}
                 onToggleSelection={toggleSelectionForExport}
                 selectedForExport={selectedForExport}
+                isExportMode={isExportMode}
                 />
             </div>
           </div>

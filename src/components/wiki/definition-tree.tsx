@@ -11,9 +11,10 @@ type DefinitionTreeProps = {
   onSelect: (id: string, sectionId?: string) => void;
   onToggleSelection: (id: string, checked: boolean) => void;
   selectedForExport: string[];
+  isExportMode: boolean;
 };
 
-export default function DefinitionTree({ definitions, selectedId, onSelect, onToggleSelection, selectedForExport }: DefinitionTreeProps) {
+export default function DefinitionTree({ definitions, selectedId, onSelect, onToggleSelection, selectedForExport, isExportMode }: DefinitionTreeProps) {
   return (
     <div className="space-y-1">
       {definitions.map(node => (
@@ -25,6 +26,7 @@ export default function DefinitionTree({ definitions, selectedId, onSelect, onTo
           level={0}
           onToggleSelection={onToggleSelection}
           isSelectedForExport={selectedForExport.includes(node.id)}
+          isExportMode={isExportMode}
         />
       ))}
     </div>
