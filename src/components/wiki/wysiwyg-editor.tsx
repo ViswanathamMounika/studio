@@ -68,7 +68,11 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     };
 
     const execCommand = (command: string, value?: string) => {
-        document.execCommand(command, false, value);
+        if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
+            document.execCommand(command, false, value);
+        } else {
+            document.execCommand(command, false, value);
+        }
         editorRef.current?.focus();
         handleInput({ currentTarget: editorRef.current! } as React.FormEvent<HTMLDivElement>);
     };
