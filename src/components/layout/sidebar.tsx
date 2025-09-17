@@ -24,6 +24,7 @@ import {
   HeartPulse,
   LogOut,
   Landmark,
+  BarChart,
 } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -109,6 +110,14 @@ export default function AppSidebar() {
               </SidebarMenu>
             </CollapsibleContent>
           </Collapsible>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Analytics" asChild>
+                <a href="/analytics">
+                    <BarChart />
+                    Analytics
+                </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarSeparator />
