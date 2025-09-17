@@ -19,8 +19,6 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Button } from '@/components/ui/button';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import { Checkbox } from '@/components/ui/checkbox';
-import { trackSearch, trackView } from '@/lib/analytics';
-import { useDebounce } from '@/hooks/use-debounce';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
@@ -34,14 +32,6 @@ export default function Home() {
   const [selectedForExport, setSelectedForExport] = useState<string[]>([]);
   const [isExportMode, setIsExportMode] = useState(false);
   
-  const debouncedSearchQuery = useDebounce(searchQuery, 500);
-
-  useEffect(() => {
-    if (debouncedSearchQuery) {
-        trackSearch(debouncedSearchQuery);
-    }
-  }, [debouncedSearchQuery]);
-
   const getAllDefinitionIds = (items: Definition[]): string[] => {
     let ids: string[] = [];
     for (const item of items) {
@@ -134,11 +124,6 @@ export default function Home() {
   const handleSelectDefinition = useCallback((id: string, sectionId?: string) => {
     setIsEditing(false);
     setSelectedDefinitionId(id);
-
-    const def = findDefinition(definitions, id);
-    if (def) {
-        trackView(def.id, def.name);
-    }
     
     if (sectionId) {
       const tabValue = sectionId.replace('section-', '');
@@ -152,7 +137,7 @@ export default function Home() {
     } else {
         setActiveTab('description');
     }
-  }, [definitions]);
+  }, []);
 
   const handleSave = (updatedDefinition: Definition) => {
     const update = (items: Definition[]): Definition[] => {
