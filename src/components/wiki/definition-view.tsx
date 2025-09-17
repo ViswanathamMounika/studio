@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Comments from './comments';
 import { ExternalLink, Pencil, Bookmark } from 'lucide-react';
 import DefinitionActions from './definition-actions';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable } from '@/lib/data';
 import { Checkbox } from '../ui/checkbox';
 import RevisionComparisonDialog from './revision-comparison-dialog';
@@ -34,8 +34,12 @@ const supportingTablesData: Record<string, SupportingTable> = {
 };
 
 export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, onToggleBookmark, activeTab, onTabChange }: DefinitionViewProps) {
+    const [selectedTable, setSelectedTable] = useState<SupportingTable | null>(null);
+    const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
+    const [showComparison, setShowComparison] = useState(false);
+    const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
+
     useEffect(() => {
-        // Reset to the description tab when the definition changes
         if (activeTab === 'examples' || activeTab === 'usage') {
             onTabChange('examples-usage');
         } else if (activeTab !== 'description' && activeTab !== 'technical-details' && activeTab !== 'revisions' && activeTab !== 'examples-usage') {
@@ -43,9 +47,28 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         }
     }, [definition, onTabChange, activeTab]);
 
-    const [selectedTable, setSelectedTable] = useState<SupportingTable | null>(null);
-    const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
-    const [showComparison, setShowComparison] = useState(false);
+    useEffect(() => {
+        const handleContentClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const anchor = target.closest('a[data-supporting-table-id]');
+            if (anchor) {
+                e.preventDefault();
+                const tableId = anchor.getAttribute('data-supporting-table-id');
+                if (tableId && supportingTablesData[tableId]) {
+                    setSelectedTable(supportingTablesData[tableId]);
+                    setIsTableDialogOpen(true);
+                }
+            }
+        };
+
+        const contentArea = document.getElementById('definition-content-area');
+        contentArea?.addEventListener('click', handleContentClick);
+
+        return () => {
+            contentArea?.removeEventListener('click', handleContentClick);
+        };
+    }, [definition]);
+
 
     const handleRevisionSelect = (revision: Revision, checked: boolean) => {
         setSelectedRevisions(prev => {
@@ -66,7 +89,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
 
   return (
-    <Dialog>
+    <>
         <article className="prose prose-sm max-w-none">
         <div className="flex justify-between items-start">
             <div>
@@ -96,166 +119,147 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             ))}
         </div>
 
-        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
-            <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="description">Description</TabsTrigger>
-                <TabsTrigger value="technical-details">Technical Details</TabsTrigger>
-                <TabsTrigger value="examples-usage">Examples & Usage</TabsTrigger>
-                <TabsTrigger value="revisions">Version History</TabsTrigger>
-            </TabsList>
-            <TabsContent value="description" id="section-description" className="mt-4 space-y-4">
-            <Card>
-                <CardContent className="p-6">
-                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
-                </CardContent>
-            </Card>
+        <div id="definition-content-area">
+            <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="description">Description</TabsTrigger>
+                    <TabsTrigger value="technical-details">Technical Details</TabsTrigger>
+                    <TabsTrigger value="examples-usage">Examples & Usage</TabsTrigger>
+                    <TabsTrigger value="revisions">Version History</TabsTrigger>
+                </TabsList>
+                <TabsContent value="description" id="section-description" className="mt-4 space-y-4">
+                <Card>
+                    <CardContent className="p-6">
+                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
+                    </CardContent>
+                </Card>
 
-            {definition.supportingTables && definition.supportingTables.length > 0 && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Supporting Tables</CardTitle>
+                    <CardTitle>Comments & Notes</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-2">
-                        {definition.supportingTables.map(table => (
-                            <DialogTrigger key={table.id} asChild>
-                                <button 
-                                    onClick={() => setSelectedTable(supportingTablesData[table.id])}
-                                    className="w-full flex items-center justify-between p-3 border rounded-md hover:bg-primary/10 transition-colors"
-                                >
-                                    <span>{table.name}</span>
-                                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                                </button>
-                            </DialogTrigger>
-                        ))}
+                    <Comments />
+                    </CardContent>
+                </Card>
+                </TabsContent>
+                <TabsContent value="technical-details" id="section-technical-details" className="mt-4">
+                <Card>
+                    <CardContent className="p-6">
+                    <div className="prose prose-sm max-w-none prose-code:font-code" dangerouslySetInnerHTML={{ __html: definition.technicalDetails }} />
+                    </CardContent>
+                </Card>
+                </TabsContent>
+                <TabsContent value="examples-usage" id="section-examples-usage" className="mt-4 space-y-4">
+                    <Card>
+                        <CardHeader><CardTitle>Examples</CardTitle></CardHeader>
+                        <CardContent>
+                            <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.examples }} />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader><CardTitle>Usage</CardTitle></CardHeader>
+                        <CardContent>
+                            <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.usage }} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="revisions" id="section-revisions" className="mt-4">
+                <Card>
+                    <CardHeader>
+                        <div className="flex justify-end">
+                            <Button 
+                                onClick={() => setShowComparison(true)} 
+                                disabled={selectedRevisions.length !== 2}
+                            >
+                                Compare Revisions
+                            </Button>
                         </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            <Card>
-                <CardHeader>
-                <CardTitle>Comments & Notes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                <Comments />
-                </CardContent>
-            </Card>
-            </TabsContent>
-            <TabsContent value="technical-details" id="section-technical-details" className="mt-4">
-            <Card>
-                <CardContent className="p-6">
-                <div className="prose prose-sm max-w-none prose-code:font-code" dangerouslySetInnerHTML={{ __html: definition.technicalDetails }} />
-                </CardContent>
-            </Card>
-            </TabsContent>
-            <TabsContent value="examples-usage" id="section-examples-usage" className="mt-4 space-y-4">
-                <Card>
-                    <CardHeader><CardTitle>Examples</CardTitle></CardHeader>
-                    <CardContent>
-                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.examples }} />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader><CardTitle>Usage</CardTitle></CardHeader>
-                    <CardContent>
-                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.usage }} />
-                    </CardContent>
-                </Card>
-            </TabsContent>
-            <TabsContent value="revisions" id="section-revisions" className="mt-4">
-            <Card>
-                 <CardHeader>
-                    <div className="flex justify-end">
-                        <Button 
-                            onClick={() => setShowComparison(true)} 
-                            disabled={selectedRevisions.length !== 2}
-                        >
-                            Compare Revisions
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-[40px]"></TableHead>
-                        <TableHead>Ticket ID</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Developer</TableHead>
-                        <TableHead>Description</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {definition.revisions.map((rev: Revision) => (
-                        <TableRow key={rev.ticketId}>
-                        <TableCell>
-                            <Checkbox 
-                                onCheckedChange={(checked) => handleRevisionSelect(rev, !!checked)}
-                                checked={selectedRevisions.some(r => r.ticketId === rev.ticketId)}
-                                disabled={selectedRevisions.length >= 2 && !selectedRevisions.some(r => r.ticketId === rev.ticketId)}
-                            />
-                        </TableCell>
-                        <TableCell className="font-medium">{rev.ticketId}</TableCell>
-                        <TableCell>{rev.date}</TableCell>
-                        <TableCell>{rev.developer}</TableCell>
-                        <TableCell>{rev.description}</TableCell>
-                        </TableRow>
-                    ))}
-                        {definition.revisions.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={5} className="text-center text-muted-foreground">No revision history.</TableCell>
-                        </TableRow>
-                    )}
-                    </TableBody>
-                </Table>
-                </CardContent>
-            </Card>
-            </TabsContent>
-        </Tabs>
-        </article>
-
-        {selectedTable && (
-            <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                    <DialogTitle>{selectedTable.name}</DialogTitle>
-                    <DialogDescription>{selectedTable.description}</DialogDescription>
-                </DialogHeader>
-                <div className="max-h-[60vh] overflow-auto">
+                    </CardHeader>
+                    <CardContent className="p-6">
                     <Table>
                         <TableHeader>
-                            <TableRow>
-                                {selectedTable.headers.map(header => <TableHead key={header}>{header}</TableHead>)}
-                            </TableRow>
+                        <TableRow>
+                            <TableHead className="w-[40px]"></TableHead>
+                            <TableHead>Ticket ID</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Developer</TableHead>
+                            <TableHead>Description</TableHead>
+                        </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {selectedTable.rows.map((row, rowIndex) => (
-                                <TableRow key={rowIndex}>
-                                    {row.map((cell, cellIndex) => {
-                                        const header = selectedTable.headers[cellIndex];
-                                        if (selectedTable.id === 'auth-status-codes' && header === 'Is Final Status?') {
-                                            if (cell === 'Yes') {
+                        {definition.revisions.map((rev: Revision) => (
+                            <TableRow key={rev.ticketId}>
+                            <TableCell>
+                                <Checkbox 
+                                    onCheckedChange={(checked) => handleRevisionSelect(rev, !!checked)}
+                                    checked={selectedRevisions.some(r => r.ticketId === rev.ticketId)}
+                                    disabled={selectedRevisions.length >= 2 && !selectedRevisions.some(r => r.ticketId === rev.ticketId)}
+                                />
+                            </TableCell>
+                            <TableCell className="font-medium">{rev.ticketId}</TableCell>
+                            <TableCell>{rev.date}</TableCell>
+                            <TableCell>{rev.developer}</TableCell>
+                            <TableCell>{rev.description}</TableCell>
+                            </TableRow>
+                        ))}
+                            {definition.revisions.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={5} className="text-center text-muted-foreground">No revision history.</TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                    </CardContent>
+                </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
+        </article>
+
+        <Dialog open={isTableDialogOpen} onOpenChange={setIsTableDialogOpen}>
+            {selectedTable && (
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>{selectedTable.name}</DialogTitle>
+                        <DialogDescription>{selectedTable.description}</DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    {selectedTable.headers.map(header => <TableHead key={header}>{header}</TableHead>)}
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {selectedTable.rows.map((row, rowIndex) => (
+                                    <TableRow key={rowIndex}>
+                                        {row.map((cell, cellIndex) => {
+                                            const header = selectedTable.headers[cellIndex];
+                                            if (selectedTable.id === 'auth-status-codes' && header === 'Is Final Status?') {
+                                                if (cell === 'Yes') {
+                                                    return (
+                                                        <TableCell key={cellIndex}>
+                                                            <Badge variant={'success'}>Yes</Badge>
+                                                        </TableCell>
+                                                    );
+                                                }
                                                 return (
                                                     <TableCell key={cellIndex}>
-                                                        <Badge variant={'success'}>Yes</Badge>
+                                                        <Badge variant={'secondary'}>No</Badge>
                                                     </TableCell>
                                                 );
                                             }
-                                            return (
-                                                <TableCell key={cellIndex}>
-                                                    <Badge variant={'secondary'}>No</Badge>
-                                                </TableCell>
-                                            );
-                                        }
-                                        return <TableCell key={cellIndex}>{cell}</TableCell>
-                                    })}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-            </DialogContent>
-        )}
+                                            return <TableCell key={cellIndex}>{cell}</TableCell>
+                                        })}
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </DialogContent>
+            )}
+        </Dialog>
 
         {showComparison && selectedRevisions.length === 2 && (
              <RevisionComparisonDialog
@@ -266,6 +270,8 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                 currentDefinitionName={definition.name}
             />
         )}
-    </Dialog>
+    </>
   );
 }
+
+    

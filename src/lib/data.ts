@@ -159,11 +159,11 @@ const definition111_rev3 = {
 const definition111_rev4 = {
     ...definition111_rev3,
     technicalDetails: `
-      <p>The decision date is primarily derived from the <code class="font-code text-primary">vw_authactiontime</code> view.</p>
+      <p>The decision date is primarily derived from the <a href="#" data-supporting-table-id="vw-authactiontime">vw_authactiontime</a> view.</p>
       <pre class="bg-muted p-2 rounded-md font-code text-sm overflow-x-auto"><code class="language-sql">SELECT COALESCE(modifdate, denieddate, apprvdate, canceldate, carvoutdate) as decision_date 
 FROM vw_authactiontime 
 WHERE auth_id = :authId;</code></pre>
-      <p>The field is of type <code class="font-code text-primary">DATETIME</code> and is indexed for performance. Logic falls back to <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> if the view returns null.</p>
+      <p>The field is of type <code class="font-code text-primary">DATETIME</code> and is indexed for performance. Logic falls back to <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> if the view returns null. In some cases, <a href="#" data-supporting-table-id="timestamp-changed">timestamp_changed</a> is consulted.</p>
     `,
     supportingTables: [
         { id: 'auth-status-codes', name: 'Authorization Status Codes' },
@@ -324,5 +324,7 @@ export function findDefinition(definitions: Definition[], id: string): Definitio
   }
   return null;
 }
+
+    
 
     
