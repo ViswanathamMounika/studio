@@ -162,9 +162,13 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 <ToolbarButton onClick={() => execCommand('justifyFull')}><AlignJustify className="h-4 w-4" /></ToolbarButton>
 
                 <Separator orientation="vertical" className="h-6 mx-1" />
-
-                <ToolbarButton onClick={() => execCommand('insertUnorderedList')}><List className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('insertOrderedList')}><ListOrdered className="h-4 w-4" /></ToolbarButton>
+                
+                <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); execCommand('insertUnorderedList'); }}>
+                    <List className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); execCommand('insertOrderedList'); }}>
+                    <ListOrdered className="h-4 w-4" />
+                </Button>
                 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
