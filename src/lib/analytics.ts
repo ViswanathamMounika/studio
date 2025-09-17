@@ -24,6 +24,7 @@ const saveToStorage = <T>(key: string, value: T) => {
 };
 
 type CountData = { [key: string]: number };
+type ViewsByModule = { [module: string]: CountData };
 
 // Track Search Queries
 export const trackSearch = (query: string) => {
@@ -34,19 +35,31 @@ export const trackSearch = (query: string) => {
 };
 
 // Track Definition Views
-export const trackView = (definitionId: string, definitionName: string) => {
-  const views = getFromStorage<CountData>('analytics_views', {});
+export const trackView = (definitionId: string, definitionName: string, module: string) => {
+  const views = getFromStorage<ViewsByModule>('analytics_views', {});
+  if (!views[module]) {
+    views[module] = {};
+  }
   const key = `${definitionName} (ID: ${definitionId})`;
-  views[key] = (views[key] || 0) + 1;
+  views[module][key] = (views[module][key] || 0) + 1;
   saveToStorage('analytics_views', views);
 };
 
-// Get Top Items
-export const getTopItems = (type: 'searches' | 'views', count: number): { name: string, count: number }[] => {
-  const data = getFromStorage<CountData>(`analytics_${type}`, {});
+// Get Top Items for searches
+export const getTopSearches = (count: number): { name: string, count: number }[] => {
+  const data = getFromStorage<CountData>('analytics_searches', {});
   return Object.entries(data)
     .sort(([, a], [, b]) => b - a)
     .slice(0, count)
     .map(([name, count]) => ({ name, count }));
 };
 
+// Get Top Items for views by module
+export const getTopViewsByModule = (module: string, count: number): { name: string, count: number }[] => {
+    const data = getFromStorage<ViewsByModule>('analytics_views', {});
+    const moduleData = data[module] || {};
+    return Object.entries(moduleData)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, count)
+        .map(([name, count]) => ({ name, count }));
+}
