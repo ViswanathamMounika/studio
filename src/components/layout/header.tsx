@@ -36,6 +36,7 @@ type AppHeaderProps = {
     handleExport?: () => void;
     selectedCount?: number;
     onAnalyticsClick?: () => void;
+    onNewDefinitionClick?: () => void;
 }
 
 export default function AppHeader({ 
@@ -44,7 +45,8 @@ export default function AppHeader({
     setIsExportMode, 
     handleExport, 
     selectedCount = 0,
-    onAnalyticsClick
+    onAnalyticsClick,
+    onNewDefinitionClick
 }: AppHeaderProps) {
   const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
 
@@ -53,7 +55,7 @@ export default function AppHeader({
       {children}
       <div className="ml-auto flex items-center gap-2">
         <SharePopover />
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={onNewDefinitionClick}>
           <Plus className="mr-2 h-4 w-4" />
           New Definition
         </Button>
