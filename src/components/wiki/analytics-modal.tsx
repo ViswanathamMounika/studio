@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getTopItems } from '@/lib/analytics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -49,7 +49,6 @@ export default function AnalyticsModal({ open, onOpenChange }: AnalyticsModalPro
                   <XAxis type="number" />
                   <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
                   <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
-                  <Legend />
                   <Bar dataKey="count" name="Search Count" fill="hsl(var(--primary))" />
                 </BarChart>
               </ResponsiveContainer>
@@ -66,7 +65,6 @@ export default function AnalyticsModal({ open, onOpenChange }: AnalyticsModalPro
                   <XAxis type="number" />
                   <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
                   <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
-                  <Legend />
                   <Bar dataKey="count" name="View Count" fill="hsl(var(--accent))" />
                 </BarChart>
               </ResponsiveContainer>
