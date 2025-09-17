@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -109,7 +110,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                   ))}
               </div>
           ) : isSelected && isNodeExpanded && !hasChildren ? (
-            <div className="space-y-1 mt-1" style={{ paddingLeft: `${(level + 2)}rem` }}>
+            <div className="space-y-1 mt-1" style={{ paddingLeft: `${(level + 3)}rem` }}>
                 <SectionLink icon={<FileText className="h-4 w-4" />} label="Description" onClick={() => onSelect(node.id, 'description')} />
                 <SectionLink icon={<Code2 className="h-4 w-4" />} label="Technical Details" onClick={() => onSelect(node.id, 'technical-details')} />
                 <SectionLink icon={<BookText className="h-4 w-4" />} label="Examples & Usage" onClick={() => onSelect(node.id, 'examples-usage')} />
