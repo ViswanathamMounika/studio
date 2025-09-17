@@ -116,13 +116,6 @@ export default function AppSidebar({ showArchived, setShowArchived }: AppSidebar
             </CollapsibleContent>
           </Collapsible>
         </SidebarMenu>
-
-        <SidebarGroup>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="show-archived" className="text-sm">Show Archived</Label>
-            <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
-          </div>
-        </SidebarGroup>
       </SidebarContent>
       <SidebarSeparator />
       <SidebarFooter>

@@ -12,6 +12,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { Menu, Search } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
@@ -175,6 +177,15 @@ export default function Home() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
+                </div>
+            </div>
+            <div className="p-4 border-b">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold tracking-tight">MPM Definitions</h2>
+                </div>
+                 <div className="flex items-center justify-between mt-2">
+                    <Label htmlFor="show-archived" className="text-sm">Show Archived</Label>
+                    <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
                 </div>
             </div>
             <div className="overflow-y-auto flex-1 p-4">
