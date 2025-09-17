@@ -142,6 +142,14 @@ export default function Home() {
 
   const visibleDefinitions = useMemo(() => {
     let itemsToFilter = searchQuery ? filteredDefinitions : definitions;
+
+    const mapBookmarkStatus = (items: Definition[]): Definition[] => {
+        return items.map(item => ({
+            ...item,
+            isBookmarked: isBookmarked(item.id),
+            children: item.children ? mapBookmarkStatus(item.children) : [],
+        }));
+    };
     
     const filterArchived = (items: Definition[]): Definition[] => {
       return items.filter(item => !item.isArchived || showArchived).map(item => {
@@ -160,19 +168,20 @@ export default function Home() {
     const filterBookmarked = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = item.children ? filterBookmarked(item.children) : [];
-            const isItemBookmarked = isBookmarked(item.id);
-            if (isItemBookmarked || children.length > 0) {
-                acc.push({ ...item, isBookmarked: isItemBookmarked, children });
+            if (item.isBookmarked || children.length > 0) {
+                acc.push({ ...item, children });
             }
             return acc;
         }, []);
     };
+    
+    const itemsWithBookmarks = mapBookmarkStatus(itemsToFilter);
 
     if (showBookmarked) {
-        return filterBookmarked(itemsToFilter);
+        return filterBookmarked(itemsWithBookmarks);
     }
 
-    return itemsToFilter.map(def => ({ ...def, isBookmarked: isBookmarked(def.id) }));
+    return itemsWithBookmarks;
   }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked, bookmarks]);
 
 
