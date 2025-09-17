@@ -182,8 +182,8 @@ export default function Home() {
             <div className="p-4 border-b">
                 <h2 className="text-lg font-semibold tracking-tight">MPM Definitions</h2>
                 <div className="flex items-center gap-2 mt-2">
-                    <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
                     <Label htmlFor="show-archived" className="text-sm">Show Archived</Label>
+                    <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
                 </div>
             </div>
             <div className="overflow-y-auto flex-1 p-4">
