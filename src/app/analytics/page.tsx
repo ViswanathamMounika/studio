@@ -6,9 +6,10 @@ import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from '@/compon
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getTopSearchedTerms, getMostViewedDefinitions } from "@/lib/analytics";
 import { Menu } from "lucide-react";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
 type SearchTerm = {
     term: string;
@@ -36,6 +37,20 @@ export default function AnalyticsPage() {
         return null; // or a loading spinner
     }
 
+    const searchChartConfig = {
+      count: {
+        label: "Searches",
+        color: "hsl(var(--chart-1))",
+      },
+    };
+
+    const viewedChartConfig = {
+      count: {
+        label: "Views",
+        color: "hsl(var(--chart-2))",
+      },
+    };
+
     return (
         <SidebarProvider>
             <Sidebar>
@@ -60,27 +75,23 @@ export default function AnalyticsPage() {
                                 <CardTitle>Top Searched Terms</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Search Term</TableHead>
-                                            <TableHead className="text-right">Count</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {topSearches.map((search) => (
-                                            <TableRow key={search.term}>
-                                                <TableCell className="font-medium">{search.term}</TableCell>
-                                                <TableCell className="text-right">{search.count}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                        {topSearches.length === 0 && (
-                                            <TableRow>
-                                                <TableCell colSpan={2} className="text-center text-muted-foreground">No search data available.</TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
+                                {topSearches.length > 0 ? (
+                                    <ChartContainer config={searchChartConfig} className="h-[300px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={topSearches} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                                                <CartesianGrid vertical={false} />
+                                                <XAxis dataKey="term" tickLine={false} tickMargin={10} axisLine={false} />
+                                                <YAxis />
+                                                <Tooltip cursor={false} content={<ChartTooltipContent />} />
+                                                <Bar dataKey="count" fill="var(--color-count)" radius={4} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </ChartContainer>
+                                ) : (
+                                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                                        No search data available.
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                         <Card>
@@ -88,27 +99,23 @@ export default function AnalyticsPage() {
                                 <CardTitle>Most Viewed Definitions</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Definition Name</TableHead>
-                                            <TableHead className="text-right">Views</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {mostViewed.map((def) => (
-                                            <TableRow key={def.id}>
-                                                <TableCell className="font-medium">{def.name}</TableCell>
-                                                <TableCell className="text-right">{def.count}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                         {mostViewed.length === 0 && (
-                                            <TableRow>
-                                                <TableCell colSpan={2} className="text-center text-muted-foreground">No view data available.</TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
+                                {mostViewed.length > 0 ? (
+                                    <ChartContainer config={viewedChartConfig} className="h-[300px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={mostViewed} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                                                <CartesianGrid vertical={false} />
+                                                <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
+                                                <YAxis />
+                                                <Tooltip cursor={false} content={<ChartTooltipContent />} />
+                                                <Bar dataKey="count" fill="var(--color-count)" radius={4} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </ChartContainer>
+                                ) : (
+                                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                                        No view data available.
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>

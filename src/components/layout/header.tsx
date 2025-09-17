@@ -2,6 +2,7 @@
 "use client";
 
 import {
+  BarChart,
   Book,
   Download,
   Menu,
@@ -51,6 +52,12 @@ export default function AppHeader({
         <Button variant="outline" size="sm">
           <Book className="h-4 w-4 mr-2" />
           Templates
+        </Button>
+         <Button variant="outline" size="sm" asChild>
+            <a href="/analytics">
+                <BarChart className="h-4 w-4 mr-2" />
+                Analytics
+            </a>
         </Button>
         {isExportMode ? (
             <Button size="sm" onClick={handleExport} disabled={selectedCount === 0}>
