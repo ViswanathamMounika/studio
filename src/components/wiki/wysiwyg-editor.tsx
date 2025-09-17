@@ -90,10 +90,6 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     const applyFontSize = (size: string) => {
         execCommand('fontSize', size);
     };
-
-    const handleInsertList = (type: 'insertOrderedList' | 'insertUnorderedList') => {
-        execCommand(type);
-    }
     
     const handleInsertTable = () => {
         const rows = prompt("Enter number of rows", "2");
@@ -167,8 +163,8 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
 
                 <Separator orientation="vertical" className="h-6 mx-1" />
 
-                <ToolbarButton onClick={() => handleInsertList('insertUnorderedList')}><List className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => handleInsertList('insertOrderedList')}><ListOrdered className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('insertUnorderedList')}><List className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('insertOrderedList')}><ListOrdered className="h-4 w-4" /></ToolbarButton>
                 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
