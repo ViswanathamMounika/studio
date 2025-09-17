@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import SharePopover from "@/components/wiki/share-popover";
 
 type AppHeaderProps = {
     children?: React.ReactNode;
@@ -51,6 +52,7 @@ export default function AppHeader({
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
       {children}
       <div className="ml-auto flex items-center gap-2">
+        <SharePopover />
         <Button variant="outline" size="sm">
           <Book className="h-4 w-4 mr-2" />
           Templates
