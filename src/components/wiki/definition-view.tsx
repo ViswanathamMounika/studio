@@ -80,7 +80,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)}>
-                    <Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-current text-primary")}/>
+                    <Bookmark className={cn("h-6 w-6", definition.isBookmarked && "fill-current text-primary")}/>
                 </Button>
                 <Button onClick={onEdit}>
                     <Pencil className="mr-2 h-4 w-4" />
@@ -121,7 +121,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                             <DialogTrigger key={table.id} asChild>
                                 <button 
                                     onClick={() => setSelectedTable(supportingTablesData[table.id])}
-                                    className="w-full flex items-center justify-between p-3 border rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                                    className="w-full flex items-center justify-between p-3 border rounded-md hover:bg-primary/10 transition-colors"
                                 >
                                     <span>{table.name}</span>
                                     <ExternalLink className="h-4 w-4 text-muted-foreground" />

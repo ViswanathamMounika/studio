@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { useBookmarks } from '@/hooks/use-bookmarks';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
@@ -25,12 +26,18 @@ export default function Home() {
   const [showBookmarked, setShowBookmarked] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
   const [searchQuery, setSearchQuery] = useState("");
+  const { isMounted, toggleBookmark, isBookmarked } = useBookmarks();
 
 
   const selectedDefinition = useMemo(() => {
     if (!selectedDefinitionId) return null;
-    return findDefinition(definitions, selectedDefinitionId);
-  }, [definitions, selectedDefinitionId]);
+    const def = findDefinition(definitions, selectedDefinitionId);
+    if (!def) return null;
+    return {
+      ...def,
+      isBookmarked: isBookmarked(def.id)
+    }
+  }, [definitions, selectedDefinitionId, isBookmarked]);
 
   const handleSelectDefinition = (id: string, sectionId?: string) => {
     setIsEditing(false);
@@ -104,21 +111,6 @@ export default function Home() {
     }
   };
 
-  const handleToggleBookmark = (id: string) => {
-    const updateBookmarkStatus = (items: Definition[]): Definition[] => {
-      return items.map(def => {
-        if (def.id === id) {
-          return { ...def, isBookmarked: !def.isBookmarked };
-        }
-        if (def.children) {
-          return { ...def, children: updateBookmarkStatus(def.children) };
-        }
-        return def;
-      });
-    };
-    setDefinitions(updateBookmarkStatus(definitions));
-  };
-
   const filteredDefinitions = useMemo(() => {
     const filterItems = (items: Definition[], query: string): Definition[] => {
         if (!query) {
@@ -168,8 +160,9 @@ export default function Home() {
     const filterBookmarked = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = item.children ? filterBookmarked(item.children) : [];
-            if (item.isBookmarked || children.length > 0) {
-                acc.push({ ...item, children });
+            const isItemBookmarked = isBookmarked(item.id);
+            if (isItemBookmarked || children.length > 0) {
+                acc.push({ ...item, isBookmarked: isItemBookmarked, children });
             }
             return acc;
         }, []);
@@ -179,9 +172,13 @@ export default function Home() {
         return filterBookmarked(itemsToFilter);
     }
 
-    return itemsToFilter;
-  }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery]);
+    return itemsToFilter.map(def => ({ ...def, isBookmarked: isBookmarked(def.id) }));
+  }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
+
+  if (!isMounted) {
+    return null; // or a loading spinner
+  }
 
   return (
     <SidebarProvider>
@@ -215,7 +212,7 @@ export default function Home() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="shrink-0">
+                    <Button variant="outline" size="icon" className="shrink-0 hover:bg-primary/10">
                       <Filter className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -259,7 +256,7 @@ export default function Home() {
                 onEdit={() => setIsEditing(true)}
                 onDuplicate={handleDuplicate}
                 onArchive={handleArchive}
-                onToggleBookmark={handleToggleBookmark}
+                onToggleBookmark={toggleBookmark}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
               />

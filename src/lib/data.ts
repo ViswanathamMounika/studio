@@ -182,7 +182,6 @@ export const initialDefinitions: Definition[] = [
     usage: '',
     revisions: [],
     isArchived: false,
-    isBookmarked: false,
     supportingTables: [],
     children: [
       {
@@ -196,7 +195,6 @@ export const initialDefinitions: Definition[] = [
         usage: '',
         revisions: [],
         isArchived: false,
-        isBookmarked: false,
         supportingTables: [],
         children: [
           {
@@ -244,7 +242,6 @@ export const initialDefinitions: Definition[] = [
             usage: '<p>Ensures consistent application of benefits and rules based on service categories rather than individual procedure codes.</p>',
             revisions: [],
             isArchived: false,
-            isBookmarked: false,
             supportingTables: [],
           },
         ],
@@ -260,7 +257,6 @@ export const initialDefinitions: Definition[] = [
         usage: '',
         revisions: [],
         isArchived: false,
-        isBookmarked: false,
         supportingTables: [],
         children: [
             {
@@ -274,7 +270,6 @@ export const initialDefinitions: Definition[] = [
                 usage: '<p>Used for payment processing, generating Explanations of Payment (EOPs), and financial reporting.</p>',
                 revisions: [],
                 isArchived: true,
-                isBookmarked: false,
                 supportingTables: [],
             }
         ]
@@ -291,8 +286,7 @@ export const initialDefinitions: Definition[] = [
     examples: '',
     usage: '',
     revisions: [],
-    isArchived: false,
-    isBookmarked: false,
+isArchived: false,
     supportingTables: [],
     children: [
       {

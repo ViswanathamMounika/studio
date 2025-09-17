@@ -29,7 +29,7 @@ export interface Definition {
 
 export interface SupportingTable {
     id: string;
-    name: string;
+    name:string;
     description: string;
     headers: string[];
     rows: string[][];
