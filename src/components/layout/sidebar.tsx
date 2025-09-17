@@ -110,14 +110,6 @@ export default function AppSidebar() {
               </SidebarMenu>
             </CollapsibleContent>
           </Collapsible>
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Analytics" asChild>
-                <a href="/analytics">
-                    <BarChart />
-                    Analytics
-                </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarSeparator />

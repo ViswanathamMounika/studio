@@ -53,12 +53,6 @@ export default function AppHeader({
           <Book className="h-4 w-4 mr-2" />
           Templates
         </Button>
-         <Button variant="outline" size="sm" asChild>
-            <a href="/analytics">
-                <BarChart className="h-4 w-4 mr-2" />
-                Analytics
-            </a>
-        </Button>
         {isExportMode ? (
             <Button size="sm" onClick={handleExport} disabled={selectedCount === 0}>
                 <Download className="mr-2 h-4 w-4" />
