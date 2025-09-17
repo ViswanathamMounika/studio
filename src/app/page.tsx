@@ -26,7 +26,7 @@ export default function Home() {
   const [showBookmarked, setShowBookmarked] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
   const [searchQuery, setSearchQuery] = useState("");
-  const { isMounted, toggleBookmark, isBookmarked } = useBookmarks();
+  const { isMounted, bookmarks, toggleBookmark, isBookmarked } = useBookmarks();
 
 
   const selectedDefinition = useMemo(() => {
@@ -173,7 +173,7 @@ export default function Home() {
     }
 
     return itemsToFilter.map(def => ({ ...def, isBookmarked: isBookmarked(def.id) }));
-  }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
+  }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked, bookmarks]);
 
 
   if (!isMounted) {
