@@ -21,6 +21,7 @@ type DefinitionViewProps = {
   onEdit: () => void;
   onDuplicate: (id: string) => void;
   onArchive: (id: string, archive: boolean) => void;
+  onDelete: (id: string) => void;
   onToggleBookmark: (id: string) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -33,7 +34,7 @@ const supportingTablesData: Record<string, SupportingTable> = {
     'vw-authactiontime': vwAuthActionTimeTable,
 };
 
-export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, onToggleBookmark, activeTab, onTabChange }: DefinitionViewProps) {
+export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, activeTab, onTabChange }: DefinitionViewProps) {
     const [selectedTable, setSelectedTable] = useState<SupportingTable | null>(null);
     const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
     const [showComparison, setShowComparison] = useState(false);
@@ -109,7 +110,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                     <Pencil className="mr-2 h-4 w-4" />
                     Edit
                 </Button>
-                <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onToggleBookmark={onToggleBookmark} />
+                <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onDelete={onDelete} onToggleBookmark={onToggleBookmark} />
             </div>
         </div>
 

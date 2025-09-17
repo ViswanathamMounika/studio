@@ -112,6 +112,25 @@ export default function Home() {
     }
   };
 
+  const handleDelete = (id: string) => {
+    const remove = (items: Definition[], idToDelete: string): Definition[] => {
+      return items
+        .filter(def => def.id !== idToDelete)
+        .map(def => {
+          if (def.children) {
+            def.children = remove(def.children, idToDelete);
+          }
+          return def;
+        });
+    };
+    
+    setDefinitions(prev => remove(prev, id));
+    
+    if (selectedDefinitionId === id) {
+      setSelectedDefinitionId(null);
+    }
+  };
+
   const filteredDefinitions = useMemo(() => {
     const filterItems = (items: Definition[], query: string): Definition[] => {
         if (!query) {
@@ -272,6 +291,7 @@ export default function Home() {
                 onEdit={() => setIsEditing(true)}
                 onDuplicate={handleDuplicate}
                 onArchive={handleArchive}
+                onDelete={handleDelete}
                 onToggleBookmark={toggleBookmark}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
