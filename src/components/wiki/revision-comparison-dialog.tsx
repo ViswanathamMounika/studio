@@ -9,7 +9,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { type Revision } from "@/lib/types";
 import diff_match_patch, { type Diff } from 'diff-match-patch';
-import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 
 type RevisionComparisonDialogProps = {
@@ -22,38 +21,35 @@ type RevisionComparisonDialogProps = {
 
 const dmp = new diff_match_patch();
 
-function createHtml(diffs: Diff[]) {
+function createDiffHtml(diffs: Diff[], type: 'insertion' | 'deletion'): string {
     let html = '';
     for (const [op, text] of diffs) {
-        switch (op) {
-            case 0: // No change
-                html += text;
-                break;
-            case -1: // Deletion
-                html += `<del class="bg-red-200/50 text-red-900">${text}</del>`;
-                break;
-            case 1: // Insertion
-                html += `<ins class="bg-green-200/50 text-green-900 no-underline">${text}</ins>`;
-                break;
+        if (op === 0) { // No change
+            html += text;
+        } else if (op === 1 && type === 'insertion') { // Insertion
+            html += `<ins class="bg-green-200/50 text-green-900 no-underline">${text}</ins>`;
+        } else if (op === -1 && type === 'deletion') { // Deletion
+            html += `<del class="bg-red-200/50 text-red-900">${text}</del>`;
+        } else if (op === 1 && type === 'deletion') {
+            // Treat insertions as neutral on the deletion side
+             html += text;
+        } else if (op === -1 && type === 'insertion') {
+            // Treat deletions as neutral on the insertion side
+            html += text;
         }
     }
-    return html;
+    return html.replace(/<ins><\/ins>/g, '').replace(/<del><\/del>/g, '');
 }
 
-function DiffView({ title, text1, text2 }: { title: string; text1: string; text2: string }) {
-    const diffs1_2 = dmp.diff_main(text1, text2);
-    dmp.diff_cleanupSemantic(diffs1_2);
 
-    const diffs2_1 = dmp.diff_main(text2, text1);
-    dmp.diff_cleanupSemantic(diffs2_1);
-  
-    // For revA (left side), we show deletions from revB's perspective
-    const html1 = createHtml(diffs2_1.map(d => [d[0] === 1 ? -1 : (d[0] === -1 ? 1 : 0), d[1]] as Diff));
-    
-    // For revB (right side), we show insertions from revA's perspective
-    const html2 = createHtml(diffs1_2);
-  
+function DiffView({ title, text1, text2 }: { title: string; text1: string; text2: string }) {
     if (text1 === text2) return null;
+    
+    const diffs = dmp.diff_main(text1, text2);
+    dmp.diff_cleanupSemantic(diffs);
+
+    const deletionHtml = createDiffHtml(diffs, 'deletion');
+    const insertionHtml = createDiffHtml(diffs, 'insertion');
 
     return (
       <div className="space-y-2">
@@ -61,11 +57,11 @@ function DiffView({ title, text1, text2 }: { title: string; text1: string; text2
         <div className="grid grid-cols-2 gap-4">
             <div 
               className="prose prose-sm max-w-none border rounded-md p-4"
-              dangerouslySetInnerHTML={{ __html: html1 || '<p class="text-muted-foreground">No content</p>' }}
+              dangerouslySetInnerHTML={{ __html: deletionHtml || '<p class="text-muted-foreground">No content</p>' }}
             />
             <div 
               className="prose prose-sm max-w-none border rounded-md p-4"
-              dangerouslySetInnerHTML={{ __html: html2 || '<p class="text-muted-foreground">No content</p>' }}
+              dangerouslySetInnerHTML={{ __html: insertionHtml || '<p class="text-muted-foreground">No content</p>' }}
             />
         </div>
       </div>
