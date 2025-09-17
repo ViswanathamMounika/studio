@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import type { Definition, Attachment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const [examples, setExamples] = useState(definition.examples);
   const [usage, setUsage] = useState(definition.usage);
   const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
     onSave({
@@ -58,17 +59,28 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
     setKeywords(keywords.filter(keyword => keyword !== keywordToRemove));
   };
   
-  const handleAddAttachment = () => {
-    // This is a placeholder for file upload logic
-    const fileNumber = attachments.length + 1;
-    const newAttachment: Attachment = {
-      name: `new-document-${fileNumber}.pdf`,
-      url: '#',
-      size: `${(Math.random() * 2000).toFixed(0)} KB`,
-      type: 'PDF'
-    };
-    setAttachments([...attachments, newAttachment]);
+  const handleAddAttachmentClick = () => {
+    fileInputRef.current?.click();
   };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const newAttachment: Attachment = {
+        name: file.name,
+        url: URL.createObjectURL(file), // Create a temporary local URL
+        size: `${(file.size / 1024).toFixed(2)} KB`,
+        type: file.type.split('/')[1]?.toUpperCase() || 'FILE',
+      };
+      setAttachments([...attachments, newAttachment]);
+    }
+    // Reset file input to allow selecting the same file again
+    if(fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
+  };
+
 
   const handleRemoveAttachment = (name: string) => {
     setAttachments(attachments.filter(att => att.name !== name));
@@ -168,10 +180,16 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Attachments</CardTitle>
-          <Button variant="outline" size="sm" onClick={handleAddAttachment}>
+          <Button variant="outline" size="sm" onClick={handleAddAttachmentClick}>
             <Upload className="mr-2 h-4 w-4" />
             Add Attachment
           </Button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileSelect} 
+            className="hidden" 
+          />
         </CardHeader>
         <CardContent>
           <AttachmentList attachments={attachments} onRemove={handleRemoveAttachment} isEditing />
