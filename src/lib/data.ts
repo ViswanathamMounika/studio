@@ -72,7 +72,8 @@ const definition111_rev1 = {
     examples: `<p>An auth is approved on 2023-10-05. The Auth Decision Date is 2023-10-05.</p>`,
     usage: `<p>Used in regulatory reports.</p>`,
     isArchived: false,
-    supportingTables: [{ id: 'auth-status-codes', name: 'Authorization Status Codes' }]
+    supportingTables: [{ id: 'auth-status-codes', name: 'Authorization Status Codes' }],
+    attachments: [],
 };
 
 const definition111_rev2 = {
@@ -150,6 +151,9 @@ WHERE auth_id = :authId;</code></pre>
     supportingTables: [
         { id: 'auth-status-codes', name: 'Authorization Status Codes' },
         { id: 'cms-compliance', name: 'CMS Compliance Matrix' },
+    ],
+    attachments: [
+        { name: 'Workflow-Diagram-v1.pdf', url: '#', size: '845 KB', type: 'PDF' },
     ]
 };
 
@@ -159,6 +163,10 @@ const definition111_rev3 = {
     usage: `
       <p>This field is used in regulatory reports to demonstrate compliance with turnaround time requirements. It is also a key metric in operational dashboards to monitor team efficiency and SLA performance.</p>
     `,
+    attachments: [
+        { name: 'Workflow-Diagram-v1.pdf', url: '#', size: '845 KB', type: 'PDF' },
+        { name: 'State-Mandate-TX-112.docx', url: '#', size: '1.2 MB', type: 'DOCX' },
+    ],
 };
 
 const definition111_rev4 = {
@@ -228,7 +236,12 @@ WHERE auth_id = :authId;</code></pre>
         { id: 'cms-compliance', name: 'CMS Compliance Matrix' },
         { id: 'timestamp-changed', name: 'timestamp_changed table'},
         { id: 'vw-authactiontime', name: 'vw_authactiontime view'}
-    ]
+    ],
+    attachments: [
+        { name: 'Workflow-Diagram-v2.pdf', url: '#', size: '912 KB', type: 'PDF' },
+        { name: 'State-Mandate-TX-112.docx', url: '#', size: '1.2 MB', type: 'DOCX' },
+        { name: 'SQL-Query-Examples.txt', url: '#', size: '12 KB', type: 'TXT' },
+    ],
 };
 
 
@@ -245,6 +258,7 @@ export const initialDefinitions: Definition[] = [
     revisions: [],
     isArchived: false,
     supportingTables: [],
+    attachments: [],
     children: [
       {
         id: '1.1',
@@ -258,6 +272,7 @@ export const initialDefinitions: Definition[] = [
         revisions: [],
         isArchived: false,
         supportingTables: [],
+        attachments: [],
         children: [
           {
             ...definition111_rev4, // The current version is the latest revision
@@ -304,6 +319,7 @@ export const initialDefinitions: Definition[] = [
             revisions: [],
             isArchived: false,
             supportingTables: [],
+            attachments: [],
           },
         ],
       },
@@ -319,6 +335,7 @@ export const initialDefinitions: Definition[] = [
         revisions: [],
         isArchived: false,
         supportingTables: [],
+        attachments: [],
         children: [
             {
                 id: '1.2.1',
@@ -332,6 +349,7 @@ export const initialDefinitions: Definition[] = [
                 revisions: [],
                 isArchived: true,
                 supportingTables: [],
+                attachments: [],
             }
         ]
       }
@@ -349,6 +367,7 @@ export const initialDefinitions: Definition[] = [
     revisions: [],
 isArchived: false,
     supportingTables: [],
+    attachments: [],
     children: [
       {
         id: '2.1',
@@ -363,6 +382,7 @@ isArchived: false,
         isArchived: false,
         isBookmarked: false,
         supportingTables: [],
+        attachments: [],
       },
     ],
   },
@@ -388,6 +408,7 @@ export function findDefinition(definitions: Definition[], id: string): Definitio
     
 
     
+
 
 
 

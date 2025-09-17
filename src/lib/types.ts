@@ -11,6 +11,13 @@ export interface SupportingTableRef {
     name: string;
 }
 
+export interface Attachment {
+  name: string;
+  url: string;
+  size: string;
+  type: string;
+}
+
 export interface Definition {
   id: string;
   name: string;
@@ -24,6 +31,7 @@ export interface Definition {
   isArchived: boolean;
   isBookmarked?: boolean;
   supportingTables: SupportingTableRef[];
+  attachments: Attachment[];
   children?: Definition[];
 }
 

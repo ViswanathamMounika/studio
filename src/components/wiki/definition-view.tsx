@@ -15,6 +15,7 @@ import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, v
 import { Checkbox } from '../ui/checkbox';
 import RevisionComparisonDialog from './revision-comparison-dialog';
 import { cn } from '@/lib/utils';
+import AttachmentList from './attachments';
 
 type DefinitionViewProps = {
   definition: Definition;
@@ -43,7 +44,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     useEffect(() => {
         if (activeTab === 'examples' || activeTab === 'usage') {
             onTabChange('examples-usage');
-        } else if (activeTab !== 'description' && activeTab !== 'technical-details' && activeTab !== 'revisions' && activeTab !== 'examples-usage') {
+        } else if (activeTab !== 'description' && activeTab !== 'technical-details' && activeTab !== 'revisions' && activeTab !== 'examples-usage' && activeTab !== 'attachments') {
             onTabChange('description');
         }
     }, [definition, onTabChange, activeTab]);
@@ -122,11 +123,12 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
         <div id="definition-content-area">
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="description">Description</TabsTrigger>
                     <TabsTrigger value="technical-details">Technical Details</TabsTrigger>
                     <TabsTrigger value="examples-usage">Examples & Usage</TabsTrigger>
                     <TabsTrigger value="revisions">Version History</TabsTrigger>
+                    <TabsTrigger value="attachments">Attachments</TabsTrigger>
                 </TabsList>
                 <TabsContent value="description" id="section-description" className="mt-4 space-y-4">
                 <Card>
@@ -214,6 +216,14 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                     </CardContent>
                 </Card>
                 </TabsContent>
+                <TabsContent value="attachments" id="section-attachments" className="mt-4">
+                    <Card>
+                        <CardHeader><CardTitle>Attachments</CardTitle></CardHeader>
+                        <CardContent>
+                            <AttachmentList attachments={definition.attachments} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
             </Tabs>
         </div>
         </article>
@@ -278,3 +288,4 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     
 
     
+

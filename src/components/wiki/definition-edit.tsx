@@ -1,14 +1,15 @@
 "use client";
 import { useState } from 'react';
-import type { Definition } from '@/lib/types';
+import type { Definition, Attachment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
+import { X, Upload, Trash2 } from 'lucide-react';
 import WysiwygEditor from './wysiwyg-editor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import AttachmentList from './attachments';
 
 type DefinitionEditProps = {
   definition: Definition;
@@ -27,6 +28,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const [technicalDetails, setTechnicalDetails] = useState(definition.technicalDetails);
   const [examples, setExamples] = useState(definition.examples);
   const [usage, setUsage] = useState(definition.usage);
+  const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments);
 
   const handleSave = () => {
     onSave({
@@ -38,6 +40,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       technicalDetails,
       examples,
       usage,
+      attachments,
     });
   };
 
@@ -53,6 +56,22 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
 
   const removeKeyword = (keywordToRemove: string) => {
     setKeywords(keywords.filter(keyword => keyword !== keywordToRemove));
+  };
+  
+  const handleAddAttachment = () => {
+    // This is a placeholder for file upload logic
+    const fileNumber = attachments.length + 1;
+    const newAttachment: Attachment = {
+      name: `new-document-${fileNumber}.pdf`,
+      url: '#',
+      size: `${(Math.random() * 2000).toFixed(0)} KB`,
+      type: 'PDF'
+    };
+    setAttachments([...attachments, newAttachment]);
+  };
+
+  const handleRemoveAttachment = (name: string) => {
+    setAttachments(attachments.filter(att => att.name !== name));
   };
 
   return (
@@ -145,6 +164,20 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
             </div>
           </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Attachments</CardTitle>
+          <Button variant="outline" size="sm" onClick={handleAddAttachment}>
+            <Upload className="mr-2 h-4 w-4" />
+            Add Attachment
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <AttachmentList attachments={attachments} onRemove={handleRemoveAttachment} isEditing />
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
