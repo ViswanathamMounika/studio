@@ -16,7 +16,7 @@
     --secondary-foreground: 222.2 84% 4.9%;
     --muted: 220 9% 91%;
     --muted-foreground: 225.2 8.2% 57.1%;
-    --accent: 174 100% 29%;
+    --accent: 231 48% 48%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -52,7 +52,7 @@
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 174 100% 29%;
+    --accent: 231 48% 48%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
@@ -87,7 +87,7 @@
   .theme-blue {
     --primary: 231 48% 48%;
     --primary-foreground: 0 0% 98%;
-    --accent: 174 100% 29%;
+    --accent: 231 48% 48%;
     --accent-foreground: 0 0% 98%;
     --ring: 231 48% 48%;
     --sidebar-primary: 231 48% 48%;
