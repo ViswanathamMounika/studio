@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Archive, Copy, Download, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Archive, Bookmark, Copy, Download, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import type { Definition } from "@/lib/types";
 
 type DefinitionActionsProps = {
@@ -16,9 +16,10 @@ type DefinitionActionsProps = {
   onEdit: () => void;
   onDuplicate: (id: string) => void;
   onArchive: (id: string, archive: boolean) => void;
+  onToggleBookmark: (id: string) => void;
 };
 
-export default function DefinitionActions({ definition, onEdit, onDuplicate, onArchive }: DefinitionActionsProps) {
+export default function DefinitionActions({ definition, onEdit, onDuplicate, onArchive, onToggleBookmark }: DefinitionActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -34,6 +35,10 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
         <DropdownMenuItem onClick={() => onDuplicate(definition.id)}>
           <Copy className="mr-2 h-4 w-4" />
           <span>Duplicate</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onToggleBookmark(definition.id)}>
+            <Bookmark className="mr-2 h-4 w-4" />
+            <span>{definition.isBookmarked ? 'Remove Bookmark' : 'Bookmark'}</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onArchive(definition.id, !definition.isArchived)}>
           <Archive className="mr-2 h-4 w-4" />

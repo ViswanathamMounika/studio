@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>('1.1.1');
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [showBookmarked, setShowBookmarked] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -101,6 +102,21 @@ export default function Home() {
     }
   };
 
+  const handleToggleBookmark = (id: string) => {
+    const updateBookmarkStatus = (items: Definition[]): Definition[] => {
+      return items.map(def => {
+        if (def.id === id) {
+          return { ...def, isBookmarked: !def.isBookmarked };
+        }
+        if (def.children) {
+          return { ...def, children: updateBookmarkStatus(def.children) };
+        }
+        return def;
+      });
+    };
+    setDefinitions(updateBookmarkStatus(definitions));
+  };
+
   const filteredDefinitions = useMemo(() => {
     const filterItems = (items: Definition[], query: string): Definition[] => {
         if (!query) {
@@ -131,21 +147,38 @@ export default function Home() {
   }, [definitions, searchQuery]);
 
   const visibleDefinitions = useMemo(() => {
-    const itemsToFilter = searchQuery ? filteredDefinitions : definitions;
+    let itemsToFilter = searchQuery ? filteredDefinitions : definitions;
     
-    const filterArchived = (items: Definition[]) => {
-      return items.filter(item => !item.isArchived || showArchived).map(item => ({
-        ...item,
-        children: item.children ? filterArchived(item.children) : []
-      }))
+    const filterArchived = (items: Definition[]): Definition[] => {
+      return items.filter(item => !item.isArchived || showArchived).map(item => {
+        const children = item.children ? filterArchived(item.children) : [];
+        if(children.length > 0 || !item.isArchived || showArchived) {
+          return {...item, children};
+        }
+        return item;
+      }).filter(item => item.children && item.children.length > 0 || !item.isArchived || showArchived)
     }
 
-    if (showArchived) {
-      return itemsToFilter;
+    if (!showArchived) {
+      itemsToFilter = filterArchived(itemsToFilter);
+    }
+    
+    const filterBookmarked = (items: Definition[]): Definition[] => {
+        return items.reduce((acc: Definition[], item) => {
+            const children = item.children ? filterBookmarked(item.children) : [];
+            if (item.isBookmarked || children.length > 0) {
+                acc.push({ ...item, children });
+            }
+            return acc;
+        }, []);
+    };
+
+    if (showBookmarked) {
+        return filterBookmarked(itemsToFilter);
     }
 
-    return filterArchived(itemsToFilter);
-  }, [definitions, filteredDefinitions, showArchived, searchQuery]);
+    return itemsToFilter;
+  }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery]);
 
 
   return (
@@ -179,11 +212,15 @@ export default function Home() {
                     />
                 </div>
             </div>
-            <div className="p-4 border-b">
+            <div className="p-4 border-b space-y-2">
                 <h2 className="text-lg font-semibold tracking-tight">MPM Definitions</h2>
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center justify-between">
                     <Label htmlFor="show-archived" className="text-sm">Show Archived</Label>
                     <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
+                </div>
+                 <div className="flex items-center justify-between">
+                    <Label htmlFor="show-bookmarked" className="text-sm">Show Bookmarked</Label>
+                    <Switch id="show-bookmarked" checked={showBookmarked} onCheckedChange={setShowBookmarked} />
                 </div>
             </div>
             <div className="overflow-y-auto flex-1 p-4">
@@ -207,6 +244,7 @@ export default function Home() {
                 onEdit={() => setIsEditing(true)}
                 onDuplicate={handleDuplicate}
                 onArchive={handleArchive}
+                onToggleBookmark={handleToggleBookmark}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
               />

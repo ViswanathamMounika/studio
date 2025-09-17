@@ -163,6 +163,7 @@ export const initialDefinitions: Definition[] = [
     usage: '',
     revisions: [],
     isArchived: false,
+    isBookmarked: false,
     supportingTables: [],
     children: [
       {
@@ -176,10 +177,12 @@ export const initialDefinitions: Definition[] = [
         usage: '',
         revisions: [],
         isArchived: false,
+        isBookmarked: false,
         supportingTables: [],
         children: [
           {
             ...definition111_rev2, // The current version is the latest revision
+            isBookmarked: true,
             revisions: [
               {
                 ticketId: 'MPM-1234',
@@ -208,6 +211,7 @@ export const initialDefinitions: Definition[] = [
             usage: '<p>Ensures consistent application of benefits and rules based on service categories rather than individual procedure codes.</p>',
             revisions: [],
             isArchived: false,
+            isBookmarked: false,
             supportingTables: [],
           },
         ],
@@ -223,6 +227,7 @@ export const initialDefinitions: Definition[] = [
         usage: '',
         revisions: [],
         isArchived: false,
+        isBookmarked: false,
         supportingTables: [],
         children: [
             {
@@ -236,6 +241,7 @@ export const initialDefinitions: Definition[] = [
                 usage: '<p>Used for payment processing, generating Explanations of Payment (EOPs), and financial reporting.</p>',
                 revisions: [],
                 isArchived: true,
+                isBookmarked: false,
                 supportingTables: [],
             }
         ]
@@ -253,6 +259,7 @@ export const initialDefinitions: Definition[] = [
     usage: '',
     revisions: [],
     isArchived: false,
+    isBookmarked: false,
     supportingTables: [],
     children: [
       {
@@ -266,6 +273,7 @@ export const initialDefinitions: Definition[] = [
         usage: '<p>This is the primary data source for pricing claims from contracted providers.</p>',
         revisions: [],
         isArchived: false,
+        isBookmarked: true,
         supportingTables: [],
       },
     ],
@@ -286,5 +294,3 @@ export function findDefinition(definitions: Definition[], id: string): Definitio
   }
   return null;
 }
-
-    

@@ -22,6 +22,7 @@ export interface Definition {
   usage: string;
   revisions: Revision[];
   isArchived: boolean;
+  isBookmarked?: boolean;
   supportingTables: SupportingTableRef[];
   children?: Definition[];
 }

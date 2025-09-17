@@ -8,18 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Comments from './comments';
-import { ExternalLink, Pencil } from 'lucide-react';
+import { ExternalLink, Pencil, Bookmark } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable } from '@/lib/data';
 import { Checkbox } from '../ui/checkbox';
 import RevisionComparisonDialog from './revision-comparison-dialog';
+import { cn } from '@/lib/utils';
 
 type DefinitionViewProps = {
   definition: Definition;
   onEdit: () => void;
   onDuplicate: (id: string) => void;
   onArchive: (id: string, archive: boolean) => void;
+  onToggleBookmark: (id: string) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
 };
@@ -31,7 +33,7 @@ const supportingTablesData: Record<string, SupportingTable> = {
     'vw-authactiontime': vwAuthActionTimeTable,
 };
 
-export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, activeTab, onTabChange }: DefinitionViewProps) {
+export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, onToggleBookmark, activeTab, onTabChange }: DefinitionViewProps) {
     useEffect(() => {
         // Reset to the description tab when the definition changes
         if (activeTab === 'examples' || activeTab === 'usage') {
@@ -77,11 +79,14 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             </div>
             </div>
             <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)}>
+                    <Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-current text-yellow-400")}/>
+                </Button>
                 <Button onClick={onEdit}>
                     <Pencil className="mr-2 h-4 w-4" />
                     Edit
                 </Button>
-                <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} />
+                <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onToggleBookmark={onToggleBookmark} />
             </div>
         </div>
 
