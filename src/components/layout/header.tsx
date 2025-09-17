@@ -1,7 +1,9 @@
+
 "use client";
 
 import {
   Book,
+  Download,
   Menu,
   MoreHorizontal,
   Plus,
@@ -25,7 +27,21 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
-export default function AppHeader({ children }: { children?: React.ReactNode }) {
+type AppHeaderProps = {
+    children?: React.ReactNode;
+    isExportMode?: boolean;
+    setIsExportMode?: (value: boolean) => void;
+    handleExport?: () => void;
+    selectedCount?: number;
+}
+
+export default function AppHeader({ 
+    children, 
+    isExportMode, 
+    setIsExportMode, 
+    handleExport, 
+    selectedCount = 0 
+}: AppHeaderProps) {
   const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
 
   return (
@@ -36,6 +52,17 @@ export default function AppHeader({ children }: { children?: React.ReactNode }) 
           <Book className="h-4 w-4 mr-2" />
           Templates
         </Button>
+        {isExportMode ? (
+            <Button size="sm" onClick={handleExport} disabled={selectedCount === 0}>
+                <Download className="mr-2 h-4 w-4" />
+                Export ({selectedCount})
+            </Button>
+        ) : (
+             <Button variant="outline" size="sm" onClick={() => setIsExportMode && setIsExportMode(true)}>
+                <Download className="mr-2 h-4 w-4" />
+                Export
+            </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">

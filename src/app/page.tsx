@@ -300,7 +300,12 @@ export default function Home() {
         <AppSidebar />
       </Sidebar>
       <SidebarInset>
-        <AppHeader>
+        <AppHeader
+            isExportMode={isExportMode}
+            setIsExportMode={setIsExportMode}
+            handleExport={handleExport}
+            selectedCount={selectedForExport.length}
+        >
              <SidebarTrigger className="sm:hidden">
                 <Menu />
               </SidebarTrigger>
@@ -367,23 +372,13 @@ export default function Home() {
                                 />
                                 <Label htmlFor="select-all" className="font-semibold text-base">Select All</Label>
                             </div>
-                             <div className="flex items-center gap-2">
-                                <Button variant="outline" size="sm" onClick={handleExport} disabled={!isAnySelected}>
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Export ({selectedForExport.length})
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelExport}>
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
+                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelExport}>
+                                <X className="h-4 w-4" />
+                            </Button>
                         </>
                     ) : (
                         <>
                              <Label className="font-semibold text-lg">MPM Definitions</Label>
-                             <Button variant="outline" size="sm" onClick={() => setIsExportMode(true)}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Export
-                            </Button>
                         </>
                     )}
                 </div>
