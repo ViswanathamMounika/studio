@@ -136,7 +136,7 @@ export default function Home() {
     
     const def = findDefinition(initialDefinitions, id);
     if (def) {
-      trackView(id, def.name, def.module);
+      trackView(id, def.name);
     }
     
     if (sectionId) {
