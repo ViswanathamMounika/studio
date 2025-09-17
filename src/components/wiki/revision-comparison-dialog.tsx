@@ -10,7 +10,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { type Revision } from "@/lib/types";
-import { Diff, DiffMatchPatch } from 'diff-match-patch';
+import diff_match_patch, { type Diff } from 'diff-match-patch';
 import { Badge } from "../ui/badge";
 
 type RevisionComparisonDialogProps = {
@@ -21,7 +21,7 @@ type RevisionComparisonDialogProps = {
   currentDefinitionName: string;
 };
 
-const dmp = new DiffMatchPatch();
+const dmp = new diff_match_patch();
 
 function createHtml(diffs: Diff[]) {
     let html = '';
