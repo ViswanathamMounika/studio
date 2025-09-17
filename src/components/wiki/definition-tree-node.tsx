@@ -32,7 +32,7 @@ const SectionLink = ({ icon, label, onClick }: { icon: React.ReactNode, label: s
 );
 
 
-export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isExportMode }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isExportMode: boolean }) {
+export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isExportMode, selectedForExport }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isExportMode: boolean, selectedForExport: string[] }) {
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId !== null && node.id === selectedId;
   const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
@@ -125,11 +125,12 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                       onToggleSelection={onToggleSelection}
                       isSelectedForExport={selectedForExport.includes(child.id)}
                       isExportMode={isExportMode}
+                      selectedForExport={selectedForExport}
                   />
                   ))}
               </div>
           ) : isSelected && isNodeExpanded && !hasChildren ? (
-            <div className="space-y-1 mt-1" style={{ paddingLeft: `${(level + 4)}rem` }}>
+            <div className="space-y-1 mt-1" style={{ paddingLeft: `${(level + 2) * 1}rem` }}>
                 <SectionLink icon={<FileText className="h-4 w-4" />} label="Description" onClick={() => onSelect(node.id, 'description')} />
                 <SectionLink icon={<Code2 className="h-4 w-4" />} label="Technical Details" onClick={() => onSelect(node.id, 'technical-details')} />
                 <SectionLink icon={<BookText className="h-4 w-4" />} label="Examples & Usage" onClick={() => onSelect(node.id, 'examples-usage')} />

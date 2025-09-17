@@ -27,6 +27,7 @@ export default function DefinitionTree({ definitions, selectedId, onSelect, onTo
           onToggleSelection={onToggleSelection}
           isSelectedForExport={selectedForExport.includes(node.id)}
           isExportMode={isExportMode}
+          selectedForExport={selectedForExport}
         />
       ))}
     </div>
