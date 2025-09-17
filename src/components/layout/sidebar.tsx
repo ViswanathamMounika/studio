@@ -2,18 +2,13 @@
 
 import {
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarFooter,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import {
   ChevronDown,
-  Archive,
   BookCopy,
   FileText,
   Home,
@@ -22,21 +17,11 @@ import {
   BookMarked,
   Layers,
   HeartPulse,
-  LogOut,
   Landmark,
-  BarChart,
 } from "lucide-react";
-import { Logo } from "@/components/icons";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 export default function AppSidebar() {
-  const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
-
   return (
     <>
       <SidebarHeader>
@@ -112,22 +97,6 @@ export default function AppSidebar() {
           </Collapsible>
         </SidebarMenu>
       </SidebarContent>
-      <SidebarSeparator />
-      <SidebarFooter>
-        <div className="flex items-center gap-2">
-          <Avatar className="h-8 w-8">
-            {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User" />}
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">Authorized User</span>
-            <span className="text-xs text-muted-foreground">user@example.com</span>
-          </div>
-          <Button variant="ghost" size="icon" className="ml-auto">
-            <LogOut className="w-4 h-4" />
-          </Button>
-        </div>
-      </SidebarFooter>
     </>
   );
 }
