@@ -57,6 +57,100 @@ export const vwAuthActionTimeTable: SupportingTable = {
 }
 
 
+const definition111_rev1 = {
+    id: '1.1.1',
+    name: 'Auth Decision Date',
+    module: 'Authorizations',
+    keywords: ['authorization', 'decision date'],
+    description: `<p>The date on which a final decision is made for an authorization request.</p>`,
+    technicalDetails: `<p>The decision date is stored in the <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> table.</p>`,
+    examples: `<p>An auth is approved on 2023-10-05. The Auth Decision Date is 2023-10-05.</p>`,
+    usage: `<p>Used in regulatory reports.</p>`,
+    isArchived: false,
+    supportingTables: [{ id: 'auth-status-codes', name: 'Authorization Status Codes' }]
+};
+
+const definition111_rev2 = {
+    id: '1.1.1',
+    name: 'Auth Decision Date',
+    module: 'Authorizations',
+    keywords: ['authorization', 'decision date', 'approved', 'denied'],
+    description: `
+      <h4 class="font-bold mt-4 mb-2">Description</h4>
+      <p>The date on which a final decision is made for an authorization request. This is a critical field for tracking service level agreements (SLAs) and reporting purposes.</p>
+      
+      <h4 class="font-bold mt-4 mb-2">Relevant Term(s)</h4>
+      <p><strong style="color: blue;">UMWF (Y/N)</strong> – Was the auth worked in the UM Workflow Utility?</p>
+      <ul class="list-disc pl-6">
+        <li>Y: If the auth STATUS was changed to or from Wand PRIORITY was NEVER changed to 1W</li>
+      </ul>
+      
+      <h4 class="font-bold mt-4 mb-2">Logic Used</h4>
+
+      <h5 class="font-bold mt-3 mb-1" style="color: blue;">Approved – (Auth Status 1)</h5>
+      <p>If UMWF = Y</p>
+      <ul class="list-disc pl-6">
+        <li>If auth has MD NOTE then DECISION DATE = MD NOTE DATE</li>
+        <li>If auth has CERTIFICATION ISSUE DATE then DECISION DATE = CERTIFICATION ISSUE DATE</li>
+        <li>If auth has AUTH ACTION DATE with valid TIME then DECISION DATE = Auth Action Date</li>
+        <li>If AUTH ACTION DATE time is all 0’s then DECISION DATE = Date Auth moved to status 1</li>
+      </ul>
+      <p>If UMWF = N</p>
+      <ul class="list-disc pl-6">
+        <li>If auth has MD NOTE then DECISION DATE = MD NOTE DATE</li>
+        <li>If LOB Code = 2 and AUTH TYPE = URGENT and has OPN or OPC REVIEW note then DECISION DATE = OPN/OPC Note Create Date</li>
+        <li>If HPCODE = LCMC, MCMC, HCMC, ABCDSNP, BSDSNP, CHDSNP, IEDSNP, HNDSNP, LACDSNP, MOLDSNP, SCANFSNP, WCDSNP) and AUTH TYPE = URGENT and has OPN/OPC REVIEW note then DECISION DATE = OPN/OPC Note Create Date</li>
+        <li>If none of the above are true then DECISION DATE = Date Auth moved to status 1</li>
+      </ul>
+      
+      <h5 class="font-bold mt-3 mb-1" style="color: red;">Modified – (Auth Status 2)</h5>
+      <ul class="list-disc pl-6">
+        <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
+        <li>If no MD Note then DECISION DATE = Date auth moved to status 2</li>
+      </ul>
+      
+      <h5 class="font-bold mt-3 mb-1" style="color: red;">Denied – (Auth Status 3)</h5>
+      <ul class="list-disc pl-6">
+          <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
+          <li>If no MD Note then DECISION DATE = Date auth moved to status 3</li>
+      </ul>
+
+      <h5 class="font-bold mt-3 mb-1" style="color: red;">Canceled – (Auth Status 6)</h5>
+      <ul class="list-disc pl-6">
+          <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
+          <li>If no MD Note then DECISION DATE = Date auth moved to status 6</li>
+      </ul>
+
+      <h5 class="font-bold mt-3 mb-1" style="color: red;">Carve Outs – (Auth Status C)</h5>
+      <ul class="list-disc pl-6">
+          <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
+          <li>If Auth went to status V or X then DECISION DATE = date the auth first moved to status V or X</li>
+          <li>If no MD Note or V or X status then DECISION DATE = Date auth moved to status C</li>
+      </ul>
+    `,
+    technicalDetails: `
+      <p>The decision date is stored in the <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> table.</p>
+      <pre class="bg-muted p-2 rounded-md font-code text-sm overflow-x-auto"><code class="language-sql">SELECT decision_date 
+FROM authorization_master 
+WHERE auth_id = :authId;</code></pre>
+      <p>The field is of type <code class="font-code text-primary">DATETIME</code> and is indexed for performance.</p>
+    `,
+    examples: `
+      <p>An authorization for a 3-month physical therapy course is submitted on 2023-10-01. The health plan reviews it and approves it on 2023-10-05. The Auth Decision Date is 2023-10-05.</p>
+    `,
+    usage: `
+      <p>This field is used in regulatory reports to demonstrate compliance with turnaround time requirements. It's also a key metric in operational dashboards to monitor team efficiency.</p>
+    `,
+    isArchived: false,
+    supportingTables: [
+        { id: 'auth-status-codes', name: 'Authorization Status Codes' },
+        { id: 'cms-compliance', name: 'CMS Compliance Matrix' },
+        { id: 'timestamp-changed', name: 'timestamp_changed table'},
+        { id: 'vw-authactiontime', name: 'vw_authactiontime view'}
+    ]
+};
+
+
 export const initialDefinitions: Definition[] = [
   {
     id: '1',
@@ -85,96 +179,22 @@ export const initialDefinitions: Definition[] = [
         supportingTables: [],
         children: [
           {
-            id: '1.1.1',
-            name: 'Auth Decision Date',
-            module: 'Authorizations',
-            keywords: ['authorization', 'decision date', 'approved', 'denied'],
-            description: `
-              <h4 class="font-bold mt-4 mb-2">Description</h4>
-              <p>The date on which a final decision is made for an authorization request. This is a critical field for tracking service level agreements (SLAs) and reporting purposes.</p>
-              
-              <h4 class="font-bold mt-4 mb-2">Relevant Term(s)</h4>
-              <p><strong style="color: blue;">UMWF (Y/N)</strong> – Was the auth worked in the UM Workflow Utility?</p>
-              <ul class="list-disc pl-6">
-                <li>Y: If the auth STATUS was changed to or from Wand PRIORITY was NEVER changed to 1W</li>
-              </ul>
-              
-              <h4 class="font-bold mt-4 mb-2">Logic Used</h4>
-
-              <h5 class="font-bold mt-3 mb-1" style="color: blue;">Approved – (Auth Status 1)</h5>
-              <p>If UMWF = Y</p>
-              <ul class="list-disc pl-6">
-                <li>If auth has MD NOTE then DECISION DATE = MD NOTE DATE</li>
-                <li>If auth has CERTIFICATION ISSUE DATE then DECISION DATE = CERTIFICATION ISSUE DATE</li>
-                <li>If auth has AUTH ACTION DATE with valid TIME then DECISION DATE = Auth Action Date</li>
-                <li>If AUTH ACTION DATE time is all 0’s then DECISION DATE = Date Auth moved to status 1</li>
-              </ul>
-              <p>If UMWF = N</p>
-              <ul class="list-disc pl-6">
-                <li>If auth has MD NOTE then DECISION DATE = MD NOTE DATE</li>
-                <li>If LOB Code = 2 and AUTH TYPE = URGENT and has OPN or OPC REVIEW note then DECISION DATE = OPN/OPC Note Create Date</li>
-                <li>If HPCODE = LCMC, MCMC, HCMC, ABCDSNP, BSDSNP, CHDSNP, IEDSNP, HNDSNP, LACDSNP, MOLDSNP, SCANFSNP, WCDSNP) and AUTH TYPE = URGENT and has OPN/OPC REVIEW note then DECISION DATE = OPN/OPC Note Create Date</li>
-                <li>If none of the above are true then DECISION DATE = Date Auth moved to status 1</li>
-              </ul>
-              
-              <h5 class="font-bold mt-3 mb-1" style="color: red;">Modified – (Auth Status 2)</h5>
-              <ul class="list-disc pl-6">
-                <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-                <li>If no MD Note then DECISION DATE = Date auth moved to status 2</li>
-              </ul>
-              
-              <h5 class="font-bold mt-3 mb-1" style="color: red;">Denied – (Auth Status 3)</h5>
-              <ul class="list-disc pl-6">
-                  <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-                  <li>If no MD Note then DECISION DATE = Date auth moved to status 3</li>
-              </ul>
-
-              <h5 class="font-bold mt-3 mb-1" style="color: red;">Canceled – (Auth Status 6)</h5>
-              <ul class="list-disc pl-6">
-                  <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-                  <li>If no MD Note then DECISION DATE = Date auth moved to status 6</li>
-              </ul>
-
-              <h5 class="font-bold mt-3 mb-1" style="color: red;">Carve Outs – (Auth Status C)</h5>
-              <ul class="list-disc pl-6">
-                  <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-                  <li>If Auth went to status V or X then DECISION DATE = date the auth first moved to status V or X</li>
-                  <li>If no MD Note or V or X status then DECISION DATE = Date auth moved to status C</li>
-              </ul>
-            `,
-            technicalDetails: `
-              <p>The decision date is stored in the <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> table.</p>
-              <pre class="bg-muted p-2 rounded-md font-code text-sm overflow-x-auto"><code class="language-sql">SELECT decision_date 
-FROM authorization_master 
-WHERE auth_id = :authId;</code></pre>
-              <p>The field is of type <code class="font-code text-primary">DATETIME</code> and is indexed for performance.</p>
-            `,
-            examples: `
-              <p>An authorization for a 3-month physical therapy course is submitted on 2023-10-01. The health plan reviews it and approves it on 2023-10-05. The Auth Decision Date is 2023-10-05.</p>
-            `,
-            usage: `
-              <p>This field is used in regulatory reports to demonstrate compliance with turnaround time requirements. It's also a key metric in operational dashboards to monitor team efficiency.</p>
-            `,
+            ...definition111_rev2, // The current version is the latest revision
             revisions: [
               {
                 ticketId: 'MPM-1234',
                 date: '2023-01-15',
                 developer: 'J. Doe',
                 description: 'Initial creation of the definition.',
+                snapshot: definition111_rev1,
               },
               {
                 ticketId: 'MPM-1290',
                 date: '2023-05-20',
                 developer: 'A. Smith',
                 description: 'Added details about Canceled/Carve-Outs logic.',
+                snapshot: definition111_rev2,
               },
-            ],
-            isArchived: false,
-            supportingTables: [
-                { id: 'auth-status-codes', name: 'Authorization Status Codes' },
-                { id: 'cms-compliance', name: 'CMS Compliance Matrix' },
-                { id: 'timestamp-changed', name: 'timestamp_changed table'},
-                { id: 'vw-authactiontime', name: 'vw_authactiontime view'}
             ],
           },
           {

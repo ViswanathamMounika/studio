@@ -3,6 +3,7 @@ export interface Revision {
   date: string;
   developer: string;
   description: string;
+  snapshot: Omit<Definition, 'revisions' | 'children'>;
 }
 
 export interface SupportingTableRef {

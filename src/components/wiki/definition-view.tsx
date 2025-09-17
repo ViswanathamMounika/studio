@@ -12,6 +12,8 @@ import { ExternalLink, Pencil } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable } from '@/lib/data';
+import { Checkbox } from '../ui/checkbox';
+import RevisionComparisonDialog from './revision-comparison-dialog';
 
 type DefinitionViewProps = {
   definition: Definition;
@@ -40,6 +42,26 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     }, [definition, onTabChange, activeTab]);
 
     const [selectedTable, setSelectedTable] = useState<SupportingTable | null>(null);
+    const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
+    const [showComparison, setShowComparison] = useState(false);
+
+    const handleRevisionSelect = (revision: Revision, checked: boolean) => {
+        setSelectedRevisions(prev => {
+            if (checked) {
+                if (prev.length < 2) {
+                    return [...prev, revision];
+                }
+                return prev;
+            } else {
+                return prev.filter(r => r.ticketId !== revision.ticketId);
+            }
+        });
+    };
+    
+    useEffect(() => {
+        setSelectedRevisions([]);
+    }, [definition]);
+
 
   return (
     <Dialog>
@@ -138,10 +160,21 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             </TabsContent>
             <TabsContent value="revisions" id="section-revisions" className="mt-4">
             <Card>
+                 <CardHeader>
+                    <div className="flex justify-end">
+                        <Button 
+                            onClick={() => setShowComparison(true)} 
+                            disabled={selectedRevisions.length !== 2}
+                        >
+                            Compare Revisions
+                        </Button>
+                    </div>
+                </CardHeader>
                 <CardContent className="p-6">
                 <Table>
                     <TableHeader>
                     <TableRow>
+                        <TableHead className="w-[40px]"></TableHead>
                         <TableHead>Ticket ID</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Developer</TableHead>
@@ -151,6 +184,13 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                     <TableBody>
                     {definition.revisions.map((rev: Revision) => (
                         <TableRow key={rev.ticketId}>
+                        <TableCell>
+                            <Checkbox 
+                                onCheckedChange={(checked) => handleRevisionSelect(rev, !!checked)}
+                                checked={selectedRevisions.some(r => r.ticketId === rev.ticketId)}
+                                disabled={selectedRevisions.length >= 2 && !selectedRevisions.some(r => r.ticketId === rev.ticketId)}
+                            />
+                        </TableCell>
                         <TableCell className="font-medium">{rev.ticketId}</TableCell>
                         <TableCell>{rev.date}</TableCell>
                         <TableCell>{rev.developer}</TableCell>
@@ -159,7 +199,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                     ))}
                         {definition.revisions.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={4} className="text-center text-muted-foreground">No revision history.</TableCell>
+                            <TableCell colSpan={5} className="text-center text-muted-foreground">No revision history.</TableCell>
                         </TableRow>
                     )}
                     </TableBody>
@@ -210,6 +250,16 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                     </Table>
                 </div>
             </DialogContent>
+        )}
+
+        {showComparison && selectedRevisions.length === 2 && (
+             <RevisionComparisonDialog
+                open={showComparison}
+                onOpenChange={setShowComparison}
+                revision1={selectedRevisions[0]}
+                revision2={selectedRevisions[1]}
+                currentDefinitionName={definition.name}
+            />
         )}
     </Dialog>
   );
