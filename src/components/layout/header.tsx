@@ -42,10 +42,9 @@ export default function AppHeader({
     onAnalyticsClick,
     onNewDefinitionClick
 }: AppHeaderProps) {
-  const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between w-full gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-start w-full gap-8 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
       <div className="flex items-center gap-4">
         {children}
       </div>
