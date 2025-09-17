@@ -79,8 +79,8 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             </div>
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)}>
-                    <Bookmark className={cn("h-6 w-6", definition.isBookmarked && "fill-current text-primary")}/>
+                <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={() => onToggleBookmark(definition.id)}>
+                    <Bookmark className={cn("h-6 w-6 text-muted-foreground", definition.isBookmarked && "fill-primary text-primary")}/>
                 </Button>
                 <Button onClick={onEdit}>
                     <Pencil className="mr-2 h-4 w-4" />
