@@ -53,6 +53,10 @@ export default function AppHeader({
       {children}
       <div className="ml-auto flex items-center gap-2">
         <SharePopover />
+        <Button size="sm">
+          <Plus className="mr-2 h-4 w-4" />
+          New Definition
+        </Button>
         <Button variant="outline" size="sm">
           <Book className="h-4 w-4 mr-2" />
           Templates
