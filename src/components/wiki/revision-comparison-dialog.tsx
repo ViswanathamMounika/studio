@@ -24,20 +24,23 @@ const dmp = new diff_match_patch();
 function createDiffHtml(diffs: Diff[], type: 'insertion' | 'deletion'): string {
     let html = '';
     for (const [op, text] of diffs) {
-        if (op === 0) { // No change
-            html += text;
-        } else if (op === 1 && type === 'insertion') { // Insertion
-            html += `<ins class="bg-green-200/50 text-green-900 no-underline">${text}</ins>`;
-        } else if (op === -1 && type === 'deletion') { // Deletion
-            html += `<del class="bg-red-200/50 text-red-900">${text}</del>`;
-        } else if (op === 1 && type === 'deletion') {
-            // Treat insertions as neutral on the deletion side
-             html += text;
-        } else if (op === -1 && type === 'insertion') {
-            // Treat deletions as neutral on the insertion side
-            html += text;
+        switch (op) {
+            case 0: // No change
+                html += text;
+                break;
+            case 1: // Insertion
+                if (type === 'insertion') {
+                    html += `<ins class="bg-green-200/50 text-green-900 no-underline">${text}</ins>`;
+                }
+                break;
+            case -1: // Deletion
+                if (type === 'deletion') {
+                    html += `<del class="bg-red-200/50 text-red-900">${text}</del>`;
+                }
+                break;
         }
     }
+    // Clean up empty tags that might be generated
     return html.replace(/<ins><\/ins>/g, '').replace(/<del><\/del>/g, '');
 }
 
