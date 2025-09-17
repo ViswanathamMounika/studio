@@ -10,15 +10,16 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Filter, Menu, Search, Download, X } from 'lucide-react';
-import { Logo } from '@/components/icons';
+import { Filter, Menu, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import { Checkbox } from '@/components/ui/checkbox';
+import { trackSearch, trackView } from '@/lib/analytics';
+import { useDebounce } from '@/hooks/use-debounce';
+import AnalyticsModal from '@/components/wiki/analytics-modal';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
@@ -31,6 +32,15 @@ export default function Home() {
   const { isMounted, bookmarks, toggleBookmark, isBookmarked } = useBookmarks();
   const [selectedForExport, setSelectedForExport] = useState<string[]>([]);
   const [isExportMode, setIsExportMode] = useState(false);
+  const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
+
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      trackSearch(debouncedSearchQuery);
+    }
+  }, [debouncedSearchQuery]);
   
   const getAllDefinitionIds = (items: Definition[]): string[] => {
     let ids: string[] = [];
@@ -45,7 +55,6 @@ export default function Home() {
 
   const allDefinitionIds = useMemo(() => getAllDefinitionIds(definitions), [definitions]);
   const areAllSelected = selectedForExport.length > 0 && allDefinitionIds.every(id => selectedForExport.includes(id));
-  const isAnySelected = selectedForExport.length > 0;
 
   const handleSelectAllForExport = (checked: boolean) => {
     if (checked) {
@@ -125,6 +134,11 @@ export default function Home() {
     setIsEditing(false);
     setSelectedDefinitionId(id);
     
+    const def = findDefinition(initialDefinitions, id);
+    if (def) {
+      trackView(id, def.name);
+    }
+    
     if (sectionId) {
       const tabValue = sectionId.replace('section-', '');
       setActiveTab(tabValue);
@@ -171,7 +185,6 @@ export default function Home() {
       children: [],
     };
     
-    // This is a simplified insertion logic. A real app would be more complex.
     setDefinitions(prev => [...prev, newDefinition]);
     setSelectedDefinitionId(newId);
   };
@@ -284,7 +297,7 @@ export default function Home() {
     }
 
     return itemsWithBookmarks;
-  }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked, bookmarks]);
+  }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
   const handleCancelExport = () => {
     setIsExportMode(false);
@@ -292,7 +305,7 @@ export default function Home() {
   };
 
   if (!isMounted) {
-    return null; // or a loading spinner
+    return null;
   }
 
   return (
@@ -306,6 +319,7 @@ export default function Home() {
               setIsExportMode={setIsExportMode}
               handleExport={handleExport}
               selectedCount={selectedForExport.length}
+              onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
           >
               <SidebarTrigger className="sm:hidden">
                   <Menu />
@@ -426,8 +440,7 @@ export default function Home() {
           </div>
       </SidebarInset>
       <Toaster />
+      <AnalyticsModal open={isAnalyticsModalOpen} onOpenChange={setIsAnalyticsModalOpen} />
     </SidebarProvider>
   );
 }
-
-    

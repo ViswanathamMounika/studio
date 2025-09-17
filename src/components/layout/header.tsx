@@ -34,6 +34,7 @@ type AppHeaderProps = {
     setIsExportMode?: (value: boolean) => void;
     handleExport?: () => void;
     selectedCount?: number;
+    onAnalyticsClick?: () => void;
 }
 
 export default function AppHeader({ 
@@ -41,7 +42,8 @@ export default function AppHeader({
     isExportMode, 
     setIsExportMode, 
     handleExport, 
-    selectedCount = 0 
+    selectedCount = 0,
+    onAnalyticsClick
 }: AppHeaderProps) {
   const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
 
@@ -64,6 +66,10 @@ export default function AppHeader({
                 Export
             </Button>
         )}
+        <Button variant="outline" size="sm" onClick={onAnalyticsClick}>
+            <BarChart className="h-4 w-4 mr-2" />
+            Analytics
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
