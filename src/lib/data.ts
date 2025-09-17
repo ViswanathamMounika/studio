@@ -145,8 +145,6 @@ WHERE auth_id = :authId;</code></pre>
     supportingTables: [
         { id: 'auth-status-codes', name: 'Authorization Status Codes' },
         { id: 'cms-compliance', name: 'CMS Compliance Matrix' },
-        { id: 'timestamp-changed', name: 'timestamp_changed table'},
-        { id: 'vw-authactiontime', name: 'vw_authactiontime view'}
     ]
 };
 
@@ -167,6 +165,12 @@ FROM vw_authactiontime
 WHERE auth_id = :authId;</code></pre>
       <p>The field is of type <code class="font-code text-primary">DATETIME</code> and is indexed for performance. Logic falls back to <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> if the view returns null.</p>
     `,
+    supportingTables: [
+        { id: 'auth-status-codes', name: 'Authorization Status Codes' },
+        { id: 'cms-compliance', name: 'CMS Compliance Matrix' },
+        { id: 'timestamp-changed', name: 'timestamp_changed table'},
+        { id: 'vw-authactiontime', name: 'vw_authactiontime view'}
+    ]
 };
 
 
@@ -199,7 +203,6 @@ export const initialDefinitions: Definition[] = [
         children: [
           {
             ...definition111_rev4, // The current version is the latest revision
-            isBookmarked: true,
             revisions: [
               {
                 ticketId: 'MPM-1234',
@@ -300,7 +303,7 @@ isArchived: false,
         usage: '<p>This is the primary data source for pricing claims from contracted providers.</p>',
         revisions: [],
         isArchived: false,
-        isBookmarked: true,
+        isBookmarked: false,
         supportingTables: [],
       },
     ],
