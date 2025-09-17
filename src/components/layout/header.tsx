@@ -49,7 +49,6 @@ export default function AppHeader({
         {children}
       </div>
       <div className="flex items-center gap-2">
-        <div className="ml-auto flex-1" />
         <SharePopover />
         <Button variant="outline" size="sm" onClick={onNewDefinitionClick}>
           <Plus className="mr-2 h-4 w-4" />
