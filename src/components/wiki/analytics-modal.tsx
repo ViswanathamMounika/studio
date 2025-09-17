@@ -18,6 +18,35 @@ type ChartData = {
   count: number;
 }[];
 
+const sampleSearches: ChartData = [
+    { name: 'decision date', count: 25 },
+    { name: 'sla', count: 22 },
+    { name: 'claim status', count: 18 },
+    { name: 'provider contract', count: 15 },
+    { name: 'urgent', count: 12 },
+    { name: 'turnaround time', count: 10 },
+    { name: 'carve out', count: 9 },
+    { name: 'cpt code', count: 7 },
+    { name: 'fee schedule', count: 5 },
+    { name: 'member id', count: 3 },
+];
+
+const sampleMMViews: ChartData = [
+    { name: 'Auth Decision Date', count: 42 },
+    { name: 'Service Type Mapping', count: 35 },
+    { name: 'Claim Adjudication Status', count: 28 },
+    { name: 'Authorization Timeliness', count: 19 },
+    { name: 'Member Eligibility', count: 15 },
+];
+
+const samplePNViews: ChartData = [
+    { name: 'Contracted Rates', count: 38 },
+    { name: 'Provider Demographics', count: 31 },
+    { name: 'Network Participation Rules', count: 24 },
+    { name: 'Credentialing Status', count: 20 },
+    { name: 'Provider Directory Accuracy', count: 11 },
+];
+
 const MODULES = ['Member Management', 'Provider Network', 'Authorizations', 'Claims', 'Core'];
 
 export default function AnalyticsModal({ open, onOpenChange }: AnalyticsModalProps) {
@@ -26,11 +55,22 @@ export default function AnalyticsModal({ open, onOpenChange }: AnalyticsModalPro
 
   useEffect(() => {
     if (open) {
-      setTopSearches(getTopSearches(10));
+      const searches = getTopSearches(10);
+      setTopSearches(searches.length > 0 ? searches : sampleSearches);
+      
       const viewsData: Record<string, ChartData> = {};
       MODULES.forEach(module => {
-        viewsData[module] = getTopViewsByModule(module, 10);
+        const views = getTopViewsByModule(module, 10);
+        if(views.length > 0){
+            viewsData[module] = views;
+        }
       });
+
+      if (Object.keys(viewsData).length === 0) {
+        viewsData['Member Management'] = sampleMMViews;
+        viewsData['Provider Network'] = samplePNViews;
+      }
+      
       setTopViewsByModule(viewsData);
     }
   }, [open]);
@@ -54,7 +94,7 @@ export default function AnalyticsModal({ open, onOpenChange }: AnalyticsModalPro
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={topSearches} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" />
+                        <XAxis type="number" allowDecimals={false} />
                         <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
                         <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
                         <Bar dataKey="count" name="Search Count" fill="hsl(var(--primary))" />
@@ -63,19 +103,19 @@ export default function AnalyticsModal({ open, onOpenChange }: AnalyticsModalPro
                     </CardContent>
                 </Card>
                 
-                {MODULES.map(module => {
+                {Object.keys(topViewsByModule).map(module => {
                     const moduleData = topViewsByModule[module] || [];
                     if (moduleData.length === 0) return null;
                     return (
                         <Card key={module}>
                             <CardHeader>
-                            <CardTitle>Top 10 Viewed in: {module}</CardTitle>
+                            <CardTitle>Top Viewed in: {module}</CardTitle>
                             </CardHeader>
                             <CardContent>
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={moduleData} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis type="number" />
+                                <XAxis type="number" allowDecimals={false} />
                                 <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
                                 <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
                                 <Bar dataKey="count" name="View Count" fill="hsl(var(--accent))" />
