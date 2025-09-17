@@ -79,66 +79,75 @@ export default function RevisionComparisonDialog({
             Showing differences between {revA.ticketId} ({revA.date}) and {revB.ticketId} ({revB.date}).
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-full w-full">
-            <div className="grid grid-cols-2 gap-x-6 p-1">
-                {/* Headers */}
-                <div className="sticky top-0 bg-background pb-2">
-                    <h3 className="font-bold text-xl">
-                        Revision: {revA.ticketId}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{revA.date} by {revA.developer}</p>
-                </div>
-                <div className="sticky top-0 bg-background pb-2">
-                    <h3 className="font-bold text-xl">
-                        Revision: {revB.ticketId}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{revB.date} by {revB.developer}</p>
-                </div>
-
-                {/* Name */}
-                <div><h4 className="font-semibold text-lg mb-2">Name</h4><p>{snapshotA.name}</p></div>
-                <div><h4 className="font-semibold text-lg mb-2">Name</h4><p>{snapshotB.name}</p></div>
-                <div className="col-span-2"><Separator className="my-4" /></div>
-
-                {/* Keywords */}
-                <div>
-                    <h4 className="font-semibold text-lg mb-2">Keywords</h4>
-                    <div className="flex flex-wrap gap-1">
-                        {snapshotA.keywords.map(k => <Badge key={k} variant="secondary">{k}</Badge>)}
+        <div className="relative h-full w-full">
+            <ScrollArea className="h-full w-full">
+                <div className="grid grid-cols-[1fr_auto_1fr] gap-x-6 p-1">
+                    {/* Headers */}
+                    <div className="sticky top-0 bg-background z-10 pb-2">
+                        <h3 className="font-bold text-xl">
+                            Revision: {revA.ticketId}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">{revA.date} by {revA.developer}</p>
                     </div>
-                </div>
-                 <div>
-                    <h4 className="font-semibold text-lg mb-2">Keywords</h4>
-                    <div className="flex flex-wrap gap-1">
-                        {snapshotB.keywords.map(k => {
-                            const isNew = !snapshotA.keywords.includes(k);
-                            return <Badge key={k} variant={isNew ? "success" : "secondary"}>{k}</Badge>
-                        })}
+                    <div className="row-span-full h-full justify-self-center">
+                        <Separator orientation="vertical" />
                     </div>
-                </div>
+                    <div className="sticky top-0 bg-background z-10 pb-2">
+                        <h3 className="font-bold text-xl">
+                            Revision: {revB.ticketId}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">{revB.date} by {revB.developer}</p>
+                    </div>
 
-                 <div className="col-span-2"><Separator className="my-4" /></div>
+                    {/* Name */}
+                    <div className="pt-2"><h4 className="font-semibold text-lg mb-2">Name</h4><p>{snapshotA.name}</p></div>
+                    <div className="pt-2"><h4 className="font-semibold text-lg mb-2">Name</h4><p>{snapshotB.name}</p></div>
+                    
+                    <div className="col-span-1"><Separator className="my-4" /></div>
+                    <div className="col-span-1"><Separator className="my-4" /></div>
 
-                {/* Diffs */}
-                <div className="space-y-4">
-                    <h4 className="font-semibold text-lg">Description</h4>
-                    <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.description }} />
-                    <h4 className="font-semibold text-lg">Technical Details</h4>
-                    <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.technicalDetails }} />
-                    <h4 className="font-semibold text-lg">Examples</h4>
-                    <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.examples }} />
-                    <h4 className="font-semibold text-lg">Usage</h4>
-                    <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.usage }} />
-                </div>
-                <div className="space-y-4">
-                    <DiffView title="Description" text1={snapshotA.description} text2={snapshotB.description} />
-                    <DiffView title="Technical Details" text1={snapshotA.technicalDetails} text2={snapshotB.technicalDetails} />
-                    <DiffView title="Examples" text1={snapshotA.examples} text2={snapshotB.examples} />
-                    <DiffView title="Usage" text1={snapshotA.usage} text2={snapshotB.usage} />
-                </div>
+                    {/* Keywords */}
+                    <div>
+                        <h4 className="font-semibold text-lg mb-2">Keywords</h4>
+                        <div className="flex flex-wrap gap-1">
+                            {snapshotA.keywords.map(k => <Badge key={k} variant="secondary">{k}</Badge>)}
+                        </div>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold text-lg mb-2">Keywords</h4>
+                        <div className="flex flex-wrap gap-1">
+                            {snapshotB.keywords.map(k => {
+                                const isNew = !snapshotA.keywords.includes(k);
+                                return <Badge key={k} variant={isNew ? "success" : "secondary"}>{k}</Badge>
+                            })}
+                        </div>
+                    </div>
 
-            </div>
-        </ScrollArea>
+                    <div className="col-span-1"><Separator className="my-4" /></div>
+                    <div className="col-span-1"><Separator className="my-4" /></div>
+
+
+                    {/* Diffs */}
+                    <div className="space-y-4">
+                        <h4 className="font-semibold text-lg">Description</h4>
+                        <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.description }} />
+                        <h4 className="font-semibold text-lg">Technical Details</h4>
+                        <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.technicalDetails }} />
+                        <h4 className="font-semibold text-lg">Examples</h4>
+                        <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.examples }} />
+                        <h4 className="font-semibold text-lg">Usage</h4>
+                        <div className="prose prose-sm max-w-none border rounded-md p-4" dangerouslySetInnerHTML={{ __html: snapshotA.usage }} />
+                    </div>
+                    <div className="space-y-4">
+                        <DiffView title="Description" text1={snapshotA.description} text2={snapshotB.description} />
+                        <DiffView title="Technical Details" text1={snapshotA.technicalDetails} text2={snapshotB.technicalDetails} />
+                        <DiffView title="Examples" text1={snapshotA.examples} text2={snapshotB.examples} />
+                        <DiffView title="Usage" text1={snapshotA.usage} text2={snapshotB.usage} />
+                    </div>
+
+                </div>
+            </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
