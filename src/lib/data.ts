@@ -47,13 +47,14 @@ export const vwAuthActionTimeTable: SupportingTable = {
     id: 'vw-authactiontime',
     name: 'vw_authactiontime view',
     description: 'A view that consolidates various action dates for an authorization.',
-    headers: ['Column Name', 'Description'],
+    headers: ['Modifdate', 'DeniedDate', 'Apprvdate', 'CancelDate', 'CarvoutDate'],
     rows: [
-        ['modifdate', 'The date the authorization was last modified.'],
-        ['denieddate', 'The date the authorization was denied.'],
-        ['apprvdate', 'The date the authorization was approved.'],
-        ['canceldate', 'The date the authorization was canceled.'],
-        ['carvoutdate', 'The date the carve-out was processed.'],
+        ['2022-07-01 15:43:05.063', 'NULL', 'NULL', 'NULL', 'NULL'],
+        ['2022-06-29 14:54:20.710', 'NULL', 'NULL', 'NULL', 'NULL'],
+        ['2022-07-05 16:16:40.180', 'NULL', 'NULL', 'NULL', 'NULL'],
+        ['2022-06-30 15:27:54.127', 'NULL', 'NULL', 'NULL', 'NULL'],
+        ['2022-07-01 15:48:22.693', 'NULL', 'NULL', 'NULL', 'NULL'],
+        ['2022-07-01 12:35:14.327', 'NULL', 'NULL', 'NULL', 'NULL'],
     ]
 }
 
@@ -384,5 +385,6 @@ export function findDefinition(definitions: Definition[], id: string): Definitio
     
 
     
+
 
 
