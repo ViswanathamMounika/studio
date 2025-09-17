@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -52,7 +53,6 @@ export default function AppearanceSettings() {
 
   return (
     <>
-      <DropdownMenuLabel>Appearance</DropdownMenuLabel>
       <DropdownMenuSub>
         <DropdownMenuSubTrigger>
           <Palette className="mr-2 h-4 w-4" />

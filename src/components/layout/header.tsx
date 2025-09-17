@@ -5,12 +5,9 @@ import {
   BarChart,
   Book,
   Download,
-  Menu,
-  MoreHorizontal,
+  Palette,
   Plus,
-  Search,
   Settings,
-  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,13 +17,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Logo } from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import SharePopover from "@/components/wiki/share-popover";
 
 type AppHeaderProps = {
@@ -94,8 +92,17 @@ export default function AppHeader({
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <AppearanceSettings />
+            <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                    <Palette className="mr-2 h-4 w-4" />
+                    <span>Appearance</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                        <AppearanceSettings />
+                    </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+            </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Logout</DropdownMenuItem>
           </DropdownMenuContent>
@@ -104,3 +111,4 @@ export default function AppHeader({
     </header>
   );
 }
+
