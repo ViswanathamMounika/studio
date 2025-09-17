@@ -28,7 +28,7 @@ export default function SharePopover() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button size="sm">
+        <Button size="sm" variant="outline">
             <Share className="mr-2 h-4 w-4" />
             Share
         </Button>
