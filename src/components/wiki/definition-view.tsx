@@ -10,8 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Comments from './comments';
 import { ExternalLink, Pencil } from 'lucide-react';
 import DefinitionActions from './definition-actions';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { authorizationStatusCodes, cmsComplianceMatrix } from '@/lib/data';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable } from '@/lib/data';
 
 type DefinitionViewProps = {
   definition: Definition;
@@ -25,6 +25,8 @@ type DefinitionViewProps = {
 const supportingTablesData: Record<string, SupportingTable> = {
     'auth-status-codes': authorizationStatusCodes,
     'cms-compliance': cmsComplianceMatrix,
+    'timestamp-changed': timestampChangedTable,
+    'vw-authactiontime': vwAuthActionTimeTable,
 };
 
 export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, activeTab, onTabChange }: DefinitionViewProps) {
@@ -169,9 +171,10 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         </article>
 
         {selectedTable && (
-            <DialogContent className="max-w-3xl">
+            <DialogContent className="max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>{selectedTable.name}</DialogTitle>
+                    <DialogDescription>{selectedTable.description}</DialogDescription>
                 </DialogHeader>
                 <div className="max-h-[60vh] overflow-auto">
                     <Table>
@@ -189,13 +192,13 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                             if (cell === 'Yes') {
                                                 return (
                                                     <TableCell key={cellIndex}>
-                                                        <Badge variant={'success'}>Active</Badge>
+                                                        <Badge variant={'success'}>Yes</Badge>
                                                     </TableCell>
                                                 );
                                             }
                                             return (
                                                 <TableCell key={cellIndex}>
-                                                    <Badge variant={'secondary'}>Inactive</Badge>
+                                                    <Badge variant={'secondary'}>No</Badge>
                                                 </TableCell>
                                             );
                                         }

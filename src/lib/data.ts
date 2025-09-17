@@ -4,6 +4,7 @@ import type { Definition, SupportingTable } from './types';
 export const authorizationStatusCodes: SupportingTable = {
     id: 'auth-status-codes',
     name: 'Authorization Status Codes',
+    description: 'Codes representing the status of a service authorization.',
     headers: ['Code', 'Description', 'Is Final Status?'],
     rows: [
         ['APP', 'Approved', 'Yes'],
@@ -18,6 +19,7 @@ export const authorizationStatusCodes: SupportingTable = {
 export const cmsComplianceMatrix: SupportingTable = {
     id: 'cms-compliance',
     name: 'CMS Compliance Matrix',
+    description: 'Turnaround time requirements for authorizations based on state regulations.',
     headers: ['State', 'Requirement ID', 'Turnaround Time (Days)', 'Applies To'],
     rows: [
         ['CA', 'CA-UM-01', '5', 'Standard (Non-Urgent)'],
@@ -28,6 +30,31 @@ export const cmsComplianceMatrix: SupportingTable = {
         ['TX', 'TX-MCR-113', '1', 'Urgent'],
     ]
 };
+
+export const timestampChangedTable: SupportingTable = {
+    id: 'timestamp-changed',
+    name: 'timestamp_changed table',
+    description: 'Tracks when a specific column was last changed for a given record.',
+    headers: ['Column Name', 'Description'],
+    rows: [
+        ['columnname', 'The name of the column that was changed.'],
+        ['timestamp_changed', 'The date and time the change occurred.'],
+    ]
+}
+
+export const vwAuthActionTimeTable: SupportingTable = {
+    id: 'vw-authactiontime',
+    name: 'vw_authactiontime view',
+    description: 'A view that consolidates various action dates for an authorization.',
+    headers: ['Column Name', 'Description'],
+    rows: [
+        ['modifdate', 'The date the authorization was last modified.'],
+        ['denieddate', 'The date the authorization was denied.'],
+        ['apprvdate', 'The date the authorization was approved.'],
+        ['canceldate', 'The date the authorization was canceled.'],
+        ['carvoutdate', 'The date the carve-out was processed.'],
+    ]
+}
 
 
 export const initialDefinitions: Definition[] = [
@@ -63,16 +90,16 @@ export const initialDefinitions: Definition[] = [
             module: 'Authorizations',
             keywords: ['authorization', 'decision date', 'approved', 'denied'],
             description: `
-              <h4 class="font-bold mt-4 mb-2" style="color: red;">Description</h4>
+              <h4 class="font-bold mt-4 mb-2">Description</h4>
               <p>The date on which a final decision is made for an authorization request. This is a critical field for tracking service level agreements (SLAs) and reporting purposes.</p>
               
-              <h4 class="font-bold mt-4 mb-2" style="color: red;">Relevant Term(s)</h4>
+              <h4 class="font-bold mt-4 mb-2">Relevant Term(s)</h4>
               <p><strong style="color: blue;">UMWF (Y/N)</strong> – Was the auth worked in the UM Workflow Utility?</p>
               <ul class="list-disc pl-6">
                 <li>Y: If the auth STATUS was changed to or from Wand PRIORITY was NEVER changed to 1W</li>
               </ul>
               
-              <h4 class="font-bold mt-4 mb-2" style="color: red;">Logic Used</h4>
+              <h4 class="font-bold mt-4 mb-2">Logic Used</h4>
 
               <h5 class="font-bold mt-3 mb-1" style="color: blue;">Approved – (Auth Status 1)</h5>
               <p>If UMWF = Y</p>
@@ -146,6 +173,8 @@ WHERE auth_id = :authId;</code></pre>
             supportingTables: [
                 { id: 'auth-status-codes', name: 'Authorization Status Codes' },
                 { id: 'cms-compliance', name: 'CMS Compliance Matrix' },
+                { id: 'timestamp-changed', name: 'timestamp_changed table'},
+                { id: 'vw-authactiontime', name: 'vw_authactiontime view'}
             ],
           },
           {

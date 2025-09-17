@@ -151,7 +151,7 @@ export default function Home() {
   return (
     <SidebarProvider>
       <Sidebar>
-        <AppSidebar showArchived={showArchived} setShowArchived={setShowArchived} />
+        <AppSidebar />
       </Sidebar>
       <SidebarInset>
         <AppHeader>
@@ -179,11 +179,9 @@ export default function Home() {
                     />
                 </div>
             </div>
-            <div className="p-4 border-b">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold tracking-tight">MPM Definitions</h2>
-                </div>
-                 <div className="flex items-center justify-between mt-2">
+            <div className="p-4 border-b flex items-center justify-between">
+                <h2 className="text-lg font-semibold tracking-tight">MPM Definitions</h2>
+                <div className="flex items-center gap-2">
                     <Label htmlFor="show-archived" className="text-sm">Show Archived</Label>
                     <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
                 </div>

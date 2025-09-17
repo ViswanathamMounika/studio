@@ -33,13 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
-type AppSidebarProps = {
-  showArchived: boolean;
-  setShowArchived: (show: boolean) => void;
-};
-
-
-export default function AppSidebar({ showArchived, setShowArchived }: AppSidebarProps) {
+export default function AppSidebar() {
   const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
 
   return (
