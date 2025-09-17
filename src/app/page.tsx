@@ -9,11 +9,13 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Menu, Search } from 'lucide-react';
+import { Filter, Menu, Search } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
@@ -200,8 +202,8 @@ export default function Home() {
         </AppHeader>
         <main className="flex-1 flex overflow-hidden">
           <div className="group-data-[state=collapsed]:-ml-64 sm:group-data-[state=collapsed]:-ml-0 w-1/4 xl:w-1/5 border-r shrink-0 transition-all duration-200 flex flex-col">
-            <div className="p-4 border-b">
-                <div className="relative">
+            <div className="p-4 border-b flex items-center gap-2">
+                <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
                       type="search" 
@@ -211,21 +213,29 @@ export default function Home() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-            </div>
-            <div className="p-4 border-b space-y-4">
-                <div>
-                    <h2 className="text-lg font-semibold tracking-tight mb-2">Filters</h2>
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="show-archived" className="text-sm">Show Archived</Label>
-                            <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="show-bookmarked" className="text-sm">Show Bookmarked</Label>
-                            <Switch id="show-bookmarked" checked={showBookmarked} onCheckedChange={setShowBookmarked} />
-                        </div>
-                    </div>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="shrink-0">
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuLabel>Filters</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuCheckboxItem
+                      checked={showArchived}
+                      onCheckedChange={setShowArchived}
+                    >
+                      Show Archived
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={showBookmarked}
+                      onCheckedChange={setShowBookmarked}
+                    >
+                      Show Bookmarked
+                    </DropdownMenuCheckboxItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
             </div>
             <div className="overflow-y-auto flex-1 p-4">
                 <p className="font-semibold text-lg mb-2">MPM Definitions</p>
