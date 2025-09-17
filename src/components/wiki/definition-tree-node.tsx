@@ -38,8 +38,9 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
   const [isNodeExpanded, setIsNodeExpanded] = useState(false);
 
   useEffect(() => {
-    setIsNodeExpanded(isParentOfSelected || isSelected);
-  }, [isParentOfSelected, isSelected]);
+    // Only auto-expand if it's a parent of the selected node, not the node itself
+    setIsNodeExpanded(isParentOfSelected);
+  }, [isParentOfSelected]);
   
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -69,7 +70,12 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level }
                     </Button>
                 </CollapsibleTrigger>
             ) : (
-                <div className="w-8 h-8 shrink-0"></div>
+                // Add a collapsible trigger for leaf nodes to show/hide section links
+                <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent" onClick={handleTriggerClick}>
+                        <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isNodeExpanded && "rotate-90")} />
+                    </Button>
+                </CollapsibleTrigger>
             )}
             
             <Button
