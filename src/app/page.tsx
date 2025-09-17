@@ -212,18 +212,23 @@ export default function Home() {
                     />
                 </div>
             </div>
-            <div className="p-4 border-b space-y-2">
-                <h2 className="text-lg font-semibold tracking-tight">MPM Definitions</h2>
-                <div className="flex items-center justify-between">
-                    <Label htmlFor="show-archived" className="text-sm">Show Archived</Label>
-                    <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
-                </div>
-                 <div className="flex items-center justify-between">
-                    <Label htmlFor="show-bookmarked" className="text-sm">Show Bookmarked</Label>
-                    <Switch id="show-bookmarked" checked={showBookmarked} onCheckedChange={setShowBookmarked} />
+            <div className="p-4 border-b space-y-4">
+                <div>
+                    <h2 className="text-lg font-semibold tracking-tight mb-2">Filters</h2>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="show-archived" className="text-sm">Show Archived</Label>
+                            <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="show-bookmarked" className="text-sm">Show Bookmarked</Label>
+                            <Switch id="show-bookmarked" checked={showBookmarked} onCheckedChange={setShowBookmarked} />
+                        </div>
+                    </div>
                 </div>
             </div>
             <div className="overflow-y-auto flex-1 p-4">
+                <p className="font-semibold text-lg mb-2">MPM Definitions</p>
                 <DefinitionTree
                 definitions={visibleDefinitions}
                 selectedId={selectedDefinitionId}
