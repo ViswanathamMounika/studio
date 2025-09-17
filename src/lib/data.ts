@@ -150,6 +150,25 @@ WHERE auth_id = :authId;</code></pre>
     ]
 };
 
+const definition111_rev3 = {
+    ...definition111_rev2,
+    keywords: ['authorization', 'decision date', 'approved', 'denied', 'SLA'],
+    usage: `
+      <p>This field is used in regulatory reports to demonstrate compliance with turnaround time requirements. It is also a key metric in operational dashboards to monitor team efficiency and SLA performance.</p>
+    `,
+};
+
+const definition111_rev4 = {
+    ...definition111_rev3,
+    technicalDetails: `
+      <p>The decision date is primarily derived from the <code class="font-code text-primary">vw_authactiontime</code> view.</p>
+      <pre class="bg-muted p-2 rounded-md font-code text-sm overflow-x-auto"><code class="language-sql">SELECT COALESCE(modifdate, denieddate, apprvdate, canceldate, carvoutdate) as decision_date 
+FROM vw_authactiontime 
+WHERE auth_id = :authId;</code></pre>
+      <p>The field is of type <code class="font-code text-primary">DATETIME</code> and is indexed for performance. Logic falls back to <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> if the view returns null.</p>
+    `,
+};
+
 
 export const initialDefinitions: Definition[] = [
   {
@@ -181,7 +200,7 @@ export const initialDefinitions: Definition[] = [
         supportingTables: [],
         children: [
           {
-            ...definition111_rev2, // The current version is the latest revision
+            ...definition111_rev4, // The current version is the latest revision
             isBookmarked: true,
             revisions: [
               {
@@ -197,6 +216,20 @@ export const initialDefinitions: Definition[] = [
                 developer: 'A. Smith',
                 description: 'Added details about Canceled/Carve-Outs logic.',
                 snapshot: definition111_rev2,
+              },
+              {
+                ticketId: 'MPM-1355',
+                date: '2023-08-01',
+                developer: 'T. Johnson',
+                description: 'Added SLA keyword and updated usage description.',
+                snapshot: definition111_rev3,
+              },
+              {
+                ticketId: 'MPM-1401',
+                date: '2023-11-10',
+                developer: 'A. Smith',
+                description: 'Updated technical details to reference vw_authactiontime view.',
+                snapshot: definition111_rev4,
               },
             ],
           },
@@ -294,3 +327,5 @@ export function findDefinition(definitions: Definition[], id: string): Definitio
   }
   return null;
 }
+
+    
