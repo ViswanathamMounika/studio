@@ -21,6 +21,7 @@ import { trackSearch, trackView } from '@/lib/analytics';
 import { useDebounce } from '@/hooks/use-debounce';
 import AnalyticsModal from '@/components/wiki/analytics-modal';
 import NewDefinitionModal from '@/components/wiki/new-definition-modal';
+import TemplatesModal from '@/components/wiki/templates-modal';
 
 export default function Home() {
   const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
@@ -35,6 +36,7 @@ export default function Home() {
   const [isExportMode, setIsExportMode] = useState(false);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
+  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -184,6 +186,7 @@ export default function Home() {
     // A more robust solution would find the correct parent based on the module.
     setDefinitions(prev => [newDefinition, ...prev]);
     setIsNewDefinitionModalOpen(false);
+    setIsTemplatesModalOpen(false);
     setSelectedDefinitionId(newDefinition.id);
   };
 
@@ -339,7 +342,7 @@ export default function Home() {
               handleExport={handleExport}
               selectedCount={selectedForExport.length}
               onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
-              onNewDefinitionClick={() => setIsNewDefinitionModalOpen(true)}
+              onTemplatesClick={() => setIsTemplatesModalOpen(true)}
           >
               <SidebarTrigger className="sm:hidden">
                   <Menu />
@@ -465,6 +468,28 @@ export default function Home() {
         open={isNewDefinitionModalOpen}
         onOpenChange={setIsNewDefinitionModalOpen}
         onSave={handleCreateDefinition}
+      />
+      <TemplatesModal
+        open={isTemplatesModalOpen}
+        onOpenChange={setIsTemplatesModalOpen}
+        onSelectTemplate={(template) => {
+          setIsTemplatesModalOpen(false);
+          setIsNewDefinitionModalOpen(true);
+        }}
+        onUseTemplate={(templateData) => {
+            const newDef: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
+                name: templateData.name,
+                module: templateData.module,
+                keywords: templateData.keywords,
+                description: templateData.description,
+                technicalDetails: templateData.technicalDetails,
+                examples: templateData.examples,
+                usage: templateData.usage,
+                attachments: [],
+                supportingTables: [],
+            };
+            handleCreateDefinition(newDef);
+        }}
       />
     </SidebarProvider>
   );
