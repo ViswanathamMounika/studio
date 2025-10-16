@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pencil, Bookmark, Trash2 } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2 } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable } from '@/lib/data';
@@ -104,6 +104,20 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         setSelectedRevisions([]);
     }, [definition]);
 
+    const handleShare = () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('definitionId', definition.id);
+        if (activeTab) {
+            url.searchParams.set('section', activeTab);
+        }
+        navigator.clipboard.writeText(url.toString()).then(() => {
+            toast({
+                title: 'Link Copied',
+                description: 'A shareable link has been copied to your clipboard.',
+            });
+        });
+    };
+
     const handleSaveNote = () => {
         if (!noteText.trim()) {
             toast({
@@ -161,6 +175,9 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             </div>
             </div>
             <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={handleShare}>
+                    <Share2 className="h-6 w-6 text-muted-foreground"/>
+                </Button>
                 <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={() => onToggleBookmark(definition.id)}>
                     <Bookmark className={cn("h-6 w-6 text-muted-foreground", definition.isBookmarked && "fill-primary text-primary")}/>
                 </Button>

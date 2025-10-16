@@ -26,7 +26,7 @@ import useLocalStorage from '@/hooks/use-local-storage';
 
 export default function Home() {
   const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
-  const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>('1.1.1');
+  const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [showBookmarked, setShowBookmarked] = useState(false);
@@ -47,6 +47,32 @@ export default function Home() {
       trackSearch(debouncedSearchQuery);
     }
   }, [debouncedSearchQuery]);
+
+  useEffect(() => {
+    if (isMounted) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const definitionId = urlParams.get('definitionId');
+      const section = urlParams.get('section');
+
+      if (definitionId) {
+        handleSelectDefinition(definitionId, section || undefined);
+      } else if (!selectedDefinitionId) {
+        // Select default if no definition is in URL and none is selected
+        setSelectedDefinitionId('1.1.1');
+      }
+    }
+  }, [isMounted]);
+
+  const updateUrl = (definitionId: string, sectionId?: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('definitionId', definitionId);
+    if (sectionId) {
+        url.searchParams.set('section', sectionId);
+    } else {
+        url.searchParams.delete('section');
+    }
+    window.history.pushState({}, '', url);
+  };
   
   const getAllDefinitionIds = (items: Definition[]): string[] => {
     let ids: string[] = [];
@@ -151,19 +177,25 @@ export default function Home() {
       trackView(id, def.name, def.module);
     }
     
-    if (sectionId) {
-      const tabValue = sectionId.replace('section-', '');
-      setActiveTab(tabValue);
-      setTimeout(() => {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    } else {
-        setActiveTab('description');
-    }
+    const targetSection = sectionId || 'description';
+    setActiveTab(targetSection);
+    updateUrl(id, targetSection);
+
+    setTimeout(() => {
+      const element = document.getElementById(`section-${targetSection}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   }, []);
+
+  const handleTabChange = (tab: string) => {
+      setActiveTab(tab);
+      if (selectedDefinitionId) {
+          updateUrl(selectedDefinitionId, tab);
+      }
+  };
+
 
   const handleSave = (updatedDefinition: Definition) => {
     const update = (items: Definition[]): Definition[] => {
@@ -460,7 +492,7 @@ export default function Home() {
                     onDelete={handleDelete}
                     onToggleBookmark={toggleBookmark}
                     activeTab={activeTab}
-                    onTabChange={setActiveTab}
+                    onTabChange={handleTabChange}
                     onSave={handleSave}
                     isAdmin={isAdmin}
                   />
