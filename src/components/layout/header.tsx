@@ -6,23 +6,14 @@ import {
   Book,
   Download,
   Palette,
-  Plus,
-  Settings,
-  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
-import SharePopover from "@/components/wiki/share-popover";
-import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
 
 type AppHeaderProps = {
     children?: React.ReactNode;
@@ -47,12 +38,11 @@ export default function AppHeader({
 }: AppHeaderProps) {
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center w-full gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center w-full gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 justify-between">
        <div className="flex items-center gap-4">
         {children}
       </div>
-      <div className="flex items-center gap-2 ml-auto">
-        <SharePopover />
+      <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" onClick={onTemplatesClick}>
           <Book className="h-4 w-4 mr-2" />
           Templates
@@ -89,5 +79,3 @@ export default function AppHeader({
     </header>
   );
 }
-
-    
