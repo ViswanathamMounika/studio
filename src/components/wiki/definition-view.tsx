@@ -21,6 +21,7 @@ import { Label } from '../ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import Comments from './comments';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 type DefinitionViewProps = {
   definition: Definition;
@@ -175,9 +176,16 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             </div>
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={handleShare}>
-                    <Share2 className="h-6 w-6 text-muted-foreground"/>
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="hover:bg-accent" onClick={handleShare}>
+                            <Share2 className="h-6 w-6 text-muted-foreground"/>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Share</p>
+                    </TooltipContent>
+                </Tooltip>
                 <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={() => onToggleBookmark(definition.id)}>
                     <Bookmark className={cn("h-6 w-6 text-muted-foreground", definition.isBookmarked && "fill-primary text-primary")}/>
                 </Button>
@@ -424,5 +432,3 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     </>
   );
 }
-
-    
