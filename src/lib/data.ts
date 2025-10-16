@@ -74,6 +74,7 @@ const definition111_rev1 = {
     isArchived: false,
     supportingTables: [{ id: 'auth-status-codes', name: 'Authorization Status Codes' }],
     attachments: [],
+    notes: [],
 };
 
 const definition111_rev2 = {
@@ -154,7 +155,8 @@ WHERE auth_id = :authId;</code></pre>
     ],
     attachments: [
         { name: 'Workflow-Diagram-v1.pdf', url: '#', size: '845 KB', type: 'PDF' },
-    ]
+    ],
+    notes: [],
 };
 
 const definition111_rev3 = {
@@ -247,9 +249,9 @@ WHERE auth_id = :authId;</code></pre>
 
 export const initialDefinitions: Definition[] = [
   {
-    id: '1.1',
+    id: '1',
     name: 'Authorizations',
-    module: 'Member Management',
+    module: 'Authorizations',
     keywords: [],
     description: '',
     technicalDetails: '',
@@ -259,6 +261,7 @@ export const initialDefinitions: Definition[] = [
     isArchived: false,
     supportingTables: [],
     attachments: [],
+    notes: [],
     children: [
       {
         ...definition111_rev4, // The current version is the latest revision
@@ -307,13 +310,14 @@ export const initialDefinitions: Definition[] = [
         isArchived: false,
         supportingTables: [],
         attachments: [],
+        notes: [],
       },
     ],
   },
   {
-    id: '1.2',
+    id: '2',
     name: 'Claims',
-    module: 'Member Management',
+    module: 'Claims',
     keywords: [],
     description: '',
     technicalDetails: '',
@@ -323,6 +327,7 @@ export const initialDefinitions: Definition[] = [
     isArchived: false,
     supportingTables: [],
     attachments: [],
+    notes: [],
     children: [
         {
             id: '1.2.1',
@@ -337,13 +342,14 @@ export const initialDefinitions: Definition[] = [
             isArchived: true,
             supportingTables: [],
             attachments: [],
+            notes: [],
         }
     ]
   },
   {
-    id: '2.1',
-    name: 'Provider Network',
-    module: 'Provider Network',
+    id: '3',
+    name: 'Provider',
+    module: 'Provider',
     keywords: [],
     description: '',
     technicalDetails: '',
@@ -353,11 +359,12 @@ export const initialDefinitions: Definition[] = [
     isArchived: false,
     supportingTables: [],
     attachments: [],
+    notes: [],
     children: [
         {
             id: '2.1.1',
             name: 'Contracted Rates',
-            module: 'Provider Network',
+            module: 'Provider',
             keywords: ['provider', 'contract', 'rates', 'fee schedule'],
             description: '<p>The negotiated payment rates for services rendered by in-network providers, as defined in their contract.</p>',
             technicalDetails: '<p>Rates are stored in the <code class="font-code text-primary">FEE_SCHEDULES</code> table, linked to a provider contract ID.</p>',
@@ -367,7 +374,8 @@ export const initialDefinitions: Definition[] = [
             isArchived: false,
             isBookmarked: false,
             supportingTables: [],
-            attachments: [],
+attachments: [],
+            notes: [],
         }
     ]
   }
@@ -387,15 +395,3 @@ export function findDefinition(definitions: Definition[], id: string): Definitio
   }
   return null;
 }
-
-    
-
-    
-
-    
-
-
-
-
-
-

@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -33,6 +34,22 @@ type DefinitionActionsProps = {
 };
 
 export default function DefinitionActions({ definition, onEdit, onDuplicate, onArchive, onToggleBookmark, onDelete }: DefinitionActionsProps) {
+  
+  const handleExport = () => {
+    const exportData = {
+        disclaimer: `This is a copy of this definition as of ${new Date().toLocaleDateString()}. Please go to ${window.location.origin} to view the updated definition.`,
+        data: definition
+    };
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `${definition.name.replace(/\s+/g, '_')}-export.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
   return (
     <AlertDialog>
       <DropdownMenu>
@@ -58,7 +75,7 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
             <Archive className="mr-2 h-4 w-4" />
             <span>{definition.isArchived ? 'Unarchive' : 'Archive'}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             <span>Export</span>
           </DropdownMenuItem>

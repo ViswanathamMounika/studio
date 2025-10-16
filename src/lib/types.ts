@@ -1,9 +1,10 @@
+
 export interface Revision {
   ticketId: string;
   date: string;
   developer: string;
   description: string;
-  snapshot: Omit<Definition, 'revisions' | 'children'>;
+  snapshot: Omit<Definition, 'revisions' | 'children' | 'notes'>;
 }
 
 export interface SupportingTableRef {
@@ -16,6 +17,15 @@ export interface Attachment {
   url: string;
   size: string;
   type: string;
+}
+
+export interface Note {
+    id: string;
+    author: string;
+    avatar: string;
+    date: string;
+    content: string;
+    isShared: boolean;
 }
 
 export interface Definition {
@@ -33,6 +43,7 @@ export interface Definition {
   supportingTables: SupportingTableRef[];
   attachments: Attachment[];
   children?: Definition[];
+  notes?: Note[];
 }
 
 export interface SupportingTable {

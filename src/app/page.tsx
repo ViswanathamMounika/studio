@@ -22,9 +22,10 @@ import { useDebounce } from '@/hooks/use-debounce';
 import AnalyticsModal from '@/components/wiki/analytics-modal';
 import NewDefinitionModal from '@/components/wiki/new-definition-modal';
 import TemplatesModal from '@/components/wiki/templates-modal';
+import useLocalStorage from '@/hooks/use-local-storage';
 
 export default function Home() {
-  const [definitions, setDefinitions] = useState<Definition[]>(initialDefinitions);
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>('1.1.1');
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -37,6 +38,7 @@ export default function Home() {
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(true);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -113,7 +115,13 @@ export default function Home() {
     };
 
     const definitionsToExport = getSelectedDefinitions(definitions, selectedForExport);
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(definitionsToExport, null, 2));
+    
+    const exportData = {
+        disclaimer: `This is a copy of this definition as of ${new Date().toLocaleDateString()}. Please go to ${window.location.origin} to view the updated definition.`,
+        data: definitionsToExport
+    };
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
     downloadAnchorNode.setAttribute("download", "definitions-export.json");
@@ -180,11 +188,13 @@ export default function Home() {
         revisions: [],
         isArchived: false,
         children: [],
+        notes: [],
     };
 
-    // This is a simplified way to add the definition.
-    // A more robust solution would find the correct parent based on the module.
-    setDefinitions(prev => [newDefinition, ...prev]);
+    setDefinitions(prev => {
+        const newDefs = [newDefinition, ...prev];
+        return newDefs;
+    });
     setIsNewDefinitionModalOpen(false);
     setIsTemplatesModalOpen(false);
     setSelectedDefinitionId(newDefinition.id);
@@ -343,6 +353,8 @@ export default function Home() {
               selectedCount={selectedForExport.length}
               onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
               onTemplatesClick={() => setIsTemplatesModalOpen(true)}
+              isAdmin={isAdmin}
+              setIsAdmin={setIsAdmin}
           >
               <SidebarTrigger className="sm:hidden">
                   <Menu />
@@ -450,6 +462,8 @@ export default function Home() {
                     onToggleBookmark={toggleBookmark}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
+                    onSave={handleSave}
+                    isAdmin={isAdmin}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">
@@ -477,7 +491,7 @@ export default function Home() {
           setIsNewDefinitionModalOpen(true);
         }}
         onUseTemplate={(templateData) => {
-            const newDef: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
+            const newDef: Omit<Definition, 'id' | 'revisions' | 'isArchived' | 'notes'> = {
                 name: templateData.name,
                 module: templateData.module,
                 keywords: templateData.keywords,

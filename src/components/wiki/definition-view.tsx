@@ -1,14 +1,15 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
-import type { Definition, Revision, SupportingTable } from '@/lib/types';
+import type { Definition, Revision, SupportingTable, Note } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Comments from './comments';
-import { ExternalLink, Pencil, Bookmark } from 'lucide-react';
+import { Pencil, Bookmark } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable } from '@/lib/data';
@@ -16,6 +17,10 @@ import { Checkbox } from '../ui/checkbox';
 import RevisionComparisonDialog from './revision-comparison-dialog';
 import { cn } from '@/lib/utils';
 import AttachmentList from './attachments';
+import { Textarea } from '../ui/textarea';
+import { Label } from '../ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useToast } from '@/hooks/use-toast';
 
 type DefinitionViewProps = {
   definition: Definition;
@@ -26,6 +31,8 @@ type DefinitionViewProps = {
   onToggleBookmark: (id: string) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onSave: (definition: Definition) => void;
+  isAdmin: boolean;
 };
 
 const supportingTablesData: Record<string, SupportingTable> = {
@@ -35,16 +42,25 @@ const supportingTablesData: Record<string, SupportingTable> = {
     'vw-authactiontime': vwAuthActionTimeTable,
 };
 
-export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, activeTab, onTabChange }: DefinitionViewProps) {
+const currentUser = {
+    name: "Current User",
+    avatar: "https://picsum.photos/seed/user/40/40"
+};
+
+export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, activeTab, onTabChange, onSave, isAdmin }: DefinitionViewProps) {
     const [selectedTable, setSelectedTable] = useState<SupportingTable | null>(null);
     const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
     const [showComparison, setShowComparison] = useState(false);
     const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
+    
+    const [noteText, setNoteText] = useState('');
+    const [shareNote, setShareNote] = useState(false);
+    const { toast } = useToast();
 
     useEffect(() => {
         if (activeTab === 'examples' || activeTab === 'usage') {
             onTabChange('examples-usage');
-        } else if (activeTab !== 'description' && activeTab !== 'technical-details' && activeTab !== 'revisions' && activeTab !== 'examples-usage' && activeTab !== 'attachments') {
+        } else if (activeTab !== 'description' && activeTab !== 'technical-details' && activeTab !== 'revisions' && active-tab !== 'attachments' && activeTab !== 'notes') {
             onTabChange('description');
         }
     }, [definition, onTabChange, activeTab]);
@@ -89,6 +105,48 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         setSelectedRevisions([]);
     }, [definition]);
 
+    const handleSaveNote = () => {
+        if (!noteText.trim()) {
+            toast({
+                variant: 'destructive',
+                title: 'Note cannot be empty.',
+            });
+            return;
+        }
+
+        const newNote: Note = {
+            id: Date.now().toString(),
+            author: currentUser.name,
+            avatar: currentUser.avatar,
+            date: new Date().toISOString(),
+            content: noteText,
+            isShared: shareNote,
+        };
+        
+        const updatedDefinition = {
+            ...definition,
+            notes: [...(definition.notes || []), newNote],
+        };
+
+        onSave(updatedDefinition);
+        setNoteText('');
+        setShareNote(false);
+        toast({
+            title: 'Note saved!',
+            description: 'Your note has been added to this definition.',
+        });
+    };
+
+    const handleDeleteNote = (noteId: string) => {
+        const updatedDefinition = {
+            ...definition,
+            notes: definition.notes?.filter(note => note.id !== noteId),
+        };
+        onSave(updatedDefinition);
+        toast({
+            title: 'Note deleted.',
+        });
+    }
 
   return (
     <>
@@ -107,11 +165,15 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                 <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={() => onToggleBookmark(definition.id)}>
                     <Bookmark className={cn("h-6 w-6 text-muted-foreground", definition.isBookmarked && "fill-primary text-primary")}/>
                 </Button>
-                <Button onClick={onEdit}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit
-                </Button>
-                <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onDelete={onDelete} onToggleBookmark={onToggleBookmark} />
+                {isAdmin && (
+                    <>
+                        <Button onClick={onEdit}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                        </Button>
+                        <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onDelete={onDelete} onToggleBookmark={onToggleBookmark} />
+                    </>
+                )}
             </div>
         </div>
 
@@ -123,12 +185,13 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
         <div id="definition-content-area">
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-6">
                     <TabsTrigger value="description">Description</TabsTrigger>
                     <TabsTrigger value="technical-details">Technical Details</TabsTrigger>
                     <TabsTrigger value="examples-usage">Examples & Usage</TabsTrigger>
                     <TabsTrigger value="revisions">Version History</TabsTrigger>
                     <TabsTrigger value="attachments">Attachments</TabsTrigger>
+                    <TabsTrigger value="notes">Notes</TabsTrigger>
                 </TabsList>
                 <TabsContent value="description" id="section-description" className="mt-4 space-y-4">
                 <Card>
@@ -139,7 +202,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
                 <Card>
                     <CardHeader>
-                    <CardTitle>Comments & Notes</CardTitle>
+                    <CardTitle>Comments</CardTitle>
                     </CardHeader>
                     <CardContent>
                     <Comments />
@@ -224,6 +287,62 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                         </CardContent>
                     </Card>
                 </TabsContent>
+                <TabsContent value="notes" id="section-notes" className="mt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>My Notes</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <Textarea 
+                                    placeholder="Add a personal or shared note..."
+                                    value={noteText}
+                                    onChange={(e) => setNoteText(e.target.value)}
+                                />
+                                <div className="flex items-center justify-between mt-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox id="share-note" checked={shareNote} onCheckedChange={(checked) => setShareNote(!!checked)} />
+                                        <Label htmlFor="share-note">Share with everyone</Label>
+                                    </div>
+                                    <Button onClick={handleSaveNote}>Save Note</Button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 pt-4">
+                                {definition.notes && definition.notes
+                                    .filter(note => note.isShared || note.author === currentUser.name)
+                                    .map(note => (
+                                    <div key={note.id} className="flex items-start gap-4 p-3 border rounded-md">
+                                        <Avatar>
+                                            <AvatarImage src={note.avatar} />
+                                            <AvatarFallback>{note.author.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <span className="font-semibold">{note.author}</span>
+                                                    <span className="text-xs text-muted-foreground ml-2">{new Date(note.date).toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {note.isShared && <Badge variant="outline">Shared</Badge>}
+                                                    {note.author === currentUser.name && (
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteNote(note.id)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <p className="text-sm mt-1">{note.content}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!definition.notes || definition.notes.length === 0) && (
+                                    <p className="text-center text-muted-foreground py-4">No notes for this definition yet.</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
             </Tabs>
         </div>
         </article>
@@ -284,8 +403,3 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     </>
   );
 }
-
-    
-
-    
-
