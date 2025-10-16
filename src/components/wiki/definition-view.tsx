@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Comments from './comments';
-import { Pencil, Bookmark } from 'lucide-react';
+import { Pencil, Bookmark, Trash2 } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable } from '@/lib/data';
@@ -60,7 +60,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     useEffect(() => {
         if (activeTab === 'examples' || activeTab === 'usage') {
             onTabChange('examples-usage');
-        } else if (activeTab !== 'description' && activeTab !== 'technical-details' && activeTab !== 'revisions' && active-tab !== 'attachments' && activeTab !== 'notes') {
+        } else if (activeTab !== 'description' && activeTab !== 'technical-details' && activeTab !== 'revisions' && activeTab !== 'attachments' && activeTab !== 'notes') {
             onTabChange('description');
         }
     }, [definition, onTabChange, activeTab]);
@@ -403,3 +403,5 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     </>
   );
 }
+
+    
