@@ -247,9 +247,9 @@ WHERE auth_id = :authId;</code></pre>
 
 export const initialDefinitions: Definition[] = [
   {
-    id: '1',
-    name: 'Member Management',
-    module: 'Core',
+    id: '1.1',
+    name: 'Authorizations',
+    module: 'Member Management',
     keywords: [],
     description: '',
     technicalDetails: '',
@@ -261,131 +261,116 @@ export const initialDefinitions: Definition[] = [
     attachments: [],
     children: [
       {
-        id: '1.1',
-        name: 'Authorizations',
-        module: 'Member Management',
-        keywords: [],
-        description: '',
-        technicalDetails: '',
-        examples: '',
-        usage: '',
-        revisions: [],
-        isArchived: false,
-        supportingTables: [],
-        attachments: [],
-        children: [
+        ...definition111_rev4, // The current version is the latest revision
+        id: '1.1.1',
+        revisions: [
           {
-            ...definition111_rev4, // The current version is the latest revision
-            revisions: [
-              {
-                ticketId: 'MPM-1234',
-                date: '2023-01-15',
-                developer: 'J. Doe',
-                description: 'Initial creation of the definition.',
-                snapshot: definition111_rev1,
-              },
-              {
-                ticketId: 'MPM-1290',
-                date: '2023-05-20',
-                developer: 'A. Smith',
-                description: 'Added details about Canceled/Carve-Outs logic.',
-                snapshot: definition111_rev2,
-              },
-              {
-                ticketId: 'MPM-1355',
-                date: '2023-08-01',
-                developer: 'T. Johnson',
-                description: 'Added SLA keyword and updated usage description.',
-                snapshot: definition111_rev3,
-              },
-              {
-                ticketId: 'MPM-1401',
-                date: '2023-11-10',
-                developer: 'A. Smith',
-                description: 'Updated technical details to reference vw_authactiontime view.',
-                snapshot: definition111_rev4,
-              },
-            ],
+            ticketId: 'MPM-1234',
+            date: '2023-01-15',
+            developer: 'J. Doe',
+            description: 'Initial creation of the definition.',
+            snapshot: definition111_rev1,
           },
           {
-            id: '1.1.2',
-            name: 'Service Type Mapping',
-            module: 'Authorizations',
-            keywords: ['service type', 'procedure code', 'mapping'],
-            description: '<p>Defines how provider-submitted procedure codes (e.g., CPT, HCPCS) are mapped to internal service type categories for routing and adjudication.</p>',
-            technicalDetails: '<p>Mapping is managed in the <code class="font-code text-primary">SERVICE_TYPE_MAP</code> table, which joins procedure codes to service category IDs.</p>',
-            examples: '<p>CPT code 99213 (Office Visit) maps to the "Outpatient Visit" service category.</p>',
-            usage: '<p>Ensures consistent application of benefits and rules based on service categories rather than individual procedure codes.</p>',
-            revisions: [],
-            isArchived: false,
-            supportingTables: [],
-            attachments: [],
+            ticketId: 'MPM-1290',
+            date: '2023-05-20',
+            developer: 'A. Smith',
+            description: 'Added details about Canceled/Carve-Outs logic.',
+            snapshot: definition111_rev2,
+          },
+          {
+            ticketId: 'MPM-1355',
+            date: '2023-08-01',
+            developer: 'T. Johnson',
+            description: 'Added SLA keyword and updated usage description.',
+            snapshot: definition111_rev3,
+          },
+          {
+            ticketId: 'MPM-1401',
+            date: '2023-11-10',
+            developer: 'A. Smith',
+            description: 'Updated technical details to reference vw_authactiontime view.',
+            snapshot: definition111_rev4,
           },
         ],
       },
       {
-        id: '1.2',
-        name: 'Claims',
-        module: 'Member Management',
-        keywords: [],
-        description: '',
-        technicalDetails: '',
-        examples: '',
-        usage: '',
+        id: '1.1.2',
+        name: 'Service Type Mapping',
+        module: 'Authorizations',
+        keywords: ['service type', 'procedure code', 'mapping'],
+        description: '<p>Defines how provider-submitted procedure codes (e.g., CPT, HCPCS) are mapped to internal service type categories for routing and adjudication.</p>',
+        technicalDetails: '<p>Mapping is managed in the <code class="font-code text-primary">SERVICE_TYPE_MAP</code> table, which joins procedure codes to service category IDs.</p>',
+        examples: '<p>CPT code 99213 (Office Visit) maps to the "Outpatient Visit" service category.</p>',
+        usage: '<p>Ensures consistent application of benefits and rules based on service categories rather than individual procedure codes.</p>',
         revisions: [],
         isArchived: false,
         supportingTables: [],
         attachments: [],
-        children: [
-            {
-                id: '1.2.1',
-                name: 'Claim Adjudication Status',
-                module: 'Claims',
-                keywords: ['claim', 'adjudication', 'paid', 'denied'],
-                description: '<p>The final status of a claim after it has been processed by the adjudication system.</p>',
-                technicalDetails: '<p>Status is stored in the <code class="font-code text-primary">CLAIMS_MASTER</code> table in the `adjudication_status` column.</p>',
-                examples: '<p>A claim is submitted and passes all edits. Its status becomes "Paid". If it fails a medical necessity review, its status becomes "Denied".</p>',
-                usage: '<p>Used for payment processing, generating Explanations of Payment (EOPs), and financial reporting.</p>',
-                revisions: [],
-                isArchived: true,
-                supportingTables: [],
-                attachments: [],
-            }
-        ]
-      }
+      },
     ],
   },
   {
-    id: '2',
-    name: 'Provider Network',
-    module: 'Core',
+    id: '1.2',
+    name: 'Claims',
+    module: 'Member Management',
     keywords: [],
     description: '',
     technicalDetails: '',
     examples: '',
     usage: '',
     revisions: [],
-isArchived: false,
+    isArchived: false,
     supportingTables: [],
     attachments: [],
     children: [
-      {
-        id: '2.1',
-        name: 'Contracted Rates',
-        module: 'Provider Network',
-        keywords: ['provider', 'contract', 'rates', 'fee schedule'],
-        description: '<p>The negotiated payment rates for services rendered by in-network providers, as defined in their contract.</p>',
-        technicalDetails: '<p>Rates are stored in the <code class="font-code text-primary">FEE_SCHEDULES</code> table, linked to a provider contract ID.</p>',
-        examples: '<p>Dr. Smith\'s contract specifies a rate of $85 for a standard office visit (CPT 99213).</p>',
-        usage: '<p>This is the primary data source for pricing claims from contracted providers.</p>',
-        revisions: [],
-        isArchived: false,
-        isBookmarked: false,
-        supportingTables: [],
-        attachments: [],
-      },
-    ],
+        {
+            id: '1.2.1',
+            name: 'Claim Adjudication Status',
+            module: 'Claims',
+            keywords: ['claim', 'adjudication', 'paid', 'denied'],
+            description: '<p>The final status of a claim after it has been processed by the adjudication system.</p>',
+            technicalDetails: '<p>Status is stored in the <code class="font-code text-primary">CLAIMS_MASTER</code> table in the `adjudication_status` column.</p>',
+            examples: '<p>A claim is submitted and passes all edits. Its status becomes "Paid". If it fails a medical necessity review, its status becomes "Denied".</p>',
+            usage: '<p>Used for payment processing, generating Explanations of Payment (EOPs), and financial reporting.</p>',
+            revisions: [],
+            isArchived: true,
+            supportingTables: [],
+            attachments: [],
+        }
+    ]
   },
+  {
+    id: '2.1',
+    name: 'Provider Network',
+    module: 'Provider Network',
+    keywords: [],
+    description: '',
+    technicalDetails: '',
+    examples: '',
+    usage: '',
+    revisions: [],
+    isArchived: false,
+    supportingTables: [],
+    attachments: [],
+    children: [
+        {
+            id: '2.1.1',
+            name: 'Contracted Rates',
+            module: 'Provider Network',
+            keywords: ['provider', 'contract', 'rates', 'fee schedule'],
+            description: '<p>The negotiated payment rates for services rendered by in-network providers, as defined in their contract.</p>',
+            technicalDetails: '<p>Rates are stored in the <code class="font-code text-primary">FEE_SCHEDULES</code> table, linked to a provider contract ID.</p>',
+            examples: '<p>Dr. Smith\'s contract specifies a rate of $85 for a standard office visit (CPT 99213).</p>',
+            usage: '<p>This is the primary data source for pricing claims from contracted providers.</p>',
+            revisions: [],
+            isArchived: false,
+            isBookmarked: false,
+            supportingTables: [],
+            attachments: [],
+        }
+    ]
+  }
 ];
 
 export function findDefinition(definitions: Definition[], id: string): Definition | null {
@@ -408,6 +393,7 @@ export function findDefinition(definitions: Definition[], id: string): Definitio
     
 
     
+
 
 
 
