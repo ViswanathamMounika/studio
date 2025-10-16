@@ -354,7 +354,6 @@ export default function Home() {
               onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
               onTemplatesClick={() => setIsTemplatesModalOpen(true)}
               isAdmin={isAdmin}
-              setIsAdmin={setIsAdmin}
           >
               <SidebarTrigger className="sm:hidden">
                   <Menu />
@@ -508,3 +507,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    

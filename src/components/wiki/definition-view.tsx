@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Comments from './comments';
 import { Pencil, Bookmark, Trash2 } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -21,6 +20,7 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import Comments from './comments';
 
 type DefinitionViewProps = {
   definition: Definition;
@@ -58,12 +58,11 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     const { toast } = useToast();
 
     useEffect(() => {
-        if (activeTab === 'examples' || activeTab === 'usage') {
-            onTabChange('examples-usage');
-        } else if (activeTab !== 'description' && activeTab !== 'technical-details' && activeTab !== 'revisions' && activeTab !== 'attachments' && activeTab !== 'notes') {
+        const validTabs = ['description', 'technical-details', 'examples-usage', 'revisions', 'attachments', 'discussions'];
+        if (activeTab && !validTabs.includes(activeTab)) {
             onTabChange('description');
         }
-    }, [definition, onTabChange, activeTab]);
+    }, [definition, activeTab, onTabChange]);
 
     useEffect(() => {
         const handleContentClick = (e: MouseEvent) => {
@@ -191,21 +190,12 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                     <TabsTrigger value="examples-usage">Examples & Usage</TabsTrigger>
                     <TabsTrigger value="revisions">Version History</TabsTrigger>
                     <TabsTrigger value="attachments">Attachments</TabsTrigger>
-                    <TabsTrigger value="notes">Notes</TabsTrigger>
+                    <TabsTrigger value="discussions">Discussions</TabsTrigger>
                 </TabsList>
                 <TabsContent value="description" id="section-description" className="mt-4 space-y-4">
                 <Card>
                     <CardContent className="p-6">
                     <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                    <CardTitle>Comments</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                    <Comments />
                     </CardContent>
                 </Card>
                 </TabsContent>
@@ -287,58 +277,72 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="notes" id="section-notes" className="mt-4">
+                <TabsContent value="discussions" id="section-discussions" className="mt-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>My Notes</CardTitle>
+                            <CardTitle>Discussions</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-6">
+                            {/* Notes and Comments Combined */}
                             <div>
-                                <Textarea 
-                                    placeholder="Add a personal or shared note..."
-                                    value={noteText}
-                                    onChange={(e) => setNoteText(e.target.value)}
-                                />
-                                <div className="flex items-center justify-between mt-2">
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox id="share-note" checked={shareNote} onCheckedChange={(checked) => setShareNote(!!checked)} />
-                                        <Label htmlFor="share-note">Share with everyone</Label>
-                                    </div>
-                                    <Button onClick={handleSaveNote}>Save Note</Button>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4 pt-4">
-                                {definition.notes && definition.notes
-                                    .filter(note => note.isShared || note.author === currentUser.name)
-                                    .map(note => (
-                                    <div key={note.id} className="flex items-start gap-4 p-3 border rounded-md">
-                                        <Avatar>
-                                            <AvatarImage src={note.avatar} />
-                                            <AvatarFallback>{note.author.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-center">
-                                                <div>
-                                                    <span className="font-semibold">{note.author}</span>
-                                                    <span className="text-xs text-muted-foreground ml-2">{new Date(note.date).toLocaleString()}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    {note.isShared && <Badge variant="outline">Shared</Badge>}
-                                                    {note.author === currentUser.name && (
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteNote(note.id)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-                                                </div>
+                                <h3 className="text-lg font-semibold mb-4">Notes & Comments</h3>
+                                <div className="space-y-4">
+                                    <div className="p-4 border rounded-lg">
+                                        <Label htmlFor="new-note-textarea" className="font-semibold">Add a new note or comment</Label>
+                                        <Textarea
+                                            id="new-note-textarea"
+                                            className="mt-2"
+                                            placeholder="Add a personal or shared note..."
+                                            value={noteText}
+                                            onChange={(e) => setNoteText(e.target.value)}
+                                        />
+                                        <div className="flex items-center justify-between mt-2">
+                                            <div className="flex items-center space-x-2">
+                                                <Checkbox id="share-note" checked={shareNote} onCheckedChange={(checked) => setShareNote(!!checked)} />
+                                                <Label htmlFor="share-note">Share with everyone</Label>
                                             </div>
-                                            <p className="text-sm mt-1">{note.content}</p>
+                                            <Button onClick={handleSaveNote}>Save</Button>
                                         </div>
                                     </div>
-                                ))}
-                                {(!definition.notes || definition.notes.length === 0) && (
-                                    <p className="text-center text-muted-foreground py-4">No notes for this definition yet.</p>
-                                )}
+                                    
+                                    <div className="space-y-4 pt-4">
+                                        {/* Render shared notes */}
+                                        {definition.notes && definition.notes
+                                            .filter(note => note.isShared || note.author === currentUser.name)
+                                            .map(note => (
+                                            <div key={note.id} className="flex items-start gap-4 p-3 border rounded-md bg-background">
+                                                <Avatar>
+                                                    <AvatarImage src={note.avatar} />
+                                                    <AvatarFallback>{note.author.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <div>
+                                                            <span className="font-semibold">{note.author}</span>
+                                                            <span className="text-xs text-muted-foreground ml-2">{new Date(note.date).toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {note.isShared ? <Badge variant="outline">Shared</Badge> : <Badge variant="secondary">Private</Badge>}
+                                                            {note.author === currentUser.name && (
+                                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteNote(note.id)}>
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-sm mt-1">{note.content}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {/* Render legacy comments */}
+                                        <Comments />
+
+                                        {(!definition.notes || definition.notes.filter(note => note.isShared || note.author === currentUser.name).length === 0) && (
+                                            <p className="text-center text-muted-foreground py-4">No notes for this definition yet.</p>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

@@ -33,7 +33,6 @@ type AppHeaderProps = {
     onAnalyticsClick?: () => void;
     onTemplatesClick?: () => void;
     isAdmin: boolean;
-    setIsAdmin: (isAdmin: boolean) => void;
 }
 
 export default function AppHeader({ 
@@ -45,7 +44,6 @@ export default function AppHeader({
     onAnalyticsClick,
     onTemplatesClick,
     isAdmin,
-    setIsAdmin
 }: AppHeaderProps) {
 
   return (
@@ -53,7 +51,7 @@ export default function AppHeader({
        <div className="flex items-center gap-4">
         {children}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 ml-auto">
         <SharePopover />
         <Button variant="outline" size="sm" onClick={onTemplatesClick}>
           <Book className="h-4 w-4 mr-2" />
@@ -87,12 +85,9 @@ export default function AppHeader({
                 <AppearanceSettings />
             </DropdownMenuContent>
         </DropdownMenu>
-        <div className="flex items-center space-x-2 p-2 rounded-md border">
-            <Shield className="h-4 w-4" />
-            <Label htmlFor="admin-mode">Admin</Label>
-            <Switch id="admin-mode" checked={isAdmin} onCheckedChange={setIsAdmin} />
-        </div>
       </div>
     </header>
   );
 }
+
+    
