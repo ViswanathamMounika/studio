@@ -252,7 +252,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
         <div id="definition-content-area">
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
-                <TabsList>
+                <TabsList className="justify-start">
                     {visibleTabs.map(tab => (
                         <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
                     ))}
@@ -478,4 +478,4 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
   );
 }
 
-  
+    

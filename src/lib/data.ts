@@ -1,5 +1,4 @@
 
-
 import type { Definition, SupportingTable } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
@@ -226,6 +225,35 @@ const definition111_rev4 = {
         { name: 'State-Mandate-TX-112.docx', url: '#', size: '1.2 MB', type: 'DOCX' },
         { name: 'SQL-Query-Examples.txt', url: '#', size: '12 KB', type: 'TXT' },
     ],
+    notes: [
+      {
+        id: "note-1",
+        authorId: "user_456",
+        author: "Alex Smith",
+        avatar: "https://picsum.photos/seed/alex/40/40",
+        date: "2023-10-26T10:00:00Z",
+        content: "Can we get clarification on how 'Canceled/Carve-Outs' impacts the SLA calculation? It seems to be a gray area.",
+        isShared: true,
+      },
+      {
+        id: "note-2",
+        authorId: "user_789",
+        author: "Jane Doe",
+        avatar: "https://picsum.photos/seed/jane/40/40",
+        date: "2023-10-27T14:30:00Z",
+        content: "Good question, Alex. My understanding is that they are excluded from the denominator. I've attached the latest reporting guidelines to ticket MPM-1295.",
+        isShared: true,
+      },
+      {
+        id: "note-3",
+        authorId: "user_123",
+        author: "Current User",
+        avatar: "https://picsum.photos/seed/user/40/40",
+        date: "2023-10-28T09:00:00Z",
+        content: "This is a private note to follow up with the reporting team about the SLA exclusions. Need to confirm by EOD Friday.",
+        isShared: false,
+      }
+    ],
 };
 
 
@@ -255,7 +283,7 @@ export const initialDefinitions: Definition[] = [
           },
           {
             ticketId: 'MPM-1290',
-            date: '2023-05-20',
+            date: '2023-5-20',
             developer: 'A. Smith',
             description: 'Added details about Canceled/Carve-Outs logic.',
             snapshot: definition111_rev2,
