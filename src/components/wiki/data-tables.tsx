@@ -147,7 +147,7 @@ export default function DataTables() {
                 </Button>
             </CardHeader>
             <CardContent className="overflow-x-auto">
-                <Table>
+                <Table className="table-fixed">
                 <TableHeader className="sticky top-0 bg-muted z-10">
                     <TableRow>
                     {defDataTable.headers.map((header) => (
