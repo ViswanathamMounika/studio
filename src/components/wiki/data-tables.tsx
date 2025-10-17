@@ -2,7 +2,7 @@
 "use client";
 
 import React from 'react';
-import { allDataTables } from '@/lib/data';
+import { defDataTable } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -11,52 +11,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Badge } from '../ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 
 export default function DataTables() {
   return (
-    <div className="container mx-auto p-0 sm:p-6">
-      <Accordion type="single" collapsible className="w-full">
-        {allDataTables.map((dataTable) => (
-          <AccordionItem value={dataTable.id} key={dataTable.id}>
-            <AccordionTrigger>
-              <div className="flex flex-wrap items-center gap-4">
-                <span className="text-lg font-semibold">{dataTable.name}</span>
-                <Badge variant="outline">{dataTable.rows.length} rows</Badge>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <p className="text-muted-foreground mb-4">{dataTable.description}</p>
-              <div className="max-h-[400px] overflow-auto border rounded-md">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-muted">
-                    <TableRow>
-                      {dataTable.headers.map((header) => (
-                        <TableHead key={header}>{header}</TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dataTable.rows.map((row, rowIndex) => (
-                      <TableRow key={rowIndex}>
-                        {row.map((cell, cellIndex) => (
-                          <TableCell key={cellIndex}>{cell}</TableCell>
+    <div className="container mx-auto p-4 sm:p-6">
+       <Card>
+            <CardHeader>
+                <CardTitle>{defDataTable.name}</CardTitle>
+                <CardDescription>{defDataTable.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="max-h-[70vh] overflow-auto border rounded-md">
+                    <Table>
+                    <TableHeader className="sticky top-0 bg-muted">
+                        <TableRow>
+                        {defDataTable.headers.map((header) => (
+                            <TableHead key={header}>{header}</TableHead>
                         ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {defDataTable.rows.map((row, rowIndex) => (
+                        <TableRow key={rowIndex}>
+                            {defDataTable.headers.map((header, cellIndex) => (
+                                <TableCell key={cellIndex}>
+                                    {row[header as keyof typeof row] !== null ? String(row[header as keyof typeof row]) : 'NULL'}
+                                </TableCell>
+                            ))}
+                        </TableRow>
+                        ))}
+                    </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+       </Card>
     </div>
   );
 }
