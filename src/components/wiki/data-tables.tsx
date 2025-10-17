@@ -1,7 +1,8 @@
 
+
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { defDataTable } from '@/lib/data';
 import {
   Table,
@@ -34,7 +35,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type DataRow = (typeof defDataTable.rows)[0];
@@ -53,6 +54,8 @@ const initialFormState: DataRow = {
   LASTCHANGEDDATE: '',
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export default function DataTables() {
   const [rows, setRows] = useState(defDataTable.rows);
   const [formData, setFormData] = useState<DataRow>(initialFormState);
@@ -67,7 +70,8 @@ export default function DataTables() {
     });
     return widths;
   });
-
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, col: string) => {
     e.preventDefault();
@@ -102,7 +106,13 @@ export default function DataTables() {
   
   const handleAddNew = () => {
       setIsEditing(false);
-      setFormData(initialFormState);
+      const newId = rows.length > 0 ? Math.max(...rows.map(r => r.ID)) + 1 : 1;
+      setFormData({
+        ...initialFormState,
+        ID: newId,
+        CREATEDDATE: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        LASTCHANGEDDATE: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      });
       setIsModalOpen(true);
   };
   
@@ -121,16 +131,40 @@ export default function DataTables() {
   };
 
   const handleSave = () => {
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     if (isEditing) {
-      setRows(prev => prev.map(row => (row.ID === formData.ID ? formData : row)));
+      setRows(prev => prev.map(row => (row.ID === formData.ID ? {...formData, LASTCHANGEDDATE: now} : row)));
       toast({ title: 'Success', description: 'Row updated successfully.' });
     } else {
-      const newId = rows.length > 0 ? Math.max(...rows.map(r => r.ID)) + 1 : 1;
-      setRows(prev => [...prev, { ...formData, ID: newId }]);
+      setRows(prev => [...prev, { ...formData, CREATEDDATE: now, LASTCHANGEDDATE: now }]);
       toast({ title: 'Success', description: 'New row added successfully.' });
     }
     setIsModalOpen(false);
   };
+
+  const filteredRows = useMemo(() => {
+    if (!searchQuery) {
+      return rows;
+    }
+    return rows.filter(row => 
+      Object.values(row).some(value => 
+        String(value).toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [rows, searchQuery]);
+
+  const totalPages = Math.ceil(filteredRows.length / ITEMS_PER_PAGE);
+  const paginatedRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredRows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredRows, currentPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  }
+
+  const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const endItem = Math.min(startItem + ITEMS_PER_PAGE - 1, filteredRows.length);
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6">
@@ -141,15 +175,30 @@ export default function DataTables() {
                     <CardTitle>DEF_DATA_TABLE</CardTitle>
                     <CardDescription>Contains metadata and queries for definitions.</CardDescription>
                 </div>
-                <Button onClick={handleAddNew}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New
-                </Button>
+                <div className="flex items-center gap-4">
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Search table..."
+                            className="w-full rounded-lg bg-background pl-8"
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1); // Reset to first page on search
+                            }}
+                        />
+                    </div>
+                    <Button onClick={handleAddNew}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add New
+                    </Button>
+                </div>
             </CardHeader>
-            <CardContent className="py-6">
-                <div className="overflow-x-auto">
-                    <Table className="min-w-full">
-                        <TableHeader className="sticky top-0 bg-muted z-10">
+            <CardContent>
+                 <div className="overflow-x-auto border rounded-lg">
+                    <Table>
+                        <TableHeader>
                             <TableRow>
                             {defDataTable.headers.map((header) => (
                                 <TableHead key={header} style={{ width: colWidths[header], position: 'relative' }}>
@@ -166,7 +215,7 @@ export default function DataTables() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {rows.map((row) => (
+                            {paginatedRows.map((row) => (
                             <TableRow key={row.ID}>
                                 {defDataTable.headers.map((header) => (
                                     <TableCell key={header} className="truncate" style={{ maxWidth: colWidths[header]}}>
@@ -203,6 +252,24 @@ export default function DataTables() {
                     </Table>
                 </div>
             </CardContent>
+            <div className="flex items-center justify-between p-6">
+                <p className="text-sm text-muted-foreground">
+                    Showing {startItem} - {endItem} of {filteredRows.length} items
+                </p>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
+                        Previous
+                    </Button>
+                    {[...Array(totalPages).keys()].map(num => (
+                        <Button key={num + 1} variant={currentPage === num + 1 ? "default" : "outline"} onClick={() => handlePageChange(num + 1)}>
+                            {num + 1}
+                        </Button>
+                    ))}
+                    <Button variant="outline" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>
+                        Next
+                    </Button>
+                </div>
+            </div>
        </Card>
 
         <DialogContent className="max-w-2xl">
@@ -211,7 +278,7 @@ export default function DataTables() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
             {defDataTable.headers.map(header => (
-                (isEditing || header !== 'ID') && (
+                (isEditing || !['ID', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(header)) && (
                     <div key={header}>
                         <Label htmlFor={header}>{header}</Label>
                         <Input
@@ -236,3 +303,5 @@ export default function DataTables() {
     </div>
   );
 }
+
+    
