@@ -620,7 +620,7 @@ export default function Home() {
                   </div>
               </div>
               )}
-              <div className="flex-1 w-full overflow-y-auto" id="definition-content">
+              <div className="flex-1 w-full overflow-y-auto p-6" id="definition-content">
                   {renderContent()}
               </div>
           </main>
@@ -644,5 +644,3 @@ export default function Home() {
     </>
   );
 }
-
-    
