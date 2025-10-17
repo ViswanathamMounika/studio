@@ -49,7 +49,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
     setIsNodeExpanded(prev => !prev);
   };
   
-  const Icon = (hasChildren || node.name === "Claims") ? Folder : FileText;
+  const Icon = hasChildren ? Folder : FileText;
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -75,23 +75,23 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                     />
                 </div>
             )}
-            {hasChildren && (
+            {hasChildren ? (
                 <CollapsibleTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent" onClick={handleTriggerClick}>
                         <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isNodeExpanded && "rotate-90")} />
                     </Button>
                 </CollapsibleTrigger>
+            ) : (
+                <div className="w-8 h-8 shrink-0"></div>
             )}
             
             <div
                 className={cn(
-                    "w-full justify-start text-left h-8 pl-0 flex items-center cursor-pointer",
-                    !hasChildren && !isExportMode && 'pl-2',
-                    hasChildren && 'pl-0'
+                    "w-full justify-start text-left h-8 pl-0 flex items-center cursor-pointer"
                 )}
                 onClick={handleNodeSelect}
             >
-                <Icon className={cn("h-4 w-4 mr-2 shrink-0", hasChildren || node.name === "Claims" ? "text-primary" : "text-muted-foreground")} />
+                <Icon className={cn("h-4 w-4 mr-2 shrink-0", hasChildren ? "text-primary" : "text-muted-foreground")} />
                 <span className="truncate flex-1">{node.name}</span>
                 {node.isBookmarked && !isExportMode && (
                   <Bookmark className="h-4 w-4 shrink-0 fill-primary text-primary ml-auto mr-2" />
@@ -121,3 +121,4 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
     </Collapsible>
   );
 }
+
