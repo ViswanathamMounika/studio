@@ -65,7 +65,7 @@ export default function Home() {
         handleNavigate(view, false);
       } else if (definitionId) {
         handleSelectDefinition(definitionId, section || undefined);
-      } else if (!selectedDefinitionId && activeView === 'definitions') {
+      } else if (activeView === 'definitions' && !selectedDefinitionId) {
         setSelectedDefinitionId('1.1.1');
       }
     }
