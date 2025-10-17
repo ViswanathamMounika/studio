@@ -98,25 +98,25 @@ export default function AppHeader({
                   </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="relative">
+                        <Bell className="h-4 w-4" />
+                        {unreadCount > 0 && (
+                            <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
+                        )}
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-96">
+                    <Notifications 
+                        notifications={notifications} 
+                        setNotifications={setNotifications}
+                        onDefinitionClick={onDefinitionClick}
+                    />
+                </DropdownMenuContent>
+            </DropdownMenu>
           </>
         )}
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="relative">
-                    <Bell className="h-4 w-4" />
-                    {unreadCount > 0 && (
-                        <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
-                    )}
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-96">
-                <Notifications 
-                    notifications={notifications} 
-                    setNotifications={setNotifications}
-                    onDefinitionClick={onDefinitionClick}
-                />
-            </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </header>
   );
