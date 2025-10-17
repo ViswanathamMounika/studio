@@ -24,7 +24,7 @@ function isParent(node: Definition, selectedId: string): boolean {
     return false;
 }
 
-const DefinitionSubItems = ({ definitionId, onSelect, activeSection }: { definitionId: string, onSelect: (id: string, sectionId?: string) => void, activeSection: string }) => {
+const DefinitionSubItems = ({ definitionId, onSelect, activeSection, level }: { definitionId: string, onSelect: (id: string, sectionId?: string) => void, activeSection: string, level: number }) => {
     const subItems = [
         { id: 'description', label: 'Description', icon: FileText },
         { id: 'revisions', label: 'Version History', icon: FileClock },
@@ -33,13 +33,16 @@ const DefinitionSubItems = ({ definitionId, onSelect, activeSection }: { definit
     ];
 
     return (
-        <div className="pl-8 space-y-1 py-1">
+        <div className="space-y-1" style={{ paddingLeft: `${(level) * 1}rem` }}>
             {subItems.map(item => (
                 <div
                     key={item.id}
-                    onClick={() => onSelect(definitionId, item.id)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onSelect(definitionId, item.id)
+                    }}
                     className={cn(
-                        "flex items-center gap-2 p-1.5 rounded-md cursor-pointer text-sm",
+                        "flex items-center gap-2 p-1.5 rounded-md cursor-pointer text-sm ml-8",
                         "hover:bg-primary/10",
                         activeSection === item.id && "bg-primary/10 text-primary"
                     )}
@@ -72,7 +75,12 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
 
   const handleTriggerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsNodeExpanded(prev => !prev);
+    if(isSelected && !hasChildren){
+       setIsNodeExpanded(prev => !prev);
+    } else {
+       onSelect(node.id);
+       setIsNodeExpanded(prev => !prev);
+    }
   };
   
   const Icon = hasChildren || isModule ? Folder : FileText;
@@ -101,15 +109,15 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                     />
                 </div>
             )}
-            {hasChildren ? (
-                <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent" onClick={handleTriggerClick}>
+            
+            <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent" onClick={handleTriggerClick}>
+                    { (hasChildren || !isModule) ? (
                         <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isNodeExpanded && "rotate-90")} />
-                    </Button>
-                </CollapsibleTrigger>
-            ) : (
-                <div className="w-8 h-8 shrink-0"></div>
-            )}
+                    ) : ( <div className="w-4 h-4"></div>)
+                    }
+                </Button>
+            </CollapsibleTrigger>
             
             <div
                 className={cn(
@@ -144,8 +152,8 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                     ))}
                 </div>
             )}
-            {!isModule && isSelected && (
-                <DefinitionSubItems definitionId={node.id} onSelect={onSelect} activeSection={activeSection}/>
+            {!isModule && isSelected && isNodeExpanded && (
+                <DefinitionSubItems definitionId={node.id} onSelect={onSelect} activeSection={activeSection} level={level}/>
             )}
       </CollapsibleContent>
     </Collapsible>
