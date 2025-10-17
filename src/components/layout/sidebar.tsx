@@ -28,10 +28,8 @@ import {
     SidebarMenuItem,
     SidebarMenuButton,
     SidebarFooter,
-    SidebarTrigger
 } from "../ui/sidebar";
 import { cn } from '@/lib/utils';
-import { Button } from '../ui/button';
 
 type AppSidebarProps = {
     activeView: 'definitions' | 'data-tables';
@@ -74,7 +72,6 @@ export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) 
                         <p className='text-xs text-muted-foreground -mt-1'>MANAGEMENT</p>
                     </div>
                 </div>
-                <SidebarTrigger className='hidden md:flex'/>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarMenu>
