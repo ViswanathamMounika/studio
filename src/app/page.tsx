@@ -57,20 +57,22 @@ export default function Home() {
   useEffect(() => {
     if (isMounted) {
       const urlParams = new URLSearchParams(window.location.search);
-      const definitionId = urlParams.get('definitionId');
-      const section = urlParams.get('section');
-      const view = urlParams.get('view') as View;
+      const definitionIdFromUrl = urlParams.get('definitionId');
+      const sectionFromUrl = urlParams.get('section');
+      const viewFromUrl = urlParams.get('view') as View;
 
-      if (view && ['data-tables', 'definitions'].includes(view)) {
-        handleNavigate(view, false);
-      } else if (definitionId) {
-        handleSelectDefinition(definitionId, section || undefined);
-      } else if (activeView === 'definitions' && !selectedDefinitionId) {
-        setSelectedDefinitionId('1.1.1');
+      if (viewFromUrl) {
+        handleNavigate(viewFromUrl, false);
+      } else if (definitionIdFromUrl) {
+        handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, false);
+      } else {
+        // Default to definitions view with first definition selected
+        setActiveView('definitions');
+        handleSelectDefinition('1.1.1', undefined, true);
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMounted, activeView]);
+  }, [isMounted]);
 
   const updateUrl = (definitionId: string, sectionId?: string, view?: View) => {
     const url = new URL(window.location.href);
@@ -85,8 +87,11 @@ export default function Home() {
         if (sectionId) {
             url.searchParams.set('section', sectionId);
         }
+    } else {
+        // If no definitionId and no view, we are at the root of the definitions view.
+        // We could clear the path or set a default. For now, clear.
     }
-    window.history.pushState({}, '', url);
+    window.history.pushState({}, '', url.toString());
   };
 
   const handleNavigate = (view: View, shouldUpdateUrl = true) => {
@@ -188,7 +193,7 @@ export default function Home() {
     }
   }, [definitions, selectedDefinitionId, isBookmarked]);
 
-  const handleSelectDefinition = useCallback((id: string, sectionId?: string) => {
+  const handleSelectDefinition = useCallback((id: string, sectionId?: string, shouldUpdateUrl = true) => {
     const isSameDefinition = id === selectedDefinitionId;
     setActiveView('definitions');
     setIsEditing(false);
@@ -203,7 +208,9 @@ export default function Home() {
     
     const targetSection = sectionId || 'description';
     setActiveTab(targetSection);
-    updateUrl(id, targetSection);
+    if (shouldUpdateUrl) {
+        updateUrl(id, targetSection);
+    }
 
     setTimeout(() => {
       const element = document.getElementById(`section-${targetSection}`);
@@ -211,6 +218,7 @@ export default function Home() {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 100);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [definitions, selectedDefinitionId]);
 
 
@@ -531,7 +539,7 @@ export default function Home() {
               onDefinitionClick={handleSelectDefinition}
               activeView={activeView}
           />
-          <main className="flex-1 flex overflow-hidden gap-4">
+          <main className="flex-1 flex overflow-hidden">
              {activeView === 'definitions' && (
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card">
                   <div className="p-4 border-b flex items-center gap-2">
@@ -612,7 +620,7 @@ export default function Home() {
                   </div>
               </div>
               )}
-              <div className="w-full overflow-y-auto" id="definition-content">
+              <div className="flex-1 w-full overflow-y-auto" id="definition-content">
                   {renderContent()}
               </div>
           </main>
@@ -636,3 +644,5 @@ export default function Home() {
     </>
   );
 }
+
+    

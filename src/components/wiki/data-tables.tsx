@@ -147,7 +147,7 @@ export default function DataTables() {
                 </Button>
             </CardHeader>
             <CardContent>
-                <div className="max-h-[70vh] overflow-auto border rounded-md">
+                <div className="overflow-auto border rounded-md">
                     <Table>
                     <TableHeader className="sticky top-0 bg-muted z-10">
                         <TableRow>
@@ -236,3 +236,5 @@ export default function DataTables() {
     </div>
   );
 }
+
+    
