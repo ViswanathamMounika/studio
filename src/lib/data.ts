@@ -63,7 +63,7 @@ export const vwAuthActionTimeTable: SupportingTable = {
 
 export const defDataTable = {
     id: 'def-data-table',
-    name: 'wiki.DEF_DATA_TABLE',
+    name: 'DEF_DATA_TABLE',
     description: 'Contains metadata and queries for definitions, linking them to underlying database objects.',
     headers: ['ID', 'DEF_ID', 'OBJECT_TYPE', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'CREATEDBY', 'CREATEDDATE', 'LASTCHANGEDBY', 'LASTCHANGEDDATE'],
     rows: [
