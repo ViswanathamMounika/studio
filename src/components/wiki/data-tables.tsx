@@ -54,7 +54,7 @@ const initialFormState: DataRow = {
   LASTCHANGEDDATE: '',
 };
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 15;
 
 export default function DataTables() {
   const [rows, setRows] = useState(defDataTable.rows);
@@ -167,7 +167,7 @@ export default function DataTables() {
   const endItem = Math.min(startItem + ITEMS_PER_PAGE - 1, filteredRows.length);
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6">
+    <div className="p-4 sm:p-6">
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -197,7 +197,7 @@ export default function DataTables() {
             </CardHeader>
             <CardContent>
                  <div className="overflow-x-auto border rounded-lg">
-                    <Table>
+                    <Table className="min-w-full">
                         <TableHeader>
                             <TableRow>
                             {defDataTable.headers.map((header) => (

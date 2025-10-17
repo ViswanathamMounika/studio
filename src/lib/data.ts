@@ -61,14 +61,11 @@ export const vwAuthActionTimeTable: SupportingTable = {
     ]
 }
 
-const generateRandomString = (length: number) => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
-};
+const names = ['J. Doe', 'A. Smith', 'T. Johnson', 'S. Lee', 'M. Garcia', 'P. Williams', 'D. Brown', 'K. Nguyen'];
+
+const getRandomName = () => {
+    return names[Math.floor(Math.random() * names.length)];
+}
 
 const generateRandomDate = () => {
     const start = new Date(2022, 0, 1);
@@ -85,9 +82,9 @@ const additionalRows = Array.from({ length: 31 }, (_, i) => ({
     DATABASE_NAME: ['DW_Reporting', 'Finance', 'Provider_Data', 'Claims'][Math.floor(Math.random()*4)],
     QUERY: `SELECT col FROM table_${i+1}`,
     NAME: `Generated Row ${i+1}`,
-    CREATEDBY: generateRandomString(10),
+    CREATEDBY: getRandomName(),
     CREATEDDATE: generateRandomDate(),
-    LASTCHANGEDBY: generateRandomString(10),
+    LASTCHANGEDBY: getRandomName(),
     LASTCHANGEDDATE: generateRandomDate(),
 }));
 
@@ -97,10 +94,10 @@ export const defDataTable = {
     description: 'Contains metadata and queries for definitions, linking them to underlying database objects.',
     headers: ['ID', 'DEF_ID', 'OBJECT_TYPE', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'CREATEDBY', 'CREATEDDATE', 'LASTCHANGEDBY', 'LASTCHANGEDDATE'],
     rows: [
-        { ID: 1, DEF_ID: 101, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-01', DATABASE_NAME: 'DW_Reporting', QUERY: 'SELECT * FROM vw_AuthDecisionDate', NAME: 'Auth Decision Date View', CREATEDBY: 'A5E6B7C8...', CREATEDDATE: '2023-01-15 10:30:00', LASTCHANGEDBY: 'F9E8D7C6...', LASTCHANGEDDATE: '2023-11-10 14:00:00' },
-        { ID: 2, DEF_ID: 102, OBJECT_TYPE: 2, SERVER_NAME: 'SQL-PROD-01', DATABASE_NAME: 'DW_Reporting', QUERY: 'sp_GetServiceTypeMappings', NAME: 'Service Type Mapping Procedure', CREATEDBY: 'A5E6B7C8...', CREATEDDATE: '2023-02-20 11:00:00', LASTCHANGEDBY: 'F9E8D7C6...', LASTCHANGEDDATE: '2023-10-01 09:20:00' },
-        { ID: 3, DEF_ID: 201, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-02', DATABASE_NAME: 'Finance', QUERY: 'SELECT * FROM vw_ContractedRates', NAME: 'Contracted Rates View', CREATEDBY: 'B4D3C2A1...', CREatedDATE: '2022-12-10 08:00:00', LASTCHANGEDBY: 'B4D3C2A1...', LASTCHANGEDDATE: '2024-01-05 16:45:00' },
-        { ID: 4, DEF_ID: 301, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-03', DATABASE_name: 'Provider_Data', QUERY: 'SELECT ProviderID, Name, Address FROM ProviderMaster', NAME: 'Provider Demographics Query', CREATEDBY: 'C3B2A1F0...', CREATEDDATE: '2023-03-12 13:00:00', LASTCHANGEDBY: 'C3B2A1F0...', LASTCHANGEDDATE: '2023-09-18 11:30:00' },
+        { ID: 1, DEF_ID: 101, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-01', DATABASE_NAME: 'DW_Reporting', QUERY: 'SELECT * FROM vw_AuthDecisionDate', NAME: 'Auth Decision Date View', CREATEDBY: 'J. Doe', CREATEDDATE: '2023-01-15 10:30:00', LASTCHANGEDBY: 'A. Smith', LASTCHANGEDDATE: '2023-11-10 14:00:00' },
+        { ID: 2, DEF_ID: 102, OBJECT_TYPE: 2, SERVER_NAME: 'SQL-PROD-01', DATABASE_NAME: 'DW_Reporting', QUERY: 'sp_GetServiceTypeMappings', NAME: 'Service Type Mapping Procedure', CREATEDBY: 'J. Doe', CREATEDDATE: '2023-02-20 11:00:00', LASTCHANGEDBY: 'A. Smith', LASTCHANGEDDATE: '2023-10-01 09:20:00' },
+        { ID: 3, DEF_ID: 201, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-02', DATABASE_NAME: 'Finance', QUERY: 'SELECT * FROM vw_ContractedRates', NAME: 'Contracted Rates View', CREATEDBY: 'T. Johnson', CREatedDATE: '2022-12-10 08:00:00', LASTCHANGEDBY: 'T. Johnson', LASTCHANGEDDATE: '2024-01-05 16:45:00' },
+        { ID: 4, DEF_ID: 301, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-03', DATABASE_name: 'Provider_Data', QUERY: 'SELECT ProviderID, Name, Address FROM ProviderMaster', NAME: 'Provider Demographics Query', CREATEDBY: 'S. Lee', CREATEDDATE: '2023-03-12 13:00:00', LASTCHANGEDBY: 'S. Lee', LASTCHANGEDDATE: '2023-09-18 11:30:00' },
         ...additionalRows,
     ]
 };
