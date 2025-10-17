@@ -21,13 +21,12 @@ import { Badge } from '../ui/badge';
 
 export default function DataTables() {
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Supporting Data Tables</h1>
+    <div className="container mx-auto p-0 sm:p-6">
       <Accordion type="single" collapsible className="w-full">
         {allDataTables.map((dataTable) => (
           <AccordionItem value={dataTable.id} key={dataTable.id}>
             <AccordionTrigger>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <span className="text-lg font-semibold">{dataTable.name}</span>
                 <Badge variant="outline">{dataTable.rows.length} rows</Badge>
               </div>

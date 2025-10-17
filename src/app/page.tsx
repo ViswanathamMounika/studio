@@ -22,11 +22,10 @@ import AnalyticsModal from '@/components/wiki/analytics-modal';
 import NewDefinitionModal from '@/components/wiki/new-definition-modal';
 import TemplatesModal from '@/components/wiki/templates-modal';
 import useLocalStorage from '@/hooks/use-local-storage';
-import Notifications from '@/components/wiki/notifications';
 import DataTables from '@/components/wiki/data-tables';
 import { diff_match_patch } from 'diff-match-patch';
 
-type View = 'definitions' | 'notifications' | 'data-tables';
+type View = 'definitions' | 'data-tables';
 
 export default function Home() {
   const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
@@ -61,7 +60,7 @@ export default function Home() {
       const section = urlParams.get('section');
       const view = urlParams.get('view') as View;
 
-      if (view && ['data-tables'].includes(view)) {
+      if (view && ['data-tables', 'definitions'].includes(view)) {
         handleNavigate(view, false);
       } else if (definitionId) {
         handleSelectDefinition(definitionId, section || undefined);
@@ -69,6 +68,7 @@ export default function Home() {
         setSelectedDefinitionId('1.1.1');
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted]);
 
   const updateUrl = (definitionId: string, sectionId?: string, view?: View) => {
@@ -524,6 +524,7 @@ export default function Home() {
               notifications={notifications}
               setNotifications={setNotifications}
               onDefinitionClick={handleSelectDefinition}
+              activeView={activeView}
           />
           <main className="flex-1 flex overflow-hidden">
              {activeView === 'definitions' && (
@@ -605,7 +606,7 @@ export default function Home() {
                   </div>
               </div>
               )}
-              <div className="w-full overflow-y-auto p-6" id="definition-content">
+              <div className="w-full overflow-y-auto" id="definition-content">
                   {renderContent()}
               </div>
           </main>
@@ -628,5 +629,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

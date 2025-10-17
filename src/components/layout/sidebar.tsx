@@ -3,18 +3,17 @@
 
 import { useState } from 'react';
 import {
-    BookCopy,
     Database,
     ChevronDown,
     Zap,
     Newspaper,
     BookOpen,
     KeyRound,
-    ShoppingCart,
-    SquareChartGantt,
     Users,
     HeartPulse,
-    BadgePercent
+    BadgePercent,
+    ShoppingCart,
+    SquareGanttChart
 } from "lucide-react";
 import {
     Collapsible,
@@ -31,7 +30,6 @@ import {
     SidebarFooter,
     SidebarTrigger
 } from "../ui/sidebar";
-import { Logo } from "../icons";
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 
@@ -40,16 +38,19 @@ type AppSidebarProps = {
     onNavigate: (view: 'definitions' | 'data-tables') => void;
 };
 
+const topNavItems = [
+    { id: 'accountability', label: 'Accountability', icon: Zap },
+    { id: 'posts', label: 'Posts', icon: Newspaper },
+];
+
 const wikiNavItems = [
     { id: 'definitions', label: 'MPM Definitions', icon: KeyRound },
     { id: 'data-tables', label: 'Data Tables', icon: Database },
     { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
-    { id: 'acronyms', label: 'Healthcare Acronyms', icon: SquareChartGantt },
+    { id: 'acronyms', label: 'Healthcare Acronyms', icon: SquareGanttChart },
 ];
 
-const otherNavItems = [
-    { id: 'accountability', label: 'Accountability', icon: Zap },
-    { id: 'posts', label: 'Posts', icon: Newspaper },
+const bottomNavItems = [
     { id: 'clients', label: 'Clients', icon: Users },
     { id: 'health-plans', label: 'Health Plans', icon: HeartPulse },
     { id: 'lob-codes', label: 'LOB Codes', icon: BadgePercent },
@@ -58,7 +59,7 @@ const otherNavItems = [
 export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) {
     const [isWikiOpen, setIsWikiOpen] = useState(true);
 
-    const handleNavigate = (id: 'definitions' | 'data-tables') => {
+    const handleNavigate = (id: string) => {
         if (id === 'data-tables' || id === 'definitions') {
             onNavigate(id);
         } else {
@@ -71,7 +72,6 @@ export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) 
         <Sidebar>
             <SidebarHeader>
                  <div className="flex items-center gap-2">
-                    <Logo className="size-8" />
                     <div className="flex flex-col">
                         <h1 className="text-lg font-bold tracking-tight">MedPOINT</h1>
                         <p className='text-xs text-muted-foreground -mt-1'>MANAGEMENT</p>
@@ -81,11 +81,11 @@ export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) 
             </SidebarHeader>
             <SidebarContent>
                 <SidebarMenu>
-                     {otherNavItems.map(item => (
+                     {topNavItems.map(item => (
                         <SidebarMenuItem key={item.id}>
                             <SidebarMenuButton
                                 isActive={false}
-                                onClick={() => {}}
+                                onClick={() => handleNavigate(item.id)}
                             >
                                 <item.icon />
                                 {item.label}
@@ -94,22 +94,24 @@ export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) 
                     ))}
 
                     <Collapsible open={isWikiOpen} onOpenChange={setIsWikiOpen}>
-                        <CollapsibleTrigger asChild>
-                            <div className="group/menu-item relative flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 cursor-pointer">
-                                <BookOpen />
-                                <span>Wiki</span>
-                                <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isWikiOpen && "rotate-180")} />
-                            </div>
-                        </CollapsibleTrigger>
+                        <SidebarMenuItem>
+                            <CollapsibleTrigger asChild>
+                                <SidebarMenuButton>
+                                    <BookOpen />
+                                    <span>Wiki</span>
+                                    <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isWikiOpen && "rotate-180")} />
+                                </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                        </SidebarMenuItem>
 
                         <CollapsibleContent className="py-1">
-                            <SidebarMenu>
+                            <SidebarMenu className='pl-4'>
                                 {wikiNavItems.map(item => (
                                     <SidebarMenuItem key={item.id}>
                                         <SidebarMenuButton
                                             isActive={activeView === item.id}
-                                            onClick={() => handleNavigate(item.id as any)}
-                                            className="h-8 pl-8"
+                                            onClick={() => handleNavigate(item.id)}
+                                            className="h-8"
                                         >
                                             <item.icon />
                                             {item.label}
@@ -119,6 +121,18 @@ export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) 
                             </SidebarMenu>
                         </CollapsibleContent>
                     </Collapsible>
+                    
+                    {bottomNavItems.map(item => (
+                        <SidebarMenuItem key={item.id}>
+                            <SidebarMenuButton
+                                isActive={false}
+                                onClick={() => handleNavigate(item.id)}
+                            >
+                                <item.icon />
+                                {item.label}
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    ))}
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter>
