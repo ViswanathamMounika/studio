@@ -24,7 +24,6 @@ import TemplatesModal from '@/components/wiki/templates-modal';
 import useLocalStorage from '@/hooks/use-local-storage';
 import Notifications from '@/components/wiki/notifications';
 import DataTables from '@/components/wiki/data-tables';
-import { diff } from 'jest-diff';
 import { diff_match_patch } from 'diff-match-patch';
 
 type View = 'definitions' | 'notifications' | 'data-tables';
@@ -300,7 +299,7 @@ export default function Home() {
                     id: `mod-${Date.now()}`,
                     name: newDefinition.module,
                     module: newDefinition.module, // self-reference for top level
-                    keywords: [], description: '', technicalDetails: '', examples: '', usage: '', revisions: [], isArchived: false, supportingTables: [], attachments: [], notes: [],
+                    keywords: [], description: '', revisions: [], isArchived: false, supportingTables: [], attachments: [], notes: [],
                     children: [newDefinition]
                 };
                 return [...prev, newModule];

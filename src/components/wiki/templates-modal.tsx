@@ -27,7 +27,7 @@ type Template = {
   title: string;
   description: string;
   icon: React.ElementType;
-  data: Partial<Definition>;
+  data: Partial<Omit<Definition, 'id' | 'revisions' | 'isArchived'>>;
 };
 
 const templates: Template[] = [
@@ -41,39 +41,30 @@ const templates: Template[] = [
       module: 'Core',
       keywords: [],
       description: '',
-      technicalDetails: '',
-      examples: '',
-      usage: '',
     },
   },
   {
     id: 'standard',
     title: 'Standard Definition',
-    description: 'A basic template with sections for description, technical details, and examples.',
+    description: 'A basic template with a description section.',
     icon: FileText,
     data: {
         name: 'New Standard Definition',
         module: 'Core',
         keywords: ['standard'],
         description: '<h3>Overview</h3><p>A clear and concise summary of what this term means.</p>',
-        technicalDetails: '<h3>Data Model</h3><p>Relevant tables, columns, and data sources.</p>',
-        examples: '<h3>Scenario 1</h3><p>Describe a real-world example.</p>',
-        usage: '<h3>Reporting</h3><p>How is this definition used in reports?</p>'
     }
   },
   {
     id: 'technical-spec',
     title: 'Technical Specification',
-    description: 'A detailed template for technical terms, including SQL queries and data lineage.',
+    description: 'A detailed template for technical terms.',
     icon: Code,
     data: {
         name: 'New Technical Specification',
         module: 'Core',
         keywords: ['technical', 'sql'],
         description: '<h3>Purpose</h3><p>What is the goal of this technical component?</p>',
-        technicalDetails: '<h3>SQL Query</h3><pre><code>SELECT * FROM ...</code></pre><h3>Data Lineage</h3><p>Source -> Staging -> Final</p>',
-        examples: '<h3>Example Usage</h3><p>How to query or use this component.</p>',
-        usage: '<h3>Dependencies</h3><p>What other definitions or systems depend on this?</p>'
     }
   },
 ];

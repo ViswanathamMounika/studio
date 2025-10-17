@@ -36,9 +36,6 @@ export interface Definition {
   module: string;
   keywords: string[];
   description: string;
-  technicalDetails: string;
-  examples: string;
-  usage: string;
   revisions: Revision[];
   isArchived: boolean;
   isBookmarked?: boolean;

@@ -37,9 +37,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       keywords,
       description,
       attachments,
-      technicalDetails: definition.technicalDetails, // Preserve existing data
-      examples: definition.examples,
-      usage: definition.usage,
     });
   };
 

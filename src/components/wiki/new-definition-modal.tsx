@@ -35,10 +35,6 @@ const initialDefinitionState = {
   module: 'Core',
   keywords: [],
   description: '',
-  technicalDetails: '',
-  examples: '',
-  usage: '',
-  supportingTables: [],
   attachments: [],
 };
 
@@ -48,9 +44,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave }: NewDe
   const [keywords, setKeywords] = useState<string[]>(initialDefinitionState.keywords);
   const [currentKeyword, setCurrentKeyword] = useState('');
   const [description, setDescription] = useState(initialDefinitionState.description);
-  const [technicalDetails, setTechnicalDetails] = useState(initialDefinitionState.technicalDetails);
-  const [examples, setExamples] = useState(initialDefinitionState.examples);
-  const [usage, setUsage] = useState(initialDefinitionState.usage);
   const [attachments, setAttachments] = useState<Attachment[]>(initialDefinitionState.attachments);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,9 +55,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave }: NewDe
       setKeywords(initialDefinitionState.keywords);
       setCurrentKeyword('');
       setDescription(initialDefinitionState.description);
-      setTechnicalDetails(initialDefinitionState.technicalDetails);
-      setExamples(initialDefinitionState.examples);
-      setUsage(initialDefinitionState.usage);
       setAttachments(initialDefinitionState.attachments);
     }
   }, [open]);
@@ -75,9 +65,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave }: NewDe
       module,
       keywords,
       description,
-      technicalDetails,
-      examples,
-      usage,
       attachments,
       supportingTables: [], // Defaulting to empty for new definitions
     };
@@ -185,31 +172,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave }: NewDe
                   </CardHeader>
                   <CardContent>
                     <WysiwygEditor value={description} onChange={setDescription} />
-                  </CardContent>
-              </Card>
-
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Technical Details</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <WysiwygEditor value={technicalDetails} onChange={setTechnicalDetails} />
-                  </CardContent>
-              </Card>
-
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Examples & Usage</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                     <div>
-                        <Label>Examples</Label>
-                        <WysiwygEditor value={examples} onChange={setExamples} />
-                    </div>
-                    <div>
-                        <Label>Usage</Label>
-                        <WysiwygEditor value={usage} onChange={setUsage} />
-                    </div>
                   </CardContent>
               </Card>
 

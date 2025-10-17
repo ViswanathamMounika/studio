@@ -76,9 +76,6 @@ const definition111_rev1 = {
     module: 'Authorizations',
     keywords: ['authorization', 'decision date'],
     description: `<p>The date on which a final decision is made for an authorization request.</p>`,
-    technicalDetails: `<p>The decision date is stored in the <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> table.</p>`,
-    examples: `<p>An auth is approved on 2023-10-05. The Auth Decision Date is 2023-10-05.</p>`,
-    usage: `<p>Used in regulatory reports.</p>`,
     isArchived: false,
     supportingTables: [{ id: 'auth-status-codes', name: 'Authorization Status Codes' }],
     attachments: [],
@@ -143,19 +140,6 @@ const definition111_rev2 = {
           <li>If no MD Note or V or X status then DECISION DATE = Date auth moved to status C</li>
       </ul>
     `,
-    technicalDetails: `
-      <p>The decision date is stored in the <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> table.</p>
-      <pre class="bg-muted p-2 rounded-md font-code text-sm overflow-x-auto"><code class="language-sql">SELECT decision_date 
-FROM authorization_master 
-WHERE auth_id = :authId;</code></pre>
-      <p>The field is of type <code class="font-code text-primary">DATETIME</code> and is indexed for performance.</p>
-    `,
-    examples: `
-      <p>An authorization for a 3-month physical therapy course is submitted on 2023-10-01. The health plan reviews it and approves it on 2023-10-05. The Auth Decision Date is 2023-10-05.</p>
-    `,
-    usage: `
-      <p>This field is used in regulatory reports to demonstrate compliance with turnaround time requirements. It's also a key metric in operational dashboards to monitor team efficiency.</p>
-    `,
     isArchived: false,
     supportingTables: [
         { id: 'auth-status-codes', name: 'Authorization Status Codes' },
@@ -170,9 +154,6 @@ WHERE auth_id = :authId;</code></pre>
 const definition111_rev3 = {
     ...definition111_rev2,
     keywords: ['authorization', 'decision date', 'approved', 'denied', 'SLA'],
-    usage: `
-      <p>This field is used in regulatory reports to demonstrate compliance with turnaround time requirements. It is also a key metric in operational dashboards to monitor team efficiency and SLA performance.</p>
-    `,
     attachments: [
         { name: 'Workflow-Diagram-v1.pdf', url: '#', size: '845 KB', type: 'PDF' },
         { name: 'State-Mandate-TX-112.docx', url: '#', size: '1.2 MB', type: 'DOCX' },
@@ -234,13 +215,6 @@ const definition111_rev4 = {
           <li>If no MD Note or V or X status then DECISION DATE = Date auth moved to status C</li>
       </ul>
     `,
-    technicalDetails: `
-      <p>The decision date is primarily derived from the <a href="#" data-supporting-table-id="vw-authactiontime">vw_authactiontime</a> view.</p>
-      <pre class="bg-muted p-2 rounded-md font-code text-sm overflow-x-auto"><code class="language-sql">SELECT COALESCE(modifdate, denieddate, apprvdate, canceldate, carvoutdate) as decision_date 
-FROM vw_authactiontime 
-WHERE auth_id = :authId;</code></pre>
-      <p>Logic falls back to <code class="font-code text-primary">AUTHORIZATION_EVENTS</code> if the view returns null. In some cases, the <a href="#" data-supporting-table-id="timestamp-changed">timestamp_changed</a> table is consulted.</p>
-    `,
     supportingTables: [
         { id: 'auth-status-codes', name: 'Authorization Status Codes' },
         { id: 'cms-compliance', name: 'CMS Compliance Matrix' },
@@ -262,9 +236,6 @@ export const initialDefinitions: Definition[] = [
     module: 'Authorizations',
     keywords: [],
     description: '',
-    technicalDetails: '',
-    examples: '',
-    usage: '',
     revisions: [],
     isArchived: false,
     supportingTables: [],
@@ -311,9 +282,6 @@ export const initialDefinitions: Definition[] = [
         module: 'Authorizations',
         keywords: ['service type', 'procedure code', 'mapping'],
         description: '<p>Defines how provider-submitted procedure codes (e.g., CPT, HCPCS) are mapped to internal service type categories for routing and adjudication.</p>',
-        technicalDetails: '<p>Mapping is managed in the <code class="font-code text-primary">SERVICE_TYPE_MAP</code> table, which joins procedure codes to service category IDs.</p>',
-        examples: '',
-        usage: '<p>Ensures consistent application of benefits and rules based on service categories rather than individual procedure codes.</p>',
         revisions: [],
         isArchived: false,
         supportingTables: [],
@@ -326,9 +294,6 @@ export const initialDefinitions: Definition[] = [
         module: 'Authorizations',
         keywords: ['SLA', 'Timeliness', 'Turnaround Time'],
         description: '<p>Measures the time taken from the receipt of an authorization request to the time a final decision is rendered.</p>',
-        technicalDetails: '',
-        examples: '',
-        usage: '',
         revisions: [],
         isArchived: false,
         supportingTables: [],
@@ -343,9 +308,6 @@ export const initialDefinitions: Definition[] = [
     module: 'Claims',
     keywords: [],
     description: '',
-    technicalDetails: '',
-    examples: '',
-    usage: '',
     revisions: [],
     isArchived: false,
     supportingTables: [],
@@ -358,9 +320,6 @@ export const initialDefinitions: Definition[] = [
             module: 'Claims',
             keywords: ['claim', 'adjudication', 'paid', 'denied'],
             description: '<p>The final status of a claim after it has been processed by the adjudication system.</p>',
-            technicalDetails: '<p>Status is stored in the <code class="font-code text-primary">CLAIMS_MASTER</code> table in the `adjudication_status` column.</p>',
-            examples: '<p>A claim is submitted and passes all edits. Its status becomes "Paid". If it fails a medical necessity review, its status becomes "Denied".</p>',
-            usage: '',
             revisions: [],
             isArchived: true,
             supportingTables: [],
@@ -375,9 +334,6 @@ export const initialDefinitions: Definition[] = [
     module: 'Provider',
     keywords: [],
     description: '',
-    technicalDetails: '',
-    examples: '',
-    usage: '',
     revisions: [],
     isArchived: false,
     supportingTables: [],
@@ -390,9 +346,6 @@ export const initialDefinitions: Definition[] = [
             module: 'Provider',
             keywords: ['provider', 'contract', 'rates', 'fee schedule'],
             description: '<p>The negotiated payment rates for services rendered by in-network providers, as defined in their contract.</p>',
-            technicalDetails: '',
-            examples: '',
-            usage: '',
             revisions: [],
             isArchived: false,
             supportingTables: [],
@@ -405,9 +358,6 @@ export const initialDefinitions: Definition[] = [
             module: 'Provider',
             keywords: ['provider', 'demographics', 'address', 'specialty'],
             description: '<p>Basic information about a healthcare provider, including name, address, contact information, and specialty.</p>',
-            technicalDetails: '',
-            examples: '',
-            usage: '',
             revisions: [],
             isArchived: false,
             supportingTables: [],
@@ -420,9 +370,6 @@ export const initialDefinitions: Definition[] = [
             module: 'Provider',
             keywords: ['network', 'participation', 'provider'],
             description: '<p>The criteria and rules determining whether a provider is considered in-network for a specific health plan product.</p>',
-            technicalDetails: '',
-            examples: '',
-            usage: '',
             revisions: [],
             isArchived: false,
             supportingTables: [],
@@ -437,9 +384,6 @@ export const initialDefinitions: Definition[] = [
       module: 'Member',
       keywords: [],
       description: '',
-      technicalDetails: '',
-      examples: '',
-      usage: '',
       revisions: [],
       isArchived: false,
       supportingTables: [],
@@ -452,9 +396,6 @@ export const initialDefinitions: Definition[] = [
               module: 'Member',
               keywords: ['member', 'eligibility', 'coverage'],
               description: '<p>The status of a member\'s enrollment and active coverage under a specific health plan for a given period.</p>',
-              technicalDetails: '',
-              examples: '',
-              usage: '',
               revisions: [],
               isArchived: false,
               supportingTables: [],
