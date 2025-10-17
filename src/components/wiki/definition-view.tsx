@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pencil, Bookmark, Trash2, Share2, Save } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -252,7 +252,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
         <div id="definition-content-area">
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
-                <TabsList className="justify-start">
+                <TabsList className={cn('grid w-full', `grid-cols-${visibleTabs.length}`)}>
                     {visibleTabs.map(tab => (
                         <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
                     ))}
@@ -477,5 +477,3 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     </TooltipProvider>
   );
 }
-
-    

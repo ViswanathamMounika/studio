@@ -331,32 +331,6 @@ export const initialDefinitions: Definition[] = [
     ],
   },
   {
-    id: '2',
-    name: 'Claims',
-    module: 'Claims',
-    keywords: [],
-    description: '',
-    revisions: [],
-    isArchived: false,
-    supportingTables: [],
-    attachments: [],
-    notes: [],
-    children: [
-        {
-            id: '1.2.1',
-            name: 'Claim Adjudication Status',
-            module: 'Claims',
-            keywords: ['claim', 'adjudication', 'paid', 'denied'],
-            description: '<p>The final status of a claim after it has been processed by the adjudication system.</p>',
-            revisions: [],
-            isArchived: true,
-            supportingTables: [],
-            attachments: [],
-            notes: [],
-        }
-    ]
-  },
-  {
     id: '3',
     name: 'Provider',
     module: 'Provider',
@@ -431,6 +405,32 @@ export const initialDefinitions: Definition[] = [
               notes: [],
           }
       ]
+  },
+  {
+    id: '2',
+    name: 'Claims',
+    module: 'Claims',
+    keywords: [],
+    description: '',
+    revisions: [],
+    isArchived: false,
+    supportingTables: [],
+    attachments: [],
+    notes: [],
+    children: [
+        {
+            id: '1.2.1',
+            name: 'Claim Adjudication Status',
+            module: 'Claims',
+            keywords: ['claim', 'adjudication', 'paid', 'denied'],
+            description: '<p>The final status of a claim after it has been processed by the adjudication system.</p>',
+            revisions: [],
+            isArchived: true,
+            supportingTables: [],
+            attachments: [],
+            notes: [],
+        }
+    ]
   }
 ];
 
