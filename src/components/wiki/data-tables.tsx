@@ -149,57 +149,57 @@ export default function DataTables() {
             <CardContent className="py-6">
                 <div className="overflow-x-auto">
                     <Table className="min-w-full">
-                    <TableHeader className="sticky top-0 bg-muted z-10">
-                        <TableRow>
-                        {defDataTable.headers.map((header) => (
-                            <TableHead key={header} style={{ width: colWidths[header], position: 'relative' }}>
-                                <div className="flex items-center justify-between">
-                                    {header}
-                                    <div
-                                    onMouseDown={(e) => handleMouseDown(e, header)}
-                                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize" 
-                                    />
-                                </div>
-                            </TableHead>
-                        ))}
-                        <TableHead className="w-[100px] text-center">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {rows.map((row) => (
-                        <TableRow key={row.ID}>
+                        <TableHeader className="sticky top-0 bg-muted z-10">
+                            <TableRow>
                             {defDataTable.headers.map((header) => (
-                                <TableCell key={header} className="truncate" style={{ maxWidth: colWidths[header]}}>
-                                    {row[header as keyof typeof row] !== null ? String(row[header as keyof typeof row]) : 'NULL'}
-                                </TableCell>
+                                <TableHead key={header} style={{ width: colWidths[header], position: 'relative' }}>
+                                    <div className="flex items-center justify-between">
+                                        {header}
+                                        <div
+                                        onMouseDown={(e) => handleMouseDown(e, header)}
+                                        className="absolute right-0 top-0 h-full w-2 cursor-col-resize" 
+                                        />
+                                    </div>
+                                </TableHead>
                             ))}
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(row)}>
-                                    <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <TableHead className="w-[100px] text-center">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {rows.map((row) => (
+                            <TableRow key={row.ID}>
+                                {defDataTable.headers.map((header) => (
+                                    <TableCell key={header} className="truncate" style={{ maxWidth: colWidths[header]}}>
+                                        {row[header as keyof typeof row] !== null ? String(row[header as keyof typeof row]) : 'NULL'}
+                                    </TableCell>
+                                ))}
+                                <TableCell className="text-center">
+                                    <div className="flex justify-center gap-2">
+                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(row)}>
+                                        <Edit className="h-4 w-4" />
                                         </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                            <AlertDialogDescription>This will permanently delete the row with ID {row.ID}.</AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(row.ID)}>Delete</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                        ))}
-                    </TableBody>
+                                        <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon">
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>This will permanently delete the row with ID {row.ID}.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(row.ID)}>Delete</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
                     </Table>
                 </div>
             </CardContent>
@@ -236,3 +236,5 @@ export default function DataTables() {
     </div>
   );
 }
+
+    
