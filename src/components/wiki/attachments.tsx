@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Attachment } from "@/lib/types";
@@ -20,12 +21,12 @@ const getFileIcon = (type: string) => {
 };
 
 type AttachmentListProps = {
-  attachments: Attachment[];
+  attachments?: Attachment[];
   isEditing?: boolean;
   onRemove?: (name: string) => void;
 };
 
-export default function AttachmentList({ attachments, isEditing = false, onRemove }: AttachmentListProps) {
+export default function AttachmentList({ attachments = [], isEditing = false, onRemove }: AttachmentListProps) {
   if (attachments.length === 0) {
     return <p className="text-muted-foreground text-center py-4">No attachments found.</p>;
   }
