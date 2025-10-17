@@ -189,13 +189,16 @@ export default function Home() {
   }, [definitions, selectedDefinitionId, isBookmarked]);
 
   const handleSelectDefinition = useCallback((id: string, sectionId?: string) => {
+    const isSameDefinition = id === selectedDefinitionId;
     setActiveView('definitions');
     setIsEditing(false);
     setSelectedDefinitionId(id);
     
-    const def = findDefinition(definitions, id);
-    if (def) {
-      trackView(id, def.name, def.module);
+    if (!isSameDefinition) {
+        const def = findDefinition(definitions, id);
+        if (def) {
+            trackView(id, def.name, def.module);
+        }
     }
     
     const targetSection = sectionId || 'description';
@@ -208,7 +211,8 @@ export default function Home() {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 100);
-  }, [definitions]);
+  }, [definitions, selectedDefinitionId]);
+
 
   const handleTabChange = (tab: string) => {
       setActiveTab(tab);
@@ -603,6 +607,7 @@ export default function Home() {
                           onToggleSelection={toggleSelectionForExport}
                           selectedForExport={selectedForExport}
                           isExportMode={isExportMode}
+                          activeSection={activeTab}
                       />
                   </div>
               </div>

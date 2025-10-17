@@ -1,12 +1,11 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Folder, FileText, Bookmark } from 'lucide-react';
+import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -25,8 +24,37 @@ function isParent(node: Definition, selectedId: string): boolean {
     return false;
 }
 
+const DefinitionSubItems = ({ definitionId, onSelect, activeSection }: { definitionId: string, onSelect: (id: string, sectionId?: string) => void, activeSection: string }) => {
+    const subItems = [
+        { id: 'description', label: 'Description', icon: FileText },
+        { id: 'revisions', label: 'Version History', icon: FileClock },
+        { id: 'attachments', label: 'Attachments', icon: Paperclip },
+        { id: 'notes', label: 'Notes', icon: MessageSquare }
+    ];
 
-export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isExportMode, selectedForExport }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isExportMode: boolean, selectedForExport: string[] }) {
+    return (
+        <div className="pl-8 space-y-1 py-1">
+            {subItems.map(item => (
+                <div
+                    key={item.id}
+                    onClick={() => onSelect(definitionId, item.id)}
+                    className={cn(
+                        "flex items-center gap-2 p-1.5 rounded-md cursor-pointer text-sm",
+                        "hover:bg-primary/10",
+                        activeSection === item.id && "bg-primary/10 text-primary"
+                    )}
+                >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    <span>{item.label}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+
+export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isExportMode, selectedForExport, activeSection }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isExportMode: boolean, selectedForExport: string[], activeSection: string }) {
+  const isModule = !node.description; // Modules usually don't have descriptions
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId !== null && node.id === selectedId;
   const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
@@ -34,14 +62,12 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
   const [isNodeExpanded, setIsNodeExpanded] = useState(false);
 
   useEffect(() => {
-    setIsNodeExpanded(isParentOfSelected);
-  }, [isParentOfSelected]);
+    setIsNodeExpanded(isSelected || isParentOfSelected);
+  }, [isSelected, isParentOfSelected]);
   
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!hasChildren || level > 0) { // Allow selecting top-level modules too
-      onSelect(node.id);
-    }
+    onSelect(node.id);
   };
 
   const handleTriggerClick = (e: React.MouseEvent) => {
@@ -49,7 +75,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
     setIsNodeExpanded(prev => !prev);
   };
   
-  const Icon = hasChildren ? Folder : FileText;
+  const Icon = hasChildren || isModule ? Folder : FileText;
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -91,7 +117,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                 )}
                 onClick={handleNodeSelect}
             >
-                <Icon className={cn("h-4 w-4 mr-2 shrink-0", hasChildren ? "text-primary" : "text-muted-foreground")} />
+                <Icon className={cn("h-4 w-4 mr-2 shrink-0", hasChildren || isModule ? "text-primary" : "text-muted-foreground")} />
                 <span className="truncate flex-1">{node.name}</span>
                 {node.isBookmarked && !isExportMode && (
                   <Bookmark className="h-4 w-4 shrink-0 fill-primary text-primary ml-auto mr-2" />
@@ -100,25 +126,28 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
         </div>
       
       <CollapsibleContent>
-          {hasChildren && isNodeExpanded && (
-              <div className="space-y-1 mt-1">
-                  {node.children?.map(child => (
-                  <DefinitionTreeNode
-                      key={child.id}
-                      node={child}
-                      selectedId={selectedId}
-                      onSelect={onSelect}
-                      level={level + 1}
-                      onToggleSelection={onToggleSelection}
-                      isSelectedForExport={selectedForExport.includes(child.id)}
-                      isExportMode={isExportMode}
-                      selectedForExport={selectedForExport}
-                  />
-                  ))}
-              </div>
-          )}
+            {hasChildren && isNodeExpanded && (
+                <div className="space-y-1 mt-1">
+                    {node.children?.map(child => (
+                    <DefinitionTreeNode
+                        key={child.id}
+                        node={child}
+                        selectedId={selectedId}
+                        onSelect={onSelect}
+                        level={level + 1}
+                        onToggleSelection={onToggleSelection}
+                        isSelectedForExport={selectedForExport.includes(child.id)}
+                        isExportMode={isExportMode}
+                        selectedForExport={selectedForExport}
+                        activeSection={activeSection}
+                    />
+                    ))}
+                </div>
+            )}
+            {!isModule && isSelected && (
+                <DefinitionSubItems definitionId={node.id} onSelect={onSelect} activeSection={activeSection}/>
+            )}
       </CollapsibleContent>
     </Collapsible>
   );
 }
-
