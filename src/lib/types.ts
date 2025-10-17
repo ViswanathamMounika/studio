@@ -1,4 +1,5 @@
 
+
 export interface Revision {
   ticketId: string;
   date: string;
@@ -21,6 +22,7 @@ export interface Attachment {
 
 export interface Note {
     id: string;
+    authorId: string;
     author: string;
     avatar: string;
     date: string;
@@ -52,4 +54,13 @@ export interface SupportingTable {
     description: string;
     headers: string[];
     rows: string[][];
+}
+
+export interface Notification {
+    id: string;
+    definitionId: string;
+    definitionName: string;
+    message: string;
+    date: string;
+    read: boolean;
 }

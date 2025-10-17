@@ -1,6 +1,8 @@
 
 "use client";
 
+import { DateRange } from "react-day-picker";
+
 const isClient = typeof window !== 'undefined';
 
 const getFromStorage = <T>(key: string, defaultValue: T): T => {
@@ -23,48 +25,57 @@ const saveToStorage = <T>(key: string, value: T) => {
   }
 };
 
-type CountData = { [key: string]: number };
-type ViewCountData = { [key: string]: { count: number, module: string } };
+type CountData = { [key: string]: { count: number, date: string } };
+type ViewCountData = { [key: string]: { count: number, module: string, date: string, id: string } };
 
-// Track Search Queries
+const isInDateRange = (dateStr: string, range?: DateRange) => {
+    if (!range?.from) return true;
+    const date = new Date(dateStr);
+    const from = new Date(range.from);
+    from.setHours(0, 0, 0, 0);
+    const to = range.to ? new Date(range.to) : new Date();
+    to.setHours(23, 59, 59, 999);
+    return date >= from && date <= to;
+};
+
 export const trackSearch = (query: string) => {
   if (!query) return;
   const searches = getFromStorage<CountData>('analytics_searches', {});
-  searches[query.toLowerCase()] = (searches[query.toLowerCase()] || 0) + 1;
+  const key = query.toLowerCase();
+  if (!searches[key]) {
+      searches[key] = { count: 0, date: new Date().toISOString() };
+  }
+  searches[key].count += 1;
+  searches[key].date = new Date().toISOString();
   saveToStorage('analytics_searches', searches);
 };
 
-// Track Definition Views
 export const trackView = (definitionId: string, definitionName: string, module: string) => {
   const views = getFromStorage<ViewCountData>('analytics_views', {});
-  const key = `${definitionName} (ID: ${definitionId})`;
+  const key = definitionName;
   if (!views[key]) {
-      views[key] = { count: 0, module: module };
+      views[key] = { count: 0, module: module, date: new Date().toISOString(), id: definitionId };
   }
   views[key].count += 1;
+  views[key].date = new Date().toISOString();
   saveToStorage('analytics_views', views);
 };
 
-// Get Top Items for searches
-export const getTopSearches = (count: number): { name: string, count: number }[] => {
+export const getTopSearches = (count: number, dateRange?: DateRange): { name: string, count: number }[] => {
   const data = getFromStorage<CountData>('analytics_searches', {});
   return Object.entries(data)
-    .sort(([, a], [, b]) => b - a)
+    .filter(([, value]) => isInDateRange(value.date, dateRange))
+    .sort(([, a], [, b]) => b.count - a.count)
     .slice(0, count)
-    .map(([name, count]) => ({ name, count }));
+    .map(([name, value]) => ({ name, count: value.count }));
 };
 
-// Get Top Items for views
-export const getTopViews = (count: number): { name: string, count: number }[] => {
+export const getTopViews = (count: number, dateRange?: DateRange): { name: string, count: number, id: string }[] => {
     const data = getFromStorage<ViewCountData>('analytics_views', {});
-    const aggregatedViews: CountData = {};
-
-    for (const name in data) {
-        aggregatedViews[name] = (aggregatedViews[name] || 0) + data[name].count;
-    }
-
-    return Object.entries(aggregatedViews)
-        .sort(([,a], [,b]) => b - a)
+    
+    return Object.entries(data)
+        .filter(([, value]) => isInDateRange(value.date, dateRange))
+        .sort(([,a], [,b]) => b.count - a.count)
         .slice(0, count)
-        .map(([name, count]) => ({ name, count }));
+        .map(([name, value]) => ({ name, count: value.count, id: value.id }));
 }

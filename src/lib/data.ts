@@ -24,11 +24,11 @@ export const cmsComplianceMatrix: SupportingTable = {
     headers: ['State', 'Requirement ID', 'Turnaround Time (Days)', 'Applies To'],
     rows: [
         ['CA', 'CA-UM-01', '5', 'Standard (Non-Urgent)'],
-        ['CA', 'CA-UM-02', '2', 'Urgent'],
+        ['CA', 'CA-UM-02', '72 hours', 'Urgent'],
         ['NY', 'NY-UM-A', '7', 'Standard (Non-Urgent)'],
         ['NY', 'NY-UM-B', '3', 'Urgent'],
         ['TX', 'TX-MCR-112', '14', 'Standard (Non-Urgent)'],
-        ['TX', 'TX-MCR-113', '1', 'Urgent'],
+        ['TX', 'TX-MCR-113', '24 hours', 'Urgent'],
     ]
 };
 
@@ -36,13 +36,13 @@ export const timestampChangedTable: SupportingTable = {
     id: 'timestamp-changed',
     name: 'timestamp_changed table',
     description: 'Tracks when a specific column was last changed for a given record.',
-    headers: ['timestamp_changed'],
+    headers: ['timestamp_changed', 'table_name', 'record_id'],
     rows: [
-        ['2023-10-26 10:00:00.000'],
-        ['2023-10-25 14:30:00.000'],
-        ['2023-10-24 09:15:00.000'],
-        ['2023-10-23 18:00:00.000'],
-        ['2023-10-22 11:45:00.000'],
+        ['2023-10-26 10:00:00.000', 'AUTHORIZATION_MASTER', '12345'],
+        ['2023-10-25 14:30:00.000', 'AUTHORIZATION_EVENTS', '67890'],
+        ['2023-10-24 09:15:00.000', 'PROVIDER_MASTER', 'P1001'],
+        ['2023-10-23 18:00:00.000', 'MEMBER_MASTER', 'M5005'],
+        ['2023-10-22 11:45:00.000', 'CLAIMS_MASTER', 'C9876'],
     ]
 }
 
@@ -50,16 +50,22 @@ export const vwAuthActionTimeTable: SupportingTable = {
     id: 'vw-authactiontime',
     name: 'vw_authactiontime view',
     description: 'A view that consolidates various action dates for an authorization.',
-    headers: ['Modifdate', 'DeniedDate', 'Apprvdate', 'CancelDate', 'CarvoutDate'],
+    headers: ['AuthID', 'Modifdate', 'DeniedDate', 'Apprvdate', 'CancelDate', 'CarvoutDate'],
     rows: [
-        ['2022-07-01 15:43:05.063', 'NULL', 'NULL', 'NULL', 'NULL'],
-        ['2022-06-29 14:54:20.710', 'NULL', 'NULL', 'NULL', 'NULL'],
-        ['2022-07-05 16:16:40.180', 'NULL', 'NULL', 'NULL', 'NULL'],
-        ['2022-06-30 15:27:54.127', 'NULL', 'NULL', 'NULL', 'NULL'],
-        ['2022-07-01 15:48:22.693', 'NULL', 'NULL', 'NULL', 'NULL'],
-        ['2022-07-01 12:35:14.327', 'NULL', 'NULL', 'NULL', 'NULL'],
+        ['AUTH001', '2022-07-01 15:43:05.063', 'NULL', 'NULL', 'NULL', 'NULL'],
+        ['AUTH002', 'NULL', 'NULL', '2022-06-29 14:54:20.710', 'NULL', 'NULL'],
+        ['AUTH003', 'NULL', '2022-07-05 16:16:40.180', 'NULL', 'NULL', 'NULL'],
+        ['AUTH004', 'NULL', 'NULL', 'NULL', '2022-06-30 15:27:54.127', 'NULL'],
+        ['AUTH005', 'NULL', 'NULL', 'NULL', 'NULL', '2022-07-01 15:48:22.693'],
     ]
 }
+
+export const allDataTables: SupportingTable[] = [
+    authorizationStatusCodes,
+    cmsComplianceMatrix,
+    timestampChangedTable,
+    vwAuthActionTimeTable,
+];
 
 
 const definition111_rev1 = {
@@ -304,7 +310,7 @@ export const initialDefinitions: Definition[] = [
         keywords: ['service type', 'procedure code', 'mapping'],
         description: '<p>Defines how provider-submitted procedure codes (e.g., CPT, HCPCS) are mapped to internal service type categories for routing and adjudication.</p>',
         technicalDetails: '<p>Mapping is managed in the <code class="font-code text-primary">SERVICE_TYPE_MAP</code> table, which joins procedure codes to service category IDs.</p>',
-        examples: '<p>CPT code 99213 (Office Visit) maps to the "Outpatient Visit" service category.</p>',
+        examples: '',
         usage: '<p>Ensures consistent application of benefits and rules based on service categories rather than individual procedure codes.</p>',
         revisions: [],
         isArchived: false,
@@ -337,7 +343,7 @@ export const initialDefinitions: Definition[] = [
             description: '<p>The final status of a claim after it has been processed by the adjudication system.</p>',
             technicalDetails: '<p>Status is stored in the <code class="font-code text-primary">CLAIMS_MASTER</code> table in the `adjudication_status` column.</p>',
             examples: '<p>A claim is submitted and passes all edits. Its status becomes "Paid". If it fails a medical necessity review, its status becomes "Denied".</p>',
-            usage: '<p>Used for payment processing, generating Explanations of Payment (EOPs), and financial reporting.</p>',
+            usage: '',
             revisions: [],
             isArchived: true,
             supportingTables: [],
@@ -367,14 +373,14 @@ export const initialDefinitions: Definition[] = [
             module: 'Provider',
             keywords: ['provider', 'contract', 'rates', 'fee schedule'],
             description: '<p>The negotiated payment rates for services rendered by in-network providers, as defined in their contract.</p>',
-            technicalDetails: '<p>Rates are stored in the <code class="font-code text-primary">FEE_SCHEDULES</code> table, linked to a provider contract ID.</p>',
-            examples: '<p>Dr. Smith\'s contract specifies a rate of $85 for a standard office visit (CPT 99213).</p>',
-            usage: '<p>This is the primary data source for pricing claims from contracted providers.</p>',
+            technicalDetails: '',
+            examples: '',
+            usage: '',
             revisions: [],
             isArchived: false,
             isBookmarked: false,
             supportingTables: [],
-attachments: [],
+            attachments: [],
             notes: [],
         }
     ]

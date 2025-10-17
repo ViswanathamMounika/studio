@@ -38,11 +38,11 @@ export default function AppHeader({
 }: AppHeaderProps) {
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center w-full gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 justify-between">
+    <header className="sticky top-0 z-30 flex h-14 items-center w-full gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
        <div className="flex items-center gap-4">
-        {children}
+        <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-2">
         <Button variant="outline" size="sm" onClick={onTemplatesClick}>
           <Book className="h-4 w-4 mr-2" />
           Templates

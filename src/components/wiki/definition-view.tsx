@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pencil, Bookmark, Trash2, Share2 } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Save } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable } from '@/lib/data';
@@ -20,8 +20,8 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import Comments from './comments';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { Switch } from '../ui/switch';
 
 type DefinitionViewProps = {
   definition: Definition;
@@ -44,6 +44,7 @@ const supportingTablesData: Record<string, SupportingTable> = {
 };
 
 const currentUser = {
+    id: "user_123",
     name: "Current User",
     avatar: "https://picsum.photos/seed/user/40/40"
 };
@@ -55,11 +56,27 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
     
     const [noteText, setNoteText] = useState('');
+    const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+    const [editingNoteText, setEditingNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
+    const [notesView, setNotesView] = useState<'my' | 'others'>('my');
     const { toast } = useToast();
 
+    const tabs = [
+        { value: 'description', label: 'Description', condition: !!definition.description },
+        { value: 'technical-details', label: 'Technical Details', condition: !!definition.technicalDetails },
+        { value: 'examples-usage', label: 'Examples & Usage', condition: !!definition.examples || !!definition.usage },
+        { value: 'revisions', label: 'Version History', condition: true },
+        { value: 'attachments', label: 'Attachments', condition: true },
+        { value: 'notes', label: 'Notes', condition: true },
+    ];
+
+    const visibleTabs = tabs.filter(tab => tab.condition);
+    const gridColsClass = `grid-cols-${visibleTabs.length}`;
+
+
     useEffect(() => {
-        const validTabs = ['description', 'technical-details', 'examples-usage', 'revisions', 'attachments', 'discussions'];
+        const validTabs = visibleTabs.map(t => t.value);
         if (activeTab && !validTabs.includes(activeTab)) {
             onTabChange('description');
         }
@@ -121,15 +138,13 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
     const handleSaveNote = () => {
         if (!noteText.trim()) {
-            toast({
-                variant: 'destructive',
-                title: 'Note cannot be empty.',
-            });
+            toast({ variant: 'destructive', title: 'Note cannot be empty.' });
             return;
         }
 
         const newNote: Note = {
             id: Date.now().toString(),
+            authorId: currentUser.id,
             author: currentUser.name,
             avatar: currentUser.avatar,
             date: new Date().toISOString(),
@@ -145,11 +160,39 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         onSave(updatedDefinition);
         setNoteText('');
         setShareNote(false);
-        toast({
-            title: 'Note saved!',
-            description: 'Your note has been added to this definition.',
-        });
+        toast({ title: 'Note saved!' });
     };
+
+    const handleEditNote = (note: Note) => {
+        setEditingNoteId(note.id);
+        setEditingNoteText(note.content);
+    };
+
+    const handleUpdateNote = () => {
+        if (!editingNoteId || !editingNoteText.trim()) return;
+
+        const updatedDefinition = {
+            ...definition,
+            notes: definition.notes?.map(note => 
+                note.id === editingNoteId ? { ...note, content: editingNoteText, date: new Date().toISOString() } : note
+            ),
+        };
+        onSave(updatedDefinition);
+        setEditingNoteId(null);
+        setEditingNoteText('');
+        toast({ title: 'Note updated!' });
+    };
+    
+    const handleToggleShareNote = (noteId: string, isShared: boolean) => {
+         const updatedDefinition = {
+            ...definition,
+            notes: definition.notes?.map(note => 
+                note.id === noteId ? { ...note, isShared: isShared, date: new Date().toISOString() } : note
+            ),
+        };
+        onSave(updatedDefinition);
+        toast({ title: `Note ${isShared ? 'shared' : 'made private'}.` });
+    }
 
     const handleDeleteNote = (noteId: string) => {
         const updatedDefinition = {
@@ -157,10 +200,14 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             notes: definition.notes?.filter(note => note.id !== noteId),
         };
         onSave(updatedDefinition);
-        toast({
-            title: 'Note deleted.',
-        });
+        toast({ title: 'Note deleted.' });
     }
+    
+    const filteredNotes = definition.notes?.filter(note => {
+        if (notesView === 'my') return note.authorId === currentUser.id;
+        if (notesView === 'others') return note.isShared && note.authorId !== currentUser.id;
+        return false;
+    });
 
   return (
     <>
@@ -209,42 +256,46 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
         <div id="definition-content-area">
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
-                <TabsList className="grid w-full grid-cols-6">
-                    <TabsTrigger value="description">Description</TabsTrigger>
-                    <TabsTrigger value="technical-details">Technical Details</TabsTrigger>
-                    <TabsTrigger value="examples-usage">Examples & Usage</TabsTrigger>
-                    <TabsTrigger value="revisions">Version History</TabsTrigger>
-                    <TabsTrigger value="attachments">Attachments</TabsTrigger>
-                    <TabsTrigger value="discussions">Discussions</TabsTrigger>
+                <TabsList className={`grid w-full ${gridColsClass}`}>
+                    {visibleTabs.map(tab => (
+                        <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                    ))}
                 </TabsList>
-                <TabsContent value="description" id="section-description" className="mt-4 space-y-4">
-                <Card>
-                    <CardContent className="p-6">
-                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
-                    </CardContent>
-                </Card>
-                </TabsContent>
-                <TabsContent value="technical-details" id="section-technical-details" className="mt-4">
-                <Card>
-                    <CardContent className="p-6">
-                    <div className="prose prose-sm max-w-none prose-code:font-code" dangerouslySetInnerHTML={{ __html: definition.technicalDetails }} />
-                    </CardContent>
-                </Card>
-                </TabsContent>
-                <TabsContent value="examples-usage" id="section-examples-usage" className="mt-4 space-y-4">
-                    <Card>
-                        <CardHeader><CardTitle>Examples</CardTitle></CardHeader>
-                        <CardContent>
-                            <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.examples }} />
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader><CardTitle>Usage</CardTitle></CardHeader>
-                        <CardContent>
-                            <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.usage }} />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+
+                {visibleTabs.find(t => t.value === 'description') &&
+                    <TabsContent value="description" id="section-description" className="mt-4 space-y-4">
+                        <Card>
+                            <CardContent className="p-6">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                }
+                {visibleTabs.find(t => t.value === 'technical-details') &&
+                    <TabsContent value="technical-details" id="section-technical-details" className="mt-4">
+                        <Card>
+                            <CardContent className="p-6">
+                                <div className="prose prose-sm max-w-none prose-code:font-code" dangerouslySetInnerHTML={{ __html: definition.technicalDetails }} />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                }
+                {visibleTabs.find(t => t.value === 'examples-usage') &&
+                    <TabsContent value="examples-usage" id="section-examples-usage" className="mt-4 space-y-4">
+                        <Card>
+                            <CardHeader><CardTitle>Examples</CardTitle></CardHeader>
+                            <CardContent>
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.examples }} />
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader><CardTitle>Usage</CardTitle></CardHeader>
+                            <CardContent>
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.usage }} />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                }
                 <TabsContent value="revisions" id="section-revisions" className="mt-4">
                 <Card>
                     <CardHeader>
@@ -302,71 +353,94 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="discussions" id="section-discussions" className="mt-4">
+                <TabsContent value="notes" id="section-notes" className="mt-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Discussions</CardTitle>
+                            <CardTitle>Notes</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            {/* Notes and Comments Combined */}
                             <div>
-                                <h3 className="text-lg font-semibold mb-4">Notes & Comments</h3>
-                                <div className="space-y-4">
-                                    <div className="p-4 border rounded-lg">
-                                        <Label htmlFor="new-note-textarea" className="font-semibold">Add a new note or comment</Label>
-                                        <Textarea
-                                            id="new-note-textarea"
-                                            className="mt-2"
-                                            placeholder="Add a personal or shared note..."
-                                            value={noteText}
-                                            onChange={(e) => setNoteText(e.target.value)}
-                                        />
-                                        <div className="flex items-center justify-between mt-2">
-                                            <div className="flex items-center space-x-2">
-                                                <Checkbox id="share-note" checked={shareNote} onCheckedChange={(checked) => setShareNote(!!checked)} />
-                                                <Label htmlFor="share-note">Share with everyone</Label>
-                                            </div>
-                                            <Button onClick={handleSaveNote}>Save</Button>
+                                <h3 className="text-lg font-semibold mb-4">Add a Note</h3>
+                                <div className="p-4 border rounded-lg">
+                                    <Textarea
+                                        id="new-note-textarea"
+                                        className="mt-2"
+                                        placeholder="Add a personal or shared note..."
+                                        value={noteText}
+                                        onChange={(e) => setNoteText(e.target.value)}
+                                    />
+                                    <div className="flex items-center justify-between mt-2">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox id="share-note" checked={shareNote} onCheckedChange={(checked) => setShareNote(!!checked)} />
+                                            <Label htmlFor="share-note">Share with everyone</Label>
                                         </div>
+                                        <Button onClick={handleSaveNote}>Save</Button>
                                     </div>
-                                    
-                                    <div className="space-y-4 pt-4">
-                                        {/* Render shared notes */}
-                                        {definition.notes && definition.notes
-                                            .filter(note => note.isShared || note.author === currentUser.name)
-                                            .map(note => (
-                                            <div key={note.id} className="flex items-start gap-4 p-3 border rounded-md bg-background">
-                                                <Avatar>
-                                                    <AvatarImage src={note.avatar} />
-                                                    <AvatarFallback>{note.author.charAt(0)}</AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex-1">
-                                                    <div className="flex justify-between items-center">
-                                                        <div>
-                                                            <span className="font-semibold">{note.author}</span>
-                                                            <span className="text-xs text-muted-foreground ml-2">{new Date(note.date).toLocaleString()}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            {note.isShared ? <Badge variant="outline">Shared</Badge> : <Badge variant="secondary">Private</Badge>}
-                                                            {note.author === currentUser.name && (
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div className="flex items-center gap-4 mb-4">
+                                    <h3 className="text-lg font-semibold">Saved Notes</h3>
+                                    <div className="flex items-center space-x-2">
+                                        <Label>My Notes</Label>
+                                        <Switch checked={notesView === 'others'} onCheckedChange={(c) => setNotesView(c ? 'others' : 'my')} />
+                                        <Label>Others' Notes</Label>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 pt-4">
+                                    {filteredNotes && filteredNotes.map(note => (
+                                        <div key={note.id} className="flex items-start gap-4 p-3 border rounded-md bg-background">
+                                            <Avatar>
+                                                <AvatarImage src={note.avatar} />
+                                                <AvatarFallback>{note.author.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <span className="font-semibold">{note.author}</span>
+                                                        <span className="text-xs text-muted-foreground ml-2">{new Date(note.date).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {note.authorId === currentUser.id ? (
+                                                            <div className='flex items-center gap-2'>
+                                                                <Label htmlFor={`share-switch-${note.id}`} className='text-sm'>Share</Label>
+                                                                <Switch id={`share-switch-${note.id}`} checked={note.isShared} onCheckedChange={(c) => handleToggleShareNote(note.id, c)}/>
+                                                            </div>
+                                                        ) : (
+                                                            <Badge variant="outline">Shared</Badge>
+                                                        )}
+                                                        {note.authorId === currentUser.id && (
+                                                            <>
+                                                                {editingNoteId === note.id ? (
+                                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleUpdateNote}>
+                                                                        <Save className="h-4 w-4" />
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditNote(note)}>
+                                                                        <Pencil className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
                                                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteNote(note.id)}>
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </Button>
-                                                            )}
-                                                        </div>
+                                                            </>
+                                                        )}
                                                     </div>
-                                                    <p className="text-sm mt-1">{note.content}</p>
                                                 </div>
+                                                {editingNoteId === note.id ? (
+                                                    <Textarea value={editingNoteText} onChange={(e) => setEditingNoteText(e.target.value)} className="mt-2"/>
+                                                ) : (
+                                                    <p className="text-sm mt-1">{note.content}</p>
+                                                )}
                                             </div>
-                                        ))}
+                                        </div>
+                                    ))}
 
-                                        {/* Render legacy comments */}
-                                        <Comments />
-
-                                        {(!definition.notes || definition.notes.filter(note => note.isShared || note.author === currentUser.name).length === 0) && (
-                                            <p className="text-center text-muted-foreground py-4">No notes for this definition yet.</p>
-                                        )}
-                                    </div>
+                                    {(!filteredNotes || filteredNotes.length === 0) && (
+                                        <p className="text-center text-muted-foreground py-4">No notes in this view.</p>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>

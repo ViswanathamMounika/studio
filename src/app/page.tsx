@@ -1,7 +1,7 @@
 
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Sidebar, SidebarInset, SidebarTrigger, SidebarProvider } from '@/components/ui/sidebar';
+import { Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import DefinitionTree from '@/components/wiki/definition-tree';
@@ -23,6 +23,10 @@ import AnalyticsModal from '@/components/wiki/analytics-modal';
 import NewDefinitionModal from '@/components/wiki/new-definition-modal';
 import TemplatesModal from '@/components/wiki/templates-modal';
 import useLocalStorage from '@/hooks/use-local-storage';
+import Notifications from '@/components/wiki/notifications';
+import DataTables from '@/components/wiki/data-tables';
+
+type View = 'definitions' | 'notifications' | 'data-tables';
 
 export default function Home() {
   const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
@@ -39,6 +43,8 @@ export default function Home() {
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(true);
+  const [activeView, setActiveView] = useState<View>('definitions');
+  const [notifications, setNotifications] = useLocalStorage('notifications', []);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -53,25 +59,39 @@ export default function Home() {
       const urlParams = new URLSearchParams(window.location.search);
       const definitionId = urlParams.get('definitionId');
       const section = urlParams.get('section');
+      const view = urlParams.get('view') as View;
 
-      if (definitionId) {
+      if (view && ['notifications', 'data-tables'].includes(view)) {
+        setActiveView(view);
+      } else if (definitionId) {
         handleSelectDefinition(definitionId, section || undefined);
-      } else if (!selectedDefinitionId) {
-        // Select default if no definition is in URL and none is selected
+      } else if (!selectedDefinitionId && activeView === 'definitions') {
         setSelectedDefinitionId('1.1.1');
       }
     }
-  }, [isMounted]);
+  }, [isMounted, activeView]);
 
-  const updateUrl = (definitionId: string, sectionId?: string) => {
+  const updateUrl = (definitionId: string, sectionId?: string, view?: View) => {
     const url = new URL(window.location.href);
-    url.searchParams.set('definitionId', definitionId);
-    if (sectionId) {
-        url.searchParams.set('section', sectionId);
-    } else {
-        url.searchParams.delete('section');
+    url.searchParams.delete('definitionId');
+    url.searchParams.delete('section');
+    url.searchParams.delete('view');
+
+    if (view) {
+        url.searchParams.set('view', view);
+    } else if (definitionId) {
+        url.searchParams.set('definitionId', definitionId);
+        if (sectionId) {
+            url.searchParams.set('section', sectionId);
+        }
     }
     window.history.pushState({}, '', url);
+  };
+
+  const handleNavigate = (view: View) => {
+    setActiveView(view);
+    setSelectedDefinitionId(null);
+    updateUrl('', '', view);
   };
   
   const getAllDefinitionIds = (items: Definition[]): string[] => {
@@ -126,13 +146,10 @@ export default function Home() {
         items.forEach(item => {
             const isSelected = selectedIds.includes(item.id);
             if (isSelected) {
-                // If parent is selected, we take the whole object
                 results.push(item);
             } else if (item.children) {
-                // If parent is not selected, check children
                 const selectedChildren = getSelectedDefinitions(item.children, selectedIds);
                 if (selectedChildren.length > 0) {
-                    // If some children are selected, create a new parent that only contains them
                     results.push({ ...item, children: selectedChildren });
                 }
             }
@@ -169,6 +186,7 @@ export default function Home() {
   }, [definitions, selectedDefinitionId, isBookmarked]);
 
   const handleSelectDefinition = useCallback((id: string, sectionId?: string) => {
+    setActiveView('definitions');
     setIsEditing(false);
     setSelectedDefinitionId(id);
     
@@ -198,6 +216,7 @@ export default function Home() {
 
 
   const handleSave = (updatedDefinition: Definition) => {
+    const originalDefinition = findDefinition(definitions, updatedDefinition.id);
     const update = (items: Definition[]): Definition[] => {
       return items.map(def => {
         if (def.id === updatedDefinition.id) {
@@ -211,6 +230,27 @@ export default function Home() {
     };
     setDefinitions(update(definitions));
     setIsEditing(false);
+
+    // Create notification if bookmarked
+    if (isBookmarked(updatedDefinition.id)) {
+        let notifMessage = `Definition "${updatedDefinition.name}" was updated.`;
+        
+        const oldNotesCount = originalDefinition?.notes?.length || 0;
+        const newNotesCount = updatedDefinition.notes?.length || 0;
+        if(newNotesCount > oldNotesCount) {
+             notifMessage = `A new note was added to "${updatedDefinition.name}".`;
+        }
+
+        const newNotification = {
+            id: Date.now().toString(),
+            definitionId: updatedDefinition.id,
+            definitionName: updatedDefinition.name,
+            message: notifMessage,
+            date: new Date().toISOString(),
+            read: false,
+        };
+        setNotifications((prev: any) => [newNotification, ...prev]);
+    }
   };
   
   const handleCreateDefinition = (newDefinitionData: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => {
@@ -219,17 +259,43 @@ export default function Home() {
         id: Date.now().toString(),
         revisions: [],
         isArchived: false,
-        children: [],
+        children: newDefinitionData.children || [],
         notes: [],
+    };
+  
+    const addDefinitionToModule = (items: Definition[], moduleName: string, def: Definition): Definition[] => {
+        return items.map(item => {
+            if (item.name === moduleName && item.children) {
+                return { ...item, children: [def, ...item.children] };
+            }
+            if (item.children) {
+                return { ...item, children: addDefinitionToModule(item.children, moduleName, def) };
+            }
+            return item;
+        });
     };
 
     setDefinitions(prev => {
-        const newDefs = [newDefinition, ...prev];
-        return newDefs;
+        const moduleExists = prev.some(m => m.name === newDefinition.module);
+        if (moduleExists) {
+            return addDefinitionToModule(prev, newDefinition.module, newDefinition);
+        } else {
+            // If module doesn't exist, create it and add definition
+            const newModule: Definition = {
+                id: `mod-${Date.now()}`,
+                name: newDefinition.module,
+                module: newDefinition.module,
+                keywords: [], description: '', technicalDetails: '', examples: '', usage: '', revisions: [], isArchived: false, supportingTables: [], attachments: [], notes: [],
+                children: [newDefinition]
+            };
+            return [...prev, newModule];
+        }
     });
+
     setIsNewDefinitionModalOpen(false);
     setIsTemplatesModalOpen(false);
     setSelectedDefinitionId(newDefinition.id);
+    setActiveView('definitions');
   };
 
 
@@ -249,7 +315,7 @@ export default function Home() {
       children: [],
     };
     
-    setDefinitions(prev => [...prev, newDefinition]);
+    handleCreateDefinition(newDefinition);
     setSelectedDefinitionId(newId);
   };
 
@@ -303,12 +369,8 @@ export default function Home() {
 
             const nameMatch = item.name.toLowerCase().includes(lowerCaseQuery);
             const keywordsMatch = item.keywords.some(k => k.toLowerCase().includes(lowerCaseQuery));
-            const descriptionMatch = item.description.toLowerCase().includes(lowerCaseQuery);
-            const technicalDetailsMatch = item.technicalDetails.toLowerCase().includes(lowerCaseQuery);
-            const examplesMatch = item.examples.toLowerCase().includes(lowerCaseQuery);
-            const usageMatch = item.usage.toLowerCase().includes(lowerCaseQuery);
-
-            if (nameMatch || keywordsMatch || descriptionMatch || technicalDetailsMatch || examplesMatch || usageMatch || children.length > 0) {
+            
+            if (nameMatch || keywordsMatch || children.length > 0) {
                 acc.push({ ...item, children });
             }
 
@@ -371,173 +433,157 @@ export default function Home() {
   if (!isMounted) {
     return null;
   }
+  
+  const renderContent = () => {
+    switch (activeView) {
+        case 'notifications':
+            return <Notifications notifications={notifications} setNotifications={setNotifications} onDefinitionClick={(id) => handleSelectDefinition(id)} />;
+        case 'data-tables':
+            return <DataTables />;
+        case 'definitions':
+        default:
+            return (
+                isEditing && selectedDefinition ? (
+                    <DefinitionEdit
+                        definition={selectedDefinition}
+                        onSave={handleSave}
+                        onCancel={() => setIsEditing(false)}
+                    />
+                ) : selectedDefinition ? (
+                    <DefinitionView
+                        definition={selectedDefinition}
+                        onEdit={() => setIsEditing(true)}
+                        onDuplicate={handleDuplicate}
+                        onArchive={handleArchive}
+                        onDelete={handleDelete}
+                        onToggleBookmark={toggleBookmark}
+                        activeTab={activeTab}
+                        onTabChange={handleTabChange}
+                        onSave={handleSave}
+                        isAdmin={isAdmin}
+                    />
+                ) : (
+                    <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">
+                            Select a definition to view its details.
+                        </p>
+                    </div>
+                )
+            );
+    }
+  }
+
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <AppSidebar />
-      </Sidebar>
-      <SidebarInset>
-          <AppHeader
-              isExportMode={isExportMode}
-              setIsExportMode={setIsExportMode}
-              handleExport={handleExport}
-              selectedCount={selectedForExport.length}
-              onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
-              onTemplatesClick={() => setIsTemplatesModalOpen(true)}
-              isAdmin={isAdmin}
-          >
-              <SidebarTrigger className="sm:hidden">
-                  <Menu />
-              </SidebarTrigger>
-              <div className="flex items-center gap-2">
-                  <SidebarTrigger className="hidden sm:flex h-7 w-7">
-                  <Menu />
-                  </SidebarTrigger>
-                  <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
-              </div>
-          </AppHeader>
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 flex overflow-hidden">
-              <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col">
-                <div className="p-4 border-b flex items-center gap-2">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                          type="search" 
-                          placeholder="Search definitions..." 
-                          className="w-full rounded-lg bg-secondary pl-8"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" className="shrink-0 hover:bg-primary/10">
-                          <Filter className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuLabel>Filters</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                          <Checkbox
-                            id="show-archived"
-                            className="mr-2"
-                            checked={showArchived}
-                            onCheckedChange={setShowArchived}
+      <div className='flex h-screen w-full'>
+          <AppSidebar activeView={activeView} onNavigate={handleNavigate} />
+          <div className="flex flex-col flex-1">
+              <AppHeader
+                  isExportMode={isExportMode}
+                  setIsExportMode={setIsExportMode}
+                  handleExport={handleExport}
+                  selectedCount={selectedForExport.length}
+                  onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
+                  onTemplatesClick={() => setIsTemplatesModalOpen(true)}
+                  isAdmin={isAdmin}
+              />
+              <main className="flex-1 flex overflow-hidden">
+                  <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col">
+                      <div className="p-4 border-b flex items-center gap-2">
+                          <div className="relative flex-1">
+                              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <Input
+                                  type="search"
+                                  placeholder="Search definitions..."
+                                  className="w-full rounded-lg bg-secondary pl-8"
+                                  value={searchQuery}
+                                  onChange={(e) => setSearchQuery(e.target.value)}
+                              />
+                          </div>
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="icon" className="shrink-0 hover:bg-primary/10">
+                                      <Filter className="h-4 w-4" />
+                                  </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                  <DropdownMenuLabel>Filters</DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                      <Checkbox
+                                          id="show-archived"
+                                          className="mr-2"
+                                          checked={showArchived}
+                                          onCheckedChange={() => setShowArchived(prev => !prev)}
+                                      />
+                                      <Label htmlFor="show-archived" className="font-normal">Show Archived</Label>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                      <Checkbox
+                                          id="show-bookmarked"
+                                          className="mr-2"
+                                          checked={showBookmarked}
+                                          onCheckedChange={() => setShowBookmarked(prev => !prev)}
+                                      />
+                                      <Label htmlFor="show-bookmarked" className="font-normal">Show Bookmarked</Label>
+                                  </DropdownMenuItem>
+                              </DropdownMenuContent>
+                          </DropdownMenu>
+                      </div>
+                      <div className="p-4 border-b">
+                          <div className="flex items-center justify-between mb-2">
+                              {isExportMode ? (
+                                  <>
+                                      <div className="flex items-center">
+                                          <Checkbox
+                                              id="select-all"
+                                              checked={areAllSelected}
+                                              onCheckedChange={handleSelectAllForExport}
+                                              className="mr-2"
+                                          />
+                                          <Label htmlFor="select-all" className="font-semibold text-base">Select All</Label>
+                                      </div>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelExport}>
+                                          <X className="h-4 w-4" />
+                                      </Button>
+                                  </>
+                              ) : (
+                                  <>
+                                      <Label className="font-semibold text-lg">MPM Definitions</Label>
+                                  </>
+                              )}
+                          </div>
+                      </div>
+                      <div className="overflow-y-auto flex-1 p-4">
+                          <DefinitionTree
+                              definitions={visibleDefinitions}
+                              selectedId={selectedDefinitionId}
+                              onSelect={handleSelectDefinition}
+                              onToggleSelection={toggleSelectionForExport}
+                              selectedForExport={selectedForExport}
+                              isExportMode={isExportMode}
                           />
-                          <Label htmlFor="show-archived" className="font-normal">Show Archived</Label>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                          <Checkbox
-                            id="show-bookmarked"
-                            className="mr-2"
-                            checked={showBookmarked}
-                            onCheckedChange={setShowBookmarked}
-                          />
-                          <Label htmlFor="show-bookmarked" className="font-normal">Show Bookmarked</Label>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                <div className="p-4 border-b">
-                    <div className="flex items-center justify-between mb-2">
-                        {isExportMode ? (
-                            <>
-                                <div className="flex items-center">
-                                    <Checkbox 
-                                    id="select-all" 
-                                    checked={areAllSelected} 
-                                    onCheckedChange={handleSelectAllForExport} 
-                                    className="mr-2"
-                                    />
-                                    <Label htmlFor="select-all" className="font-semibold text-base">Select All</Label>
-                                </div>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelExport}>
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </>
-                        ) : (
-                            <>
-                                <Label className="font-semibold text-lg">MPM Definitions</Label>
-                            </>
-                        )}
-                    </div>
-                </div>
-                <div className="overflow-y-auto flex-1 p-4">
-                    <DefinitionTree
-                    definitions={visibleDefinitions}
-                    selectedId={selectedDefinitionId}
-                    onSelect={handleSelectDefinition}
-                    onToggleSelection={toggleSelectionForExport}
-                    selectedForExport={selectedForExport}
-                    isExportMode={isExportMode}
-                    />
-                </div>
-              </div>
-              <div className="w-full lg:w-3/4 xl:w-4/5 overflow-y-auto p-6" id="definition-content">
-                {isEditing && selectedDefinition ? (
-                  <DefinitionEdit
-                    definition={selectedDefinition}
-                    onSave={handleSave}
-                    onCancel={() => setIsEditing(false)}
-                  />
-                ) : selectedDefinition ? (
-                  <DefinitionView
-                    definition={selectedDefinition}
-                    onEdit={() => setIsEditing(true)}
-                    onDuplicate={handleDuplicate}
-                    onArchive={handleArchive}
-                    onDelete={handleDelete}
-                    onToggleBookmark={toggleBookmark}
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
-                    onSave={handleSave}
-                    isAdmin={isAdmin}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-muted-foreground">
-                      Select a definition to view its details.
-                    </p>
+                      </div>
                   </div>
-                )}
-              </div>
-            </div>
+                  <div className="w-full lg:w-3/4 xl:w-4/5 overflow-y-auto p-6" id="definition-content">
+                      {renderContent()}
+                  </div>
+              </main>
           </div>
-      </SidebarInset>
-      <Toaster />
-      <AnalyticsModal open={isAnalyticsModalOpen} onOpenChange={setIsAnalyticsModalOpen} />
-      <NewDefinitionModal 
-        open={isNewDefinitionModalOpen}
-        onOpenChange={setIsNewDefinitionModalOpen}
-        onSave={handleCreateDefinition}
-      />
-      <TemplatesModal
-        open={isTemplatesModalOpen}
-        onOpenChange={setIsTemplatesModalOpen}
-        onSelectTemplate={(template) => {
-          setIsTemplatesModalOpen(false);
-          setIsNewDefinitionModalOpen(true);
-        }}
-        onUseTemplate={(templateData) => {
-            const newDef: Omit<Definition, 'id' | 'revisions' | 'isArchived' | 'notes'> = {
-                name: templateData.name,
-                module: templateData.module,
-                keywords: templateData.keywords,
-                description: templateData.description,
-                technicalDetails: templateData.technicalDetails,
-                examples: templateData.examples,
-                usage: templateData.usage,
-                attachments: [],
-                supportingTables: [],
-            };
-            handleCreateDefinition(newDef);
-        }}
-      />
-    </SidebarProvider>
+          <Toaster />
+          <AnalyticsModal open={isAnalyticsModalOpen} onOpenChange={setIsAnalyticsModalOpen} onDefinitionClick={handleSelectDefinition} />
+          <NewDefinitionModal
+              open={isNewDefinitionModalOpen}
+              onOpenChange={setIsNewDefinitionModalOpen}
+              onSave={handleCreateDefinition}
+          />
+          <TemplatesModal
+              open={isTemplatesModalOpen}
+              onOpenChange={setIsTemplatesModalOpen}
+              onUseTemplate={(templateData) => {
+                  handleCreateDefinition(templateData as any);
+              }}
+          />
+      </div>
   );
 }
-
-    

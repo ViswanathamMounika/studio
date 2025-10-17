@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useRef } from 'react';
 import type { Definition, Attachment } from '@/lib/types';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Trash2 } from 'lucide-react';
+import { X, Upload } from 'lucide-react';
 import WysiwygEditor from './wysiwyg-editor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -25,9 +26,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const [keywords, setKeywords] = useState<string[]>(definition.keywords);
   const [currentKeyword, setCurrentKeyword] = useState('');
   const [description, setDescription] = useState(definition.description);
-  const [technicalDetails, setTechnicalDetails] = useState(definition.technicalDetails);
-  const [examples, setExamples] = useState(definition.examples);
-  const [usage, setUsage] = useState(definition.usage);
   const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,9 +36,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       module,
       keywords,
       description,
-      technicalDetails,
-      examples,
-      usage,
       attachments,
     });
   };
@@ -149,31 +144,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
           </CardHeader>
           <CardContent>
             <WysiwygEditor value={description} onChange={setDescription} />
-          </CardContent>
-      </Card>
-
-      <Card>
-          <CardHeader>
-              <CardTitle>Technical Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <WysiwygEditor value={technicalDetails} onChange={setTechnicalDetails} />
-          </CardContent>
-      </Card>
-
-      <Card>
-          <CardHeader>
-              <CardTitle>Examples & Usage</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-             <div>
-                <Label>Examples</Label>
-                <WysiwygEditor value={examples} onChange={setExamples} />
-            </div>
-            <div>
-                <Label>Usage</Label>
-                <WysiwygEditor value={usage} onChange={setUsage} />
-            </div>
           </CardContent>
       </Card>
 

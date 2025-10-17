@@ -1,102 +1,43 @@
+
 "use client";
 
 import {
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from "@/components/ui/sidebar";
-import {
-  ChevronDown,
-  BookCopy,
-  FileText,
-  Home,
-  Users,
-  Database,
-  BookMarked,
-  Layers,
-  HeartPulse,
-  Landmark,
+    BookCopy,
+    Database,
+    Bell,
 } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "../ui/button";
 
-export default function AppSidebar() {
-  return (
-    <>
-      <SidebarHeader>
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold">MPM Core</span>
+type AppSidebarProps = {
+    activeView: 'definitions' | 'notifications' | 'data-tables';
+    onNavigate: (view: 'definitions' | 'notifications' | 'data-tables') => void;
+};
+
+export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) {
+    const navItems = [
+        { id: 'definitions', label: 'MPM Definitions', icon: BookCopy },
+        { id: 'data-tables', label: 'Data Tables', icon: Database },
+        { id: 'notifications', label: 'Notifications', icon: Bell },
+    ];
+
+    return (
+        <div className="flex flex-col h-full w-64 bg-slate-50 border-r">
+            <div className="p-4 border-b">
+                <h1 className="text-lg font-bold tracking-tight">MPM Core</h1>
+            </div>
+            <nav className="flex-1 p-4 space-y-2">
+                {navItems.map(item => (
+                    <Button
+                        key={item.id}
+                        variant={activeView === item.id ? 'secondary' : 'ghost'}
+                        className="w-full justify-start"
+                        onClick={() => onNavigate(item.id as any)}
+                    >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {item.label}
+                    </Button>
+                ))}
+            </nav>
         </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Accountability" isActive>
-              <Home />
-              Accountability
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Posts">
-              <FileText />
-              Posts
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          
-          <Collapsible>
-            <SidebarMenuItem>
-              <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip="Wiki">
-                      <BookCopy />
-                      Wiki
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-                  </SidebarMenuButton>
-              </CollapsibleTrigger>
-            </SidebarMenuItem>
-            <CollapsibleContent>
-              <SidebarMenu className="ml-4">
-                <SidebarMenuItem>
-                    <SidebarMenuButton size="sm">
-                        <BookMarked />
-                        MPM Definitions
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton size="sm">
-                        <Database />
-                        MPM Datasets
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton size="sm">
-                        <HeartPulse />
-                        Healthcare Acronyms
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton size="sm">
-                        <Users />
-                        Clients
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton size="sm">
-                        <Landmark />
-                        Health Plans
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton size="sm">
-                        <Layers />
-                        LOB Codes
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </CollapsibleContent>
-          </Collapsible>
-        </SidebarMenu>
-      </SidebarContent>
-    </>
-  );
+    );
 }

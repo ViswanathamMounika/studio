@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React from 'react';
@@ -19,22 +20,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, Code, Plus } from 'lucide-react';
-import NewDefinitionModal from './new-definition-modal';
+import type { Definition } from '@/lib/types';
 
 type Template = {
   id: string;
   title: string;
   description: string;
   icon: React.ElementType;
-  data: {
-    name: string;
-    module: string;
-    keywords: string[];
-    description: string;
-    technicalDetails: string;
-    examples: string;
-    usage: string;
-  };
+  data: Partial<Definition>;
 };
 
 const templates: Template[] = [
@@ -88,13 +81,10 @@ const templates: Template[] = [
 type TemplatesModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUseTemplate: (templateData: Template['data']) => void;
-  onSelectTemplate: (template: Template) => void; // Keeping this for potential future use
+  onUseTemplate: (templateData: Partial<Definition>) => void;
 };
 
 export default function TemplatesModal({ open, onOpenChange, onUseTemplate }: TemplatesModalProps) {
-    const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = React.useState(false);
-    const [selectedTemplateData, setSelectedTemplateData] = React.useState<Template['data'] | null>(null);
 
   const handleUseTemplate = (template: Template) => {
     onUseTemplate(template.data);
