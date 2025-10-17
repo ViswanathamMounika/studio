@@ -6,7 +6,8 @@ import {
   Book,
   Download,
   Palette,
-  Bell
+  Bell,
+  PlusCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ type AppHeaderProps = {
     selectedCount?: number;
     onAnalyticsClick?: () => void;
     onTemplatesClick?: () => void;
+    onNewDefinitionClick?: () => void;
     isAdmin: boolean;
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
@@ -43,6 +45,7 @@ export default function AppHeader({
     selectedCount = 0,
     onAnalyticsClick,
     onTemplatesClick,
+    onNewDefinitionClick,
     isAdmin,
     notifications,
     setNotifications,
@@ -65,6 +68,10 @@ export default function AppHeader({
         {showDefinitionControls && (
           <>
             <div className="flex items-center gap-2">
+                <Button onClick={onNewDefinitionClick}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    New
+                </Button>
               <Button variant="outline" size="sm" onClick={onTemplatesClick}>
                 <Book className="h-4 w-4 mr-2" />
                 Templates
@@ -121,3 +128,5 @@ export default function AppHeader({
     </header>
   );
 }
+
+    

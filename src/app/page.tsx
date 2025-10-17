@@ -533,6 +533,7 @@ export default function Home() {
               selectedCount={selectedForExport.length}
               onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
               onTemplatesClick={() => setIsTemplatesModalOpen(true)}
+              onNewDefinitionClick={() => setIsNewDefinitionModalOpen(true)}
               isAdmin={isAdmin}
               notifications={notifications}
               setNotifications={setNotifications}
@@ -644,3 +645,5 @@ export default function Home() {
     </>
   );
 }
+
+    
