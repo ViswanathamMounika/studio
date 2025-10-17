@@ -28,6 +28,34 @@ import { SidebarInset } from '@/components/ui/sidebar';
 
 type View = 'definitions' | 'data-tables';
 
+const initialNotifications: NotificationType[] = [
+  {
+    id: '1',
+    definitionId: '1.1.1',
+    definitionName: 'Auth Decision Date',
+    message: 'The description of "Auth Decision Date" was updated.',
+    date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    read: false,
+  },
+  {
+    id: '2',
+    definitionId: '2.1.1',
+    definitionName: 'Contracted Rates',
+    message: 'A new note was added to "Contracted Rates".',
+    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    read: true,
+  },
+  {
+    id: '3',
+    definitionId: '3.1.1',
+    definitionName: 'Provider Demographics',
+    message: 'The attachments for "Provider Demographics" were updated.',
+    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    read: false,
+  },
+];
+
+
 export default function Home() {
   const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
@@ -44,7 +72,7 @@ export default function Home() {
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(true);
   const [activeView, setActiveView] = useState<View>('definitions');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', []);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', initialNotifications);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
