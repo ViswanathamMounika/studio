@@ -48,13 +48,10 @@ const wikiNavItems = [
     { id: 'data-tables', label: 'Data Tables', icon: Database },
     { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
     { id: 'acronyms', label: 'Healthcare Acronyms', icon: SquareGanttChart },
-];
-
-const bottomNavItems = [
     { id: 'clients', label: 'Clients', icon: Users },
     { id: 'health-plans', label: 'Health Plans', icon: HeartPulse },
     { id: 'lob-codes', label: 'LOB Codes', icon: BadgePercent },
-]
+];
 
 export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) {
     const [isWikiOpen, setIsWikiOpen] = useState(true);
@@ -121,18 +118,6 @@ export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) 
                             </SidebarMenu>
                         </CollapsibleContent>
                     </Collapsible>
-                    
-                    {bottomNavItems.map(item => (
-                        <SidebarMenuItem key={item.id}>
-                            <SidebarMenuButton
-                                isActive={false}
-                                onClick={() => handleNavigate(item.id)}
-                            >
-                                <item.icon />
-                                {item.label}
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    ))}
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter>
