@@ -20,7 +20,7 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Switch } from '../ui/switch';
 
 type DefinitionViewProps = {
@@ -80,7 +80,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         if (activeTab && !validTabs.includes(activeTab)) {
             onTabChange('description');
         }
-    }, [definition, activeTab, onTabChange]);
+    }, [definition, activeTab, onTabChange, visibleTabs]);
 
     useEffect(() => {
         const handleContentClick = (e: MouseEvent) => {
@@ -210,7 +210,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     });
 
   return (
-    <>
+    <TooltipProvider>
         <article className="prose prose-sm max-w-none">
         <div className="flex justify-between items-start">
             <div>
@@ -503,6 +503,6 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                 currentDefinitionName={definition.name}
             />
         )}
-    </>
+    </TooltipProvider>
   );
 }
