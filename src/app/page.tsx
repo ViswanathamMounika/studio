@@ -527,7 +527,7 @@ export default function Home() {
               onDefinitionClick={handleSelectDefinition}
               activeView={activeView}
           />
-          <main className="flex-1 flex overflow-hidden">
+          <main className="flex-1 flex overflow-hidden gap-4">
              {activeView === 'definitions' && (
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card">
                   <div className="p-4 border-b flex items-center gap-2">

@@ -64,38 +64,40 @@ export default function AppHeader({
       <div className="ml-auto flex items-center gap-2">
         {showDefinitionControls && (
           <>
-            <Button variant="outline" size="sm" onClick={onTemplatesClick}>
-              <Book className="h-4 w-4 mr-2" />
-              Templates
-            </Button>
-            {isAdmin && (
-                isExportMode ? (
-                    <Button size="sm" onClick={handleExport} disabled={selectedCount === 0}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Export ({selectedCount})
-                    </Button>
-                ) : (
-                    <Button variant="outline" size="sm" onClick={() => setIsExportMode && setIsExportMode(true)}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Export
-                    </Button>
-                )
-            )}
-            <Button variant="outline" size="sm" onClick={onAnalyticsClick}>
-                <BarChart className="h-4 w-4 mr-2" />
-                Analytics
-            </Button>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                        <Palette className="h-4 w-4 mr-2" />
-                        Appearance
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <AppearanceSettings />
-                </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={onTemplatesClick}>
+                <Book className="h-4 w-4 mr-2" />
+                Templates
+              </Button>
+              {isAdmin && (
+                  isExportMode ? (
+                      <Button size="sm" onClick={handleExport} disabled={selectedCount === 0}>
+                          <Download className="mr-2 h-4 w-4" />
+                          Export ({selectedCount})
+                      </Button>
+                  ) : (
+                      <Button variant="outline" size="sm" onClick={() => setIsExportMode && setIsExportMode(true)}>
+                          <Download className="mr-2 h-4 w-4" />
+                          Export
+                      </Button>
+                  )
+              )}
+              <Button variant="outline" size="sm" onClick={onAnalyticsClick}>
+                  <BarChart className="h-4 w-4 mr-2" />
+                  Analytics
+              </Button>
+              <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                          <Palette className="h-4 w-4 mr-2" />
+                          Appearance
+                      </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                      <AppearanceSettings />
+                  </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </>
         )}
         <DropdownMenu>
