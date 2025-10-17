@@ -96,9 +96,14 @@ export default function Home() {
 
   const handleNavigate = (view: View, shouldUpdateUrl = true) => {
     setActiveView(view);
-    setSelectedDefinitionId(null);
-    if(shouldUpdateUrl) {
-      updateUrl('', '', view);
+    if (view === 'definitions') {
+        // When navigating to definitions, default to the first one.
+        handleSelectDefinition('1.1.1', undefined, shouldUpdateUrl);
+    } else {
+        setSelectedDefinitionId(null);
+        if(shouldUpdateUrl) {
+            updateUrl('', '', view);
+        }
     }
   };
   
@@ -645,5 +650,3 @@ export default function Home() {
     </>
   );
 }
-
-    
