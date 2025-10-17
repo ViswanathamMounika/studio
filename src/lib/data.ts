@@ -29,6 +29,8 @@ export const cmsComplianceMatrix: SupportingTable = {
         ['NY', 'NY-UM-B', '3', 'Urgent'],
         ['TX', 'TX-MCR-112', '14', 'Standard (Non-Urgent)'],
         ['TX', 'TX-MCR-113', '24 hours', 'Urgent'],
+        ['FL', 'FL-MED-004', '7', 'Standard (Non-Urgent)'],
+        ['FL', 'FL-MED-005', '48 hours', 'Urgent'],
     ]
 };
 
@@ -38,11 +40,11 @@ export const timestampChangedTable: SupportingTable = {
     description: 'Tracks when a specific column was last changed for a given record.',
     headers: ['timestamp_changed', 'table_name', 'record_id'],
     rows: [
-        ['2023-10-26 10:00:00.000', 'AUTHORIZATION_MASTER', '12345'],
-        ['2023-10-25 14:30:00.000', 'AUTHORIZATION_EVENTS', '67890'],
-        ['2023-10-24 09:15:00.000', 'PROVIDER_MASTER', 'P1001'],
-        ['2023-10-23 18:00:00.000', 'MEMBER_MASTER', 'M5005'],
-        ['2023-10-22 11:45:00.000', 'CLAIMS_MASTER', 'C9876'],
+        ['2023-10-26 10:00:15.123', 'AUTHORIZATION_MASTER', 'AUTH-55432'],
+        ['2023-10-25 14:32:05.456', 'AUTHORIZATION_EVENTS', 'EVT-98765'],
+        ['2023-10-24 09:15:45.789', 'PROVIDER_MASTER', 'PROV-1001-A'],
+        ['2023-10-23 18:05:12.321', 'MEMBER_MASTER', 'MEM-5005-B'],
+        ['2023-10-22 11:46:30.654', 'CLAIMS_MASTER', 'CLM-9876-C'],
     ]
 }
 
@@ -52,11 +54,11 @@ export const vwAuthActionTimeTable: SupportingTable = {
     description: 'A view that consolidates various action dates for an authorization.',
     headers: ['AuthID', 'Modifdate', 'DeniedDate', 'Apprvdate', 'CancelDate', 'CarvoutDate'],
     rows: [
-        ['AUTH001', '2022-07-01 15:43:05.063', 'NULL', 'NULL', 'NULL', 'NULL'],
-        ['AUTH002', 'NULL', 'NULL', '2022-06-29 14:54:20.710', 'NULL', 'NULL'],
-        ['AUTH003', 'NULL', '2022-07-05 16:16:40.180', 'NULL', 'NULL', 'NULL'],
-        ['AUTH004', 'NULL', 'NULL', 'NULL', '2022-06-30 15:27:54.127', 'NULL'],
-        ['AUTH005', 'NULL', 'NULL', 'NULL', 'NULL', '2022-07-01 15:48:22.693'],
+        ['AUTH-55432', '2023-07-01 15:43:05.063', 'NULL', 'NULL', 'NULL', 'NULL'],
+        ['AUTH-55433', 'NULL', 'NULL', '2023-06-29 14:54:20.710', 'NULL', 'NULL'],
+        ['AUTH-55434', 'NULL', '2023-07-05 16:16:40.180', 'NULL', 'NULL', 'NULL'],
+        ['AUTH-55435', 'NULL', 'NULL', 'NULL', '2023-06-30 15:27:54.127', 'NULL'],
+        ['AUTH-55436', 'NULL', 'NULL', 'NULL', 'NULL', '2023-07-01 15:48:22.693'],
     ]
 }
 
@@ -318,6 +320,21 @@ export const initialDefinitions: Definition[] = [
         attachments: [],
         notes: [],
       },
+       {
+        id: '1.1.3',
+        name: 'Authorization Timeliness',
+        module: 'Authorizations',
+        keywords: ['SLA', 'Timeliness', 'Turnaround Time'],
+        description: '<p>Measures the time taken from the receipt of an authorization request to the time a final decision is rendered.</p>',
+        technicalDetails: '',
+        examples: '',
+        usage: '',
+        revisions: [],
+        isArchived: false,
+        supportingTables: [],
+        attachments: [],
+        notes: [],
+      }
     ],
   },
   {
@@ -378,12 +395,73 @@ export const initialDefinitions: Definition[] = [
             usage: '',
             revisions: [],
             isArchived: false,
-            isBookmarked: false,
             supportingTables: [],
             attachments: [],
             notes: [],
-        }
+        },
+        {
+            id: '3.1.1',
+            name: 'Provider Demographics',
+            module: 'Provider',
+            keywords: ['provider', 'demographics', 'address', 'specialty'],
+            description: '<p>Basic information about a healthcare provider, including name, address, contact information, and specialty.</p>',
+            technicalDetails: '',
+            examples: '',
+            usage: '',
+            revisions: [],
+            isArchived: false,
+            supportingTables: [],
+            attachments: [],
+            notes: [],
+        },
+         {
+            id: '3.1.2',
+            name: 'Network Participation Rules',
+            module: 'Provider',
+            keywords: ['network', 'participation', 'provider'],
+            description: '<p>The criteria and rules determining whether a provider is considered in-network for a specific health plan product.</p>',
+            technicalDetails: '',
+            examples: '',
+            usage: '',
+            revisions: [],
+            isArchived: false,
+            supportingTables: [],
+            attachments: [],
+            notes: [],
+        },
     ]
+  },
+  {
+      id: '4',
+      name: 'Member',
+      module: 'Member',
+      keywords: [],
+      description: '',
+      technicalDetails: '',
+      examples: '',
+      usage: '',
+      revisions: [],
+      isArchived: false,
+      supportingTables: [],
+      attachments: [],
+      notes: [],
+      children: [
+           {
+              id: '4.1.1',
+              name: 'Member Eligibility',
+              module: 'Member',
+              keywords: ['member', 'eligibility', 'coverage'],
+              description: '<p>The status of a member\'s enrollment and active coverage under a specific health plan for a given period.</p>',
+              technicalDetails: '',
+              examples: '',
+              usage: '',
+              revisions: [],
+              isArchived: false,
+              supportingTables: [],
+              attachments: [],
+              notes: [],
+          }
+      ]
   }
 ];
 

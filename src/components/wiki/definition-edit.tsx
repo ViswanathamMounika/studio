@@ -18,7 +18,7 @@ type DefinitionEditProps = {
   onCancel: () => void;
 };
 
-const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management'];
+const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
 
 export default function DefinitionEdit({ definition, onSave, onCancel }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
@@ -37,6 +37,9 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       keywords,
       description,
       attachments,
+      technicalDetails: definition.technicalDetails, // Preserve existing data
+      examples: definition.examples,
+      usage: definition.usage,
     });
   };
 

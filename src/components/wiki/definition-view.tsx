@@ -256,7 +256,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
         <div id="definition-content-area">
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
-                <TabsList className={`grid w-full ${gridColsClass}`}>
+                <TabsList className={cn("grid w-full", gridColsClass)}>
                     {visibleTabs.map(tab => (
                         <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
                     ))}

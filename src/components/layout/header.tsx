@@ -6,6 +6,7 @@ import {
   Book,
   Download,
   Palette,
+  PlusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
 
 type AppHeaderProps = {
     children?: React.ReactNode;
@@ -23,6 +26,7 @@ type AppHeaderProps = {
     selectedCount?: number;
     onAnalyticsClick?: () => void;
     onTemplatesClick?: () => void;
+    onNewDefinitionClick: () => void;
     isAdmin: boolean;
 }
 
@@ -34,6 +38,7 @@ export default function AppHeader({
     selectedCount = 0,
     onAnalyticsClick,
     onTemplatesClick,
+    onNewDefinitionClick,
     isAdmin,
 }: AppHeaderProps) {
 
@@ -47,6 +52,12 @@ export default function AppHeader({
           <Book className="h-4 w-4 mr-2" />
           Templates
         </Button>
+        {isAdmin && (
+            <Button variant="default" size="sm" onClick={onNewDefinitionClick}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Definition
+            </Button>
+        )}
         {isAdmin && (
             isExportMode ? (
                 <Button size="sm" onClick={handleExport} disabled={selectedCount === 0}>

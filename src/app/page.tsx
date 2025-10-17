@@ -1,16 +1,15 @@
 
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import DefinitionTree from '@/components/wiki/definition-tree';
 import DefinitionView from '@/components/wiki/definition-view';
 import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
-import type { Definition } from '@/lib/types';
+import type { Definition, Notification as NotificationType } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Filter, Menu, Search, X } from 'lucide-react';
+import { Filter, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -25,6 +24,8 @@ import TemplatesModal from '@/components/wiki/templates-modal';
 import useLocalStorage from '@/hooks/use-local-storage';
 import Notifications from '@/components/wiki/notifications';
 import DataTables from '@/components/wiki/data-tables';
+import { diff } from 'jest-diff';
+import { diff_match_patch } from 'diff-match-patch';
 
 type View = 'definitions' | 'notifications' | 'data-tables';
 
@@ -44,7 +45,7 @@ export default function Home() {
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(true);
   const [activeView, setActiveView] = useState<View>('definitions');
-  const [notifications, setNotifications] = useLocalStorage('notifications', []);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', []);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -190,7 +191,7 @@ export default function Home() {
     setIsEditing(false);
     setSelectedDefinitionId(id);
     
-    const def = findDefinition(initialDefinitions, id);
+    const def = findDefinition(definitions, id);
     if (def) {
       trackView(id, def.name, def.module);
     }
@@ -205,7 +206,7 @@ export default function Home() {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 100);
-  }, []);
+  }, [definitions]);
 
   const handleTabChange = (tab: string) => {
       setActiveTab(tab);
@@ -217,6 +218,7 @@ export default function Home() {
 
   const handleSave = (updatedDefinition: Definition) => {
     const originalDefinition = findDefinition(definitions, updatedDefinition.id);
+    
     const update = (items: Definition[]): Definition[] => {
       return items.map(def => {
         if (def.id === updatedDefinition.id) {
@@ -235,13 +237,21 @@ export default function Home() {
     if (isBookmarked(updatedDefinition.id)) {
         let notifMessage = `Definition "${updatedDefinition.name}" was updated.`;
         
+        const dmp = new diff_match_patch();
+        const descriptionDiff = dmp.diff_main(originalDefinition?.description || '', updatedDefinition.description);
+        const hasDescriptionChanges = descriptionDiff.some(d => d[0] !== 0);
+
+        if (hasDescriptionChanges) {
+             notifMessage = `The description of "${updatedDefinition.name}" was updated.`;
+        }
+        
         const oldNotesCount = originalDefinition?.notes?.length || 0;
         const newNotesCount = updatedDefinition.notes?.length || 0;
         if(newNotesCount > oldNotesCount) {
              notifMessage = `A new note was added to "${updatedDefinition.name}".`;
         }
 
-        const newNotification = {
+        const newNotification: NotificationType = {
             id: Date.now().toString(),
             definitionId: updatedDefinition.id,
             definitionName: updatedDefinition.name,
@@ -276,19 +286,25 @@ export default function Home() {
     };
 
     setDefinitions(prev => {
-        const moduleExists = prev.some(m => m.name === newDefinition.module);
-        if (moduleExists) {
-            return addDefinitionToModule(prev, newDefinition.module, newDefinition);
+        const parentModule = findDefinition(prev, newDefinitionData.module);
+        
+        if (parentModule) {
+            return addDefinitionToModule(prev, parentModule.name, newDefinition);
         } else {
-            // If module doesn't exist, create it and add definition
-            const newModule: Definition = {
-                id: `mod-${Date.now()}`,
-                name: newDefinition.module,
-                module: newDefinition.module,
-                keywords: [], description: '', technicalDetails: '', examples: '', usage: '', revisions: [], isArchived: false, supportingTables: [], attachments: [], notes: [],
-                children: [newDefinition]
-            };
-            return [...prev, newModule];
+             const moduleExists = prev.some(m => m.name === newDefinition.module);
+             if (moduleExists) {
+                 return addDefinitionToModule(prev, newDefinition.module, newDefinition);
+             } else {
+                // If module doesn't exist, create it and add definition
+                const newModule: Definition = {
+                    id: `mod-${Date.now()}`,
+                    name: newDefinition.module,
+                    module: newDefinition.module, // self-reference for top level
+                    keywords: [], description: '', technicalDetails: '', examples: '', usage: '', revisions: [], isArchived: false, supportingTables: [], attachments: [], notes: [],
+                    children: [newDefinition]
+                };
+                return [...prev, newModule];
+             }
         }
     });
 
@@ -308,11 +324,29 @@ export default function Home() {
     if (!definitionToDuplicate) return;
 
     const newId = Date.now().toString();
-    const newDefinition: Definition = {
+    
+    // Find parent module to place the duplicated item
+    const findParentModule = (items: Definition[], childId: string): Definition | null => {
+        for (const item of items) {
+            if (item.children?.some(c => c.id === childId)) {
+                return item;
+            }
+            if (item.children) {
+                const found = findParentModule(item.children, childId);
+                if (found) return found;
+            }
+        }
+        return null;
+    };
+    
+    const parentModule = findParentModule(definitions, id);
+
+    const newDefinition: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
       ...definitionToDuplicate,
-      id: newId,
       name: `${definitionToDuplicate.name} (Copy)`,
       children: [],
+      // Use parent module or its own module if it's a top-level item
+      module: parentModule ? parentModule.name : definitionToDuplicate.module,
     };
     
     handleCreateDefinition(newDefinition);
@@ -485,6 +519,7 @@ export default function Home() {
                   selectedCount={selectedForExport.length}
                   onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
                   onTemplatesClick={() => setIsTemplatesModalOpen(true)}
+                  onNewDefinitionClick={() => setIsNewDefinitionModalOpen(true)}
                   isAdmin={isAdmin}
               />
               <main className="flex-1 flex overflow-hidden">
