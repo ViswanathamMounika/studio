@@ -207,7 +207,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
   return (
     <TooltipProvider>
-        <article className="prose prose-sm max-w-none">
+        <article className="prose prose-sm max-w-none my-6">
         <div className="flex justify-between items-start">
             <div>
             <p className="text-sm text-muted-foreground">{definition.module}</p>
@@ -477,3 +477,5 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     </TooltipProvider>
   );
 }
+
+    
