@@ -87,6 +87,17 @@ export default function AppHeader({
         </Button>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                    <Palette className="h-4 w-4 mr-2" />
+                    Appearance
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <AppearanceSettings />
+            </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="relative">
                     <Bell className="h-4 w-4" />
                     {unreadCount > 0 && (
@@ -100,17 +111,6 @@ export default function AppHeader({
                     setNotifications={setNotifications}
                     onDefinitionClick={onDefinitionClick}
                 />
-            </DropdownMenuContent>
-        </DropdownMenu>
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                    <Palette className="h-4 w-4 mr-2" />
-                    Appearance
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <AppearanceSettings />
             </DropdownMenuContent>
         </DropdownMenu>
       </div>

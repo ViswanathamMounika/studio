@@ -62,14 +62,14 @@ export default function Home() {
       const view = urlParams.get('view') as View;
 
       if (view && ['data-tables'].includes(view)) {
-        setActiveView(view);
+        handleNavigate(view, false);
       } else if (definitionId) {
         handleSelectDefinition(definitionId, section || undefined);
       } else if (!selectedDefinitionId && activeView === 'definitions') {
         setSelectedDefinitionId('1.1.1');
       }
     }
-  }, [isMounted, activeView]);
+  }, [isMounted]);
 
   const updateUrl = (definitionId: string, sectionId?: string, view?: View) => {
     const url = new URL(window.location.href);
@@ -88,10 +88,12 @@ export default function Home() {
     window.history.pushState({}, '', url);
   };
 
-  const handleNavigate = (view: View) => {
+  const handleNavigate = (view: View, shouldUpdateUrl = true) => {
     setActiveView(view);
     setSelectedDefinitionId(null);
-    updateUrl('', '', view);
+    if(shouldUpdateUrl) {
+      updateUrl('', '', view);
+    }
   };
   
   const getAllDefinitionIds = (items: Definition[]): string[] => {
@@ -524,6 +526,7 @@ export default function Home() {
               onDefinitionClick={handleSelectDefinition}
           />
           <main className="flex-1 flex overflow-hidden">
+             {activeView === 'definitions' && (
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card">
                   <div className="p-4 border-b flex items-center gap-2">
                       <div className="relative flex-1">
@@ -601,7 +604,8 @@ export default function Home() {
                       />
                   </div>
               </div>
-              <div className="w-full lg:w-3/4 xl:w-4/5 overflow-y-auto p-6" id="definition-content">
+              )}
+              <div className="w-full overflow-y-auto p-6" id="definition-content">
                   {renderContent()}
               </div>
           </main>
