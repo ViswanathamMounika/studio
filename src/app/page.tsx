@@ -25,12 +25,6 @@ import useLocalStorage from '@/hooks/use-local-storage';
 import Notifications from '@/components/wiki/notifications';
 import DataTables from '@/components/wiki/data-tables';
 import { diff_match_patch } from 'diff-match-patch';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
 
 type View = 'definitions' | 'notifications' | 'data-tables';
 
@@ -67,7 +61,7 @@ export default function Home() {
       const section = urlParams.get('section');
       const view = urlParams.get('view') as View;
 
-      if (view && ['notifications', 'data-tables'].includes(view)) {
+      if (view && ['data-tables'].includes(view)) {
         setActiveView(view);
       } else if (definitionId) {
         handleSelectDefinition(definitionId, section || undefined);
@@ -348,6 +342,7 @@ export default function Home() {
 
     const newDefinition: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
       ...definitionToDuplicate,
+      id: newId,
       name: `${definitionToDuplicate.name} (Copy)`,
       children: [],
       // Use parent module or its own module if it's a top-level item
@@ -475,8 +470,6 @@ export default function Home() {
   
   const renderContent = () => {
     switch (activeView) {
-        case 'notifications':
-            return <Notifications notifications={notifications} setNotifications={setNotifications} onDefinitionClick={(id) => handleSelectDefinition(id)} />;
         case 'data-tables':
             return <DataTables />;
         case 'definitions':
@@ -515,121 +508,120 @@ export default function Home() {
 
   return (
     <div className='flex h-screen bg-background'>
-      <SidebarProvider>
-        <AppSidebar activeView={activeView} onNavigate={handleNavigate} />
-        <SidebarInset>
-          <div className="flex flex-col flex-1 h-screen">
-              <AppHeader
-                  isExportMode={isExportMode}
-                  setIsExportMode={setIsExportMode}
-                  handleExport={handleExport}
-                  selectedCount={selectedForExport.length}
-                  onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
-                  onTemplatesClick={() => setIsTemplatesModalOpen(true)}
-                  onNewDefinitionClick={() => setIsNewDefinitionModalOpen(true)}
-                  isAdmin={isAdmin}
-              />
-              <main className="flex-1 flex overflow-hidden">
-                  <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card">
-                      <div className="p-4 border-b flex items-center gap-2">
-                          <div className="relative flex-1">
-                              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                  type="search"
-                                  placeholder="Search definitions..."
-                                  className="w-full rounded-lg bg-secondary pl-8"
-                                  value={searchQuery}
-                                  onChange={(e) => setSearchQuery(e.target.value)}
-                              />
-                          </div>
-                          <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="icon" className="shrink-0 hover:bg-primary/10">
-                                      <Filter className="h-4 w-4" />
-                                  </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent>
-                                  <DropdownMenuLabel>Filters</DropdownMenuLabel>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                      <Checkbox
-                                          id="show-archived"
-                                          className="mr-2"
-                                          checked={showArchived}
-                                          onCheckedChange={() => setShowArchived(prev => !prev)}
-                                      />
-                                      <Label htmlFor="show-archived" className="font-normal">Show Archived</Label>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                      <Checkbox
-                                          id="show-bookmarked"
-                                          className="mr-2"
-                                          checked={showBookmarked}
-                                          onCheckedChange={() => setShowBookmarked(prev => !prev)}
-                                      />
-                                      <Label htmlFor="show-bookmarked" className="font-normal">Show Bookmarked</Label>
-                                  </DropdownMenuItem>
-                              </DropdownMenuContent>
-                          </DropdownMenu>
-                      </div>
-                      <div className="p-4 border-b">
-                          <div className="flex items-center justify-between mb-2">
-                              {isExportMode ? (
-                                  <>
-                                      <div className="flex items-center">
-                                          <Checkbox
-                                              id="select-all"
-                                              checked={areAllSelected}
-                                              onCheckedChange={handleSelectAllForExport}
-                                              className="mr-2"
-                                          />
-                                          <Label htmlFor="select-all" className="font-semibold text-base">Select All</Label>
-                                      </div>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelExport}>
-                                          <X className="h-4 w-4" />
-                                      </Button>
-                                  </>
-                              ) : (
-                                  <>
-                                      <Label className="font-semibold text-lg">MPM Definitions</Label>
-                                  </>
-                              )}
-                          </div>
-                      </div>
-                      <div className="overflow-y-auto flex-1 p-4">
-                          <DefinitionTree
-                              definitions={visibleDefinitions}
-                              selectedId={selectedDefinitionId}
-                              onSelect={handleSelectDefinition}
-                              onToggleSelection={toggleSelectionForExport}
-                              selectedForExport={selectedForExport}
-                              isExportMode={isExportMode}
+      <AppSidebar activeView={activeView} onNavigate={handleNavigate} />
+        <div className="flex flex-col flex-1 h-screen">
+          <AppHeader
+              isExportMode={isExportMode}
+              setIsExportMode={setIsExportMode}
+              handleExport={handleExport}
+              selectedCount={selectedForExport.length}
+              onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
+              onTemplatesClick={() => setIsTemplatesModalOpen(true)}
+              onNewDefinitionClick={() => setIsNewDefinitionModalOpen(true)}
+              isAdmin={isAdmin}
+              notifications={notifications}
+              setNotifications={setNotifications}
+              onDefinitionClick={handleSelectDefinition}
+          />
+          <main className="flex-1 flex overflow-hidden">
+              <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card">
+                  <div className="p-4 border-b flex items-center gap-2">
+                      <div className="relative flex-1">
+                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                              type="search"
+                              placeholder="Search definitions..."
+                              className="w-full rounded-lg bg-secondary pl-8"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
                           />
                       </div>
+                      <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="icon" className="shrink-0 hover:bg-primary/10">
+                                  <Filter className="h-4 w-4" />
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                              <DropdownMenuLabel>Filters</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <Checkbox
+                                      id="show-archived"
+                                      className="mr-2"
+                                      checked={showArchived}
+                                      onCheckedChange={() => setShowArchived(prev => !prev)}
+                                  />
+                                  <Label htmlFor="show-archived" className="font-normal">Show Archived</Label>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <Checkbox
+                                      id="show-bookmarked"
+                                      className="mr-2"
+                                      checked={showBookmarked}
+                                      onCheckedChange={() => setShowBookmarked(prev => !prev)}
+                                  />
+                                  <Label htmlFor="show-bookmarked" className="font-normal">Show Bookmarked</Label>
+                              </DropdownMenuItem>
+                          </DropdownMenuContent>
+                      </DropdownMenu>
                   </div>
-                  <div className="w-full lg:w-3/4 xl:w-4/5 overflow-y-auto p-6" id="definition-content">
-                      {renderContent()}
+                  <div className="p-4 border-b">
+                      <div className="flex items-center justify-between mb-2">
+                          {isExportMode ? (
+                              <>
+                                  <div className="flex items-center">
+                                      <Checkbox
+                                          id="select-all"
+                                          checked={areAllSelected}
+                                          onCheckedChange={handleSelectAllForExport}
+                                          className="mr-2"
+                                      />
+                                      <Label htmlFor="select-all" className="font-semibold text-base">Select All</Label>
+                                  </div>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelExport}>
+                                      <X className="h-4 w-4" />
+                                  </Button>
+                              </>
+                          ) : (
+                              <>
+                                  <Label className="font-semibold text-lg">MPM Definitions</Label>
+                              </>
+                          )}
+                      </div>
                   </div>
-              </main>
-          </div>
-          </SidebarInset>
-        </SidebarProvider>
-
-          <Toaster />
-          <AnalyticsModal open={isAnalyticsModalOpen} onOpenChange={setIsAnalyticsModalOpen} onDefinitionClick={handleSelectDefinition} />
-          <NewDefinitionModal
-              open={isNewDefinitionModalOpen}
-              onOpenChange={setIsNewDefinitionModalOpen}
-              onSave={handleCreateDefinition}
-          />
-          <TemplatesModal
-              open={isTemplatesModalOpen}
-              onOpenChange={setIsTemplatesModalOpen}
-              onUseTemplate={(templateData) => {
-                  handleCreateDefinition(templateData as any);
-              }}
-          />
+                  <div className="overflow-y-auto flex-1 p-4">
+                      <DefinitionTree
+                          definitions={visibleDefinitions}
+                          selectedId={selectedDefinitionId}
+                          onSelect={handleSelectDefinition}
+                          onToggleSelection={toggleSelectionForExport}
+                          selectedForExport={selectedForExport}
+                          isExportMode={isExportMode}
+                      />
+                  </div>
+              </div>
+              <div className="w-full lg:w-3/4 xl:w-4/5 overflow-y-auto p-6" id="definition-content">
+                  {renderContent()}
+              </div>
+          </main>
       </div>
+
+      <Toaster />
+      <AnalyticsModal open={isAnalyticsModalOpen} onOpenChange={setIsAnalyticsModalOpen} onDefinitionClick={handleSelectDefinition} />
+      <NewDefinitionModal
+          open={isNewDefinitionModalOpen}
+          onOpenChange={setIsNewDefinitionModalOpen}
+          onSave={handleCreateDefinition}
+      />
+      <TemplatesModal
+          open={isTemplatesModalOpen}
+          onOpenChange={setIsTemplatesModalOpen}
+          onUseTemplate={(templateData) => {
+              handleCreateDefinition(templateData as any);
+          }}
+      />
+    </div>
   );
 }
 

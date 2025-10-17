@@ -4,7 +4,6 @@
 import {
     BookCopy,
     Database,
-    Bell,
 } from "lucide-react";
 import {
     Sidebar,
@@ -14,27 +13,22 @@ import {
     SidebarMenuItem,
     SidebarMenuButton,
     SidebarFooter,
-    useSidebar,
 } from "../ui/sidebar";
 import { Logo } from "../icons";
-import { Button } from "../ui/button";
 
 type AppSidebarProps = {
-    activeView: 'definitions' | 'notifications' | 'data-tables';
-    onNavigate: (view: 'definitions' | 'notifications' | 'data-tables') => void;
+    activeView: 'definitions' | 'data-tables';
+    onNavigate: (view: 'definitions' | 'data-tables') => void;
 };
 
 export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) {
     const navItems = [
         { id: 'definitions', label: 'MPM Definitions', icon: BookCopy },
         { id: 'data-tables', label: 'Data Tables', icon: Database },
-        { id: 'notifications', label: 'Notifications', icon: Bell },
     ];
-    const { state } = useSidebar();
-
 
     return (
-        <Sidebar collapsible="offcanvas">
+        <Sidebar collapsible="none">
             <SidebarHeader>
                  <div className="flex items-center gap-2">
                     <Logo className="size-6 text-primary" />

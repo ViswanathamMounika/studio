@@ -7,6 +7,7 @@ import {
   Download,
   Palette,
   PlusCircle,
+  Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +16,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
-import { SidebarTrigger } from "../ui/sidebar";
+import type { Notification } from "@/lib/types";
+import Notifications from "../wiki/notifications";
+import { Badge } from "../ui/badge";
 
 type AppHeaderProps = {
     children?: React.ReactNode;
@@ -27,6 +30,9 @@ type AppHeaderProps = {
     onTemplatesClick?: () => void;
     onNewDefinitionClick: () => void;
     isAdmin: boolean;
+    notifications: Notification[];
+    setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
+    onDefinitionClick: (id: string) => void;
 }
 
 export default function AppHeader({ 
@@ -39,12 +45,16 @@ export default function AppHeader({
     onTemplatesClick,
     onNewDefinitionClick,
     isAdmin,
+    notifications,
+    setNotifications,
+    onDefinitionClick
 }: AppHeaderProps) {
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center w-full gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
        <div className="flex items-center gap-2">
-        <SidebarTrigger className="md:hidden"/>
         <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
       </div>
       <div className="ml-auto flex items-center gap-2">
@@ -75,6 +85,23 @@ export default function AppHeader({
             <BarChart className="h-4 w-4 mr-2" />
             Analytics
         </Button>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="relative">
+                    <Bell className="h-4 w-4" />
+                    {unreadCount > 0 && (
+                        <Badge className="absolute -top-2 -right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
+                    )}
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-96">
+                <Notifications 
+                    notifications={notifications} 
+                    setNotifications={setNotifications}
+                    onDefinitionClick={onDefinitionClick}
+                />
+            </DropdownMenuContent>
+        </DropdownMenu>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
