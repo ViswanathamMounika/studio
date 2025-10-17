@@ -25,6 +25,12 @@ import useLocalStorage from '@/hooks/use-local-storage';
 import Notifications from '@/components/wiki/notifications';
 import DataTables from '@/components/wiki/data-tables';
 import { diff_match_patch } from 'diff-match-patch';
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
 
 type View = 'definitions' | 'notifications' | 'data-tables';
 
@@ -508,9 +514,11 @@ export default function Home() {
 
 
   return (
-      <div className='flex h-screen w-full'>
-          <AppSidebar activeView={activeView} onNavigate={handleNavigate} />
-          <div className="flex flex-col flex-1">
+    <div className='flex h-screen bg-background'>
+      <SidebarProvider>
+        <AppSidebar activeView={activeView} onNavigate={handleNavigate} />
+        <SidebarInset>
+          <div className="flex flex-col flex-1 h-screen">
               <AppHeader
                   isExportMode={isExportMode}
                   setIsExportMode={setIsExportMode}
@@ -522,7 +530,7 @@ export default function Home() {
                   isAdmin={isAdmin}
               />
               <main className="flex-1 flex overflow-hidden">
-                  <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col">
+                  <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card">
                       <div className="p-4 border-b flex items-center gap-2">
                           <div className="relative flex-1">
                               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -604,6 +612,9 @@ export default function Home() {
                   </div>
               </main>
           </div>
+          </SidebarInset>
+        </SidebarProvider>
+
           <Toaster />
           <AnalyticsModal open={isAnalyticsModalOpen} onOpenChange={setIsAnalyticsModalOpen} onDefinitionClick={handleSelectDefinition} />
           <NewDefinitionModal
@@ -621,3 +632,5 @@ export default function Home() {
       </div>
   );
 }
+
+    

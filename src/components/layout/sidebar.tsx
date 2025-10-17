@@ -6,6 +6,17 @@ import {
     Database,
     Bell,
 } from "lucide-react";
+import {
+    Sidebar,
+    SidebarHeader,
+    SidebarContent,
+    SidebarMenu,
+    SidebarMenuItem,
+    SidebarMenuButton,
+    SidebarFooter,
+    useSidebar,
+} from "../ui/sidebar";
+import { Logo } from "../icons";
 import { Button } from "../ui/button";
 
 type AppSidebarProps = {
@@ -19,25 +30,37 @@ export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) 
         { id: 'data-tables', label: 'Data Tables', icon: Database },
         { id: 'notifications', label: 'Notifications', icon: Bell },
     ];
+    const { state } = useSidebar();
+
 
     return (
-        <div className="flex flex-col h-full w-64 bg-slate-50 border-r">
-            <div className="p-4 border-b">
-                <h1 className="text-lg font-bold tracking-tight">MPM Core</h1>
-            </div>
-            <nav className="flex-1 p-4 space-y-2">
-                {navItems.map(item => (
-                    <Button
-                        key={item.id}
-                        variant={activeView === item.id ? 'secondary' : 'ghost'}
-                        className="w-full justify-start"
-                        onClick={() => onNavigate(item.id as any)}
-                    >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        {item.label}
-                    </Button>
-                ))}
-            </nav>
-        </div>
+        <Sidebar collapsible="offcanvas">
+            <SidebarHeader>
+                 <div className="flex items-center gap-2">
+                    <Logo className="size-6 text-primary" />
+                    <h1 className="text-lg font-bold tracking-tight">MPM Core</h1>
+                </div>
+            </SidebarHeader>
+            <SidebarContent>
+                <SidebarMenu>
+                    {navItems.map(item => (
+                        <SidebarMenuItem key={item.id}>
+                            <SidebarMenuButton
+                                isActive={activeView === item.id}
+                                onClick={() => onNavigate(item.id as any)}
+                            >
+                                <item.icon />
+                                {item.label}
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    ))}
+                </SidebarMenu>
+            </SidebarContent>
+            <SidebarFooter>
+                {/* Optional Footer Content */}
+            </SidebarFooter>
+        </Sidebar>
     );
 }
+
+    
