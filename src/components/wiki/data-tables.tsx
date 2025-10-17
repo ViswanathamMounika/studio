@@ -110,8 +110,10 @@ export default function DataTables() {
       setFormData({
         ...initialFormState,
         ID: newId,
-        CREATEDDATE: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        LASTCHANGEDDATE: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        CREATEDBY: 'Current User', // Placeholder
+        LASTCHANGEDBY: 'Current User', // Placeholder
+        CREATEDDATE: new Date().toISOString(),
+        LASTCHANGEDDATE: new Date().toISOString(),
       });
       setIsModalOpen(true);
   };
@@ -131,9 +133,9 @@ export default function DataTables() {
   };
 
   const handleSave = () => {
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const now = new Date().toISOString();
     if (isEditing) {
-      setRows(prev => prev.map(row => (row.ID === formData.ID ? {...formData, LASTCHANGEDDATE: now} : row)));
+      setRows(prev => prev.map(row => (row.ID === formData.ID ? {...formData, LASTCHANGEDDATE: now, LASTCHANGEDBY: 'Current User'} : row)));
       toast({ title: 'Success', description: 'Row updated successfully.' });
     } else {
       setRows(prev => [...prev, { ...formData, CREATEDDATE: now, LASTCHANGEDDATE: now }]);
@@ -165,6 +167,19 @@ export default function DataTables() {
 
   const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
   const endItem = Math.min(startItem + ITEMS_PER_PAGE - 1, filteredRows.length);
+  
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    } catch (e) {
+      return dateString;
+    }
+  };
 
   return (
     <div className="p-4 sm:p-6">
@@ -195,7 +210,7 @@ export default function DataTables() {
                     </Button>
                 </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="py-0">
                  <div className="overflow-x-auto border rounded-lg">
                     <Table className="min-w-full">
                         <TableHeader>
@@ -219,7 +234,10 @@ export default function DataTables() {
                             <TableRow key={row.ID}>
                                 {defDataTable.headers.map((header) => (
                                     <TableCell key={header} className="truncate" style={{ maxWidth: colWidths[header]}}>
-                                        {row[header as keyof typeof row] !== null ? String(row[header as keyof typeof row]) : 'NULL'}
+                                        {header === 'CREATEDDATE' || header === 'LASTCHANGEDDATE'
+                                            ? formatDate(String(row[header as keyof typeof row]))
+                                            : row[header as keyof typeof row] !== null ? String(row[header as keyof typeof row]) : 'NULL'
+                                        }
                                     </TableCell>
                                 ))}
                                 <TableCell className="text-center">
@@ -260,11 +278,24 @@ export default function DataTables() {
                     <Button variant="outline" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
                         Previous
                     </Button>
-                    {[...Array(totalPages).keys()].map(num => (
-                        <Button key={num + 1} variant={currentPage === num + 1 ? "default" : "outline"} onClick={() => handlePageChange(num + 1)}>
-                            {num + 1}
-                        </Button>
-                    ))}
+                    {[...Array(totalPages > 5 ? 5 : totalPages).keys()].map(num => {
+                        let pageNum = num + 1;
+                        if (totalPages > 5 && currentPage > 3) {
+                            pageNum = currentPage - 2 + num;
+                            if (pageNum > totalPages) return null;
+                        }
+                         return (
+                            <Button key={pageNum} variant={currentPage === pageNum ? "default" : "outline"} onClick={() => handlePageChange(pageNum)}>
+                                {pageNum}
+                            </Button>
+                        )
+                    })}
+                     {totalPages > 5 && currentPage < totalPages - 2 && (
+                        <>
+                        <span>...</span>
+                        <Button variant="outline" onClick={() => handlePageChange(totalPages)}>{totalPages}</Button>
+                        </>
+                    )}
                     <Button variant="outline" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>
                         Next
                     </Button>
@@ -277,8 +308,12 @@ export default function DataTables() {
             <DialogTitle>{isEditing ? 'Edit Row' : 'Add New Row'}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
-            {defDataTable.headers.map(header => (
-                (isEditing || !['ID', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(header)) && (
+            {defDataTable.headers.map(header => {
+                const hiddenFields = ['ID', 'CREATEDDATE', 'CREATEDBY', 'LASTCHANGEDDATE', 'LASTCHANGEDBY'];
+                if (hiddenFields.includes(header)) {
+                    return null;
+                }
+                return (
                     <div key={header}>
                         <Label htmlFor={header}>{header}</Label>
                         <Input
@@ -286,11 +321,10 @@ export default function DataTables() {
                             name={header}
                             value={String(formData[header as keyof DataRow])}
                             onChange={handleInputChange}
-                            disabled={isEditing && header === 'ID'}
                         />
                     </div>
                 )
-            ))}
+            })}
           </div>
           <DialogFooter>
             <DialogClose asChild>
@@ -303,5 +337,3 @@ export default function DataTables() {
     </div>
   );
 }
-
-    
