@@ -252,9 +252,9 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
         <div id="definition-content-area">
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="w-full">
                     {visibleTabs.map(tab => (
-                        <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                        <TabsTrigger key={tab.value} value={tab.value} className="flex-1">{tab.label}</TabsTrigger>
                     ))}
                 </TabsList>
 
@@ -477,5 +477,3 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     </TooltipProvider>
   );
 }
-
-    
