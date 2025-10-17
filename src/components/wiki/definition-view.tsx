@@ -70,9 +70,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     ];
 
     const visibleTabs = tabs.filter(tab => tab.condition);
-    const gridColsClass = `grid-cols-${visibleTabs.length}`;
-
-
+    
     useEffect(() => {
         const validTabs = visibleTabs.map(t => t.value);
         if (activeTab && !validTabs.includes(activeTab)) {
@@ -254,7 +252,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
         <div id="definition-content-area">
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
-                <TabsList className={cn("grid w-full", gridColsClass)}>
+                <TabsList>
                     {visibleTabs.map(tab => (
                         <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
                     ))}
@@ -479,3 +477,5 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     </TooltipProvider>
   );
 }
+
+  
