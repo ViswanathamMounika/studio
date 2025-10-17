@@ -18,7 +18,6 @@ import {
   DialogTitle,
   DialogFooter,
   DialogClose,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -139,8 +138,8 @@ export default function DataTables() {
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>{defDataTable.name}</CardTitle>
-                    <CardDescription>{defDataTable.description}</CardDescription>
+                    <CardTitle>DEF_DATA_TABLE</CardTitle>
+                    <CardDescription>Contains metadata and queries for definitions.</CardDescription>
                 </div>
                 <Button onClick={handleAddNew}>
                     <PlusCircle className="mr-2 h-4 w-4" />
