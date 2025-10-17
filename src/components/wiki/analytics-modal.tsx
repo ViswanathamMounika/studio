@@ -88,11 +88,11 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
 
   const CustomTick = (props: any) => {
     const { x, y, payload } = props;
-    const { value, id } = topViews.find(item => item.name === payload.value) || {};
+    const matchingView = topViews.find(item => item.name === payload.value);
     
     const handleClick = () => {
-        if (id) {
-            onDefinitionClick(id);
+        if (matchingView?.id) {
+            onDefinitionClick(matchingView.id);
             onOpenChange(false);
         }
     };
@@ -107,10 +107,10 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
           textAnchor="end"
           fill="#666"
           fontSize={12}
-          className={id ? "cursor-pointer hover:underline" : ""}
+          className={matchingView?.id ? "cursor-pointer hover:underline fill-primary" : ""}
           onClick={handleClick}
         >
-          {value}
+          {payload.value}
         </text>
       </g>
     );
