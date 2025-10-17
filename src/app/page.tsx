@@ -24,6 +24,7 @@ import TemplatesModal from '@/components/wiki/templates-modal';
 import useLocalStorage from '@/hooks/use-local-storage';
 import DataTables from '@/components/wiki/data-tables';
 import { diff_match_patch } from 'diff-match-patch';
+import { SidebarInset } from '@/components/ui/sidebar';
 
 type View = 'definitions' | 'data-tables';
 
@@ -509,9 +510,10 @@ export default function Home() {
 
 
   return (
-    <div className='flex h-screen bg-background'>
+    <>
       <AppSidebar activeView={activeView} onNavigate={handleNavigate} />
-        <div className="flex flex-col flex-1 h-screen">
+      <SidebarInset>
+        <div className="flex flex-col h-screen bg-background">
           <AppHeader
               isExportMode={isExportMode}
               setIsExportMode={setIsExportMode}
@@ -610,7 +612,8 @@ export default function Home() {
                   {renderContent()}
               </div>
           </main>
-      </div>
+        </div>
+      </SidebarInset>
 
       <Toaster />
       <AnalyticsModal open={isAnalyticsModalOpen} onOpenChange={setIsAnalyticsModalOpen} onDefinitionClick={handleSelectDefinition} />
@@ -626,6 +629,6 @@ export default function Home() {
               handleCreateDefinition(templateData as any);
           }}
       />
-    </div>
+    </>
   );
 }

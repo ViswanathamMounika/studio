@@ -19,6 +19,7 @@ import AppearanceSettings from "@/components/wiki/appearance-settings";
 import type { Notification } from "@/lib/types";
 import Notifications from "../wiki/notifications";
 import { Badge } from "../ui/badge";
+import { SidebarTrigger } from "../ui/sidebar";
 
 type AppHeaderProps = {
     children?: React.ReactNode;
@@ -58,6 +59,7 @@ export default function AppHeader({
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center w-full gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
        <div className="flex items-center gap-2">
+        <SidebarTrigger className="md:hidden" />
         <h1 className="text-xl font-bold tracking-tight">
           {activeView === 'definitions' ? 'MPM Data Definitions' : 'Data Tables'}
         </h1>

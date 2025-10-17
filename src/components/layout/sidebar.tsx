@@ -35,7 +35,7 @@ import { Button } from '../ui/button';
 
 type AppSidebarProps = {
     activeView: 'definitions' | 'data-tables';
-    onNavigate: (view: 'definitions' | 'data-tables') => void;
+    onNavigate: (view: 'definitions' | 'data-tables' | string) => void;
 };
 
 const topNavItems = [
@@ -74,7 +74,7 @@ export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) 
                         <p className='text-xs text-muted-foreground -mt-1'>MANAGEMENT</p>
                     </div>
                 </div>
-                <SidebarTrigger className='md:hidden'/>
+                <SidebarTrigger className='hidden md:flex'/>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarMenu>
