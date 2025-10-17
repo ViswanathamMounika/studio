@@ -133,7 +133,7 @@ export default function DataTables() {
   };
 
   return (
-    <div className="container mx-auto p-4 sm:p-6">
+    <div className="p-4 sm:p-6">
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
