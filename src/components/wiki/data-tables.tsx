@@ -179,7 +179,7 @@ export default function DataTables() {
   }
   
   const handleFilterChange = useCallback((key: keyof DataRow, value: string) => {
-      setFilters(prev => ({...prev, [key]: value}));
+      setFilters(prev => ({...prev, [key]: value === 'all' ? '' : value}));
       setCurrentPage(1);
   }, []);
 
@@ -236,10 +236,10 @@ export default function DataTables() {
     const filterContent = () => {
         if (headerKey === 'OBJECT_TYPE') {
             return (
-                <Select onValueChange={(v) => handleFilterChange(headerKey, v)}>
+                <Select onValueChange={(v) => handleFilterChange(headerKey, v)} defaultValue={filters[headerKey] || 'all'}>
                     <SelectTrigger className="h-8"><SelectValue placeholder="Filter..." /></SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All</SelectItem>
+                        <SelectItem value="all">All</SelectItem>
                         <SelectItem value="1">View Query</SelectItem>
                         <SelectItem value="2">Table Query</SelectItem>
                     </SelectContent>
@@ -498,5 +498,3 @@ export default function DataTables() {
     </div>
   );
 }
-
-    
