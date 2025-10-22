@@ -141,6 +141,10 @@ export default function DataTables() {
     setIsModalOpen(false);
   };
 
+  const mapObjectType = (type: number) => {
+    return type === 1 ? 'View Query' : 'Table Query';
+  }
+
   const sortedAndFilteredRows = useMemo(() => {
     let filtered = [...rows].filter(row => {
         return Object.entries(filters).every(([key, value]) => {
@@ -209,10 +213,6 @@ export default function DataTables() {
     }
   };
 
-  const mapObjectType = (type: number) => {
-      return type === 1 ? 'View Query' : 'Table Query';
-  }
-
   const handlePreview = (row: DataRow) => {
     // In a real app, you would execute the row.QUERY here.
     const dummyData = allDataTables[Math.floor(Math.random() * allDataTables.length)];
@@ -230,7 +230,7 @@ export default function DataTables() {
   }
 
   const renderFilter = (headerKey: keyof DataRow) => {
-    const nonFilterable = ['ID', 'CREATEDBY', 'LASTCHANGEDBY', 'Actions'];
+    const nonFilterable = ['ID', 'CREATEDBY', 'LASTCHANGEDBY'];
     if (nonFilterable.includes(headerKey)) return null;
 
     const filterContent = () => {
