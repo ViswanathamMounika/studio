@@ -42,6 +42,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { cn } from '@/lib/utils';
 
 type DataRow = (typeof defDataTable.rows)[0];
 type SortKey = keyof DataRow;
@@ -87,6 +88,10 @@ export default function DataTables() {
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
+
+  const mapObjectType = (type: number) => {
+    return type === 1 ? 'View Query' : 'Table Query';
+  }
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -140,10 +145,6 @@ export default function DataTables() {
     }
     setIsModalOpen(false);
   };
-
-  const mapObjectType = (type: number) => {
-    return type === 1 ? 'View Query' : 'Table Query';
-  }
 
   const sortedAndFilteredRows = useMemo(() => {
     let filtered = [...rows].filter(row => {
@@ -255,7 +256,7 @@ export default function DataTables() {
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 ml-2">
+                <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto hover:bg-accent focus-visible:bg-accent">
                     <Filter className="h-4 w-4"/>
                 </Button>
             </PopoverTrigger>
@@ -267,7 +268,7 @@ export default function DataTables() {
   }
 
   return (
-    <div className="w-full p-4 sm:p-6">
+    <div className="w-full">
       <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Supporting Tables</CardTitle>
@@ -284,18 +285,20 @@ export default function DataTables() {
                           {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
                              const isSortable = ['ID', 'SERVER_NAME', 'DATABASE_NAME', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(header);
                              return (
-                              <TableHead key={header} className="border p-2">
+                              <TableHead key={header} className="border p-2 bg-muted/50">
                                   <div className="flex items-center">
-                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className="p-0 h-auto hover:bg-transparent">
+                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className={cn("p-0 h-auto font-bold text-foreground hover:bg-transparent", !isSortable && "cursor-default")}>
                                           {headerMapping[header]}
                                           {isSortable && <ArrowUpDown className="ml-2 h-4 w-4" />}
                                       </Button>
-                                      {renderFilter(header)}
+                                      <div className="ml-auto">
+                                        {renderFilter(header)}
+                                      </div>
                                   </div>
                               </TableHead>
                              )
                           })}
-                          <TableHead className="w-[120px] text-center border p-2">Actions</TableHead>
+                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50 font-bold text-foreground">Actions</TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -310,7 +313,7 @@ export default function DataTables() {
                                     : cellValue !== null ? String(cellValue) : 'NULL';
                                 
                                 return (
-                                  <TableCell key={header} className="truncate p-2 border" style={{maxWidth: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'none'}}>
+                                  <TableCell key={header} className="truncate p-4 border" style={{maxWidth: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'none'}}>
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
@@ -498,3 +501,5 @@ export default function DataTables() {
     </div>
   );
 }
+
+    
