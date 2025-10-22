@@ -326,7 +326,7 @@ export default function DataTables() {
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto hover:bg-accent focus-visible:bg-accent">
+                <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto hover:bg-blue-700 focus-visible:bg-accent">
                     <Filter className="h-4 w-4"/>
                 </Button>
             </PopoverTrigger>
@@ -355,12 +355,16 @@ export default function DataTables() {
                           {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
                              const isSortable = ['ID', 'SERVER_NAME', 'DATABASE_NAME', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(header);
                              return (
-                              <TableHead key={header} className="border p-2 bg-muted/50 text-base" style={{width: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
+                              <TableHead key={header} className="border p-2 bg-muted/50" style={{width: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
                                   <div className="flex items-center">
-                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className={cn("p-0 h-auto hover:bg-blue-700 hover:text-white font-bold text-black", !isSortable && "cursor-default")}>
+                                      <div onClick={() => isSortable && requestSort(header)} className={cn("flex items-center", isSortable && "cursor-pointer")}>
                                           <span className="text-lg font-bold text-black">{headerMapping[header]}</span>
-                                          {isSortable && <ArrowUpDown className="ml-2 h-4 w-4" />}
-                                      </Button>
+                                          {isSortable && (
+                                            <Button variant="ghost" className="p-1 h-auto ml-2 hover:bg-blue-700">
+                                              <ArrowUpDown className="h-4 w-4" />
+                                            </Button>
+                                          )}
+                                      </div>
                                       <div className="ml-auto flex items-center">
                                           {renderFilter(header)}
                                       </div>

@@ -60,7 +60,7 @@ export default function AppHeader({
       case 'definitions':
         return 'MPM Data Definitions';
       case 'supporting-tables':
-        return 'Supporting Tables';
+        return '';
       default:
         return 'MedPoint Wiki';
     }
