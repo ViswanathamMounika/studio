@@ -32,12 +32,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { PlusCircle, Edit, Trash2, Eye, Info, Filter, ArrowUpDown } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Eye, Info, ArrowUpDown, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
@@ -82,45 +81,11 @@ export default function DataTables() {
   const [isQueryExecuted, setIsQueryExecuted] = useState(false);
 
   const { toast } = useToast();
-  const resizingRef = useRef<{ col: string; startX: number; startWidth: number } | null>(null);
-  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
-    const widths: Record<string, number> = {};
-    defDataTable.headers.forEach(h => {
-        widths[h] = ['ID', 'OBJECT_TYPE', 'CREATEDBY', 'LASTCHANGEDBY', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(h) ? 150 : 250;
-    });
-    return widths;
-  });
   
   const [filters, setFilters] = useState<Partial<Record<keyof DataRow, string>>>({});
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, col: string) => {
-    e.preventDefault();
-    resizingRef.current = {
-      col,
-      startX: e.clientX,
-      startWidth: colWidths[col]
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!resizingRef.current) return;
-    const { col, startX, startWidth } = resizingRef.current;
-    const newWidth = startWidth + (e.clientX - startX);
-    if (newWidth > 50) {
-      setColWidths(prev => ({ ...prev, [col]: newWidth }));
-    }
-  };
-
-  const handleMouseUp = () => {
-    resizingRef.current = null;
-    window.removeEventListener('mousemove', handleMouseMove);
-    window.removeEventListener('mouseup', handleMouseUp);
-  };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -263,83 +228,72 @@ export default function DataTables() {
     }, 1500);
   }
 
-  const FilterPopover = () => (
-    <Popover>
-        <PopoverTrigger asChild>
-            <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" /> Filters
-            </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-96" align="end">
-            <div className="space-y-4">
-                <h4 className="font-medium leading-none">Filters</h4>
-                <div className="space-y-2">
-                    <Label>Query Type</Label>
-                    <Select onValueChange={(v) => handleFilterChange('OBJECT_TYPE', v)}>
-                        <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="1">View Query</SelectItem>
-                            <SelectItem value="2">Table Query</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                {(Object.keys(headerMapping) as Array<keyof DataRow>).filter(k => ['SERVER_NAME','DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION'].includes(k)).map(key => (
-                    <div key={key} className="space-y-2">
-                        <Label>{headerMapping[key]}</Label>
-                        <Input placeholder={`Filter by ${headerMapping[key]}...`} onChange={(e) => handleFilterChange(key, e.target.value)} />
-                    </div>
-                ))}
-                <Button onClick={() => setFilters({})} variant="secondary" className="w-full">Clear Filters</Button>
-            </div>
-        </PopoverContent>
-    </Popover>
-  );
+  const renderFilter = (header: string) => {
+    const key = header as keyof DataRow;
+    if (key === 'OBJECT_TYPE') {
+        return (
+            <Select onValueChange={(v) => handleFilterChange(key, v)}>
+                <SelectTrigger className="h-8"><SelectValue placeholder="Filter..." /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="1">View Query</SelectItem>
+                    <SelectItem value="2">Table Query</SelectItem>
+                </SelectContent>
+            </Select>
+        );
+    }
+    if (['ID', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION', 'CREATEDBY', 'LASTCHANGEDBY'].includes(key)) {
+        return <Input className="h-8" placeholder="Filter..." onChange={(e) => handleFilterChange(key, e.target.value)} />;
+    }
+     if (['CREATEDDATE', 'LASTCHANGEDDATE'].includes(key)) {
+        return <Input type="date" className="h-8" placeholder="Filter..." onChange={(e) => handleFilterChange(key, e.target.value)} />;
+    }
+    return null;
+  }
 
   return (
     <div className="w-full p-4 sm:p-6">
       <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                  {/* Title removed as per request */}
-              </div>
-              <div className="flex items-center gap-4">
-                  <FilterPopover />
-                  <Button onClick={handleAddNew}>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add New
-                  </Button>
-              </div>
+            <CardTitle>Supporting Tables</CardTitle>
+            <Button onClick={handleAddNew}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add New
+            </Button>
           </CardHeader>
           <CardContent className="p-0">
                <div className="overflow-x-auto border-t">
-                  <Table>
+                  <Table className="min-w-full">
                       <TableHeader>
                           <TableRow>
-                          {defDataTable.headers.map((header) => {
+                          {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
                              const isSortable = ['ID', 'SERVER_NAME', 'DATABASE_NAME', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(header);
                              return (
-                              <TableHead key={header} style={{ width: colWidths[header], position: 'relative' }}>
+                              <TableHead key={header} className="border p-2">
                                   <div className="flex items-center justify-between">
-                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header as SortKey)} className="p-0 h-auto">
-                                          {headerMapping[header as keyof DataRow]}
+                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className="p-0 h-auto hover:bg-transparent">
+                                          {headerMapping[header]}
                                           {isSortable && <ArrowUpDown className="ml-2 h-4 w-4" />}
                                       </Button>
-                                      <div
-                                        onMouseDown={(e) => handleMouseDown(e, header)}
-                                        className="absolute right-0 top-0 h-full w-1 cursor-col-resize" 
-                                      />
                                   </div>
                               </TableHead>
                              )
                           })}
-                          <TableHead className="w-[120px] text-center">Actions</TableHead>
+                          <TableHead className="w-[120px] text-center border p-2">Actions</TableHead>
+                          </TableRow>
+                          <TableRow>
+                            {(defDataTable.headers as Array<keyof DataRow>).map((header) => (
+                                <TableHead key={`${header}-filter`} className="p-1 border">
+                                    {renderFilter(header)}
+                                </TableHead>
+                            ))}
+                            <TableHead className="p-1 border"></TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
                           {paginatedRows.map((row) => (
                           <TableRow key={row.ID}>
-                              {defDataTable.headers.map((header) => {
-                                const cellValue = row[header as keyof typeof row];
+                              {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
+                                const cellValue = row[header];
                                 const displayValue = header === 'CREATEDDATE' || header === 'LASTCHANGEDDATE'
                                     ? formatDate(String(cellValue))
                                     : header === 'OBJECT_TYPE'
@@ -347,7 +301,7 @@ export default function DataTables() {
                                     : cellValue !== null ? String(cellValue) : 'NULL';
                                 
                                 return (
-                                  <TableCell key={header} className="truncate" style={{ maxWidth: colWidths[header]}}>
+                                  <TableCell key={header} className="truncate p-2 border">
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
@@ -361,7 +315,7 @@ export default function DataTables() {
                                   </TableCell>
                                 )
                               })}
-                              <TableCell className="text-center">
+                              <TableCell className="text-center p-1 border">
                                   <div className="flex justify-center gap-1">
                                       <Button variant="ghost" size="icon" onClick={() => handlePreview(row)}>
                                         <Eye className="h-4 w-4" />
@@ -396,7 +350,7 @@ export default function DataTables() {
           </CardContent>
           <div className="flex items-center justify-between p-6 border-t">
               <p className="text-sm text-muted-foreground">
-                  Showing {startItem} - {endItem} of {sortedAndFilteredRows.length} items
+                  Showing {paginatedRows.length > 0 ? startItem : 0} - {endItem} of {sortedAndFilteredRows.length} items
               </p>
               <div className="flex items-center gap-2">
                   <Button variant="outline" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
@@ -420,7 +374,7 @@ export default function DataTables() {
                       <Button variant="outline" onClick={() => handlePageChange(totalPages)}>{totalPages}</Button>
                       </>
                   )}
-                  <Button variant="outline" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>
+                  <Button variant="outline" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages}>
                       Next
                   </Button>
               </div>
@@ -439,7 +393,7 @@ export default function DataTables() {
               </div>
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="DESCRIPTION">{headerMapping.DESCRIPTION}</Label>
-                <Textarea id="DESCRIPTION" name="DESCRIPTION" value={formData.DESCRIPTION || ''} onChange={handleInputChange} className="font-mono" />
+                <Textarea id="DESCRIPTION" name="DESCRIPTION" value={formData.DESCRIPTION || ''} onChange={handleInputChange} />
               </div>
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="SERVER_NAME">{headerMapping.SERVER_NAME}</Label>
@@ -513,14 +467,14 @@ export default function DataTables() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            {previewData?.headers.map(header => <TableHead key={header}>{header}</TableHead>)}
+                            {previewData?.headers.map(header => <TableHead key={header} className="border p-2">{header}</TableHead>)}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {previewData?.rows.map((row, rowIndex) => (
                             <TableRow key={rowIndex}>
                                 {row.map((cell, cellIndex) => (
-                                    <TableCell key={cellIndex}>{String(cell)}</TableCell>
+                                    <TableCell key={cellIndex} className="p-2 border">{String(cell)}</TableCell>
                                 ))}
                             </TableRow>
                         ))}
