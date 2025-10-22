@@ -40,25 +40,19 @@ import { useToast } from '@/hooks/use-toast';
 
 type DataRow = (typeof defDataTable.rows)[0];
 
-const initialFormState: DataRow = {
-  ID: 0,
-  DEF_ID: 0,
+const initialFormState: Omit<DataRow, 'ID' | 'CREATEDBY' | 'CREATEDDATE' | 'LASTCHANGEDBY' | 'LASTCHANGEDDATE'> = {
   OBJECT_TYPE: 0,
   SERVER_NAME: '',
   DATABASE_NAME: '',
   QUERY: '',
   NAME: '',
-  CREATEDBY: '',
-  CREATEDDATE: '',
-  LASTCHANGEDBY: '',
-  LASTCHANGEDDATE: '',
 };
 
 const ITEMS_PER_PAGE = 15;
 
 export default function DataTables() {
   const [rows, setRows] = useState(defDataTable.rows);
-  const [formData, setFormData] = useState<DataRow>(initialFormState);
+  const [formData, setFormData] = useState<DataRow>({ ...initialFormState, ID: 0, CREATEDBY: '', CREATEDDATE: '', LASTCHANGEDBY: '', LASTCHANGEDDATE: ''});
   const [isEditing, setIsEditing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
@@ -210,7 +204,7 @@ export default function DataTables() {
                     </Button>
                 </div>
             </CardHeader>
-            <CardContent className="py-0">
+            <CardContent className="p-0">
                  <div className="overflow-x-auto border rounded-lg">
                     <Table className="min-w-full">
                         <TableHeader>
@@ -319,7 +313,7 @@ export default function DataTables() {
                         <Input
                             id={header}
                             name={header}
-                            value={String(formData[header as keyof DataRow])}
+                            value={String(formData[header as keyof DataRow] ?? '')}
                             onChange={handleInputChange}
                         />
                     </div>
@@ -337,3 +331,5 @@ export default function DataTables() {
     </div>
   );
 }
+
+    
