@@ -40,6 +40,7 @@ import { PlusCircle, Edit, Trash2, Search, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type DataRow = (typeof defDataTable.rows)[0];
 
@@ -120,7 +121,7 @@ export default function DataTables() {
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: parseInt(value, 10) as any }));
   }
   
   const handleAddNew = () => {
@@ -263,16 +264,29 @@ export default function DataTables() {
                       <TableBody>
                           {paginatedRows.map((row) => (
                           <TableRow key={row.ID}>
-                              {defDataTable.headers.map((header) => (
+                              {defDataTable.headers.map((header) => {
+                                const cellValue = row[header as keyof typeof row];
+                                const displayValue = header === 'CREATEDDATE' || header === 'LASTCHANGEDDATE'
+                                    ? formatDate(String(cellValue))
+                                    : header === 'OBJECT_TYPE'
+                                    ? mapObjectType(cellValue as number)
+                                    : cellValue !== null ? String(cellValue) : 'NULL';
+                                
+                                return (
                                   <TableCell key={header} className="truncate" style={{ maxWidth: colWidths[header]}}>
-                                      {header === 'CREATEDDATE' || header === 'LASTCHANGEDDATE'
-                                          ? formatDate(String(row[header as keyof typeof row]))
-                                          : header === 'OBJECT_TYPE'
-                                          ? mapObjectType(row.OBJECT_TYPE)
-                                          : row[header as keyof typeof row] !== null ? String(row[header as keyof typeof row]) : 'NULL'
-                                      }
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="block truncate">{displayValue}</span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{displayValue}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
                                   </TableCell>
-                              ))}
+                                )
+                              })}
                               <TableCell className="text-center">
                                   <div className="flex justify-center gap-1">
                                       <Button variant="ghost" size="icon" onClick={() => handlePreview(row)}>
