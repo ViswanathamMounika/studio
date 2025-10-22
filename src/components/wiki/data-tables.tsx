@@ -358,7 +358,7 @@ export default function DataTables() {
                               <TableHead key={header} className="border p-2 bg-muted/50" style={{width: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
                                   <div className="flex items-center">
                                       <div onClick={() => isSortable && requestSort(header)} className={cn("flex items-center group", isSortable && "cursor-pointer")}>
-                                          <span className="text-lg font-bold text-black">{headerMapping[header]}</span>
+                                          <span className="text-xl font-bold text-black">{headerMapping[header]}</span>
                                           {isSortable && (
                                             <Button variant="ghost" className="p-1 h-auto ml-2 hover:bg-blue-700">
                                               <ArrowUpDown className="h-4 w-4" />
@@ -372,12 +372,12 @@ export default function DataTables() {
                               </TableHead>
                              )
                           })}
-                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50"><span className="text-lg font-bold text-black">Actions</span></TableHead>
+                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50"><span className="text-xl font-bold text-black">Actions</span></TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
                           {paginatedRows.map((row) => (
-                          <TableRow key={row.ID} className="text-sm">
+                          <TableRow key={row.ID} className="text-sm h-16">
                               {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
                                 const cellValue = row[header];
                                 const displayValue = header === 'CREATEDDATE' || header === 'LASTCHANGEDDATE'
