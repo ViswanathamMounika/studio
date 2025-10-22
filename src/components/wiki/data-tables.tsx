@@ -286,7 +286,7 @@ export default function DataTables() {
                       <Button
                           variant={"outline"}
                           className={cn(
-                              "w-full justify-start text-left font-normal h-8",
+                              "w-[240px] justify-start text-left font-normal h-8",
                               !dateRange && "text-muted-foreground"
                           )}
                       >
@@ -330,7 +330,7 @@ export default function DataTables() {
                     <Filter className="h-4 w-4"/>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-2">
+            <PopoverContent className="w-auto p-2">
                 {filterContent()}
             </PopoverContent>
         </Popover>
@@ -372,7 +372,7 @@ export default function DataTables() {
                               </TableHead>
                              )
                           })}
-                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50"><span className="text-xl font-bold text-black">Actions</span></TableHead>
+                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50"><span className="text-sm font-bold text-black">Actions</span></TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -479,7 +479,7 @@ export default function DataTables() {
               </div>
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="DESCRIPTION">{headerMapping.DESCRIPTION}</Label>
-                <Textarea id="DESCRIPTION" name="DESCRIPTION" value={formData.DESCRIPTION || ''} onChange={handleInputChange} className="font-sans text-sm" />
+                <Textarea id="DESCRIPTION" name="DESCRIPTION" value={formData.DESCRIPTION || ''} onChange={handleInputChange} />
               </div>
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="SERVER_NAME">{headerMapping.SERVER_NAME}</Label>
