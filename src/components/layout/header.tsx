@@ -78,10 +78,6 @@ export default function AppHeader({
         {activeView === 'definitions' && (
           <>
             <div className="flex items-center gap-2">
-                <Button onClick={onNewDefinitionClick}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    New
-                </Button>
               <Button variant="outline" size="sm" onClick={onTemplatesClick}>
                 <Book className="h-4 w-4 mr-2" />
                 Templates
