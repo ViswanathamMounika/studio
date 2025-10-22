@@ -81,6 +81,7 @@ const additionalRows = Array.from({ length: 31 }, (_, i) => ({
     DATABASE_NAME: ['DW_Reporting', 'Finance', 'Provider_Data', 'Claims'][Math.floor(Math.random()*4)],
     QUERY: `SELECT col FROM table_${i+1}`,
     NAME: `Generated Row ${i+1}`,
+    DESCRIPTION: `This is a generated description for row ${i+1}.`,
     CREATEDBY: getRandomName(),
     CREATEDDATE: generateRandomDate(),
     LASTCHANGEDBY: getRandomName(),
@@ -91,12 +92,12 @@ export const defDataTable = {
     id: 'def-data-table',
     name: 'DEF_DATA_TABLE',
     description: 'Contains metadata and queries for definitions, linking them to underlying database objects.',
-    headers: ['ID', 'OBJECT_TYPE', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'CREATEDBY', 'CREATEDDATE', 'LASTCHANGEDBY', 'LASTCHANGEDDATE'],
+    headers: ['ID', 'OBJECT_TYPE', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION', 'CREATEDBY', 'CREATEDDATE', 'LASTCHANGEDBY', 'LASTCHANGEDDATE'],
     rows: [
-        { ID: 1, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-01', DATABASE_NAME: 'DW_Reporting', QUERY: 'SELECT * FROM vw_AuthDecisionDate', NAME: 'Auth Decision Date View', CREATEDBY: 'J. Doe', CREATEDDATE: '2023-01-15 10:30:00', LASTCHANGEDBY: 'A. Smith', LASTCHANGEDDATE: '2023-11-10 14:00:00' },
-        { ID: 2, OBJECT_TYPE: 2, SERVER_NAME: 'SQL-PROD-01', DATABASE_NAME: 'DW_Reporting', QUERY: 'sp_GetServiceTypeMappings', NAME: 'Service Type Mapping Procedure', CREATEDBY: 'J. Doe', CREATEDDATE: '2023-02-20 11:00:00', LASTCHANGEDBY: 'A. Smith', LASTCHANGEDDATE: '2023-10-01 09:20:00' },
-        { ID: 3, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-02', DATABASE_NAME: 'Finance', QUERY: 'SELECT * FROM vw_ContractedRates', NAME: 'Contracted Rates View', CREATEDBY: 'T. Johnson', CREATEDDATE: '2022-12-10 08:00:00', LASTCHANGEDBY: 'T. Johnson', LASTCHANGEDDATE: '2024-01-05 16:45:00' },
-        { ID: 4, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-03', DATABASE_NAME: 'Provider_Data', QUERY: 'SELECT ProviderID, Name, Address FROM ProviderMaster', NAME: 'Provider Demographics Query', CREATEDBY: 'S. Lee', CREATEDDATE: '2023-03-12 13:00:00', LASTCHANGEDBY: 'S. Lee', LASTCHANGEDDATE: '2023-09-18 11:30:00' },
+        { ID: 1, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-01', DATABASE_NAME: 'DW_Reporting', QUERY: 'SELECT * FROM vw_AuthDecisionDate', NAME: 'Auth Decision Date View', DESCRIPTION: 'Provides the final decision date for an authorization.', CREATEDBY: 'J. Doe', CREATEDDATE: '2023-01-15 10:30:00', LASTCHANGEDBY: 'A. Smith', LASTCHANGEDDATE: '2023-11-10 14:00:00' },
+        { ID: 2, OBJECT_TYPE: 2, SERVER_NAME: 'SQL-PROD-01', DATABASE_NAME: 'DW_Reporting', QUERY: 'sp_GetServiceTypeMappings', NAME: 'Service Type Mapping Procedure', DESCRIPTION: 'Maps procedure codes to internal service categories.', CREATEDBY: 'J. Doe', CREATEDDATE: '2023-02-20 11:00:00', LASTCHANGEDBY: 'A. Smith', LASTCHANGEDDATE: '2023-10-01 09:20:00' },
+        { ID: 3, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-02', DATABASE_NAME: 'Finance', QUERY: 'SELECT * FROM vw_ContractedRates', NAME: 'Contracted Rates View', DESCRIPTION: 'Shows negotiated payment rates for in-network providers.', CREATEDBY: 'T. Johnson', CREATEDDATE: '2022-12-10 08:00:00', LASTCHANGEDBY: 'T. Johnson', LASTCHANGEDDATE: '2024-01-05 16:45:00' },
+        { ID: 4, OBJECT_TYPE: 1, SERVER_NAME: 'SQL-PROD-03', DATABASE_NAME: 'Provider_Data', QUERY: 'SELECT ProviderID, Name, Address FROM ProviderMaster', NAME: 'Provider Demographics Query', DESCRIPTION: 'Retrieves basic information about healthcare providers.', CREATEDBY: 'S. Lee', CREATEDDATE: '2023-03-12 13:00:00', LASTCHANGEDBY: 'S. Lee', LASTCHANGEDDATE: '2023-09-18 11:30:00' },
         ...additionalRows,
     ]
 };
@@ -488,3 +489,5 @@ export function findDefinition(definitions: Definition[], id: string): Definitio
   }
   return null;
 }
+
+    

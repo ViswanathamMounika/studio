@@ -49,6 +49,7 @@ const initialFormState: Omit<DataRow, 'ID' | 'CREATEDBY' | 'CREATEDDATE' | 'LAST
   DATABASE_NAME: '',
   QUERY: '',
   NAME: '',
+  DESCRIPTION: '',
 };
 
 const ITEMS_PER_PAGE = 15;
@@ -60,6 +61,7 @@ const headerMapping: Record<keyof DataRow, string> = {
     DATABASE_NAME: "Database Name",
     QUERY: "Query",
     NAME: "Name",
+    DESCRIPTION: "Description",
     CREATEDBY: "Created By",
     CREATEDDATE: "Created Date",
     LASTCHANGEDBY: "Last Changed By",
@@ -79,7 +81,7 @@ export default function DataTables() {
   const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
     const widths: Record<string, number> = {};
     defDataTable.headers.forEach(h => {
-        widths[h] = h === 'QUERY' || h === 'NAME' ? 250 : 150;
+        widths[h] = h === 'QUERY' || h === 'NAME' || h === 'DESCRIPTION' ? 250 : 150;
     });
     return widths;
   });
@@ -212,7 +214,7 @@ export default function DataTables() {
   }
 
   return (
-    <div className="p-4 sm:p-6 w-full">
+    <div className="w-full p-4 sm:p-6">
       <Card>
           <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -343,9 +345,13 @@ export default function DataTables() {
             <DialogTitle>{isEditing ? 'Edit Supporting Query' : 'Add New Supporting Query'}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 py-4">
-              <div className="space-y-2">
+              <div className="space-y-2 col-span-2">
                 <Label htmlFor="NAME">{headerMapping.NAME}</Label>
                 <Input id="NAME" name="NAME" value={formData.NAME} onChange={handleInputChange} />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="DESCRIPTION">{headerMapping.DESCRIPTION}</Label>
+                <Textarea id="DESCRIPTION" name="DESCRIPTION" value={formData.DESCRIPTION || ''} onChange={handleInputChange} className="font-mono" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="OBJECT_TYPE">{headerMapping.OBJECT_TYPE}</Label>
@@ -418,3 +424,5 @@ export default function DataTables() {
     </div>
   );
 }
+
+    
