@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { defDataTable, allDataTables } from '@/lib/data';
 import {
   Table,
@@ -50,6 +50,52 @@ import { Calendar } from '../ui/calendar';
 type DataRow = (typeof defDataTable.rows)[0];
 type SortKey = keyof DataRow;
 
+const TruncatedCell = ({ children, style }: { children: React.ReactNode, style: React.CSSProperties }) => {
+    const [isTruncated, setIsTruncated] = useState(false);
+    const textRef = useRef<HTMLSpanElement>(null);
+
+    useEffect(() => {
+        const checkTruncation = () => {
+            if (textRef.current) {
+                setIsTruncated(textRef.current.scrollWidth > textRef.current.clientWidth);
+            }
+        };
+
+        checkTruncation();
+        window.addEventListener('resize', checkTruncation);
+
+        return () => window.removeEventListener('resize', checkTruncation);
+    }, [children]);
+
+    const cellContent = (
+        <span ref={textRef} className="block truncate">{children}</span>
+    );
+
+    return (
+        <TableCell className="truncate p-4 border text-sm" style={style}>
+            {isTruncated ? (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            {cellContent}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{children}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            ) : (
+                cellContent
+            )}
+        </TableCell>
+    );
+};
+
+
+const mapObjectType = (type: number) => {
+  return type === 1 ? 'View Query' : 'Table Query';
+}
+
 const initialFormState: Omit<DataRow, 'ID' | 'CREATEDBY' | 'CREATEDDATE' | 'LASTCHANGEDBY' | 'LASTCHANGEDDATE'> = {
   OBJECT_TYPE: 1,
   SERVER_NAME: '',
@@ -75,9 +121,6 @@ const headerMapping: Record<keyof DataRow, string> = {
     LASTCHANGEDDATE: "Last Changed Date"
 }
 
-const mapObjectType = (type: number) => {
-  return type === 1 ? 'View Query' : 'Table Query';
-}
 
 export default function DataTables() {
   const [rows, setRows] = useState(defDataTable.rows);
@@ -286,7 +329,7 @@ export default function DataTables() {
                       <Button
                           variant={"outline"}
                           className={cn(
-                              "w-[240px] justify-start text-left font-normal h-8",
+                              "w-[260px] justify-start text-left font-normal h-8",
                               !dateRange && "text-muted-foreground"
                           )}
                       >
@@ -358,7 +401,7 @@ export default function DataTables() {
                               <TableHead key={header} className="border p-2 bg-muted/50" style={{width: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
                                   <div className="flex items-center">
                                       <div onClick={() => isSortable && requestSort(header)} className={cn("flex items-center group", isSortable && "cursor-pointer")}>
-                                          <span className="text-sm font-bold text-black">{headerMapping[header]}</span>
+                                          <span className="text-sm font-bold">{headerMapping[header]}</span>
                                           {isSortable && (
                                             <Button variant="ghost" className="p-1 h-auto ml-2 hover:bg-blue-700">
                                               <ArrowUpDown className="h-4 w-4" />
@@ -372,7 +415,7 @@ export default function DataTables() {
                               </TableHead>
                              )
                           })}
-                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50"><span className="text-sm font-bold text-black">Actions</span></TableHead>
+                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50"><span className="text-sm font-bold">Actions</span></TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -387,18 +430,9 @@ export default function DataTables() {
                                     : cellValue !== null ? String(cellValue) : 'NULL';
                                 
                                 return (
-                                  <TableCell key={header} className="truncate p-4 border text-sm" style={{maxWidth: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <span className="block truncate">{displayValue}</span>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>{displayValue}</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </TableCell>
+                                  <TruncatedCell key={header} style={{maxWidth: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
+                                    {displayValue}
+                                  </TruncatedCell>
                                 )
                               })}
                               <TableCell className="text-center p-1 border">
