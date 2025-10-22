@@ -32,8 +32,8 @@ import {
 import { cn } from '@/lib/utils';
 
 type AppSidebarProps = {
-    activeView: 'definitions' | 'data-tables';
-    onNavigate: (view: 'definitions' | 'data-tables' | string) => void;
+    activeView: 'definitions' | 'supporting-tables';
+    onNavigate: (view: 'definitions' | 'supporting-tables' | string) => void;
 };
 
 const topNavItems = [
@@ -43,7 +43,7 @@ const topNavItems = [
 
 const wikiNavItems = [
     { id: 'definitions', label: 'MPM Definitions', icon: KeyRound },
-    { id: 'data-tables', label: 'Data Tables', icon: Database },
+    { id: 'supporting-tables', label: 'Supporting Tables', icon: Database },
     { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
     { id: 'acronyms', label: 'Healthcare Acronyms', icon: SquareGanttChart },
     { id: 'clients', label: 'Clients', icon: Users },
@@ -55,7 +55,7 @@ export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) 
     const [isWikiOpen, setIsWikiOpen] = useState(true);
 
     const handleNavigate = (id: string) => {
-        if (id === 'data-tables' || id === 'definitions') {
+        if (id === 'supporting-tables' || id === 'definitions') {
             onNavigate(id);
         } else {
             // Placeholder for other navigation items

@@ -34,7 +34,7 @@ type AppHeaderProps = {
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
     onDefinitionClick: (id: string) => void;
-    activeView: 'definitions' | 'data-tables';
+    activeView: 'definitions' | 'supporting-tables';
 }
 
 export default function AppHeader({ 
@@ -54,18 +54,28 @@ export default function AppHeader({
 }: AppHeaderProps) {
 
   const unreadCount = notifications.filter(n => !n.read).length;
-  const showDefinitionControls = activeView === 'definitions';
+  
+  const getTitle = () => {
+    switch (activeView) {
+      case 'definitions':
+        return 'MPM Data Definitions';
+      case 'supporting-tables':
+        return 'Supporting Tables';
+      default:
+        return 'MedPoint Wiki';
+    }
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center w-full gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
        <div className="flex items-center gap-2">
         <SidebarTrigger />
         <h1 className="text-xl font-bold tracking-tight">
-          {activeView === 'definitions' ? 'MPM Data Definitions' : 'Data Tables'}
+          {getTitle()}
         </h1>
       </div>
       <div className="ml-auto flex items-center gap-2">
-        {showDefinitionControls && (
+        {activeView === 'definitions' && (
           <>
             <div className="flex items-center gap-2">
                 <Button onClick={onNewDefinitionClick}>
@@ -128,5 +138,3 @@ export default function AppHeader({
     </header>
   );
 }
-
-    

@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { defDataTable, allDataTables } from '@/lib/data';
 import {
   Table,
@@ -32,17 +32,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { PlusCircle, Edit, Trash2, Search, Eye } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Eye, Info, Filter, ArrowUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type DataRow = (typeof defDataTable.rows)[0];
+type SortKey = keyof DataRow;
 
 const initialFormState: Omit<DataRow, 'ID' | 'CREATEDBY' | 'CREATEDDATE' | 'LASTCHANGEDBY' | 'LASTCHANGEDDATE'> = {
   OBJECT_TYPE: 1,
@@ -53,7 +55,7 @@ const initialFormState: Omit<DataRow, 'ID' | 'CREATEDBY' | 'CREATEDDATE' | 'LAST
   DESCRIPTION: '',
 };
 
-const ITEMS_PER_PAGE = 15;
+const ITEMS_PER_PAGE = 10;
 
 const headerMapping: Record<keyof DataRow, string> = {
     ID: "ID",
@@ -76,17 +78,22 @@ export default function DataTables() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewData, setPreviewData] = useState<{ headers: string[], rows: (string|number|null)[][] } | null>(null);
+  const [isConnectionSuccessful, setIsConnectionSuccessful] = useState(false);
+  const [isQueryExecuted, setIsQueryExecuted] = useState(false);
 
   const { toast } = useToast();
   const resizingRef = useRef<{ col: string; startX: number; startWidth: number } | null>(null);
   const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
     const widths: Record<string, number> = {};
     defDataTable.headers.forEach(h => {
-        widths[h] = h === 'QUERY' || h === 'NAME' || h === 'DESCRIPTION' ? 250 : 150;
+        widths[h] = ['ID', 'OBJECT_TYPE', 'CREATEDBY', 'LASTCHANGEDBY', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(h) ? 150 : 250;
     });
     return widths;
   });
-  const [searchQuery, setSearchQuery] = useState('');
+  
+  const [filters, setFilters] = useState<Partial<Record<keyof DataRow, string>>>({});
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>(null);
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, col: string) => {
@@ -135,12 +142,16 @@ export default function DataTables() {
         CREATEDDATE: new Date().toISOString(),
         LASTCHANGEDDATE: new Date().toISOString(),
       });
+      setIsConnectionSuccessful(false);
+      setIsQueryExecuted(false);
       setIsModalOpen(true);
   };
   
   const handleEdit = (row: DataRow) => {
       setIsEditing(true);
       setFormData(row);
+      setIsConnectionSuccessful(false);
+      setIsQueryExecuted(false);
       setIsModalOpen(true);
   };
 
@@ -164,29 +175,59 @@ export default function DataTables() {
     setIsModalOpen(false);
   };
 
-  const filteredRows = useMemo(() => {
-    if (!searchQuery) {
-      return rows;
-    }
-    return rows.filter(row => 
-      Object.values(row).some(value => 
-        String(value).toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    );
-  }, [rows, searchQuery]);
+  const sortedAndFilteredRows = useMemo(() => {
+    let filtered = [...rows].filter(row => {
+        return Object.entries(filters).every(([key, value]) => {
+            if (!value) return true;
+            const rowValue = row[key as keyof DataRow];
+            if (key === 'OBJECT_TYPE') {
+                return (value === '1' && mapObjectType(rowValue as number) === 'View Query') ||
+                       (value === '2' && mapObjectType(rowValue as number) === 'Table Query');
+            }
+            return String(rowValue).toLowerCase().includes(value.toLowerCase());
+        });
+    });
 
-  const totalPages = Math.ceil(filteredRows.length / ITEMS_PER_PAGE);
+    if (sortConfig !== null) {
+      filtered.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return filtered;
+  }, [rows, filters, sortConfig]);
+
+  const totalPages = Math.ceil(sortedAndFilteredRows.length / ITEMS_PER_PAGE);
   const paginatedRows = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredRows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredRows, currentPage]);
+    return sortedAndFilteredRows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [sortedAndFilteredRows, currentPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   }
+  
+  const handleFilterChange = useCallback((key: keyof DataRow, value: string) => {
+      setFilters(prev => ({...prev, [key]: value}));
+      setCurrentPage(1);
+  }, []);
+
+  const requestSort = (key: SortKey) => {
+    if (!['ID', 'SERVER_NAME', 'DATABASE_NAME', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(key)) return;
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
 
   const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-  const endItem = Math.min(startItem + ITEMS_PER_PAGE - 1, filteredRows.length);
+  const endItem = Math.min(startItem + ITEMS_PER_PAGE - 1, sortedAndFilteredRows.length);
   
   const formatDate = (dateString: string) => {
     try {
@@ -208,34 +249,61 @@ export default function DataTables() {
 
   const handlePreview = (row: DataRow) => {
     // In a real app, you would execute the row.QUERY here.
-    // For this prototype, we'll just show some dummy data from allDataTables.
     const dummyData = allDataTables[Math.floor(Math.random() * allDataTables.length)];
     setPreviewData({ headers: dummyData.headers, rows: dummyData.rows.map(r => r.map(c => c)) });
+    setIsQueryExecuted(true);
     setIsPreviewModalOpen(true);
   }
+  
+  const handleTestConnection = () => {
+    toast({ title: "Testing connection...", description: "Please wait." });
+    setTimeout(() => {
+        setIsConnectionSuccessful(true);
+        toast({ title: "Success!", description: "Connection established successfully." });
+    }, 1500);
+  }
+
+  const FilterPopover = () => (
+    <Popover>
+        <PopoverTrigger asChild>
+            <Button variant="outline">
+                <Filter className="mr-2 h-4 w-4" /> Filters
+            </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-96" align="end">
+            <div className="space-y-4">
+                <h4 className="font-medium leading-none">Filters</h4>
+                <div className="space-y-2">
+                    <Label>Query Type</Label>
+                    <Select onValueChange={(v) => handleFilterChange('OBJECT_TYPE', v)}>
+                        <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="1">View Query</SelectItem>
+                            <SelectItem value="2">Table Query</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                {(Object.keys(headerMapping) as Array<keyof DataRow>).filter(k => ['SERVER_NAME','DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION'].includes(k)).map(key => (
+                    <div key={key} className="space-y-2">
+                        <Label>{headerMapping[key]}</Label>
+                        <Input placeholder={`Filter by ${headerMapping[key]}...`} onChange={(e) => handleFilterChange(key, e.target.value)} />
+                    </div>
+                ))}
+                <Button onClick={() => setFilters({})} variant="secondary" className="w-full">Clear Filters</Button>
+            </div>
+        </PopoverContent>
+    </Popover>
+  );
 
   return (
     <div className="w-full p-4 sm:p-6">
       <Card>
           <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                  <CardTitle>Supporting Queries</CardTitle>
-                  <CardDescription>Contains metadata and queries for definitions.</CardDescription>
+                  {/* Title removed as per request */}
               </div>
               <div className="flex items-center gap-4">
-                  <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                          type="search"
-                          placeholder="Search table..."
-                          className="w-full rounded-lg bg-background pl-8"
-                          value={searchQuery}
-                          onChange={(e) => {
-                              setSearchQuery(e.target.value);
-                              setCurrentPage(1); // Reset to first page on search
-                          }}
-                      />
-                  </div>
+                  <FilterPopover />
                   <Button onClick={handleAddNew}>
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Add New
@@ -244,20 +312,26 @@ export default function DataTables() {
           </CardHeader>
           <CardContent className="p-0">
                <div className="overflow-x-auto border-t">
-                  <Table className="min-w-full">
+                  <Table>
                       <TableHeader>
                           <TableRow>
-                          {defDataTable.headers.map((header) => (
+                          {defDataTable.headers.map((header) => {
+                             const isSortable = ['ID', 'SERVER_NAME', 'DATABASE_NAME', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(header);
+                             return (
                               <TableHead key={header} style={{ width: colWidths[header], position: 'relative' }}>
                                   <div className="flex items-center justify-between">
-                                      {headerMapping[header as keyof DataRow]}
+                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header as SortKey)} className="p-0 h-auto">
+                                          {headerMapping[header as keyof DataRow]}
+                                          {isSortable && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                                      </Button>
                                       <div
-                                      onMouseDown={(e) => handleMouseDown(e, header)}
-                                      className="absolute right-0 top-0 h-full w-1 cursor-col-resize" 
+                                        onMouseDown={(e) => handleMouseDown(e, header)}
+                                        className="absolute right-0 top-0 h-full w-1 cursor-col-resize" 
                                       />
                                   </div>
                               </TableHead>
-                          ))}
+                             )
+                          })}
                           <TableHead className="w-[120px] text-center">Actions</TableHead>
                           </TableRow>
                       </TableHeader>
@@ -322,7 +396,7 @@ export default function DataTables() {
           </CardContent>
           <div className="flex items-center justify-between p-6 border-t">
               <p className="text-sm text-muted-foreground">
-                  Showing {startItem} - {endItem} of {filteredRows.length} items
+                  Showing {startItem} - {endItem} of {sortedAndFilteredRows.length} items
               </p>
               <div className="flex items-center gap-2">
                   <Button variant="outline" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
@@ -367,6 +441,37 @@ export default function DataTables() {
                 <Label htmlFor="DESCRIPTION">{headerMapping.DESCRIPTION}</Label>
                 <Textarea id="DESCRIPTION" name="DESCRIPTION" value={formData.DESCRIPTION || ''} onChange={handleInputChange} className="font-mono" />
               </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="SERVER_NAME">{headerMapping.SERVER_NAME}</Label>
+                <div className="flex items-center gap-2">
+                  <Input id="SERVER_NAME" name="SERVER_NAME" value={formData.SERVER_NAME} onChange={handleInputChange} className="flex-1" />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                          <p>Using service account to test the connection.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <Button variant="outline" onClick={handleTestConnection}>Test Connection</Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="DATABASE_NAME">{headerMapping.DATABASE_NAME}</Label>
+                <Select name="DATABASE_NAME" disabled={!isConnectionSuccessful} value={formData.DATABASE_NAME} onValueChange={(value) => handleSelectChange('DATABASE_NAME', value)}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Test connection to see databases" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="DW_Reporting">DW_Reporting</SelectItem>
+                        <SelectItem value="Finance">Finance</SelectItem>
+                        <SelectItem value="Provider_Data">Provider_Data</SelectItem>
+                        <SelectItem value="Claims">Claims</SelectItem>
+                    </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="OBJECT_TYPE">{headerMapping.OBJECT_TYPE}</Label>
                 <Select name="OBJECT_TYPE" value={String(formData.OBJECT_TYPE)} onValueChange={(value) => handleSelectChange('OBJECT_TYPE', value)}>
@@ -379,29 +484,21 @@ export default function DataTables() {
                     </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="SERVER_NAME">{headerMapping.SERVER_NAME}</Label>
-                <Input id="SERVER_NAME" name="SERVER_NAME" value={formData.SERVER_NAME} onChange={handleInputChange} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="DATABASE_NAME">{headerMapping.DATABASE_NAME}</Label>
-                <Input id="DATABASE_NAME" name="DATABASE_NAME" value={formData.DATABASE_NAME} onChange={handleInputChange} />
-              </div>
               <div className="col-span-2 space-y-2">
                 <Label htmlFor="QUERY">{headerMapping.QUERY}</Label>
                 <Textarea id="QUERY" name="QUERY" value={formData.QUERY} onChange={handleInputChange} className="font-mono h-32" />
               </div>
           </div>
           <DialogFooter className='sm:justify-between w-full'>
-            <Button variant="outline" onClick={() => handlePreview(formData)}>
+            <Button variant="outline" onClick={() => handlePreview(formData)} disabled={!formData.QUERY}>
                 <Eye className="mr-2 h-4 w-4" />
-                Preview Data
+                Run & Preview
             </Button>
             <div className='flex gap-2'>
                 <DialogClose asChild>
                   <Button variant="outline">Cancel</Button>
                 </DialogClose>
-                <Button onClick={handleSave}>Save</Button>
+                <Button onClick={handleSave} disabled={!isQueryExecuted}>Save</Button>
             </div>
           </DialogFooter>
         </DialogContent>
@@ -438,5 +535,3 @@ export default function DataTables() {
     </div>
   );
 }
-
-    

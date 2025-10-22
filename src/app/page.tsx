@@ -26,7 +26,7 @@ import DataTables from '@/components/wiki/data-tables';
 import { diff_match_patch } from 'diff-match-patch';
 import { SidebarInset } from '@/components/ui/sidebar';
 
-type View = 'definitions' | 'data-tables';
+type View = 'definitions' | 'supporting-tables';
 
 const initialNotifications: NotificationType[] = [
   {
@@ -518,7 +518,7 @@ export default function Home() {
   
   const renderContent = () => {
     switch (activeView) {
-        case 'data-tables':
+        case 'supporting-tables':
             return <DataTables />;
         case 'definitions':
         default:
