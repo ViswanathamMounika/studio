@@ -37,12 +37,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { PlusCircle, Edit, Trash2, Eye, Info, ArrowUpDown, Filter } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Eye, Info, ArrowUpDown, Filter, Calendar as CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { cn } from '@/lib/utils';
+import { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
+import { Calendar } from '../ui/calendar';
 
 type DataRow = (typeof defDataTable.rows)[0];
 type SortKey = keyof DataRow;
@@ -88,6 +91,9 @@ export default function DataTables() {
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [createdDateFilter, setCreatedDateFilter] = useState<DateRange | undefined>();
+  const [lastChangedDateFilter, setLastChangedDateFilter] = useState<DateRange | undefined>();
 
   const mapObjectType = (type: number) => {
     return type === 1 ? 'View Query' : 'Table Query';
@@ -148,7 +154,26 @@ export default function DataTables() {
 
   const sortedAndFilteredRows = useMemo(() => {
     let filtered = [...rows].filter(row => {
-        return Object.entries(filters).every(([key, value]) => {
+        const isWithinCreatedDate = () => {
+          if (!createdDateFilter?.from) return true;
+          const date = new Date(row.CREATEDDATE);
+          const from = new Date(createdDateFilter.from);
+          from.setHours(0,0,0,0);
+          const to = createdDateFilter.to ? new Date(createdDateFilter.to) : new Date();
+          to.setHours(23,59,59,999);
+          return date >= from && date <= to;
+        }
+        const isWithinLastChangedDate = () => {
+            if (!lastChangedDateFilter?.from) return true;
+            const date = new Date(row.LASTCHANGEDDATE);
+            const from = new Date(lastChangedDateFilter.from);
+            from.setHours(0,0,0,0);
+            const to = lastChangedDateFilter.to ? new Date(lastChangedDateFilter.to) : new Date();
+            to.setHours(23,59,59,999);
+            return date >= from && date <= to;
+        }
+
+        const textFiltersMatch = Object.entries(filters).every(([key, value]) => {
             if (!value) return true;
             const rowValue = row[key as keyof DataRow];
             if (key === 'OBJECT_TYPE') {
@@ -157,6 +182,8 @@ export default function DataTables() {
             }
             return String(rowValue).toLowerCase().includes(value.toLowerCase());
         });
+
+        return textFiltersMatch && isWithinCreatedDate() && isWithinLastChangedDate();
     });
 
     if (sortConfig !== null) {
@@ -171,7 +198,7 @@ export default function DataTables() {
       });
     }
     return filtered;
-  }, [rows, filters, sortConfig]);
+  }, [rows, filters, sortConfig, createdDateFilter, lastChangedDateFilter]);
 
   const totalPages = Math.ceil(sortedAndFilteredRows.length / ITEMS_PER_PAGE);
   const paginatedRows = useMemo(() => {
@@ -229,7 +256,7 @@ export default function DataTables() {
         toast({ title: "Success!", description: "Connection established successfully." });
     }, 1500);
   }
-
+  
   const renderFilter = (headerKey: keyof DataRow) => {
     const nonFilterable = ['ID', 'CREATEDBY', 'LASTCHANGEDBY'];
     if (nonFilterable.includes(headerKey)) return null;
@@ -248,15 +275,57 @@ export default function DataTables() {
             );
         }
         if (['CREATEDDATE', 'LASTCHANGEDDATE'].includes(headerKey)) {
-            return <Input type="date" className="h-8" placeholder="Filter..." onChange={(e) => handleFilterChange(headerKey, e.target.value)} />;
+          const isCreatedDate = headerKey === 'CREATEDDATE';
+          const dateRange = isCreatedDate ? createdDateFilter : lastChangedDateFilter;
+          const setDateRange = isCreatedDate ? setCreatedDateFilter : setLastChangedDateFilter;
+            return (
+              <div className="flex flex-col gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                      <Button
+                          variant={"outline"}
+                          className={cn(
+                              "w-full justify-start text-left font-normal h-8",
+                              !dateRange && "text-muted-foreground"
+                          )}
+                      >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dateRange?.from ? (
+                              dateRange.to ? (
+                                  <>
+                                      {format(dateRange.from, "LLL dd, y")} -{" "}
+                                      {format(dateRange.to, "LLL dd, y")}
+                                  </>
+                              ) : (
+                                  format(dateRange.from, "LLL dd, y")
+                              )
+                          ) : (
+                              <span>Pick a date range</span>
+                          )}
+                      </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                          initialFocus
+                          mode="range"
+                          defaultMonth={dateRange?.from}
+                          selected={dateRange}
+                          onSelect={setDateRange}
+                          numberOfMonths={2}
+                      />
+                  </PopoverContent>
+              </Popover>
+              <Button variant="ghost" size="sm" onClick={() => setDateRange(undefined)} disabled={!dateRange}>Clear</Button>
+            </div>
+            );
         }
-        return <Input className="h-8" placeholder="Filter..." onChange={(e) => handleFilterChange(headerKey, e.target.value)} />;
+        return <Input className="h-8" placeholder="Filter..." onChange={(e) => handleFilterChange(headerKey, e.target.value)} defaultValue={filters[headerKey]} />;
     };
     
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto hover:bg-accent focus-visible:bg-accent">
+                <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent focus-visible:bg-accent">
                     <Filter className="h-4 w-4"/>
                 </Button>
             </PopoverTrigger>
@@ -285,25 +354,23 @@ export default function DataTables() {
                           {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
                              const isSortable = ['ID', 'SERVER_NAME', 'DATABASE_NAME', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(header);
                              return (
-                              <TableHead key={header} className="border p-2 bg-muted/50">
-                                  <div className="flex items-center">
-                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className={cn("p-0 h-auto font-bold text-foreground hover:bg-transparent", !isSortable && "cursor-default")}>
+                              <TableHead key={header} className="border p-2 bg-muted/50" style={{maxWidth: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'none'}}>
+                                  <div className="flex items-center justify-between">
+                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className={cn("p-0 h-auto font-bold text-black hover:bg-transparent dark:text-white dark:hover:text-white", !isSortable && "cursor-default")}>
                                           {headerMapping[header]}
                                           {isSortable && <ArrowUpDown className="ml-2 h-4 w-4" />}
                                       </Button>
-                                      <div className="ml-auto">
-                                        {renderFilter(header)}
-                                      </div>
+                                      {renderFilter(header)}
                                   </div>
                               </TableHead>
                              )
                           })}
-                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50 font-bold text-foreground">Actions</TableHead>
+                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50 font-bold text-black">Actions</TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
                           {paginatedRows.map((row) => (
-                          <TableRow key={row.ID}>
+                          <TableRow key={row.ID} className="h-12">
                               {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
                                 const cellValue = row[header];
                                 const displayValue = header === 'CREATEDDATE' || header === 'LASTCHANGEDDATE'
@@ -396,7 +463,7 @@ export default function DataTables() {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{isEditing ? 'Edit Supporting Query' : 'Add New Supporting Query'}</DialogTitle>
+            <DialogTitle>{isEditing ? 'Edit' : 'Add New Supporting Table'}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 py-4">
               <div className="space-y-2 col-span-2">
