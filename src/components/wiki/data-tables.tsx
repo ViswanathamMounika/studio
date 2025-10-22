@@ -59,7 +59,7 @@ const initialFormState: Omit<DataRow, 'ID' | 'CREATEDBY' | 'CREATEDDATE' | 'LAST
   DESCRIPTION: '',
 };
 
-const ITEMS_PER_PAGE = 15;
+const ITEMS_PER_PAGE = 10;
 
 const headerMapping: Record<keyof DataRow, string> = {
     ID: "ID",
@@ -73,6 +73,10 @@ const headerMapping: Record<keyof DataRow, string> = {
     CREATEDDATE: "Created Date",
     LASTCHANGEDBY: "Last Changed By",
     LASTCHANGEDDATE: "Last Changed Date"
+}
+
+const mapObjectType = (type: number) => {
+  return type === 1 ? 'View Query' : 'Table Query';
 }
 
 export default function DataTables() {
@@ -95,10 +99,6 @@ export default function DataTables() {
   const [createdDateFilter, setCreatedDateFilter] = useState<DateRange | undefined>();
   const [lastChangedDateFilter, setLastChangedDateFilter] = useState<DateRange | undefined>();
 
-  const mapObjectType = (type: number) => {
-    return type === 1 ? 'View Query' : 'Table Query';
-  }
-  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -340,7 +340,8 @@ export default function DataTables() {
   return (
     <div className="w-full">
       <Card>
-          <CardHeader className="flex flex-row items-center justify-end">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Supporting Tables</CardTitle>
             <Button onClick={handleAddNew}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add New
@@ -356,8 +357,8 @@ export default function DataTables() {
                              return (
                               <TableHead key={header} className="border p-2 bg-muted/50 text-base" style={{width: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
                                   <div className="flex items-center">
-                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className={cn("p-0 h-auto font-bold text-black hover:bg-transparent", !isSortable && "cursor-default")}>
-                                          <span className="text-base font-bold text-black">{headerMapping[header]}</span>
+                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className={cn("p-0 h-auto hover:bg-blue-700 hover:text-white font-bold text-black", !isSortable && "cursor-default")}>
+                                          <span className="text-lg font-bold text-black">{headerMapping[header]}</span>
                                           {isSortable && <ArrowUpDown className="ml-2 h-4 w-4" />}
                                       </Button>
                                       <div className="ml-auto flex items-center">
@@ -367,12 +368,12 @@ export default function DataTables() {
                               </TableHead>
                              )
                           })}
-                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50"><span className="text-base font-bold text-black">Actions</span></TableHead>
+                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50"><span className="text-lg font-bold text-black">Actions</span></TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
                           {paginatedRows.map((row) => (
-                          <TableRow key={row.ID} className="h-16 text-sm">
+                          <TableRow key={row.ID} className="h-20 text-sm">
                               {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
                                 const cellValue = row[header];
                                 const displayValue = header === 'CREATEDDATE' || header === 'LASTCHANGEDDATE'
@@ -382,7 +383,7 @@ export default function DataTables() {
                                     : cellValue !== null ? String(cellValue) : 'NULL';
                                 
                                 return (
-                                  <TableCell key={header} className="truncate p-4 border" style={{maxWidth: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
+                                  <TableCell key={header} className="truncate p-4 border text-sm" style={{maxWidth: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
