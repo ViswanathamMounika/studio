@@ -59,7 +59,7 @@ const initialFormState: Omit<DataRow, 'ID' | 'CREATEDBY' | 'CREATEDDATE' | 'LAST
   DESCRIPTION: '',
 };
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 15;
 
 const headerMapping: Record<keyof DataRow, string> = {
     ID: "ID",
@@ -265,7 +265,7 @@ export default function DataTables() {
     const filterContent = () => {
         if (headerKey === 'OBJECT_TYPE') {
             return (
-                <Select onValueChange={(v) => handleFilterChange(headerKey, v)} defaultValue={filters[headerKey] || 'all'}>
+                <Select onValueChange={(v) => handleFilterChange(headerKey, v)} value={filters[headerKey] || 'all'}>
                     <SelectTrigger className="h-8"><SelectValue placeholder="Filter..." /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All</SelectItem>
@@ -320,13 +320,13 @@ export default function DataTables() {
             </div>
             );
         }
-        return <Input className="h-8" placeholder="Filter..." onChange={(e) => handleFilterChange(headerKey, e.target.value)} defaultValue={filters[headerKey]} />;
+        return <Input className="h-8" placeholder="Filter..." onChange={(e) => handleFilterChange(headerKey, e.target.value)} value={filters[headerKey] || ''} />;
     };
     
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 ml-2 hover:bg-accent focus-visible:bg-accent">
+                <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto hover:bg-accent focus-visible:bg-accent">
                     <Filter className="h-4 w-4"/>
                 </Button>
             </PopoverTrigger>
@@ -340,8 +340,7 @@ export default function DataTables() {
   return (
     <div className="w-full">
       <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Supporting Tables</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-end">
             <Button onClick={handleAddNew}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add New
@@ -357,23 +356,23 @@ export default function DataTables() {
                              return (
                               <TableHead key={header} className="border p-2 bg-muted/50 text-base" style={{width: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
                                   <div className="flex items-center">
-                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className={cn("p-0 h-auto font-bold text-black hover:bg-transparent hover:text-blue-700 dark:text-white dark:hover:text-blue-400", !isSortable && "cursor-default")}>
-                                          {headerMapping[header]}
+                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className={cn("p-0 h-auto font-bold text-black hover:bg-transparent", !isSortable && "cursor-default")}>
+                                          <span className="text-base font-bold text-black">{headerMapping[header]}</span>
                                           {isSortable && <ArrowUpDown className="ml-2 h-4 w-4" />}
                                       </Button>
-                                      <div className="ml-auto">
+                                      <div className="ml-auto flex items-center">
                                           {renderFilter(header)}
                                       </div>
                                   </div>
                               </TableHead>
                              )
                           })}
-                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50 font-bold text-base text-black">Actions</TableHead>
+                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50"><span className="text-base font-bold text-black">Actions</span></TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
                           {paginatedRows.map((row) => (
-                          <TableRow key={row.ID} className="h-14 text-base">
+                          <TableRow key={row.ID} className="h-16 text-sm">
                               {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
                                 const cellValue = row[header];
                                 const displayValue = header === 'CREATEDDATE' || header === 'LASTCHANGEDDATE'
@@ -571,4 +570,3 @@ export default function DataTables() {
     </div>
   );
 }
-
