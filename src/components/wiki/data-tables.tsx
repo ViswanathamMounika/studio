@@ -72,7 +72,7 @@ const TruncatedCell = ({ children, style }: { children: React.ReactNode, style: 
     );
 
     return (
-        <TableCell className="truncate p-4 border text-sm" style={style}>
+        <TableCell className="p-4 border text-sm" style={style}>
             {isTruncated ? (
                 <TooltipProvider>
                     <Tooltip>
@@ -329,7 +329,7 @@ export default function DataTables() {
                       <Button
                           variant={"outline"}
                           className={cn(
-                              "w-[260px] justify-start text-left font-normal h-8",
+                              "justify-start text-left font-normal h-8",
                               !dateRange && "text-muted-foreground"
                           )}
                       >
@@ -420,7 +420,7 @@ export default function DataTables() {
                       </TableHeader>
                       <TableBody>
                           {paginatedRows.map((row) => (
-                          <TableRow key={row.ID} className="text-sm h-16">
+                          <TableRow key={row.ID} className="h-16">
                               {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
                                 const cellValue = row[header];
                                 const displayValue = header === 'CREATEDDATE' || header === 'LASTCHANGEDDATE'
@@ -525,7 +525,7 @@ export default function DataTables() {
                           <Info className="h-4 w-4 text-muted-foreground" />
                       </TooltipTrigger>
                       <TooltipContent>
-                          <p>Using service account to test the connection.</p>
+                          <p>A secure service account is being used to test and validate the connection.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
