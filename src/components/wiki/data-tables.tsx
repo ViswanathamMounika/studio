@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { defDataTable, allDataTables } from '@/lib/data';
 import {
   Table,
@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -228,26 +229,41 @@ export default function DataTables() {
     }, 1500);
   }
 
-  const renderFilter = (header: string) => {
-    const key = header as keyof DataRow;
-    if (key === 'OBJECT_TYPE') {
-        return (
-            <Select onValueChange={(v) => handleFilterChange(key, v)}>
-                <SelectTrigger className="h-8"><SelectValue placeholder="Filter..." /></SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="1">View Query</SelectItem>
-                    <SelectItem value="2">Table Query</SelectItem>
-                </SelectContent>
-            </Select>
-        );
-    }
-    if (['ID', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION', 'CREATEDBY', 'LASTCHANGEDBY'].includes(key)) {
-        return <Input className="h-8" placeholder="Filter..." onChange={(e) => handleFilterChange(key, e.target.value)} />;
-    }
-     if (['CREATEDDATE', 'LASTCHANGEDDATE'].includes(key)) {
-        return <Input type="date" className="h-8" placeholder="Filter..." onChange={(e) => handleFilterChange(key, e.target.value)} />;
-    }
-    return null;
+  const renderFilter = (headerKey: keyof DataRow) => {
+    const nonFilterable = ['ID', 'CREATEDBY', 'LASTCHANGEDBY', 'Actions'];
+    if (nonFilterable.includes(headerKey)) return null;
+
+    const filterContent = () => {
+        if (headerKey === 'OBJECT_TYPE') {
+            return (
+                <Select onValueChange={(v) => handleFilterChange(headerKey, v)}>
+                    <SelectTrigger className="h-8"><SelectValue placeholder="Filter..." /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">All</SelectItem>
+                        <SelectItem value="1">View Query</SelectItem>
+                        <SelectItem value="2">Table Query</SelectItem>
+                    </SelectContent>
+                </Select>
+            );
+        }
+        if (['CREATEDDATE', 'LASTCHANGEDDATE'].includes(headerKey)) {
+            return <Input type="date" className="h-8" placeholder="Filter..." onChange={(e) => handleFilterChange(headerKey, e.target.value)} />;
+        }
+        return <Input className="h-8" placeholder="Filter..." onChange={(e) => handleFilterChange(headerKey, e.target.value)} />;
+    };
+    
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 ml-2">
+                    <Filter className="h-4 w-4"/>
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-2">
+                {filterContent()}
+            </PopoverContent>
+        </Popover>
+    );
   }
 
   return (
@@ -269,24 +285,17 @@ export default function DataTables() {
                              const isSortable = ['ID', 'SERVER_NAME', 'DATABASE_NAME', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(header);
                              return (
                               <TableHead key={header} className="border p-2">
-                                  <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
                                       <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className="p-0 h-auto hover:bg-transparent">
                                           {headerMapping[header]}
                                           {isSortable && <ArrowUpDown className="ml-2 h-4 w-4" />}
                                       </Button>
+                                      {renderFilter(header)}
                                   </div>
                               </TableHead>
                              )
                           })}
                           <TableHead className="w-[120px] text-center border p-2">Actions</TableHead>
-                          </TableRow>
-                          <TableRow>
-                            {(defDataTable.headers as Array<keyof DataRow>).map((header) => (
-                                <TableHead key={`${header}-filter`} className="p-1 border">
-                                    {renderFilter(header)}
-                                </TableHead>
-                            ))}
-                            <TableHead className="p-1 border"></TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -301,7 +310,7 @@ export default function DataTables() {
                                     : cellValue !== null ? String(cellValue) : 'NULL';
                                 
                                 return (
-                                  <TableCell key={header} className="truncate p-2 border">
+                                  <TableCell key={header} className="truncate p-2 border" style={{maxWidth: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'none'}}>
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
@@ -489,3 +498,5 @@ export default function DataTables() {
     </div>
   );
 }
+
+    
