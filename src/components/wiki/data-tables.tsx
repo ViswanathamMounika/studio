@@ -105,7 +105,8 @@ export default function DataTables() {
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: parseInt(value, 10) as any }));
+    const isNumeric = name === 'OBJECT_TYPE';
+    setFormData(prev => ({ ...prev, [name]: isNumeric ? parseInt(value, 10) : value }));
   }
   
   const handleAddNew = () => {
@@ -325,7 +326,7 @@ export default function DataTables() {
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent focus-visible:bg-accent">
+                <Button variant="ghost" size="icon" className="h-6 w-6 ml-2 hover:bg-accent focus-visible:bg-accent">
                     <Filter className="h-4 w-4"/>
                 </Button>
             </PopoverTrigger>
@@ -354,23 +355,25 @@ export default function DataTables() {
                           {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
                              const isSortable = ['ID', 'SERVER_NAME', 'DATABASE_NAME', 'CREATEDDATE', 'LASTCHANGEDDATE'].includes(header);
                              return (
-                              <TableHead key={header} className="border p-2 bg-muted/50" style={{maxWidth: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'none'}}>
-                                  <div className="flex items-center justify-between">
-                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className={cn("p-0 h-auto font-bold text-black hover:bg-transparent dark:text-white dark:hover:text-white", !isSortable && "cursor-default")}>
+                              <TableHead key={header} className="border p-2 bg-muted/50 text-base" style={{width: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
+                                  <div className="flex items-center">
+                                      <Button variant="ghost" onClick={() => isSortable && requestSort(header)} className={cn("p-0 h-auto font-bold text-black hover:bg-transparent hover:text-blue-700 dark:text-white dark:hover:text-blue-400", !isSortable && "cursor-default")}>
                                           {headerMapping[header]}
                                           {isSortable && <ArrowUpDown className="ml-2 h-4 w-4" />}
                                       </Button>
-                                      {renderFilter(header)}
+                                      <div className="ml-auto">
+                                          {renderFilter(header)}
+                                      </div>
                                   </div>
                               </TableHead>
                              )
                           })}
-                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50 font-bold text-black">Actions</TableHead>
+                          <TableHead className="w-[120px] text-center border p-2 bg-muted/50 font-bold text-base text-black">Actions</TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
                           {paginatedRows.map((row) => (
-                          <TableRow key={row.ID} className="h-12">
+                          <TableRow key={row.ID} className="h-14 text-base">
                               {(defDataTable.headers as Array<keyof DataRow>).map((header) => {
                                 const cellValue = row[header];
                                 const displayValue = header === 'CREATEDDATE' || header === 'LASTCHANGEDDATE'
@@ -380,7 +383,7 @@ export default function DataTables() {
                                     : cellValue !== null ? String(cellValue) : 'NULL';
                                 
                                 return (
-                                  <TableCell key={header} className="truncate p-4 border" style={{maxWidth: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'none'}}>
+                                  <TableCell key={header} className="truncate p-4 border" style={{maxWidth: (header === 'QUERY' || header === 'DESCRIPTION') ? '200px' : 'auto'}}>
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
@@ -472,7 +475,7 @@ export default function DataTables() {
               </div>
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="DESCRIPTION">{headerMapping.DESCRIPTION}</Label>
-                <Textarea id="DESCRIPTION" name="DESCRIPTION" value={formData.DESCRIPTION || ''} onChange={handleInputChange} />
+                <Textarea id="DESCRIPTION" name="DESCRIPTION" value={formData.DESCRIPTION || ''} onChange={handleInputChange} className="font-sans text-sm" />
               </div>
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="SERVER_NAME">{headerMapping.SERVER_NAME}</Label>
@@ -569,4 +572,3 @@ export default function DataTables() {
   );
 }
 
-    
