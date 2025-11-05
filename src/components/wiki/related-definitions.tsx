@@ -10,12 +10,29 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Definition } from '@/lib/types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { initialDefinitions } from '@/lib/data';
+import { initialDefinitions, findDefinition } from '@/lib/data';
 
 type RelatedDefinitionsProps = {
   currentDefinition: Definition;
   onDefinitionClick: (id: string, sectionId?: string) => void;
 };
+
+const findDefinitionByName = (definitions: Definition[], name: string): Definition | null => {
+    const search = (items: Definition[]): Definition | null => {
+        for (const item of items) {
+            if (item.name.toLowerCase().trim() === name.toLowerCase().trim()) {
+                return item;
+            }
+            if (item.children) {
+                const found = search(item.children);
+                if (found) return found;
+            }
+        }
+        return null;
+    };
+    return search(definitions);
+};
+
 
 export default function RelatedDefinitions({ currentDefinition, onDefinitionClick }: RelatedDefinitionsProps) {
   const [loading, setLoading] = useState(true);
@@ -44,23 +61,7 @@ export default function RelatedDefinitions({ currentDefinition, onDefinitionClic
   useEffect(() => {
     fetchSuggestions();
   }, [fetchSuggestions]);
-
-  const findDefinitionByName = (name: string): Definition | null => {
-    const search = (items: Definition[]): Definition | null => {
-        for (const item of items) {
-            if (item.name.toLowerCase() === name.toLowerCase()) {
-                return item;
-            }
-            if (item.children) {
-                const found = search(item.children);
-                if (found) return found;
-            }
-        }
-        return null;
-    };
-    return search(definitions);
-  };
-
+  
   if (loading) {
     return (
       <div className="space-y-4">
@@ -88,7 +89,7 @@ export default function RelatedDefinitions({ currentDefinition, onDefinitionClic
   }
 
   const renderedSuggestions = suggestions
-    .map(name => findDefinitionByName(name))
+    .map(name => findDefinitionByName(definitions, name))
     .filter((def): def is Definition => def !== null && def.id !== currentDefinition.id);
 
   return (
