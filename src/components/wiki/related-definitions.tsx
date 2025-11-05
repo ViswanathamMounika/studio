@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { suggestDefinitions } from '@/ai/flows/definition-suggestion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ export default function RelatedDefinitions({ currentDefinition, onDefinitionClic
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [definitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
 
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -39,12 +39,11 @@ export default function RelatedDefinitions({ currentDefinition, onDefinitionClic
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentDefinition]);
 
   useEffect(() => {
     fetchSuggestions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDefinition.id]);
+  }, [fetchSuggestions]);
 
   const findDefinitionByName = (name: string): Definition | null => {
     const search = (items: Definition[]): Definition | null => {
