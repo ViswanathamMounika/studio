@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Switch } from '../ui/switch';
+import RelatedDefinitions from './related-definitions';
 
 type DefinitionViewProps = {
   definition: Definition;
@@ -67,6 +68,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         { value: 'revisions', label: 'Version History', condition: true },
         { value: 'attachments', label: 'Attachments', condition: true },
         { value: 'notes', label: 'Notes', condition: true },
+        { value: 'related', label: 'Related', condition: true },
     ];
 
     const visibleTabs = tabs.filter(tab => tab.condition);
@@ -414,6 +416,16 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                     )}
                                 </div>
                             </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="related" id="section-related" className="mt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Related Definitions</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <RelatedDefinitions currentDefinition={definition} />
                         </CardContent>
                     </Card>
                 </TabsContent>
