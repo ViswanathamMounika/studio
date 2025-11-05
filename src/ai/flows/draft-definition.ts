@@ -48,11 +48,21 @@ const draftDefinitionFlow = ai.defineFlow(
     outputSchema: DraftDefinitionOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    if (!output) {
-      throw new Error('The model did not return an output.');
+    try {
+      const {output} = await prompt(input);
+      if (output) {
+        return output;
+      }
+    } catch (error) {
+      console.error('Error in draftDefinitionFlow, returning fallback.', error);
     }
-    return output;
+    
+    // Provide a fallback with valid data in case of an error or no output
+    return {
+      name: 'New Draft Definition',
+      description: '<p>Could not generate a description from the provided SQL. Please write one manually.</p>',
+      keywords: [],
+    };
   }
 );
 
