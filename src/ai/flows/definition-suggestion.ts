@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -38,10 +39,9 @@ const getDefinitions = ai.defineTool(
     outputSchema: z.array(z.string()).describe('A list of definition names.'),
   },
   async (input) => {
-    // TODO: Implement the actual definition retrieval logic here
-    // This is a placeholder, replace with actual implementation
+    // This is a placeholder, returning existing definition names
     console.log('getDefinitions tool called with:', input);
-    return ['Definition 1', 'Definition 2', 'Definition 3'];
+    return ['Service Type Mapping', 'Authorization Timeliness', 'Contracted Rates'];
   }
 );
 
@@ -74,3 +74,5 @@ const suggestDefinitionsFlow = ai.defineFlow(
     return output!;
   }
 );
+
+    

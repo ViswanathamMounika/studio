@@ -68,7 +68,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         { value: 'revisions', label: 'Version History', condition: true },
         { value: 'attachments', label: 'Attachments', condition: true },
         { value: 'notes', label: 'Notes', condition: true },
-        { value: 'related', label: 'Related', condition: true },
+        { value: 'related', label: 'Related Definitions', condition: true },
     ];
 
     const visibleTabs = tabs.filter(tab => tab.condition);
@@ -489,3 +489,5 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     </TooltipProvider>
   );
 }
+
+    
