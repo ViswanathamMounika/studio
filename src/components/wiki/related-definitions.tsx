@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Definition } from '@/lib/types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { initialDefinitions, findDefinition } from '@/lib/data';
+import { initialDefinitions } from '@/lib/data';
 
 type RelatedDefinitionsProps = {
   currentDefinition: Definition;
@@ -62,16 +62,12 @@ export default function RelatedDefinitions({ currentDefinition, onDefinitionClic
     return search(definitions);
   };
 
-  const handleDefinitionClick = (id: string) => {
-    onDefinitionClick(id, 'description');
-  };
-
   if (loading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-2/3" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-2/3" />
       </div>
     );
   }
@@ -103,7 +99,7 @@ export default function RelatedDefinitions({ currentDefinition, onDefinitionClic
                 <Card key={index} className="hover:bg-muted/50 transition-colors">
                     <CardContent className="p-4">
                         <button
-                            onClick={() => handleDefinitionClick(def.id)}
+                            onClick={() => onDefinitionClick(def.id)}
                             className="text-left w-full"
                         >
                             <p className="font-semibold text-primary">{def.name}</p>
