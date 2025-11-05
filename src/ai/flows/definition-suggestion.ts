@@ -41,6 +41,7 @@ const getDefinitions = ai.defineTool(
   async (input) => {
     // This is a placeholder, returning existing definition names
     console.log('getDefinitions tool called with:', input);
+    // Return names that are guaranteed to exist in initialDefinitions
     return ['Service Type Mapping', 'Authorization Timeliness', 'Contracted Rates', 'Claim Adjudication Status'];
   }
 );

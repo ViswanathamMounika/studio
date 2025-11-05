@@ -9,7 +9,6 @@ import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, Message
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import RelatedDefinitions from './related-definitions';
-import { Skeleton } from '../ui/skeleton';
 
 function isParent(node: Definition, selectedId: string): boolean {
     if (!node.children) {
@@ -26,13 +25,18 @@ function isParent(node: Definition, selectedId: string): boolean {
     return false;
 }
 
-const DefinitionSubItems = ({ definitionId, onSelect, activeSection, level }: { definitionId: string, onSelect: (id: string, sectionId?: string) => void, activeSection: string, level: number }) => {
+const DefinitionSubItems = ({ definition, onSelect, activeSection, level }: { definition: Definition, onSelect: (id: string, sectionId?: string) => void, activeSection: string, level: number }) => {
     const subItems = [
         { id: 'description', label: 'Description', icon: FileText },
         { id: 'revisions', label: 'Version History', icon: FileClock },
         { id: 'attachments', label: 'Attachments', icon: Paperclip },
-        { id: 'notes', label: 'Notes', icon: MessageSquare }
+        { id: 'notes', label: 'Notes', icon: MessageSquare },
+        { id: 'related-definitions', label: 'Related Definitions', icon: Link },
     ];
+
+    const handleDefinitionClick = (id: string) => {
+        onSelect(id, 'description');
+    };
 
     return (
         <div className="space-y-1" style={{ paddingLeft: `${(level) * 1}rem` }}>
@@ -41,7 +45,7 @@ const DefinitionSubItems = ({ definitionId, onSelect, activeSection, level }: { 
                     key={item.id}
                     onClick={(e) => {
                         e.stopPropagation();
-                        onSelect(definitionId, item.id)
+                        onSelect(definition.id, item.id)
                     }}
                     className={cn(
                         "flex items-center gap-2 p-1.5 rounded-md cursor-pointer text-sm ml-8",
@@ -65,7 +69,6 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
   const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
   
   const [isNodeExpanded, setIsNodeExpanded] = useState(false);
-  const [showRelated, setShowRelated] = useState(false);
 
   useEffect(() => {
     setIsNodeExpanded(isSelected || isParentOfSelected);
@@ -90,19 +93,6 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-  };
-
-  const handleRelatedClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowRelated(!showRelated);
-  }
-
-  const handleDefinitionClick = (id: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('definitionId', id);
-    url.searchParams.set('section', 'description');
-    window.history.pushState({}, '', url.toString());
-    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   return (
@@ -146,11 +136,6 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                 {node.isBookmarked && !isExportMode && (
                   <Bookmark className="h-4 w-4 shrink-0 fill-primary text-primary ml-auto mr-1" />
                 )}
-                 {!isModule && !isExportMode && (
-                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 ml-auto mr-1 group-hover/item:opacity-100 opacity-0" onClick={handleRelatedClick}>
-                    <Link className="h-4 w-4" />
-                  </Button>
-                )}
             </div>
         </div>
       
@@ -174,17 +159,9 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                 </div>
             )}
             {!isModule && isSelected && isNodeExpanded && (
-                <DefinitionSubItems definitionId={node.id} onSelect={onSelect} activeSection={activeSection} level={level}/>
-            )}
-            {!isModule && showRelated && isNodeExpanded && (
-              <div className="pl-12 pr-4 py-2">
-                <h4 className="text-xs font-semibold text-muted-foreground mb-2">Related Definitions</h4>
-                <RelatedDefinitions currentDefinition={node} onDefinitionClick={handleDefinitionClick}/>
-              </div>
+                <DefinitionSubItems definition={node} onSelect={onSelect} activeSection={activeSection} level={level}/>
             )}
       </CollapsibleContent>
     </Collapsible>
   );
 }
-
-    

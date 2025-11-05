@@ -10,11 +10,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Definition } from '@/lib/types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { initialDefinitions } from '@/lib/data';
+import { initialDefinitions, findDefinition } from '@/lib/data';
 
 type RelatedDefinitionsProps = {
   currentDefinition: Definition;
-  onDefinitionClick: (id: string) => void;
+  onDefinitionClick: (id: string, sectionId?: string) => void;
 };
 
 export default function RelatedDefinitions({ currentDefinition, onDefinitionClick }: RelatedDefinitionsProps) {
@@ -63,11 +63,7 @@ export default function RelatedDefinitions({ currentDefinition, onDefinitionClic
   };
 
   const handleDefinitionClick = (id: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('definitionId', id);
-    url.searchParams.set('section', 'description');
-    window.history.pushState({}, '', url.toString());
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    onDefinitionClick(id, 'description');
   };
 
   if (loading) {
@@ -96,33 +92,29 @@ export default function RelatedDefinitions({ currentDefinition, onDefinitionClic
     );
   }
 
+  const renderedSuggestions = suggestions
+    .map(name => findDefinitionByName(name))
+    .filter((def): def is Definition => def !== null && def.id !== currentDefinition.id);
+
   return (
     <div className="space-y-3">
-        {suggestions.length > 0 ? (
-            suggestions.map((name, index) => {
-                const def = findDefinitionByName(name);
-                if (def && def.id !== currentDefinition.id) {
-                    return (
-                        <Card key={index} className="hover:bg-muted/50 transition-colors">
-                            <CardContent className="p-4">
-                                <button
-                                    onClick={() => handleDefinitionClick(def.id)}
-                                    className="text-left w-full"
-                                >
-                                    <p className="font-semibold text-primary">{def.name}</p>
-                                    <p className="text-sm text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: def.description.replace(/<[^>]+>/g, '') }}></p>
-                                </button>
-                            </CardContent>
-                        </Card>
-                    );
-                }
-                return null;
-            })
+        {renderedSuggestions.length > 0 ? (
+            renderedSuggestions.map((def, index) => (
+                <Card key={index} className="hover:bg-muted/50 transition-colors">
+                    <CardContent className="p-4">
+                        <button
+                            onClick={() => handleDefinitionClick(def.id)}
+                            className="text-left w-full"
+                        >
+                            <p className="font-semibold text-primary">{def.name}</p>
+                            <p className="text-sm text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: def.description.replace(/<[^>]+>/g, '') }}></p>
+                        </button>
+                    </CardContent>
+                </Card>
+            ))
         ) : (
             <p className="text-muted-foreground text-center py-4">No related definitions found.</p>
         )}
     </div>
   );
 }
-
-    

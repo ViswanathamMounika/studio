@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Pencil, Bookmark, Trash2, Share2, Save } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Save, Link } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable } from '@/lib/data';
@@ -68,7 +68,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         { value: 'revisions', label: 'Version History', condition: true },
         { value: 'attachments', label: 'Attachments', condition: true },
         { value: 'notes', label: 'Notes', condition: true },
-        { value: 'related', label: 'Related Definitions', condition: true },
+        { value: 'related-definitions', label: 'Related Definitions', condition: true },
     ];
 
     const visibleTabs = tabs.filter(tab => tab.condition);
@@ -206,6 +206,10 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         if (notesView === 'others') return note.isShared && note.authorId !== currentUser.id;
         return false;
     });
+
+    const handleDefinitionClick = (id: string, sectionId?: string) => {
+        onTabChange(sectionId || 'description');
+    }
 
   return (
     <TooltipProvider>
@@ -419,13 +423,13 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                         </CardContent>
                     </Card>
                 </TabsContent>
-                 <TabsContent value="related" id="section-related" className="mt-4">
+                 <TabsContent value="related-definitions" id="section-related-definitions" className="mt-4">
                     <Card>
                         <CardHeader>
                             <CardTitle>Related Definitions</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <RelatedDefinitions currentDefinition={definition} onDefinitionClick={onTabChange} />
+                            <RelatedDefinitions currentDefinition={definition} onDefinitionClick={handleDefinitionClick} />
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -489,5 +493,3 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     </TooltipProvider>
   );
 }
-
-    
