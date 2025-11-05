@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
@@ -25,7 +26,7 @@ type AppHeaderProps = {
     children?: React.ReactNode;
     isExportMode?: boolean;
     setIsExportMode?: (value: boolean) => void;
-    handleExport?: () => void;
+    handleExport?: (format: 'json' | 'pdf' | 'excel' | 'html') => void;
     selectedCount?: number;
     onAnalyticsClick?: () => void;
     onTemplatesClick?: () => void;
@@ -84,10 +85,20 @@ export default function AppHeader({
               </Button>
               {isAdmin && (
                   isExportMode ? (
-                      <Button size="sm" onClick={handleExport} disabled={selectedCount === 0}>
-                          <Download className="mr-2 h-4 w-4" />
-                          Export ({selectedCount})
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" disabled={selectedCount === 0}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Export ({selectedCount})
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => handleExport && handleExport('json')}>JSON</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport && handleExport('pdf')}>PDF</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport && handleExport('excel')}>Excel (XLSX)</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport && handleExport('html')}>HTML</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                   ) : (
                       <Button variant="outline" size="sm" onClick={() => setIsExportMode && setIsExportMode(true)}>
                           <Download className="mr-2 h-4 w-4" />

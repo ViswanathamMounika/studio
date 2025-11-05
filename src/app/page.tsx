@@ -25,6 +25,8 @@ import useLocalStorage from '@/hooks/use-local-storage';
 import DataTables from '@/components/wiki/data-tables';
 import { diff_match_patch } from 'diff-match-patch';
 import { SidebarInset } from '@/components/ui/sidebar';
+import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 
 type View = 'definitions' | 'supporting-tables';
 
@@ -191,28 +193,49 @@ export default function Home() {
     });
   };
 
-  const handleExport = () => {
-    const getSelectedDefinitions = (items: Definition[], selectedIds: string[]): Definition[] => {
-        const results: Definition[] = [];
-        items.forEach(item => {
-            const isSelected = selectedIds.includes(item.id);
-            if (isSelected) {
-                results.push(item);
-            } else if (item.children) {
-                const selectedChildren = getSelectedDefinitions(item.children, selectedIds);
-                if (selectedChildren.length > 0) {
-                    results.push({ ...item, children: selectedChildren });
-                }
-            }
-        });
-        return results;
-    };
+  const getSelectedDefinitions = (items: Definition[], selectedIds: string[]): Definition[] => {
+    const results: Definition[] = [];
+    items.forEach(item => {
+        const isSelected = selectedIds.includes(item.id);
+        if (isSelected) {
+            results.push(item);
+        }
+    });
+    return results;
+  };
 
-    const definitionsToExport = getSelectedDefinitions(definitions, selectedForExport);
+
+  const handleExport = (format: 'json' | 'pdf' | 'excel' | 'html') => {
+    const definitionsToExport = getSelectedDefinitions(
+        getAllDefinitionIds(definitions).map(id => findDefinition(definitions, id)).filter(d => d) as Definition[],
+        selectedForExport
+    );
     
+    if (definitionsToExport.length === 0) return;
+
+    switch (format) {
+      case 'json':
+        handleJsonExport(definitionsToExport);
+        break;
+      case 'pdf':
+        handlePdfExport(definitionsToExport);
+        break;
+      case 'excel':
+        handleExcelExport(definitionsToExport);
+        break;
+      case 'html':
+        handleHtmlExport(definitionsToExport);
+        break;
+    }
+
+    setIsExportMode(false);
+    setSelectedForExport([]);
+  };
+
+  const handleJsonExport = (data: Definition[]) => {
     const exportData = {
-        disclaimer: `This is a copy of this definition as of ${new Date().toLocaleDateString()}. Please go to ${window.location.origin} to view the updated definition.`,
-        data: definitionsToExport
+        disclaimer: `This is a copy of definitions as of ${new Date().toLocaleDateString()}. Please go to ${window.location.origin} to view the updated definitions.`,
+        data: data
     };
     
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
@@ -222,9 +245,84 @@ export default function Home() {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
-    setIsExportMode(false);
-    setSelectedForExport([]);
+  }
+
+  const handlePdfExport = (data: Definition[]) => {
+    const doc = new jsPDF();
+    let y = 20;
+    data.forEach((def, index) => {
+      if (index > 0) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.text(def.name, 20, y);
+      y += 10;
+      doc.setFont('helvetica', 'normal');
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = def.description;
+      const text = doc.splitTextToSize(tempDiv.innerText, 170);
+      if (y + text.length * 5 > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(text, 20, y);
+      y += text.length * 5 + 10;
+    });
+    doc.save(`definitions-export.pdf`);
   };
+
+  const handleExcelExport = (data: Definition[]) => {
+    const sheetData = data.map(def => ({
+      ID: def.id,
+      Name: def.name,
+      Module: def.module,
+      Keywords: def.keywords.join(', '),
+      Description: def.description.replace(/<[^>]+>/g, ''), // strip html
+      Archived: def.isArchived,
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(sheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Definitions');
+    XLSX.writeFile(workbook, `definitions-export.xlsx`);
+  };
+
+  const handleHtmlExport = (data: Definition[]) => {
+     const htmlContent = `
+      <html>
+        <head>
+          <title>Definitions Export</title>
+          <style>
+            body { font-family: sans-serif; line-height: 1.6; padding: 2rem; }
+            h1, h2 { color: #333; }
+            .definition { border-bottom: 1px solid #ccc; padding-bottom: 1rem; margin-bottom: 1rem; }
+            .keywords { font-style: italic; color: #777; }
+          </style>
+        </head>
+        <body>
+          <h1>Definitions Export</h1>
+          <p>Exported on: ${new Date().toLocaleDateString()}</p>
+          <hr/>
+          ${data.map(def => `
+            <div class="definition">
+              <h2>${def.name}</h2>
+              <p><strong>Module:</strong> ${def.module}</p>
+              <div class="keywords"><strong>Keywords:</strong> ${def.keywords.join(', ')}</div>
+              <div>${def.description}</div>
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `;
+    const dataStr = "data:text/html;charset=utf-8," + encodeURIComponent(htmlContent);
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `definitions-export.html`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
 
   const selectedDefinition = useMemo(() => {
     if (!selectedDefinitionId) return null;
