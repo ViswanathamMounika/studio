@@ -1,116 +1,160 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { suggestDefinitions } from '@/ai/flows/definition-suggestion';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Definition } from '@/lib/types';
-import { AlertCircle, RefreshCw } from 'lucide-react';
-import useLocalStorage from '@/hooks/use-local-storage';
-import { initialDefinitions, findDefinition } from '@/lib/data';
+import { PlusCircle, Trash2, Pencil, Save, X } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { findDefinition } from '@/lib/data';
 
 type RelatedDefinitionsProps = {
   currentDefinition: Definition;
+  allDefinitions: Definition[];
   onDefinitionClick: (id: string, sectionId?: string) => void;
+  onSave: (definition: Definition) => void;
+  isAdmin: boolean;
 };
 
-const findDefinitionByName = (definitions: Definition[], name: string): Definition | null => {
-    const search = (items: Definition[]): Definition | null => {
-        for (const item of items) {
-            if (item.name.toLowerCase().trim() === name.toLowerCase().trim()) {
-                return item;
-            }
-            if (item.children) {
-                const found = search(item.children);
-                if (found) return found;
-            }
+const flattenDefinitions = (definitions: Definition[]): Definition[] => {
+    let flat: Definition[] = [];
+    for (const def of definitions) {
+        flat.push(def);
+        if (def.children) {
+            flat = flat.concat(flattenDefinitions(def.children));
         }
-        return null;
-    };
-    return search(definitions);
-};
-
-
-export default function RelatedDefinitions({ currentDefinition, onDefinitionClick }: RelatedDefinitionsProps) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [definitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
-
-  const fetchSuggestions = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await suggestDefinitions({
-        currentDefinitionName: currentDefinition.name,
-        currentDefinitionDescription: currentDefinition.description,
-        keywords: currentDefinition.keywords,
-      });
-      setSuggestions(result.suggestedDefinitions);
-    } catch (err) {
-      setError('Failed to fetch related definitions. Please try again.');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
-  }, [currentDefinition]);
+    return flat;
+}
 
-  useEffect(() => {
-    fetchSuggestions();
-  }, [fetchSuggestions]);
-  
-  if (loading) {
+
+export default function RelatedDefinitions({
+    currentDefinition,
+    allDefinitions,
+    onDefinitionClick,
+    onSave,
+    isAdmin
+}: RelatedDefinitionsProps) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [open, setOpen] = useState(false);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+
+    const flatAllDefinitions = useMemo(() => flattenDefinitions(allDefinitions), [allDefinitions]);
+
+    const relatedDefinitions = useMemo(() => {
+        return (currentDefinition.relatedDefinitions || [])
+            .map(id => findDefinition(allDefinitions, id))
+            .filter((def): def is Definition => def !== null);
+    }, [currentDefinition.relatedDefinitions, allDefinitions]);
+    
+    const unselectedDefinitions = useMemo(() => {
+        const relatedIds = new Set(currentDefinition.relatedDefinitions || []);
+        relatedIds.add(currentDefinition.id);
+        return flatAllDefinitions.filter(def => !relatedIds.has(def.id) && def.description); // Only allow linking to definitions not modules
+    }, [flatAllDefinitions, currentDefinition]);
+
+    const handleAdd = () => {
+        if (!selectedId) return;
+
+        const updatedRelated = [...(currentDefinition.relatedDefinitions || []), selectedId];
+        onSave({ ...currentDefinition, relatedDefinitions: updatedRelated });
+        setSelectedId(null);
+        setOpen(false);
+    }
+
+    const handleDelete = (idToDelete: string) => {
+        const updatedRelated = (currentDefinition.relatedDefinitions || []).filter(id => id !== idToDelete);
+        onSave({ ...currentDefinition, relatedDefinitions: updatedRelated });
+    };
+
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-2/3" />
-      </div>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Related Definitions</CardTitle>
+                {isAdmin && (
+                    <div className="flex gap-2">
+                        {isEditing ? (
+                             <Button variant="outline" onClick={() => setIsEditing(false)}><X className="mr-2 h-4 w-4" />Cancel</Button>
+                        ) : (
+                            <Button variant="outline" onClick={() => setIsEditing(true)}><Pencil className="mr-2 h-4 w-4" />Edit</Button>
+                        )}
+                    </div>
+                )}
+            </CardHeader>
+            <CardContent>
+                {isEditing && (
+                    <div className="flex items-center gap-2 mb-4 p-4 border rounded-lg">
+                        <Popover open={open} onOpenChange={setOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={open}
+                                    className="w-[300px] justify-between"
+                                >
+                                    {selectedId
+                                        ? unselectedDefinitions.find(def => def.id === selectedId)?.name
+                                        : "Select a definition..."}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-0">
+                                <Command>
+                                    <CommandInput placeholder="Search definitions..." />
+                                    <CommandList>
+                                        <CommandEmpty>No definitions found.</CommandEmpty>
+                                        <CommandGroup>
+                                            {unselectedDefinitions.map((def) => (
+                                                <CommandItem
+                                                    key={def.id}
+                                                    value={def.name}
+                                                    onSelect={() => {
+                                                        setSelectedId(def.id);
+                                                        setOpen(false);
+                                                    }}
+                                                >
+                                                    {def.name}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                        <Button onClick={handleAdd} disabled={!selectedId}><PlusCircle className="mr-2 h-4 w-4" /> Add Relation</Button>
+                    </div>
+                )}
+                <div className="space-y-3">
+                    {relatedDefinitions.length > 0 ? (
+                        relatedDefinitions.map(def => (
+                            <Card key={def.id} className="hover:bg-muted/50 transition-colors group">
+                                <CardContent className="p-4 flex items-center justify-between">
+                                    <button
+                                        onClick={() => onDefinitionClick(def.id)}
+                                        className="text-left flex-1"
+                                    >
+                                        <p className="font-semibold text-primary">{def.name}</p>
+                                        <p className="text-sm text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: def.description.replace(/<[^>]+>/g, '') }}></p>
+                                    </button>
+                                    {isEditing && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-destructive opacity-0 group-hover:opacity-100"
+                                            onClick={() => handleDelete(def.id)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        ))
+                    ) : (
+                        <p className="text-muted-foreground text-center py-4">No related definitions have been linked.</p>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
     );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>
-            {error}
-            <Button variant="secondary" size="sm" onClick={fetchSuggestions} className="mt-4">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Retry
-            </Button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  const renderedSuggestions = suggestions
-    .map(name => findDefinitionByName(definitions, name))
-    .filter((def): def is Definition => def !== null && def.id !== currentDefinition.id);
-
-  return (
-    <div className="space-y-3">
-        {renderedSuggestions.length > 0 ? (
-            renderedSuggestions.map((def, index) => (
-                <Card key={index} className="hover:bg-muted/50 transition-colors">
-                    <CardContent className="p-4">
-                        <button
-                            onClick={() => onDefinitionClick(def.id)}
-                            className="text-left w-full"
-                        >
-                            <p className="font-semibold text-primary">{def.name}</p>
-                            <p className="text-sm text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: def.description.replace(/<[^>]+>/g, '') }}></p>
-                        </button>
-                    </CardContent>
-                </Card>
-            ))
-        ) : (
-            <p className="text-muted-foreground text-center py-4">No related definitions found.</p>
-        )}
-    </div>
-  );
 }

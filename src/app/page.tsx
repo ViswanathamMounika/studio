@@ -82,25 +82,35 @@ export default function Home() {
     }
   }, [debouncedSearchQuery]);
 
-  useEffect(() => {
+  const handlePopState = useCallback(() => {
     if (isMounted) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const definitionIdFromUrl = urlParams.get('definitionId');
-      const sectionFromUrl = urlParams.get('section');
-      const viewFromUrl = urlParams.get('view') as View;
+        const urlParams = new URLSearchParams(window.location.search);
+        const definitionIdFromUrl = urlParams.get('definitionId');
+        const sectionFromUrl = urlParams.get('section');
+        const viewFromUrl = urlParams.get('view') as View;
 
-      if (viewFromUrl) {
-        handleNavigate(viewFromUrl, false);
-      } else if (definitionIdFromUrl) {
-        handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, false);
-      } else {
-        // Default to definitions view with first definition selected
-        setActiveView('definitions');
-        handleSelectDefinition('1.1.1', undefined, true);
-      }
+        if (viewFromUrl) {
+            handleNavigate(viewFromUrl, false);
+        } else if (definitionIdFromUrl) {
+            handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, false);
+        } else {
+            setActiveView('definitions');
+            handleSelectDefinition('1.1.1', undefined, false);
+        }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted]);
+
+  useEffect(() => {
+    window.addEventListener('popstate', handlePopState);
+    
+    // Initial load
+    handlePopState();
+
+    return () => {
+        window.removeEventListener('popstate', handlePopState);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted, handlePopState]);
 
   const updateUrl = (definitionId: string, sectionId?: string, view?: View) => {
     const url = new URL(window.location.href);
@@ -284,20 +294,22 @@ export default function Home() {
     if (isBookmarked(updatedDefinition.id)) {
         let notifMessage = `Definition "${updatedDefinition.name}" was updated.`;
         
-        const dmp = new diff_match_patch();
-        const descriptionDiff = dmp.diff_main(originalDefinition?.description || '', updatedDefinition.description);
-        const hasDescriptionChanges = descriptionDiff.some(d => d[0] !== 0);
+        if (originalDefinition) {
+            const dmp = new diff_match_patch();
+            const descriptionDiff = dmp.diff_main(originalDefinition.description || '', updatedDefinition.description);
+            const hasDescriptionChanges = descriptionDiff.some(d => d[0] !== 0);
 
-        if (hasDescriptionChanges) {
-             notifMessage = `The description of "${updatedDefinition.name}" was updated.`;
+            if (hasDescriptionChanges) {
+                notifMessage = `The description of "${updatedDefinition.name}" was updated.`;
+            }
+            
+            const oldNotesCount = originalDefinition?.notes?.length || 0;
+            const newNotesCount = updatedDefinition.notes?.length || 0;
+            if(newNotesCount > oldNotesCount) {
+                notifMessage = `A new note was added to "${updatedDefinition.name}".`;
+            }
         }
         
-        const oldNotesCount = originalDefinition?.notes?.length || 0;
-        const newNotesCount = updatedDefinition.notes?.length || 0;
-        if(newNotesCount > oldNotesCount) {
-             notifMessage = `A new note was added to "${updatedDefinition.name}".`;
-        }
-
         const newNotification: NotificationType = {
             id: Date.now().toString(),
             definitionId: updatedDefinition.id,
@@ -318,6 +330,7 @@ export default function Home() {
         isArchived: false,
         children: newDefinitionData.children || [],
         notes: [],
+        relatedDefinitions: [],
     };
   
     const addDefinitionToModule = (items: Definition[], moduleName: string, def: Definition): Definition[] => {

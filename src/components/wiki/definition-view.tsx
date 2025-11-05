@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Pencil, Bookmark, Trash2, Share2, Save, Link } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable } from '@/lib/data';
+import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable, initialDefinitions } from '@/lib/data';
 import { Checkbox } from '../ui/checkbox';
 import RevisionComparisonDialog from './revision-comparison-dialog';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Switch } from '../ui/switch';
 import RelatedDefinitions from './related-definitions';
+import useLocalStorage from '@/hooks/use-local-storage';
 
 type DefinitionViewProps = {
   definition: Definition;
@@ -62,6 +63,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     const [shareNote, setShareNote] = useState(false);
     const [notesView, setNotesView] = useState<'my' | 'others'>('my');
     const { toast } = useToast();
+    const [definitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
 
     const tabs = [
         { value: 'description', label: 'Description', condition: !!definition.description },
@@ -208,8 +210,17 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     });
 
     const handleDefinitionClick = (id: string, sectionId?: string) => {
-        onTabChange(sectionId || 'description');
-    }
+        const url = new URL(window.location.href);
+        url.searchParams.set('definitionId', id);
+        if (sectionId) {
+            url.searchParams.set('section', sectionId);
+        } else {
+            url.searchParams.delete('section');
+        }
+        window.history.pushState({}, '', url.toString());
+        // This is a simple way to trigger a re-render and navigation in the parent
+        window.dispatchEvent(new PopStateEvent('popstate'));
+    };
 
   return (
     <TooltipProvider>
@@ -424,14 +435,13 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                     </Card>
                 </TabsContent>
                  <TabsContent value="related-definitions" id="section-related-definitions" className="mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Related Definitions</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <RelatedDefinitions currentDefinition={definition} onDefinitionClick={handleDefinitionClick} />
-                        </CardContent>
-                    </Card>
+                    <RelatedDefinitions
+                        currentDefinition={definition}
+                        allDefinitions={definitions}
+                        onDefinitionClick={handleDefinitionClick}
+                        onSave={onSave}
+                        isAdmin={isAdmin}
+                    />
                 </TabsContent>
             </Tabs>
         </div>

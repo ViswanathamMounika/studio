@@ -43,6 +43,7 @@ export interface Definition {
   attachments: Attachment[];
   children?: Definition[];
   notes?: Note[];
+  relatedDefinitions?: string[];
 }
 
 export interface SupportingTable {
