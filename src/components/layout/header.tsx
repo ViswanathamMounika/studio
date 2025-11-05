@@ -29,7 +29,6 @@ type AppHeaderProps = {
     handleExport?: (format: 'json' | 'pdf' | 'excel' | 'html') => void;
     selectedCount?: number;
     onAnalyticsClick?: () => void;
-    onTemplatesClick?: () => void;
     onNewDefinitionClick?: () => void;
     isAdmin: boolean;
     notifications: Notification[];
@@ -45,7 +44,6 @@ export default function AppHeader({
     handleExport, 
     selectedCount = 0,
     onAnalyticsClick,
-    onTemplatesClick,
     onNewDefinitionClick,
     isAdmin,
     notifications,
@@ -79,9 +77,9 @@ export default function AppHeader({
         {activeView === 'definitions' && (
           <>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={onTemplatesClick}>
-                <Book className="h-4 w-4 mr-2" />
-                Templates
+              <Button variant="outline" size="sm" onClick={onNewDefinitionClick}>
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Add New
               </Button>
               {isAdmin && (
                   isExportMode ? (

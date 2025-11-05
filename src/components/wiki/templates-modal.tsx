@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Code, Plus } from 'lucide-react';
+import { FileText, Code, Plus, DatabaseZap } from 'lucide-react';
 import type { Definition } from '@/lib/types';
 
 type Template = {
@@ -67,19 +67,25 @@ const templates: Template[] = [
         description: '<h3>Purpose</h3><p>What is the goal of this technical component?</p>',
     }
   },
+  {
+    id: 'draft-from-sql',
+    title: 'Draft from SQL',
+    description: 'Use AI to automatically draft a definition from a SQL query.',
+    icon: DatabaseZap,
+    data: {},
+  },
 ];
 
 type TemplatesModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUseTemplate: (templateData: Partial<Definition>) => void;
+  onUseTemplate: (templateData: Partial<Definition>, templateId: string) => void;
 };
 
 export default function TemplatesModal({ open, onOpenChange, onUseTemplate }: TemplatesModalProps) {
 
   const handleUseTemplate = (template: Template) => {
-    onUseTemplate(template.data);
-    onOpenChange(false);
+    onUseTemplate(template.data, template.id);
   };
 
   return (

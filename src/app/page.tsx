@@ -27,6 +27,7 @@ import { diff_match_patch } from 'diff-match-patch';
 import { SidebarInset } from '@/components/ui/sidebar';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
+import DraftFromSqlModal, { type DraftedDefinition } from '@/components/wiki/draft-from-sql-modal';
 
 type View = 'definitions' | 'supporting-tables';
 
@@ -75,6 +76,9 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState(true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', initialNotifications);
+  const [isDraftFromSqlModalOpen, setIsDraftFromSqlModalOpen] = useState(false);
+  const [draftedDefinitionData, setDraftedDefinitionData] = useState<DraftedDefinition | null>(null);
+
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -626,7 +630,23 @@ export default function Home() {
   if (!isMounted) {
     return null;
   }
+
+  const handleUseTemplate = (templateData: Partial<Definition>, templateId: string) => {
+    if (templateId === 'draft-from-sql') {
+        setIsDraftFromSqlModalOpen(true);
+    } else {
+        setDraftedDefinitionData(templateData);
+        setIsNewDefinitionModalOpen(true);
+    }
+    setIsTemplatesModalOpen(false);
+  };
   
+  const handleDraftFromSql = (draftedData: DraftedDefinition) => {
+    setDraftedDefinitionData(draftedData);
+    setIsDraftFromSqlModalOpen(false);
+    setIsNewDefinitionModalOpen(true);
+  };
+
   const renderContent = () => {
     switch (activeView) {
         case 'supporting-tables':
@@ -676,8 +696,7 @@ export default function Home() {
               handleExport={handleExport}
               selectedCount={selectedForExport.length}
               onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
-              onTemplatesClick={() => setIsTemplatesModalOpen(true)}
-              onNewDefinitionClick={() => setIsNewDefinitionModalOpen(true)}
+              onNewDefinitionClick={() => setIsTemplatesModalOpen(true)}
               isAdmin={isAdmin}
               notifications={notifications}
               setNotifications={setNotifications}
@@ -778,13 +797,17 @@ export default function Home() {
           open={isNewDefinitionModalOpen}
           onOpenChange={setIsNewDefinitionModalOpen}
           onSave={handleCreateDefinition}
+          initialData={draftedDefinitionData}
       />
       <TemplatesModal
           open={isTemplatesModalOpen}
           onOpenChange={setIsTemplatesModalOpen}
-          onUseTemplate={(templateData) => {
-              handleCreateDefinition(templateData as any);
-          }}
+          onUseTemplate={handleUseTemplate}
+      />
+       <DraftFromSqlModal
+        open={isDraftFromSqlModalOpen}
+        onOpenChange={setIsDraftFromSqlModalOpen}
+        onDraft={handleDraftFromSql}
       />
     </>
   );

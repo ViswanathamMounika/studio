@@ -21,11 +21,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AttachmentList from './attachments';
 import { ScrollArea } from '../ui/scroll-area';
+import { DraftedDefinition } from './draft-from-sql-modal';
 
 type NewDefinitionModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (definition: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => void;
+  initialData?: Partial<Definition> | DraftedDefinition | null;
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
@@ -38,7 +40,7 @@ const initialDefinitionState = {
   attachments: [],
 };
 
-export default function NewDefinitionModal({ open, onOpenChange, onSave }: NewDefinitionModalProps) {
+export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData }: NewDefinitionModalProps) {
   const [name, setName] = useState(initialDefinitionState.name);
   const [module, setModule] = useState(initialDefinitionState.module);
   const [keywords, setKeywords] = useState<string[]>(initialDefinitionState.keywords);
@@ -49,15 +51,16 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave }: NewDe
 
   useEffect(() => {
     if (open) {
-      // Reset form when modal opens
-      setName(initialDefinitionState.name);
-      setModule(initialDefinitionState.module);
-      setKeywords(initialDefinitionState.keywords);
+      // Reset form when modal opens, potentially with initial data from templates
+      const data = initialData || initialDefinitionState;
+      setName(data.name || initialDefinitionState.name);
+      setModule(data.module || initialDefinitionState.module);
+      setKeywords(data.keywords || initialDefinitionState.keywords);
       setCurrentKeyword('');
-      setDescription(initialDefinitionState.description);
-      setAttachments(initialDefinitionState.attachments);
+      setDescription(data.description || initialDefinitionState.description);
+      setAttachments(data.attachments || initialDefinitionState.attachments);
     }
-  }, [open]);
+  }, [open, initialData]);
 
   const handleSave = () => {
     const newDefinitionData = {
