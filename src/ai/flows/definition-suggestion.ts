@@ -71,11 +71,16 @@ const suggestDefinitionsFlow = ai.defineFlow(
     outputSchema: SuggestDefinitionsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    if (output) {
-      return output;
+    try {
+      const {output} = await prompt(input);
+      if (output) {
+        return output;
+      }
+    } catch (error) {
+        console.error('Error in suggestDefinitionsFlow, returning fallback.', error);
     }
-    // Provide a fallback with valid data
+
+    // Provide a fallback with valid data in case of an error or no output
     return {
         suggestedDefinitions: ['Service Type Mapping', 'Authorization Timeliness', 'Contracted Rates', 'Claim Adjudication Status']
     };
