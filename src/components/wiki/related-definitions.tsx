@@ -1,14 +1,15 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Definition } from '@/lib/types';
-import { PlusCircle, Trash2, Pencil, Save, X } from 'lucide-react';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { PlusCircle, Trash2, Pencil, X } from 'lucide-react';
 import { findDefinition } from '@/lib/data';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type RelatedDefinitionsProps = {
   currentDefinition: Definition;
@@ -40,6 +41,13 @@ export default function RelatedDefinitions({
     const [isEditing, setIsEditing] = useState(false);
     const [open, setOpen] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    useEffect(() => {
+        if (!open) {
+            setSearchQuery('');
+        }
+    }, [open]);
 
     const flatAllDefinitions = useMemo(() => flattenDefinitions(allDefinitions), [allDefinitions]);
 
@@ -52,8 +60,15 @@ export default function RelatedDefinitions({
     const unselectedDefinitions = useMemo(() => {
         const relatedIds = new Set(currentDefinition.relatedDefinitions || []);
         relatedIds.add(currentDefinition.id);
-        return flatAllDefinitions.filter(def => !relatedIds.has(def.id) && def.description); // Only allow linking to definitions not modules
-    }, [flatAllDefinitions, currentDefinition]);
+        const filtered = flatAllDefinitions.filter(def => !relatedIds.has(def.id) && def.description);
+        
+        if (!searchQuery) {
+            return filtered;
+        }
+
+        return filtered.filter(def => def.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    }, [flatAllDefinitions, currentDefinition, searchQuery]);
 
     const handleAdd = () => {
         if (!selectedId) return;
@@ -86,8 +101,8 @@ export default function RelatedDefinitions({
             <CardContent>
                 {isEditing && (
                     <div className="flex items-center gap-2 mb-4 p-4 border rounded-lg">
-                        <Popover open={open} onOpenChange={setOpen}>
-                            <PopoverTrigger asChild>
+                        <DropdownMenu open={open} onOpenChange={setOpen}>
+                            <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="outline"
                                     role="combobox"
@@ -95,33 +110,40 @@ export default function RelatedDefinitions({
                                     className="w-[300px] justify-between"
                                 >
                                     {selectedId
-                                        ? unselectedDefinitions.find(def => def.id === selectedId)?.name
+                                        ? flatAllDefinitions.find(def => def.id === selectedId)?.name
                                         : "Select a definition..."}
                                 </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[300px] p-0">
-                                <Command>
-                                    <CommandInput placeholder="Search definitions..." />
-                                    <CommandList>
-                                        <CommandEmpty>No definitions found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {unselectedDefinitions.map((def) => (
-                                                <CommandItem
-                                                    key={def.id}
-                                                    value={def.name}
-                                                    onSelect={() => {
-                                                        setSelectedId(def.id);
-                                                        setOpen(false);
-                                                    }}
-                                                >
-                                                    {def.name}
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[300px] p-2">
+                                <Input 
+                                    autoFocus
+                                    placeholder="Search definitions..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="mb-2"
+                                />
+                                <ScrollArea className="h-[200px]">
+                                    {unselectedDefinitions.length > 0 ? (
+                                        unselectedDefinitions.map((def) => (
+                                            <div
+                                                key={def.id}
+                                                onClick={() => {
+                                                    setSelectedId(def.id);
+                                                    setOpen(false);
+                                                }}
+                                                className="p-2 rounded-md hover:bg-accent cursor-pointer text-sm"
+                                            >
+                                                {def.name}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-2 text-center text-sm text-muted-foreground">
+                                            No definitions found.
+                                        </div>
+                                    )}
+                                </ScrollArea>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button onClick={handleAdd} disabled={!selectedId}><PlusCircle className="mr-2 h-4 w-4" /> Add Relation</Button>
                     </div>
                 )}
