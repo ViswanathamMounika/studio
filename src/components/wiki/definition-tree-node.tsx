@@ -5,9 +5,11 @@ import React, { useState, useEffect } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare } from 'lucide-react';
+import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import RelatedDefinitions from './related-definitions';
+import { Skeleton } from '../ui/skeleton';
 
 function isParent(node: Definition, selectedId: string): boolean {
     if (!node.children) {
@@ -63,6 +65,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
   const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
   
   const [isNodeExpanded, setIsNodeExpanded] = useState(false);
+  const [showRelated, setShowRelated] = useState(false);
 
   useEffect(() => {
     setIsNodeExpanded(isSelected || isParentOfSelected);
@@ -87,6 +90,19 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+  };
+
+  const handleRelatedClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowRelated(!showRelated);
+  }
+
+  const handleDefinitionClick = (id: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('definitionId', id);
+    url.searchParams.set('section', 'description');
+    window.history.pushState({}, '', url.toString());
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   return (
@@ -128,7 +144,12 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                 <Icon className={cn("h-4 w-4 mr-2 shrink-0", hasChildren || isModule ? "text-primary" : "text-muted-foreground")} />
                 <span className="truncate flex-1">{node.name}</span>
                 {node.isBookmarked && !isExportMode && (
-                  <Bookmark className="h-4 w-4 shrink-0 fill-primary text-primary ml-auto mr-2" />
+                  <Bookmark className="h-4 w-4 shrink-0 fill-primary text-primary ml-auto mr-1" />
+                )}
+                 {!isModule && !isExportMode && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 ml-auto mr-1 group-hover/item:opacity-100 opacity-0" onClick={handleRelatedClick}>
+                    <Link className="h-4 w-4" />
+                  </Button>
                 )}
             </div>
         </div>
@@ -155,7 +176,15 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
             {!isModule && isSelected && isNodeExpanded && (
                 <DefinitionSubItems definitionId={node.id} onSelect={onSelect} activeSection={activeSection} level={level}/>
             )}
+            {!isModule && showRelated && isNodeExpanded && (
+              <div className="pl-12 pr-4 py-2">
+                <h4 className="text-xs font-semibold text-muted-foreground mb-2">Related Definitions</h4>
+                <RelatedDefinitions currentDefinition={node} onDefinitionClick={handleDefinitionClick}/>
+              </div>
+            )}
       </CollapsibleContent>
     </Collapsible>
   );
 }
+
+    

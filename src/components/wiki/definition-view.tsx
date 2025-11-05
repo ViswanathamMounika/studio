@@ -425,7 +425,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                             <CardTitle>Related Definitions</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <RelatedDefinitions currentDefinition={definition} />
+                            <RelatedDefinitions currentDefinition={definition} onDefinitionClick={onTabChange} />
                         </CardContent>
                     </Card>
                 </TabsContent>

@@ -9,14 +9,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Definition } from '@/lib/types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { initialDefinitions, findDefinition } from '@/lib/data';
 import useLocalStorage from '@/hooks/use-local-storage';
+import { initialDefinitions } from '@/lib/data';
 
 type RelatedDefinitionsProps = {
   currentDefinition: Definition;
+  onDefinitionClick: (id: string) => void;
 };
 
-export default function RelatedDefinitions({ currentDefinition }: RelatedDefinitionsProps) {
+export default function RelatedDefinitions({ currentDefinition, onDefinitionClick }: RelatedDefinitionsProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -123,3 +124,5 @@ export default function RelatedDefinitions({ currentDefinition }: RelatedDefinit
     </div>
   );
 }
+
+    
