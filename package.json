@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm run genkit:dev",
+    "dev": "npm run genkit:dev & npm run next:dev",
     "next:dev": "next dev",
     "genkit:dev": "genkit start --port 3400 -- tsx src/ai/dev.ts",
     "build": "next build",
