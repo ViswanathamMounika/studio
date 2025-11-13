@@ -79,7 +79,7 @@ export default function RevisionComparisonDialog({
   revision2,
   currentDefinitionName
 }: RevisionComparisonDialogProps) {
-    const [revA, revB] = [revision1, revision2].sort((a, b) => new Date(a.date).getTime() - new Date(a.date).getTime());
+    const [revA, revB] = [revision1, revision2].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const snapshotA = revA.snapshot;
     const snapshotB = revB.snapshot;
@@ -110,6 +110,8 @@ export default function RevisionComparisonDialog({
               </div>
               <Separator />
               <DiffView title="Description" text1={snapshotA.description} text2={snapshotB.description} />
+              <DiffView title="Technical Details" text1={snapshotA.technicalDetails || ''} text2={snapshotB.technicalDetails || ''} />
+              <DiffView title="Usage Examples" text1={snapshotA.usageExamples || ''} text2={snapshotB.usageExamples || ''} />
             </div>
           </ScrollArea>
         </div>

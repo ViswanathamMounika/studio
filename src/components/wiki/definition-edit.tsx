@@ -26,6 +26,8 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const [keywords, setKeywords] = useState<string[]>(definition.keywords);
   const [currentKeyword, setCurrentKeyword] = useState('');
   const [description, setDescription] = useState(definition.description);
+  const [technicalDetails, setTechnicalDetails] = useState(definition.technicalDetails || '');
+  const [usageExamples, setUsageExamples] = useState(definition.usageExamples || '');
   const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +38,8 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       module,
       keywords,
       description,
+      technicalDetails,
+      usageExamples,
       attachments,
     });
   };
@@ -144,6 +148,24 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
           </CardHeader>
           <CardContent>
             <WysiwygEditor value={description} onChange={setDescription} />
+          </CardContent>
+      </Card>
+
+      <Card>
+          <CardHeader>
+              <CardTitle>Technical Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <WysiwygEditor value={technicalDetails} onChange={setTechnicalDetails} />
+          </CardContent>
+      </Card>
+
+      <Card>
+          <CardHeader>
+              <CardTitle>Usage Examples</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <WysiwygEditor value={usageExamples} onChange={setUsageExamples} />
           </CardContent>
       </Card>
 

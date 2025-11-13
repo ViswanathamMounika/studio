@@ -44,6 +44,8 @@ export interface Definition {
   children?: Definition[];
   notes?: Note[];
   relatedDefinitions?: string[];
+  technicalDetails?: string;
+  usageExamples?: string;
 }
 
 export interface SupportingTable {

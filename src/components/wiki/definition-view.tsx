@@ -67,6 +67,8 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
     const tabs = [
         { value: 'description', label: 'Description', condition: !!definition.description },
+        { value: 'technical-details', label: 'Technical Details', condition: !!definition.technicalDetails },
+        { value: 'usage-examples', label: 'Usage Examples', condition: !!definition.usageExamples },
         { value: 'revisions', label: 'Version History', condition: true },
         { value: 'attachments', label: 'Attachments', condition: true },
         { value: 'notes', label: 'Notes', condition: true },
@@ -280,6 +282,26 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                         <Card>
                             <CardContent className="p-6">
                                 <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                }
+                {visibleTabs.find(t => t.value === 'technical-details') &&
+                    <TabsContent value="technical-details" id="section-technical-details" className="mt-4 space-y-4">
+                        <Card>
+                            <CardHeader><CardTitle>Technical Details</CardTitle></CardHeader>
+                            <CardContent className="p-6">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.technicalDetails! }} />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                }
+                {visibleTabs.find(t => t.value === 'usage-examples') &&
+                    <TabsContent value="usage-examples" id="section-usage-examples" className="mt-4 space-y-4">
+                        <Card>
+                            <CardHeader><CardTitle>Usage Examples</CardTitle></CardHeader>
+                            <CardContent className="p-6">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.usageExamples! }} />
                             </CardContent>
                         </Card>
                     </TabsContent>
