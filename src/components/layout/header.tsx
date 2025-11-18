@@ -8,7 +8,8 @@ import {
   Palette,
   Bell,
   PlusCircle,
-  Archive
+  Archive,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,8 +31,8 @@ import { SidebarTrigger } from "../ui/sidebar";
 
 type AppHeaderProps = {
     children?: React.ReactNode;
-    isExportMode?: boolean;
-    setIsExportMode?: (value: boolean) => void;
+    isSelectMode?: boolean;
+    setIsSelectMode?: (value: boolean) => void;
     handleExport?: (format: 'json' | 'pdf' | 'excel' | 'html') => void;
     handleBulkArchive?: (archive: boolean) => void;
     selectedCount?: number;
@@ -46,8 +47,8 @@ type AppHeaderProps = {
 
 export default function AppHeader({ 
     children, 
-    isExportMode, 
-    setIsExportMode, 
+    isSelectMode, 
+    setIsSelectMode, 
     handleExport, 
     handleBulkArchive,
     selectedCount = 0,
@@ -89,42 +90,40 @@ export default function AppHeader({
                 <PlusCircle className="h-4 w-4 mr-2" />
                 Templates
               </Button>
-              {isAdmin && (
-                  isExportMode ? (
-                      <div className="flex gap-2">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="sm" disabled={selectedCount === 0}>
-                              <Download className="mr-2 h-4 w-4" />
-                              Export ({selectedCount})
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => handleExport && handleExport('json')}>JSON</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExport && handleExport('pdf')}>PDF</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExport && handleExport('excel')}>Excel (XLSX)</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExport && handleExport('html')}>HTML</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="sm" variant="outline" disabled={selectedCount === 0}>
-                              <Archive className="mr-2 h-4 w-4" />
-                              Bulk Actions
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => handleBulkArchive && handleBulkArchive(true)}>Archive Selected</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleBulkArchive && handleBulkArchive(false)}>Restore Selected</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                  ) : (
-                      <Button variant="outline" size="sm" onClick={() => setIsExportMode && setIsExportMode(true)}>
+              {isAdmin && !isSelectMode && (
+                <Button variant="outline" size="sm" onClick={() => setIsSelectMode && setIsSelectMode(true)}>
+                    Select
+                </Button>
+              )}
+              {isAdmin && isSelectMode && (
+                <>
+                   <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="outline" disabled={selectedCount === 0}>
                           <Download className="mr-2 h-4 w-4" />
-                          Export
-                      </Button>
-                  )
+                          Export ({selectedCount})
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleExport && handleExport('json')}>JSON</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExport && handleExport('pdf')}>PDF</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExport && handleExport('excel')}>Excel (XLSX)</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExport && handleExport('html')}>HTML</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="outline" disabled={selectedCount === 0}>
+                          <Archive className="mr-2 h-4 w-4" />
+                          Bulk Actions
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleBulkArchive && handleBulkArchive(true)}>Archive Selected</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleBulkArchive && handleBulkArchive(false)}>Restore Selected</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                </>
               )}
               <Button variant="outline" size="sm" onClick={onAnalyticsClick}>
                   <BarChart className="h-4 w-4 mr-2" />

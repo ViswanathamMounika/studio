@@ -70,7 +70,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const { isMounted, bookmarks, toggleBookmark, isBookmarked } = useBookmarks();
   const [selectedForExport, setSelectedForExport] = useState<string[]>([]);
-  const [isExportMode, setIsExportMode] = useState(false);
+  const [isSelectMode, setIsSelectMode] = useState(false);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
@@ -234,7 +234,7 @@ export default function Home() {
         break;
     }
 
-    setIsExportMode(false);
+    setIsSelectMode(false);
     setSelectedForExport([]);
   };
 
@@ -557,7 +557,7 @@ export default function Home() {
       title: 'Bulk Action Complete',
       description: `${selectedForExport.length} definitions have been ${archive ? 'archived' : 'restored'}.`
     });
-    setIsExportMode(false);
+    setIsSelectMode(false);
     setSelectedForExport([]);
   };
 
@@ -649,8 +649,8 @@ export default function Home() {
     return itemsWithBookmarks;
   }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
-  const handleCancelExport = () => {
-    setIsExportMode(false);
+  const handleCancelSelectMode = () => {
+    setIsSelectMode(false);
     setSelectedForExport([]);
   };
 
@@ -718,8 +718,8 @@ export default function Home() {
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background">
           <AppHeader
-              isExportMode={isExportMode}
-              setIsExportMode={setIsExportMode}
+              isSelectMode={isSelectMode}
+              setIsSelectMode={setIsSelectMode}
               handleExport={handleExport}
               handleBulkArchive={handleBulkArchive}
               selectedCount={selectedForExport.length}
@@ -777,7 +777,7 @@ export default function Home() {
                   </div>
                   <div className="p-4 border-b">
                       <div className="flex items-center justify-between mb-2">
-                          {isExportMode ? (
+                          {isSelectMode ? (
                               <>
                                   <div className="flex items-center">
                                       <Checkbox
@@ -788,7 +788,7 @@ export default function Home() {
                                       />
                                       <Label htmlFor="select-all" className="font-semibold text-base">Select All</Label>
                                   </div>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelExport}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelSelectMode}>
                                       <X className="h-4 w-4" />
                                   </Button>
                               </>
@@ -806,7 +806,7 @@ export default function Home() {
                           onSelect={handleSelectDefinition}
                           onToggleSelection={toggleSelectionForExport}
                           selectedForExport={selectedForExport}
-                          isExportMode={isExportMode}
+                          isExportMode={isSelectMode}
                           activeSection={activeTab}
                           searchQuery={searchQuery}
                       />

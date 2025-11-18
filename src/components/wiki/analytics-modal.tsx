@@ -136,49 +136,9 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
             Showing the most searched terms and most viewed definitions.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex items-center gap-2 py-4">
-            <Button variant="outline" onClick={() => setPresetRange('today')}>Today</Button>
-            <Button variant="outline" onClick={() => setPresetRange('week')}>Past Week</Button>
-            <Button variant="outline" onClick={() => setPresetRange('month')}>Past Month</Button>
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button
-                        variant={"outline"}
-                        className={cn(
-                            "justify-start text-left font-normal",
-                            !dateRange && "text-muted-foreground"
-                        )}
-                    >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateRange?.from ? (
-                            dateRange.to ? (
-                                <>
-                                    {format(dateRange.from, "LLL dd, y")} -{" "}
-                                    {format(dateRange.to, "LLL dd, y")}
-                                </>
-                            ) : (
-                                format(dateRange.from, "LLL dd, y")
-                            )
-                        ) : (
-                            <span>Pick a date range</span>
-                        )}
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={dateRange?.from}
-                        selected={dateRange}
-                        onSelect={setDateRange}
-                        numberOfMonths={2}
-                    />
-                </PopoverContent>
-            </Popover>
-            <Button onClick={() => setDateRange(undefined)}>Clear</Button>
-        </div>
-        <ScrollArea className="flex-1 py-4 pr-6">
-            <div className="space-y-6">
+        
+        <ScrollArea className="flex-1 -mx-6">
+            <div className="space-y-6 px-6 py-4">
                  <Card>
                     <CardHeader>
                         <CardTitle className='flex items-center gap-2'>
@@ -215,6 +175,49 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
                     </CardContent>
                 </Card>
                 <Separator />
+
+                <div className="flex items-center gap-2 py-4">
+                    <Button variant="outline" onClick={() => setPresetRange('today')}>Today</Button>
+                    <Button variant="outline" onClick={() => setPresetRange('week')}>Past Week</Button>
+                    <Button variant="outline" onClick={() => setPresetRange('month')}>Past Month</Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "justify-start text-left font-normal",
+                                    !dateRange && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dateRange?.from ? (
+                                    dateRange.to ? (
+                                        <>
+                                            {format(dateRange.from, "LLL dd, y")} -{" "}
+                                            {format(dateRange.to, "LLL dd, y")}
+                                        </>
+                                    ) : (
+                                        format(dateRange.from, "LLL dd, y")
+                                    )
+                                ) : (
+                                    <span>Pick a date range</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={dateRange?.from}
+                                selected={dateRange}
+                                onSelect={setDateRange}
+                                numberOfMonths={2}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                    <Button onClick={() => setDateRange(undefined)}>Clear</Button>
+                </div>
+
                 <Card>
                     <CardHeader>
                     <CardTitle>Top 10 Searched Terms</CardTitle>
