@@ -12,7 +12,7 @@ import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 
@@ -189,22 +189,25 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
                     <CardContent>
                         {recentViews.length > 0 ? (
                             <div className="space-y-2">
-                                {recentViews.map(item => (
-                                    <div key={item.id} className="flex justify-between items-center p-2 rounded-md hover:bg-muted">
-                                        <button 
-                                            className="text-primary hover:underline text-sm"
-                                            onClick={() => {
-                                                onDefinitionClick(item.id);
-                                                onOpenChange(false);
-                                            }}
-                                        >
-                                            {item.name}
-                                        </button>
-                                        <span className="text-xs text-muted-foreground">
-                                            {formatDistanceToNow(new Date(item.date), { addSuffix: true })}
-                                        </span>
-                                    </div>
-                                ))}
+                                {recentViews.map(item => {
+                                    const itemDate = new Date(item.date);
+                                    return (
+                                        <div key={item.id} className="flex justify-between items-center p-2 rounded-md hover:bg-muted">
+                                            <button 
+                                                className="text-primary hover:underline text-sm"
+                                                onClick={() => {
+                                                    onDefinitionClick(item.id);
+                                                    onOpenChange(false);
+                                                }}
+                                            >
+                                                {item.name}
+                                            </button>
+                                            <span className="text-xs text-muted-foreground">
+                                                {isValid(itemDate) ? formatDistanceToNow(itemDate, { addSuffix: true }) : ''}
+                                            </span>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         ) : (
                             <p className="text-sm text-muted-foreground text-center">No recent views found.</p>
