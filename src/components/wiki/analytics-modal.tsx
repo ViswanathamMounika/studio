@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getTopSearches, getTopViews, getRecentViews } from '@/lib/analytics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '../ui/scroll-area';
 import { Button } from '../ui/button';
 import { Calendar } from '../ui/calendar';
@@ -32,6 +33,7 @@ type RecentViewData = {
     id: string;
     name: string;
     date: string;
+    module: string;
 }
 
 const sampleSearches: ChartData = [
@@ -80,7 +82,7 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
     const views = getTopViews(10, dateRange);
     setTopViews(views.length > 0 ? views : sampleViews);
 
-    const recents = getRecentViews(5);
+    const recents = getRecentViews(10);
     setRecentViews(recents);
   };
   
@@ -148,29 +150,41 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
                     </CardHeader>
                     <CardContent>
                         {recentViews.length > 0 ? (
-                            <div className="space-y-2">
-                                {recentViews.map(item => {
-                                    const itemDate = new Date(item.date);
-                                    return (
-                                        <div key={item.id} className="flex justify-between items-center p-2 rounded-md hover:bg-muted">
-                                            <button 
-                                                className="text-primary hover:underline text-sm"
-                                                onClick={() => {
-                                                    onDefinitionClick(item.id);
-                                                    onOpenChange(false);
-                                                }}
-                                            >
-                                                {item.name}
-                                            </button>
-                                            <span className="text-xs text-muted-foreground">
-                                                {isValid(itemDate) ? formatDistanceToNow(itemDate, { addSuffix: true }) : ''}
-                                            </span>
-                                        </div>
-                                    )
-                                })}
-                            </div>
+                           <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Module</TableHead>
+                                        <TableHead className="text-right">Viewed</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {recentViews.map(item => {
+                                        const itemDate = new Date(item.date);
+                                        return (
+                                            <TableRow key={item.id} className="hover:bg-muted">
+                                                <TableCell>
+                                                    <button 
+                                                        className="text-primary hover:underline font-medium"
+                                                        onClick={() => {
+                                                            onDefinitionClick(item.id);
+                                                            onOpenChange(false);
+                                                        }}
+                                                    >
+                                                        {item.name}
+                                                    </button>
+                                                </TableCell>
+                                                <TableCell>{item.module}</TableCell>
+                                                <TableCell className="text-right text-muted-foreground">
+                                                    {isValid(itemDate) ? formatDistanceToNow(itemDate, { addSuffix: true }) : ''}
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
+                                </TableBody>
+                           </Table>
                         ) : (
-                            <p className="text-sm text-muted-foreground text-center">No recent views found.</p>
+                            <p className="text-sm text-muted-foreground text-center py-8">No recent views found.</p>
                         )}
                     </CardContent>
                 </Card>
@@ -215,7 +229,7 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
                             />
                         </PopoverContent>
                     </Popover>
-                    <Button onClick={() => setDateRange(undefined)}>Clear</Button>
+                    {dateRange && <Button variant="ghost" onClick={() => setDateRange(undefined)}>Clear</Button>}
                 </div>
 
                 <Card>
