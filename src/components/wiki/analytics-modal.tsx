@@ -82,7 +82,7 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
     const views = getTopViews(10, dateRange);
     setTopViews(views.length > 0 ? views : sampleViews);
 
-    const recents = getRecentViews(10);
+    const recents = getRecentViews(5);
     setRecentViews(recents);
   };
   
