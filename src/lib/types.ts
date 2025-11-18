@@ -53,7 +53,7 @@ export interface SupportingTable {
     name:string;
     description: string;
     headers: string[];
-    rows: string[][];
+    rows: (string|number|null)[][];
 }
 
 export interface Notification {
