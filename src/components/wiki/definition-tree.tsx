@@ -13,9 +13,10 @@ type DefinitionTreeProps = {
   selectedForExport: string[];
   isExportMode: boolean;
   activeSection: string;
+  searchQuery: string;
 };
 
-export default function DefinitionTree({ definitions, selectedId, onSelect, onToggleSelection, selectedForExport, isExportMode, activeSection }: DefinitionTreeProps) {
+export default function DefinitionTree({ definitions, selectedId, onSelect, onToggleSelection, selectedForExport, isExportMode, activeSection, searchQuery }: DefinitionTreeProps) {
   return (
     <div className="space-y-1">
       {definitions.map(node => (
@@ -30,6 +31,7 @@ export default function DefinitionTree({ definitions, selectedId, onSelect, onTo
           isExportMode={isExportMode}
           selectedForExport={selectedForExport}
           activeSection={activeSection}
+          searchQuery={searchQuery}
         />
       ))}
     </div>

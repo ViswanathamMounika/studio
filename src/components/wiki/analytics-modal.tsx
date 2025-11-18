@@ -4,16 +4,17 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { getTopSearches, getTopViews } from '@/lib/analytics';
+import { getTopSearches, getTopViews, getRecentViews } from '@/lib/analytics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '../ui/scroll-area';
 import { Button } from '../ui/button';
 import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Separator } from '../ui/separator';
 
 type AnalyticsModalProps = {
   open: boolean;
@@ -26,6 +27,12 @@ type ChartData = {
   count: number;
   id?: string;
 }[];
+
+type RecentViewData = {
+    id: string;
+    name: string;
+    date: string;
+}
 
 const sampleSearches: ChartData = [
     { name: 'decision date', count: 25 },
@@ -57,6 +64,7 @@ const sampleViews: ChartData = [
 export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }: AnalyticsModalProps) {
   const [topSearches, setTopSearches] = useState<ChartData>([]);
   const [topViews, setTopViews] = useState<ChartData>([]);
+  const [recentViews, setRecentViews] = useState<RecentViewData[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   useEffect(() => {
@@ -71,6 +79,9 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
     
     const views = getTopViews(10, dateRange);
     setTopViews(views.length > 0 ? views : sampleViews);
+
+    const recents = getRecentViews(5);
+    setRecentViews(recents);
   };
   
   const setPresetRange = (preset: 'today' | 'week' | 'month') => {
@@ -168,6 +179,39 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
         </div>
         <ScrollArea className="flex-1 py-4 pr-6">
             <div className="space-y-6">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className='flex items-center gap-2'>
+                            <Clock className="h-5 w-5" />
+                            Recently Viewed Definitions
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {recentViews.length > 0 ? (
+                            <div className="space-y-2">
+                                {recentViews.map(item => (
+                                    <div key={item.id} className="flex justify-between items-center p-2 rounded-md hover:bg-muted">
+                                        <button 
+                                            className="text-primary hover:underline text-sm"
+                                            onClick={() => {
+                                                onDefinitionClick(item.id);
+                                                onOpenChange(false);
+                                            }}
+                                        >
+                                            {item.name}
+                                        </button>
+                                        <span className="text-xs text-muted-foreground">
+                                            {formatDistanceToNow(new Date(item.date), { addSuffix: true })}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center">No recent views found.</p>
+                        )}
+                    </CardContent>
+                </Card>
+                <Separator />
                 <Card>
                     <CardHeader>
                     <CardTitle>Top 10 Searched Terms</CardTitle>

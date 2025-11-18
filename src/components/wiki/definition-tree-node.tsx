@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link } from 'lucide-react';
+import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link, Archive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import RelatedDefinitions from './related-definitions';
@@ -24,6 +24,27 @@ function isParent(node: Definition, selectedId: string): boolean {
     }
     return false;
 }
+
+const HighlightedText = ({ text, highlight }: { text: string; highlight: string }) => {
+    if (!highlight.trim()) {
+        return <span>{text}</span>;
+    }
+    const regex = new RegExp(`(${highlight})`, 'gi');
+    const parts = text.split(regex);
+    return (
+        <span>
+            {parts.map((part, i) =>
+                regex.test(part) ? (
+                    <span key={i} className="bg-yellow-300/50 rounded">
+                        {part}
+                    </span>
+                ) : (
+                    part
+                )
+            )}
+        </span>
+    );
+};
 
 const DefinitionSubItems = ({ definition, onSelect, activeSection, level }: { definition: Definition, onSelect: (id: string, sectionId?: string) => void, activeSection: string, level: number }) => {
     const subItems = [
@@ -62,7 +83,7 @@ const DefinitionSubItems = ({ definition, onSelect, activeSection, level }: { de
 };
 
 
-export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isExportMode, selectedForExport, activeSection }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isExportMode: boolean, selectedForExport: string[], activeSection: string }) {
+export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isExportMode, selectedForExport, activeSection, searchQuery }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isExportMode: boolean, selectedForExport: string[], activeSection: string, searchQuery: string }) {
   const isModule = !node.description; // Modules usually don't have descriptions
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId !== null && node.id === selectedId;
@@ -71,8 +92,12 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
   const [isNodeExpanded, setIsNodeExpanded] = useState(false);
 
   useEffect(() => {
-    setIsNodeExpanded(isSelected || isParentOfSelected);
-  }, [isSelected, isParentOfSelected]);
+    if (searchQuery) {
+        setIsNodeExpanded(true);
+    } else {
+        setIsNodeExpanded(isSelected || isParentOfSelected);
+    }
+  }, [isSelected, isParentOfSelected, searchQuery]);
   
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -132,7 +157,10 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                 onClick={handleNodeSelect}
             >
                 <Icon className={cn("h-4 w-4 mr-2 shrink-0", hasChildren || isModule ? "text-primary" : "text-muted-foreground")} />
-                <span className="truncate flex-1">{node.name}</span>
+                <span className="truncate flex-1"><HighlightedText text={node.name} highlight={searchQuery} /></span>
+                {node.isArchived && !isExportMode && (
+                    <Archive className="h-4 w-4 shrink-0 text-muted-foreground ml-auto mr-1" />
+                )}
                 {node.isBookmarked && !isExportMode && (
                   <Bookmark className="h-4 w-4 shrink-0 fill-primary text-primary ml-auto mr-1" />
                 )}
@@ -154,6 +182,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                         isExportMode={isExportMode}
                         selectedForExport={selectedForExport}
                         activeSection={activeSection}
+                        searchQuery={searchQuery}
                     />
                     ))}
                 </div>

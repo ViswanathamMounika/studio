@@ -28,6 +28,7 @@ import { SidebarInset } from '@/components/ui/sidebar';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import DraftFromSqlModal, { type DraftedDefinition } from '@/components/wiki/draft-from-sql-modal';
+import { useToast } from '@/hooks/use-toast';
 
 type View = 'definitions' | 'supporting-tables';
 
@@ -78,6 +79,7 @@ export default function Home() {
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', initialNotifications);
   const [isDraftFromSqlModalOpen, setIsDraftFromSqlModalOpen] = useState(false);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<DraftedDefinition | null>(null);
+  const { toast } = useToast();
 
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
@@ -534,6 +536,31 @@ export default function Home() {
     }
   };
 
+  const handleBulkArchive = (archive: boolean) => {
+    if (selectedForExport.length === 0) return;
+
+    const updateArchiveStatusRecursive = (items: Definition[]): Definition[] => {
+      return items.map(def => {
+        const newDef = { ...def };
+        if (selectedForExport.includes(def.id)) {
+          newDef.isArchived = archive;
+        }
+        if (newDef.children) {
+          newDef.children = updateArchiveStatusRecursive(newDef.children);
+        }
+        return newDef;
+      });
+    };
+
+    setDefinitions(updateArchiveStatusRecursive(definitions));
+    toast({
+      title: 'Bulk Action Complete',
+      description: `${selectedForExport.length} definitions have been ${archive ? 'archived' : 'restored'}.`
+    });
+    setIsExportMode(false);
+    setSelectedForExport([]);
+  };
+
   const handleDelete = (id: string) => {
     const remove = (items: Definition[], idToDelete: string): Definition[] => {
       return items
@@ -694,6 +721,7 @@ export default function Home() {
               isExportMode={isExportMode}
               setIsExportMode={setIsExportMode}
               handleExport={handleExport}
+              handleBulkArchive={handleBulkArchive}
               selectedCount={selectedForExport.length}
               onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
               onNewDefinitionClick={() => setIsTemplatesModalOpen(true)}
@@ -780,6 +808,7 @@ export default function Home() {
                           selectedForExport={selectedForExport}
                           isExportMode={isExportMode}
                           activeSection={activeTab}
+                          searchQuery={searchQuery}
                       />
                   </div>
               </div>

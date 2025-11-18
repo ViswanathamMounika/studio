@@ -26,7 +26,7 @@ const saveToStorage = <T>(key: string, value: T) => {
 };
 
 type CountData = { [key: string]: { count: number, date: string } };
-type ViewCountData = { [key: string]: { count: number, module: string, date: string, id: string } };
+type ViewCountData = { [key: string]: { count: number, module: string, date: string, id: string, name: string } };
 
 const isInDateRange = (dateStr: string, range?: DateRange) => {
     if (!range?.from) return true;
@@ -52,9 +52,9 @@ export const trackSearch = (query: string) => {
 
 export const trackView = (definitionId: string, definitionName: string, module: string) => {
   const views = getFromStorage<ViewCountData>('analytics_views', {});
-  const key = definitionName;
+  const key = definitionId;
   if (!views[key]) {
-      views[key] = { count: 0, module: module, date: new Date().toISOString(), id: definitionId };
+      views[key] = { count: 0, module: module, date: new Date().toISOString(), id: definitionId, name: definitionName };
   }
   views[key].count += 1;
   views[key].date = new Date().toISOString();
@@ -77,5 +77,14 @@ export const getTopViews = (count: number, dateRange?: DateRange): { name: strin
         .filter(([, value]) => isInDateRange(value.date, dateRange))
         .sort(([,a], [,b]) => b.count - a.count)
         .slice(0, count)
-        .map(([name, value]) => ({ name, count: value.count, id: value.id }));
+        .map(([, value]) => ({ name: value.name, count: value.count, id: value.id }));
+}
+
+export const getRecentViews = (count: number): { name: string, id: string, date: string }[] => {
+    const data = getFromStorage<ViewCountData>('analytics_views', {});
+
+    return Object.values(data)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, count)
+        .map(value => ({ name: value.name, id: value.id, date: value.date }));
 }
