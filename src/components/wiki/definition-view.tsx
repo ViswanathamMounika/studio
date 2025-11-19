@@ -502,7 +502,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                                     </TableCell>
                                                 );
                                             }
-                                            return <TableCell key={cellIndex}>{cell}</TableCell>
+                                            return <TableCell key={cellIndex}>{cell === null ? 'NULL' : cell}</TableCell>
                                         })}
                                     </TableRow>
                                 ))}
