@@ -5,13 +5,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Definition } from '@/lib/types';
-import { PlusCircle, Trash2, Pencil, X, Wand2 } from 'lucide-react';
+import { PlusCircle, Trash2, Pencil, X } from 'lucide-react';
 import { findDefinition } from '@/lib/data';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { suggestDefinitions } from '@/ai/flows/definition-suggestion';
-import { useToast } from '@/hooks/use-toast';
 
 type RelatedDefinitionsProps = {
   currentDefinition: Definition;
@@ -44,9 +42,6 @@ export default function RelatedDefinitions({
     const [open, setOpen] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [suggestedDefinitions, setSuggestedDefinitions] = useState<string[]>([]);
-    const [isSuggesting, setIsSuggesting] = useState(false);
-    const { toast } = useToast();
 
     useEffect(() => {
         if (!open) {
@@ -88,37 +83,6 @@ export default function RelatedDefinitions({
         const updatedRelated = (currentDefinition.relatedDefinitions || []).filter(id => id !== idToDelete);
         onSave({ ...currentDefinition, relatedDefinitions: updatedRelated });
     };
-
-    const handleGetSuggestions = async () => {
-        setIsSuggesting(true);
-        try {
-            const result = await suggestDefinitions({
-                currentDefinitionName: currentDefinition.name,
-                currentDefinitionDescription: currentDefinition.description,
-                keywords: currentDefinition.keywords,
-            });
-            const suggestions = result.suggestedDefinitions
-                .map(name => flatAllDefinitions.find(def => def.name === name)?.id)
-                .filter((id): id is string => !!id && id !== currentDefinition.id && !(currentDefinition.relatedDefinitions || []).includes(id));
-            
-            setSuggestedDefinitions(suggestions.slice(0, 3)); // Limit to 3 suggestions
-            if(suggestions.length === 0) {
-                 toast({ title: 'No new suggestions found.' });
-            }
-        } catch (error) {
-            console.error("Error getting suggestions:", error);
-            toast({ variant: 'destructive', title: 'Could not fetch suggestions.' });
-        } finally {
-            setIsSuggesting(false);
-        }
-    };
-    
-    const handleAddSuggestion = (id: string) => {
-        const updatedRelated = [...(currentDefinition.relatedDefinitions || []), id];
-        onSave({ ...currentDefinition, relatedDefinitions: updatedRelated });
-        setSuggestedDefinitions(prev => prev.filter(sId => sId !== id));
-    };
-
 
     return (
         <Card>
@@ -183,31 +147,6 @@ export default function RelatedDefinitions({
                             </DropdownMenu>
                             <Button onClick={handleAdd} disabled={!selectedId}><PlusCircle className="mr-2 h-4 w-4" /> Add Relation</Button>
                         </div>
-
-                         <div className="p-4 border rounded-lg space-y-3">
-                            <div className="flex justify-between items-center">
-                                <h4 className="font-semibold">AI Suggestions</h4>
-                                <Button size="sm" onClick={handleGetSuggestions} disabled={isSuggesting}>
-                                    <Wand2 className="mr-2 h-4 w-4" />
-                                    {isSuggesting ? 'Suggesting...' : 'Get Suggestions'}
-                                </Button>
-                            </div>
-                            {suggestedDefinitions.length > 0 && (
-                                <div className="space-y-2">
-                                    {suggestedDefinitions.map(id => {
-                                        const def = findDefinition(allDefinitions, id);
-                                        if (!def) return null;
-                                        return (
-                                            <div key={id} className="flex items-center justify-between p-2 rounded-md bg-secondary">
-                                                <span>{def.name}</span>
-                                                <Button size="sm" variant="ghost" onClick={() => handleAddSuggestion(id)}>Add</Button>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )}
-                         </div>
-
                     </div>
                 )}
                 <div className="space-y-3">
