@@ -74,27 +74,29 @@ const generateRandomDate = () => {
     return date.toISOString().slice(0, 19).replace('T', ' ');
 }
 
-export const defDataTable: SupportingTable = {
+const defDataTableHeaders = ['ID', 'OBJECT_TYPE', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION', 'CREATEDBY', 'CREATEDDATE', 'LASTCHANGEDBY', 'LASTCHANGEDDATE'];
+
+export const defDataTable = {
     id: 'def-data-table',
     name: 'Definition Data Table',
     description: 'A table to manage data definitions',
-    headers: ['ID', 'OBJECT_TYPE', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION', 'CREATEDBY', 'CREATEDDATE', 'LASTCHANGEDBY', 'LASTCHANGEDDATE'],
-    rows: Array.from({length: 15}, (_, i) => [
-        i + 1,
-        i % 2 + 1,
-        'SQL-SERVER-PROD',
-        ['DW_Reporting', 'Finance', 'Provider_Data', 'Claims'][Math.floor(Math.random()*4)],
-        `SELECT * FROM table_${i+1}`,
-        `Data Definition ${i+1}`,
-        `This is a description for data definition ${i+1}`,
-        getRandomName(),
-        generateRandomDate(),
-        getRandomName(),
-        generateRandomDate()
-    ])
+    headers: defDataTableHeaders,
+    rows: Array.from({length: 15}, (_, i) => ({
+        ID: i + 1,
+        OBJECT_TYPE: i % 2 + 1,
+        SERVER_NAME: 'SQL-SERVER-PROD',
+        DATABASE_NAME: ['DW_Reporting', 'Finance', 'Provider_Data', 'Claims'][Math.floor(Math.random()*4)],
+        QUERY: `SELECT * FROM table_${i+1}`,
+        NAME: `Data Definition ${i+1}`,
+        DESCRIPTION: `This is a description for data definition ${i+1}`,
+        CREATEDBY: getRandomName(),
+        CREATEDDATE: generateRandomDate(),
+        LASTCHANGEDBY: getRandomName(),
+        LASTCHANGEDDATE: generateRandomDate()
+    }))
 };
 
-export const allDataTables = [authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable, defDataTable];
+export const allDataTables = [authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable, { ...defDataTable, rows: defDataTable.rows.map(Object.values) }];
 
 const definition111_rev1 = {
     id: '1.1.1',
