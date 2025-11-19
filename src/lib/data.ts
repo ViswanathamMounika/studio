@@ -74,20 +74,27 @@ const generateRandomDate = () => {
     return date.toISOString().slice(0, 19).replace('T', ' ');
 }
 
-const additionalRows: Omit<Definition, 'revisions' | 'children' | 'isBookmarked'>[] = Array.from({ length: 31 }, (_, i) => ({
-    id: (i + 5).toString(),
-    name: `Generated Definition ${i+1}`,
-    module: ['Authorizations', 'Claims', 'Provider', 'Member'][Math.floor(Math.random()*4)],
-    keywords: [`gen_${i+1}`],
-    description: `This is a generated description for definition ${i+1}.`,
-    technicalDetails: `Generated technical detail for ${i+1}`,
-    usageExamples: `Generated usage example for ${i+1}`,
-    isArchived: Math.random() > 0.9,
-    supportingTables: [],
-    attachments: [],
-    notes: [],
-}));
+export const defDataTable: SupportingTable = {
+    id: 'def-data-table',
+    name: 'Definition Data Table',
+    description: 'A table to manage data definitions',
+    headers: ['ID', 'OBJECT_TYPE', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION', 'CREATEDBY', 'CREATEDDATE', 'LASTCHANGEDBY', 'LASTCHANGEDDATE'],
+    rows: Array.from({length: 15}, (_, i) => [
+        i + 1,
+        i % 2 + 1,
+        'SQL-SERVER-PROD',
+        ['DW_Reporting', 'Finance', 'Provider_Data', 'Claims'][Math.floor(Math.random()*4)],
+        `SELECT * FROM table_${i+1}`,
+        `Data Definition ${i+1}`,
+        `This is a description for data definition ${i+1}`,
+        getRandomName(),
+        generateRandomDate(),
+        getRandomName(),
+        generateRandomDate()
+    ])
+};
 
+export const allDataTables = [authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable, defDataTable];
 
 const definition111_rev1 = {
     id: '1.1.1',

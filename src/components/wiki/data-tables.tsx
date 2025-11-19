@@ -116,14 +116,14 @@ const headerMapping: Record<keyof DataRow, string> = {
     NAME: "Name",
     DESCRIPTION: "Description",
     CREATEDBY: "Created By",
-    CREATEDDATE: "Created Date",
     LASTCHANGEDBY: "Last Changed By",
-    LASTCHANGEDDATE: "Last Changed Date"
+    LASTCHANGEDDATE: "Last Changed Date",
+    CREATEDDATE: "Created Date"
 }
 
 
 export default function DataTables() {
-  const [rows, setRows] = useState(defDataTable.rows);
+  const [rows, setRows] = useState(defDataTable?.rows || []);
   const [formData, setFormData] = useState<DataRow>({ ...initialFormState, ID: 0, CREATEDBY: '', CREATEDDATE: '', LASTCHANGEDBY: '', LASTCHANGEDDATE: ''});
   const [isEditing, setIsEditing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -379,6 +379,11 @@ export default function DataTables() {
         </Popover>
     );
   }
+  
+  if (!defDataTable) {
+    return <div>Loading...</div>
+  }
+
 
   return (
     <div className="w-full">
