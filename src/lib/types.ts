@@ -33,11 +33,16 @@ export interface Note {
 export interface Definition {
   id: string;
   name: string;
-  module: string;
+  shortDescription?: string;
+  description: string; // Corresponds to DEF_LONG_DESCR
   keywords: string[];
-  description: string;
-  revisions: Revision[];
+  module: string;
+  sourceType?: string;
+  sourceDb?: string;
+  sourceName?: string;
+  sourceServer?: string;
   isArchived: boolean;
+  revisions: Revision[];
   isBookmarked?: boolean;
   supportingTables: SupportingTableRef[];
   attachments: Attachment[];

@@ -11,6 +11,7 @@ import WysiwygEditor from './wysiwyg-editor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AttachmentList from './attachments';
+import { Textarea } from '../ui/textarea';
 
 type DefinitionEditProps = {
   definition: Definition;
@@ -19,6 +20,7 @@ type DefinitionEditProps = {
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
+const sourceTypes = ['Table', 'View', 'SQL Query'];
 
 export default function DefinitionEdit({ definition, onSave, onCancel }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
@@ -26,9 +28,14 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const [keywords, setKeywords] = useState<string[]>(definition.keywords);
   const [currentKeyword, setCurrentKeyword] = useState('');
   const [description, setDescription] = useState(definition.description);
+  const [shortDescription, setShortDescription] = useState(definition.shortDescription || '');
   const [technicalDetails, setTechnicalDetails] = useState(definition.technicalDetails || '');
   const [usageExamples, setUsageExamples] = useState(definition.usageExamples || '');
   const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments);
+  const [sourceType, setSourceType] = useState(definition.sourceType || 'View');
+  const [sourceDb, setSourceDb] = useState(definition.sourceDb || '');
+  const [sourceName, setSourceName] = useState(definition.sourceName || '');
+  const [sourceServer, setSourceServer] = useState(definition.sourceServer || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
@@ -38,9 +45,14 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       module,
       keywords,
       description,
+      shortDescription,
       technicalDetails,
       usageExamples,
       attachments,
+      sourceType,
+      sourceDb,
+      sourceName,
+      sourceServer,
     });
   };
 
@@ -96,14 +108,17 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       </div>
       
       <Card>
+        <CardHeader>
+            <CardTitle>Core Information</CardTitle>
+        </CardHeader>
         <CardContent className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">Definition Name (DEF_NAME)</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="module">Module</Label>
+              <Label htmlFor="module">Module (EZ_Module)</Label>
               <Select value={module} onValueChange={setModule}>
                 <SelectTrigger id="module">
                   <SelectValue placeholder="Select a module" />
@@ -119,7 +134,11 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
             </div>
           </div>
           <div>
-            <Label htmlFor="keywords">Keywords</Label>
+            <Label htmlFor="short_description">Short Description (DEF_SHORT_DESCR)</Label>
+            <Textarea id="short_description" value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="keywords">Keywords (DEF_KEYWORDS)</Label>
             <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md min-h-[40px]">
               {keywords.map(keyword => (
                 <Badge key={keyword} variant="secondary" className="gap-1">
@@ -143,8 +162,45 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       </Card>
       
       <Card>
+        <CardHeader>
+            <CardTitle>Data Source</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="source_type">Source Type (DEF_SOURCE_TYPE)</Label>
+                    <Select value={sourceType} onValueChange={setSourceType}>
+                        <SelectTrigger id="source_type">
+                        <SelectValue placeholder="Select a source type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        {sourceTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                            {type}
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div>
+                    <Label htmlFor="source_server">Source Server (DEF_SOURCE_SERVERS)</Label>
+                    <Input id="source_server" value={sourceServer} onChange={(e) => setSourceServer(e.target.value)} />
+                </div>
+                <div>
+                    <Label htmlFor="source_db">Source Database (DEF_SOURCE_DB)</Label>
+                    <Input id="source_db" value={sourceDb} onChange={(e) => setSourceDb(e.target.value)} />
+                </div>
+                <div>
+                    <Label htmlFor="source_name">Source Name (DEF_SOURCE_NAME)</Label>
+                    <Input id="source_name" value={sourceName} onChange={(e) => setSourceName(e.target.value)} />
+                </div>
+            </div>
+        </CardContent>
+      </Card>
+
+      <Card>
           <CardHeader>
-              <CardTitle>Description</CardTitle>
+              <CardTitle>Definition Content (DEF_LONG_DESCR)</CardTitle>
           </CardHeader>
           <CardContent>
             <WysiwygEditor value={description} onChange={setDescription} />
@@ -162,7 +218,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
 
       <Card>
           <CardHeader>
-              <CardTitle>Usage Examples</CardTitle>
+              <CardTitle>Usage Examples / SQL View</CardTitle>
           </CardHeader>
           <CardContent>
             <WysiwygEditor value={usageExamples} onChange={setUsageExamples} />

@@ -12,7 +12,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Filter, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import { Checkbox } from '@/components/ui/checkbox';

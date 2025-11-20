@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AttachmentList from './attachments';
 import { ScrollArea } from '../ui/scroll-area';
 import { DraftedDefinition } from './draft-from-sql-modal';
+import { Textarea } from '../ui/textarea';
 
 type NewDefinitionModalProps = {
   open: boolean;
@@ -31,15 +32,21 @@ type NewDefinitionModalProps = {
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
+const sourceTypes = ['Table', 'View', 'SQL Query'];
 
 const initialDefinitionState = {
   name: '',
   module: 'Core',
   keywords: [],
   description: '',
+  shortDescription: '',
   technicalDetails: '',
   usageExamples: '',
   attachments: [],
+  sourceType: 'View',
+  sourceDb: '',
+  sourceName: '',
+  sourceServer: '',
 };
 
 export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData }: NewDefinitionModalProps) {
@@ -48,35 +55,55 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [keywords, setKeywords] = useState<string[]>(initialDefinitionState.keywords);
   const [currentKeyword, setCurrentKeyword] = useState('');
   const [description, setDescription] = useState(initialDefinitionState.description);
+  const [shortDescription, setShortDescription] = useState(initialDefinitionState.shortDescription);
   const [technicalDetails, setTechnicalDetails] = useState(initialDefinitionState.technicalDetails);
   const [usageExamples, setUsageExamples] = useState(initialDefinitionState.usageExamples);
   const [attachments, setAttachments] = useState<Attachment[]>(initialDefinitionState.attachments);
+  const [sourceType, setSourceType] = useState(initialDefinitionState.sourceType);
+  const [sourceDb, setSourceDb] = useState(initialDefinitionState.sourceDb);
+  const [sourceName, setSourceName] = useState(initialDefinitionState.sourceName);
+  const [sourceServer, setSourceServer] = useState(initialDefinitionState.sourceServer);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
-      // Reset form when modal opens, potentially with initial data from templates
       const data = initialData || initialDefinitionState;
       setName(data.name || initialDefinitionState.name);
       setModule(data.module || initialDefinitionState.module);
       setKeywords(data.keywords || initialDefinitionState.keywords);
       setCurrentKeyword('');
-      setDescription(data.description || initialDefinitionState.description);
+      // @ts-ignore
+      setDescription(data.longDescription || data.description || initialDefinitionState.description);
+      // @ts-ignore
+      setShortDescription(data.shortDescription || initialDefinitionState.shortDescription);
       setTechnicalDetails(data.technicalDetails || initialDefinitionState.technicalDetails);
       setUsageExamples(data.usageExamples || initialDefinitionState.usageExamples);
       setAttachments(data.attachments || initialDefinitionState.attachments);
+       // @ts-ignore
+      setSourceType(data.sourceType || initialDefinitionState.sourceType);
+       // @ts-ignore
+      setSourceDb(data.sourceDb || initialDefinitionState.sourceDb);
+       // @ts-ignore
+      setSourceName(data.sourceName || initialDefinitionState.sourceName);
+      // @ts-ignore
+      setSourceServer(data.sourceServer || initialDefinitionState.sourceServer);
     }
   }, [open, initialData]);
 
   const handleSave = () => {
     const newDefinitionData = {
-      name,
-      module,
-      keywords,
-      description,
-      technicalDetails,
-      usageExamples,
-      attachments,
+      name: name,
+      shortDescription: shortDescription,
+      description: description, // This is long description
+      keywords: keywords,
+      module: module,
+      sourceType: sourceType,
+      sourceDb: sourceDb,
+      sourceName: sourceName,
+      sourceServer: sourceServer,
+      technicalDetails: technicalDetails,
+      usageExamples: usageExamples,
+      attachments: attachments,
       supportingTables: [], // Defaulting to empty for new definitions
     };
     onSave(newDefinitionData);
@@ -131,14 +158,17 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
           <ScrollArea className="h-full pr-6">
             <div className="space-y-6 py-4">
               <Card>
+                <CardHeader>
+                    <CardTitle>Core Information</CardTitle>
+                </CardHeader>
                 <CardContent className="p-6 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="new-def-name">Name</Label>
+                      <Label htmlFor="new-def-name">Definition Name (DEF_NAME)</Label>
                       <Input id="new-def-name" value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
                     <div>
-                      <Label htmlFor="new-def-module">Module</Label>
+                      <Label htmlFor="new-def-module">Module (EZ_Module)</Label>
                       <Select value={module} onValueChange={setModule}>
                         <SelectTrigger id="new-def-module">
                           <SelectValue placeholder="Select a module" />
@@ -154,7 +184,11 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="new-def-keywords">Keywords</Label>
+                    <Label htmlFor="new-def-short-descr">Short Description (DEF_SHORT_DESCR)</Label>
+                    <Textarea id="new-def-short-descr" value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="new-def-keywords">Keywords (DEF_KEYWORDS)</Label>
                     <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md min-h-[40px]">
                       {keywords.map(keyword => (
                         <Badge key={keyword} variant="secondary" className="gap-1">
@@ -178,8 +212,45 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
               </Card>
               
               <Card>
+                <CardHeader>
+                    <CardTitle>Data Source</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                   <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="new-def-source-type">Source Type (DEF_SOURCE_TYPE)</Label>
+                            <Select value={sourceType} onValueChange={setSourceType}>
+                                <SelectTrigger id="new-def-source-type">
+                                <SelectValue placeholder="Select a source type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                {sourceTypes.map((type) => (
+                                    <SelectItem key={type} value={type}>
+                                    {type}
+                                    </SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="new-def-source-server">Source Server (DEF_SOURCE_SERVERS)</Label>
+                            <Input id="new-def-source-server" value={sourceServer} onChange={(e) => setSourceServer(e.target.value)} />
+                        </div>
+                        <div>
+                            <Label htmlFor="new-def-source-db">Source Database (DEF_SOURCE_DB)</Label>
+                            <Input id="new-def-source-db" value={sourceDb} onChange={(e) => setSourceDb(e.target.value)} />
+                        </div>
+                        <div>
+                            <Label htmlFor="new-def-source-name">Source Name (DEF_SOURCE_NAME)</Label>
+                            <Input id="new-def-source-name" value={sourceName} onChange={(e) => setSourceName(e.target.value)} />
+                        </div>
+                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
                   <CardHeader>
-                      <CardTitle>Description</CardTitle>
+                      <CardTitle>Definition Content (DEF_LONG_DESCR)</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <WysiwygEditor value={description} onChange={setDescription} />
@@ -197,7 +268,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
 
               <Card>
                   <CardHeader>
-                      <CardTitle>Usage Examples</CardTitle>
+                      <CardTitle>Usage Examples / SQL View</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <WysiwygEditor value={usageExamples} onChange={setUsageExamples} />
