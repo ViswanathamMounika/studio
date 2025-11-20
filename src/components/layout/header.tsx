@@ -11,7 +11,8 @@ import {
   Archive,
   Trash2,
   File,
-  DatabaseZap
+  DatabaseZap,
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
