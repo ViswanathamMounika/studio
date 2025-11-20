@@ -800,16 +800,22 @@ export default function Home() {
                       </div>
                   </div>
                   <div className="overflow-y-auto flex-1 p-4">
-                      <DefinitionTree
-                          definitions={visibleDefinitions}
-                          selectedId={selectedDefinitionId}
-                          onSelect={handleSelectDefinition}
-                          onToggleSelection={toggleSelectionForExport}
-                          selectedForExport={selectedForExport}
-                          isExportMode={isSelectMode}
-                          activeSection={activeTab}
-                          searchQuery={searchQuery}
-                      />
+                      {visibleDefinitions.length > 0 ? (
+                        <DefinitionTree
+                            definitions={visibleDefinitions}
+                            selectedId={selectedDefinitionId}
+                            onSelect={handleSelectDefinition}
+                            onToggleSelection={toggleSelectionForExport}
+                            selectedForExport={selectedForExport}
+                            isExportMode={isSelectMode}
+                            activeSection={activeTab}
+                            searchQuery={searchQuery}
+                        />
+                      ) : (
+                        <div className="text-center text-muted-foreground p-8">
+                            <p>No results found.</p>
+                        </div>
+                      )}
                   </div>
               </div>
               )}
