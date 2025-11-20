@@ -9,7 +9,7 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Filter, Search, X } from 'lucide-react';
+import { Filter, Search, X, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -78,7 +78,7 @@ export default function Wiki() {
   const [activeView, setActiveView] = useState<View>('definitions');
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', initialNotifications);
   const [isDraftFromSqlModalOpen, setIsDraftFromSqlModalOpen] = useState(false);
-  const [draftedDefinitionData, setDraftedDefinitionData] = useState<DraftedDefinition | null>(null);
+  const [draftedDefinitionData, setDraftedDefinitionData] = useState<DraftedDefinition | Partial<Definition> | null>(null);
   const { toast } = useToast();
 
 
@@ -658,6 +658,28 @@ export default function Wiki() {
     return null;
   }
 
+  const handleNewDefinitionClick = (type: 'template' | 'sql' | 'blank') => {
+    if (type === 'template') {
+      setIsTemplatesModalOpen(true);
+    } else if (type === 'sql') {
+      setIsDraftFromSqlModalOpen(true);
+    } else {
+      setDraftedDefinitionData({
+        name: 'New Blank Definition',
+        module: 'Core',
+        keywords: [],
+        description: '',
+      });
+      setIsNewDefinitionModalOpen(true);
+    }
+  };
+  
+  const handleDraftFromSql = (draftedData: DraftedDefinition) => {
+    setDraftedDefinitionData(draftedData);
+    setIsDraftFromSqlModalOpen(false);
+    setIsNewDefinitionModalOpen(true);
+  };
+
   const handleUseTemplate = (templateData: Partial<Definition>, templateId: string) => {
     if (templateId === 'draft-from-sql') {
         setIsDraftFromSqlModalOpen(true);
@@ -666,12 +688,6 @@ export default function Wiki() {
         setIsNewDefinitionModalOpen(true);
     }
     setIsTemplatesModalOpen(false);
-  };
-  
-  const handleDraftFromSql = (draftedData: DraftedDefinition) => {
-    setDraftedDefinitionData(draftedData);
-    setIsDraftFromSqlModalOpen(false);
-    setIsNewDefinitionModalOpen(true);
   };
 
   const renderContent = () => {
@@ -724,7 +740,7 @@ export default function Wiki() {
               handleBulkArchive={handleBulkArchive}
               selectedCount={selectedForExport.length}
               onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
-              onNewDefinitionClick={() => setIsTemplatesModalOpen(true)}
+              onNewDefinitionClick={handleNewDefinitionClick}
               isAdmin={isAdmin}
               notifications={notifications}
               setNotifications={setNotifications}

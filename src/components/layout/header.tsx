@@ -9,7 +9,9 @@ import {
   Bell,
   PlusCircle,
   Archive,
-  Trash2
+  Trash2,
+  File,
+  DatabaseZap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +39,7 @@ type AppHeaderProps = {
     handleBulkArchive?: (archive: boolean) => void;
     selectedCount?: number;
     onAnalyticsClick?: () => void;
-    onNewDefinitionClick?: () => void;
+    onNewDefinitionClick: (type: 'template' | 'sql' | 'blank') => void;
     isAdmin: boolean;
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
@@ -86,10 +88,29 @@ export default function AppHeader({
         {activeView === 'definitions' && (
           <>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={onNewDefinitionClick}>
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Templates
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    New Definition
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => onNewDefinitionClick('template')}>
+                    <File className="mr-2 h-4 w-4" />
+                    From Template
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onNewDefinitionClick('sql')}>
+                    <DatabaseZap className="mr-2 h-4 w-4" />
+                    From SQL (AI Draft)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onNewDefinitionClick('blank')}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Blank Definition
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               {isAdmin && !isSelectMode && (
                 <Button variant="outline" size="sm" onClick={() => setIsSelectMode && setIsSelectMode(true)}>
                     Select
