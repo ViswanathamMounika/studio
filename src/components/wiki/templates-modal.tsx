@@ -67,13 +67,6 @@ const templates: Template[] = [
         description: '<h3>Purpose</h3><p>What is the goal of this technical component?</p>',
     }
   },
-  {
-    id: 'draft-from-sql',
-    title: 'Draft from SQL',
-    description: 'Use AI to automatically draft a definition from a SQL query.',
-    icon: DatabaseZap,
-    data: {},
-  },
 ];
 
 type TemplatesModalProps = {

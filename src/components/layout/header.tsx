@@ -40,7 +40,7 @@ type AppHeaderProps = {
     handleBulkArchive?: (archive: boolean) => void;
     selectedCount?: number;
     onAnalyticsClick?: () => void;
-    onNewDefinitionClick: (type: 'template' | 'sql' | 'blank') => void;
+    onNewDefinitionClick: (type: 'template' | 'blank') => void;
     isAdmin: boolean;
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
@@ -100,10 +100,6 @@ export default function AppHeader({
                   <DropdownMenuItem onClick={() => onNewDefinitionClick('template')}>
                     <File className="mr-2 h-4 w-4" />
                     From Template
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onNewDefinitionClick('sql')}>
-                    <DatabaseZap className="mr-2 h-4 w-4" />
-                    From SQL (AI Draft)
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onNewDefinitionClick('blank')}>
                     <Plus className="mr-2 h-4 w-4" />

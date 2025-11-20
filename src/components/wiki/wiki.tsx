@@ -658,11 +658,9 @@ export default function Wiki() {
     return null;
   }
 
-  const handleNewDefinitionClick = (type: 'template' | 'sql' | 'blank') => {
+  const handleNewDefinitionClick = (type: 'template' | 'blank') => {
     if (type === 'template') {
       setIsTemplatesModalOpen(true);
-    } else if (type === 'sql') {
-      setIsDraftFromSqlModalOpen(true);
     } else {
       setDraftedDefinitionData({
         name: 'New Blank Definition',
