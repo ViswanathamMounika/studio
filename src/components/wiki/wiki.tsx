@@ -9,7 +9,7 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Filter, Search, X, Plus } from 'lucide-react';
+import { Filter, Search, X, Plus, File, DatabaseZap } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -24,7 +24,7 @@ import TemplatesModal from '@/components/wiki/templates-modal';
 import useLocalStorage from '@/hooks/use-local-storage';
 import DataTables from '@/components/wiki/data-tables';
 import { diff_match_patch } from 'diff-match-patch';
-import { SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import DraftFromSqlModal, { type DraftedDefinition } from '@/components/wiki/draft-from-sql-modal';
@@ -679,13 +679,9 @@ export default function Wiki() {
   };
 
   const handleUseTemplate = (templateData: Partial<Definition>, templateId: string) => {
-    if (templateId === 'draft-from-sql') {
-        setIsDraftFromSqlModalOpen(true);
-    } else {
-        setDraftedDefinitionData(templateData);
-        setIsNewDefinitionModalOpen(true);
-    }
-    setIsTemplatesModalOpen(false);
+      setDraftedDefinitionData(templateData);
+      setIsNewDefinitionModalOpen(true);
+      setIsTemplatesModalOpen(false);
   };
 
   const renderContent = () => {
@@ -727,7 +723,7 @@ export default function Wiki() {
 
 
   return (
-    <>
+    <SidebarProvider>
       <AppSidebar activeView={activeView} onNavigate={handleNavigate} />
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background">
@@ -858,6 +854,6 @@ export default function Wiki() {
         onOpenChange={setIsDraftFromSqlModalOpen}
         onDraft={handleDraftFromSql}
       />
-    </>
+    </SidebarProvider>
   );
 }
