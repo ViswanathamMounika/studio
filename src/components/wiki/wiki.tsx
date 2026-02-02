@@ -164,7 +164,7 @@ export default function Wiki() {
   };
 
   const allDefinitionIds = useMemo(() => getAllDefinitionIds(definitions), [definitions]);
-  const areAllSelected = selectedForExport.length > 0 && allDefinitionIds.every(id => selectedForExport.includes(id));
+  const areAllSelected = selectedForExport.length > 0 && selectedForExport.length === allDefinitionIds.length;
 
   const handleSelectAllForExport = (checked: boolean) => {
     if (checked) {
@@ -723,6 +723,7 @@ export default function Wiki() {
           <AppHeader
               onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
               onNewDefinitionClick={handleNewDefinitionClick}
+              onSelectClick={() => setIsSelectMode(true)}
               isAdmin={isAdmin}
               notifications={notifications}
               setNotifications={setNotifications}
@@ -732,54 +733,8 @@ export default function Wiki() {
           <main className="flex-1 flex overflow-hidden">
              {activeView === 'definitions' && (
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card">
-                  <div className="p-4 border-b flex items-center gap-2">
-                      <div className="relative flex-1">
-                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input
-                              type="search"
-                              placeholder="Search definitions..."
-                              className="w-full rounded-lg bg-secondary pl-8"
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                          />
-                      </div>
-                      <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="icon" className="shrink-0 hover:bg-primary/10">
-                                  <Filter className="h-4 w-4" />
-                              </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                              <DropdownMenuLabel>Filters</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  <Checkbox
-                                      id="show-archived"
-                                      className="mr-2"
-                                      checked={showArchived}
-                                      onCheckedChange={() => setShowArchived(prev => !prev)}
-                                  />
-                                  <Label htmlFor="show-archived" className="font-normal">Show Archived</Label>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  <Checkbox
-                                      id="show-bookmarked"
-                                      className="mr-2"
-                                      checked={showBookmarked}
-                                      onCheckedChange={() => setShowBookmarked(prev => !prev)}
-                                  />
-                                  <Label htmlFor="show-bookmarked" className="font-normal">Show Bookmarked</Label>
-                              </DropdownMenuItem>
-                          </DropdownMenuContent>
-                      </DropdownMenu>
-                  </div>
                   
-                  {!isSelectMode ? (
-                        <div className="p-4 border-b flex items-center justify-between">
-                            <Label className="font-semibold text-lg">MPM Definitions</Label>
-                            <Button variant="outline" size="sm" onClick={() => setIsSelectMode(true)}>Select</Button>
-                        </div>
-                    ) : (
+                  {isSelectMode ? (
                         <div className="p-4 border-b space-y-2">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
@@ -816,6 +771,48 @@ export default function Wiki() {
                                     </Button>
                                 </div>
                             )}
+                        </div>
+                    ) : (
+                        <div className="p-4 border-b flex items-center gap-2">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    type="search"
+                                    placeholder="Search definitions..."
+                                    className="w-full rounded-lg bg-secondary pl-8"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon" className="shrink-0 hover:bg-primary/10">
+                                        <Filter className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuLabel>Filters</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                        <Checkbox
+                                            id="show-archived"
+                                            className="mr-2"
+                                            checked={showArchived}
+                                            onCheckedChange={() => setShowArchived(prev => !prev)}
+                                        />
+                                        <Label htmlFor="show-archived" className="font-normal">Show Archived</Label>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                        <Checkbox
+                                            id="show-bookmarked"
+                                            className="mr-2"
+                                            checked={showBookmarked}
+                                            onCheckedChange={() => setShowBookmarked(prev => !prev)}
+                                        />
+                                        <Label htmlFor="show-bookmarked" className="font-normal">Show Bookmarked</Label>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     )}
 

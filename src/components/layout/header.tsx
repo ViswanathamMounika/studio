@@ -8,7 +8,8 @@ import {
   Bell,
   PlusCircle,
   File,
-  Plus
+  Plus,
+  LayoutGrid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,7 @@ type AppHeaderProps = {
     children?: React.ReactNode;
     onAnalyticsClick?: () => void;
     onNewDefinitionClick: (type: 'template' | 'blank') => void;
+    onSelectClick: () => void;
     isAdmin: boolean;
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
@@ -38,6 +40,7 @@ export default function AppHeader({
     children, 
     onAnalyticsClick,
     onNewDefinitionClick,
+    onSelectClick,
     isAdmin,
     notifications,
     setNotifications,
@@ -88,6 +91,11 @@ export default function AppHeader({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <Button variant="outline" size="sm" onClick={onSelectClick}>
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                Select
+              </Button>
 
               <Button variant="outline" size="sm" onClick={onAnalyticsClick}>
                   <BarChart className="h-4 w-4 mr-2" />
