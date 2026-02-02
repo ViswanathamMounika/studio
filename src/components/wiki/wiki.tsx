@@ -9,7 +9,7 @@ import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Filter, Search, X, Plus, File, DatabaseZap } from 'lucide-react';
+import { Filter, Search, X, Plus, File, DatabaseZap, Download, FileText, FileJson, Archive } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -29,6 +29,7 @@ import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import DraftFromSqlModal, { type DraftedDefinition } from '@/components/wiki/draft-from-sql-modal';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '../ui/separator';
 
 type View = 'definitions' | 'supporting-tables';
 
@@ -77,7 +78,6 @@ export default function Wiki() {
   const [isAdmin, setIsAdmin] = useState(true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', initialNotifications);
-  const [isDraftFromSqlModalOpen, setIsDraftFromSqlModalOpen] = useState(false);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<DraftedDefinition | Partial<Definition> | null>(null);
   const { toast } = useToast();
 
@@ -674,7 +674,6 @@ export default function Wiki() {
   
   const handleDraftFromSql = (draftedData: DraftedDefinition) => {
     setDraftedDefinitionData(draftedData);
-    setIsDraftFromSqlModalOpen(false);
     setIsNewDefinitionModalOpen(true);
   };
 
@@ -728,11 +727,6 @@ export default function Wiki() {
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background">
           <AppHeader
-              isSelectMode={isSelectMode}
-              setIsSelectMode={setIsSelectMode}
-              handleExport={handleExport}
-              handleBulkArchive={handleBulkArchive}
-              selectedCount={selectedForExport.length}
               onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
               onNewDefinitionClick={handleNewDefinitionClick}
               isAdmin={isAdmin}
@@ -785,30 +779,26 @@ export default function Wiki() {
                           </DropdownMenuContent>
                       </DropdownMenu>
                   </div>
-                  <div className="p-4 border-b">
-                      <div className="flex items-center justify-between mb-2">
-                          {isSelectMode ? (
-                              <>
-                                  <div className="flex items-center">
-                                      <Checkbox
-                                          id="select-all"
-                                          checked={areAllSelected}
-                                          onCheckedChange={handleSelectAllForExport}
-                                          className="mr-2"
-                                      />
-                                      <Label htmlFor="select-all" className="font-semibold text-base">Select All</Label>
-                                  </div>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelSelectMode}>
-                                      <X className="h-4 w-4" />
-                                  </Button>
-                              </>
-                          ) : (
-                              <>
-                                  <Label className="font-semibold text-lg">MPM Definitions</Label>
-                              </>
-                          )}
-                      </div>
+                  <div className="p-4 border-b flex items-center justify-between">
+                      <Label className="font-semibold text-lg">MPM Definitions</Label>
+                       {isSelectMode ? (
+                          <Button variant="ghost" size="sm" onClick={handleCancelSelectMode}>Cancel</Button>
+                       ) : (
+                          <Button variant="outline" size="sm" onClick={() => setIsSelectMode(true)}>Select</Button>
+                       )}
                   </div>
+                  
+                  {isSelectMode && (
+                      <div className="p-4 border-b flex items-center">
+                          <Checkbox
+                              id="select-all"
+                              checked={areAllSelected}
+                              onCheckedChange={handleSelectAllForExport}
+                          />
+                          <Label htmlFor="select-all" className="ml-2 text-sm font-medium">Select All</Label>
+                      </div>
+                  )}
+
                   <div className="overflow-y-auto flex-1 p-4">
                       {visibleDefinitions.length > 0 ? (
                         <DefinitionTree
@@ -827,6 +817,28 @@ export default function Wiki() {
                         </div>
                       )}
                   </div>
+                   {isSelectMode && selectedForExport.length > 0 && (
+                    <div className="p-4 border-t bg-card space-y-2">
+                        <p className="text-sm font-medium text-center">{selectedForExport.length} item(s) selected</p>
+                        <div className="space-y-2">
+                            <h4 className="text-sm font-semibold text-muted-foreground">Export</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button size="sm" variant="outline" onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4"/>PDF</Button>
+                                <Button size="sm" variant="outline" onClick={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4"/>JSON</Button>
+                                <Button size="sm" variant="outline" onClick={() => handleExport('excel')}><DatabaseZap className="mr-2 h-4 w-4"/>Excel</Button>
+                                <Button size="sm" variant="outline" onClick={() => handleExport('html')}><File className="mr-2 h-4 w-4"/>HTML</Button>
+                            </div>
+                            <Separator className="my-2" />
+                            <h4 className="text-sm font-semibold text-muted-foreground">Actions</h4>
+                            <div className="grid grid-cols-1 gap-2">
+                                <Button variant="outline" onClick={() => handleBulkArchive(true)}>
+                                    <Archive className="mr-2 h-4 w-4" />
+                                    Archive Selected
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
               </div>
               )}
               <div className="flex-1 w-full overflow-y-auto p-6" id="definition-content">
@@ -848,11 +860,6 @@ export default function Wiki() {
           open={isTemplatesModalOpen}
           onOpenChange={setIsTemplatesModalOpen}
           onUseTemplate={handleUseTemplate}
-      />
-       <DraftFromSqlModal
-        open={isDraftFromSqlModalOpen}
-        onOpenChange={setIsDraftFromSqlModalOpen}
-        onDraft={handleDraftFromSql}
       />
     </SidebarProvider>
   );

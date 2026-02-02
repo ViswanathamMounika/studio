@@ -4,17 +4,11 @@
 import {
   BarChart,
   Book,
-  Download,
   Palette,
   Bell,
   PlusCircle,
-  Archive,
-  Trash2,
   File,
-  DatabaseZap,
-  Plus,
-  FileText,
-  FileJson
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,12 +16,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
-  DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
 import type { Notification } from "@/lib/types";
@@ -37,11 +25,6 @@ import { SidebarTrigger } from "../ui/sidebar";
 
 type AppHeaderProps = {
     children?: React.ReactNode;
-    isSelectMode?: boolean;
-    setIsSelectMode?: (value: boolean) => void;
-    handleExport?: (format: 'json' | 'pdf' | 'excel' | 'html') => void;
-    handleBulkArchive?: (archive: boolean) => void;
-    selectedCount?: number;
     onAnalyticsClick?: () => void;
     onNewDefinitionClick: (type: 'template' | 'blank') => void;
     isAdmin: boolean;
@@ -53,11 +36,6 @@ type AppHeaderProps = {
 
 export default function AppHeader({ 
     children, 
-    isSelectMode, 
-    setIsSelectMode, 
-    handleExport, 
-    handleBulkArchive,
-    selectedCount = 0,
     onAnalyticsClick,
     onNewDefinitionClick,
     isAdmin,
@@ -111,50 +89,6 @@ export default function AppHeader({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {isAdmin && !isSelectMode && (
-                <Button variant="outline" size="sm" onClick={() => setIsSelectMode && setIsSelectMode(true)}>
-                    Select
-                </Button>
-              )}
-              {isAdmin && isSelectMode && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="outline" disabled={selectedCount === 0}>
-                          <Archive className="mr-2 h-4 w-4" />
-                          Bulk Actions ({selectedCount})
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                         <DropdownMenuLabel>Export Selected</DropdownMenuLabel>
-                         <DropdownMenuSeparator />
-                         <DropdownMenuItem onClick={() => handleExport && handleExport('json')}>
-                           <FileJson className="mr-2 h-4 w-4" />
-                           Export as JSON
-                         </DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => handleExport && handleExport('pdf')}>
-                           <FileText className="mr-2 h-4 w-4" />
-                           Export as PDF
-                         </DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => handleExport && handleExport('excel')}>
-                           <DatabaseZap className="mr-2 h-4 w-4" />
-                           Export as Excel (XLSX)
-                         </DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => handleExport && handleExport('html')}>
-                           <File className="mr-2 h-4 w-4" />
-                           Export as HTML
-                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleBulkArchive && handleBulkArchive(true)}>
-                          <Archive className="mr-2 h-4 w-4" />
-                          Archive Selected
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleBulkArchive && handleBulkArchive(false)}>
-                          <Archive className="mr-2 h-4 w-4" />
-                          Restore Selected
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-              )}
               <Button variant="outline" size="sm" onClick={onAnalyticsClick}>
                   <BarChart className="h-4 w-4 mr-2" />
                   Analytics
