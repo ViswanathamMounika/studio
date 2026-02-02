@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
   experimental: {
     // Kept for other potential experimental features
   },
-  allowedDevOrigins: ["*.cloudworkstations.dev"],
+  allowedDevOrigins: ["https://*.cloudworkstations.dev"],
 };
 
 export default nextConfig;

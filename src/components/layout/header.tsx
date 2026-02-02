@@ -12,7 +12,9 @@ import {
   Trash2,
   File,
   DatabaseZap,
-  Plus
+  Plus,
+  FileText,
+  FileJson
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +26,8 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-  DropdownMenuPortal
+  DropdownMenuPortal,
+  DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
 import type { Notification } from "@/lib/types";
@@ -118,27 +121,37 @@ export default function AppHeader({
                       <DropdownMenuTrigger asChild>
                         <Button size="sm" variant="outline" disabled={selectedCount === 0}>
                           <Archive className="mr-2 h-4 w-4" />
-                          Bulk Actions
+                          Bulk Actions ({selectedCount})
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                         <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>
-                              <Download className="mr-2 h-4 w-4" />
-                              Export Selected ({selectedCount})
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuPortal>
-                              <DropdownMenuSubContent>
-                                <DropdownMenuItem onClick={() => handleExport && handleExport('json')}>JSON</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleExport && handleExport('pdf')}>PDF</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleExport && handleExport('excel')}>Excel (XLSX)</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleExport && handleExport('html')}>HTML</DropdownMenuItem>
-                              </DropdownMenuSubContent>
-                            </DropdownMenuPortal>
-                          </DropdownMenuSub>
+                         <DropdownMenuLabel>Export Selected</DropdownMenuLabel>
+                         <DropdownMenuSeparator />
+                         <DropdownMenuItem onClick={() => handleExport && handleExport('json')}>
+                           <FileJson className="mr-2 h-4 w-4" />
+                           Export as JSON
+                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => handleExport && handleExport('pdf')}>
+                           <FileText className="mr-2 h-4 w-4" />
+                           Export as PDF
+                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => handleExport && handleExport('excel')}>
+                           <DatabaseZap className="mr-2 h-4 w-4" />
+                           Export as Excel (XLSX)
+                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => handleExport && handleExport('html')}>
+                           <File className="mr-2 h-4 w-4" />
+                           Export as HTML
+                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleBulkArchive && handleBulkArchive(true)}>Archive Selected</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleBulkArchive && handleBulkArchive(false)}>Restore Selected</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleBulkArchive && handleBulkArchive(true)}>
+                          <Archive className="mr-2 h-4 w-4" />
+                          Archive Selected
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleBulkArchive && handleBulkArchive(false)}>
+                          <Archive className="mr-2 h-4 w-4" />
+                          Restore Selected
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
               )}
