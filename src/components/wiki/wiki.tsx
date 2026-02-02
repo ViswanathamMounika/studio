@@ -27,7 +27,6 @@ import { diff_match_patch } from 'diff-match-patch';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
-import DraftFromSqlModal, { type DraftedDefinition } from '@/components/wiki/draft-from-sql-modal';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
 
@@ -78,7 +77,7 @@ export default function Wiki() {
   const [isAdmin, setIsAdmin] = useState(true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', initialNotifications);
-  const [draftedDefinitionData, setDraftedDefinitionData] = useState<DraftedDefinition | Partial<Definition> | null>(null);
+  const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
 
 
@@ -672,11 +671,6 @@ export default function Wiki() {
     }
   };
   
-  const handleDraftFromSql = (draftedData: DraftedDefinition) => {
-    setDraftedDefinitionData(draftedData);
-    setIsNewDefinitionModalOpen(true);
-  };
-
   const handleUseTemplate = (templateData: Partial<Definition>, templateId: string) => {
       setDraftedDefinitionData(templateData);
       setIsNewDefinitionModalOpen(true);
@@ -852,7 +846,6 @@ export default function Wiki() {
           </main>
         </div>
       </SidebarInset>
-
       <Toaster />
       <AnalyticsModal open={isAnalyticsModalOpen} onOpenChange={setIsAnalyticsModalOpen} onDefinitionClick={handleSelectDefinition} />
       <NewDefinitionModal
