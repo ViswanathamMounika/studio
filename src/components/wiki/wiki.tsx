@@ -779,25 +779,52 @@ export default function Wiki() {
                           </DropdownMenuContent>
                       </DropdownMenu>
                   </div>
-                  <div className="p-4 border-b flex items-center justify-between">
-                      <Label className="font-semibold text-lg">MPM Definitions</Label>
-                       {isSelectMode ? (
-                          <Button variant="ghost" size="sm" onClick={handleCancelSelectMode}>Cancel</Button>
-                       ) : (
-                          <Button variant="outline" size="sm" onClick={() => setIsSelectMode(true)}>Select</Button>
-                       )}
-                  </div>
                   
-                  {isSelectMode && (
-                      <div className="p-4 border-b flex items-center">
-                          <Checkbox
-                              id="select-all"
-                              checked={areAllSelected}
-                              onCheckedChange={handleSelectAllForExport}
-                          />
-                          <Label htmlFor="select-all" className="ml-2 text-sm font-medium">Select All</Label>
-                      </div>
-                  )}
+                  {!isSelectMode ? (
+                        <div className="p-4 border-b flex items-center justify-between">
+                            <Label className="font-semibold text-lg">MPM Definitions</Label>
+                            <Button variant="outline" size="sm" onClick={() => setIsSelectMode(true)}>Select</Button>
+                        </div>
+                    ) : (
+                        <div className="p-4 border-b space-y-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Checkbox
+                                        id="select-all"
+                                        checked={areAllSelected}
+                                        onCheckedChange={handleSelectAllForExport}
+                                    />
+                                    <Label htmlFor="select-all" className="text-sm font-medium">
+                                        {selectedForExport.length > 0 ? `${selectedForExport.length} selected` : 'Select All'}
+                                    </Label>
+                                </div>
+                                <Button variant="ghost" size="sm" onClick={handleCancelSelectMode}>Cancel</Button>
+                            </div>
+                            {selectedForExport.length > 0 && (
+                                <div className="flex items-center gap-2 pt-2 border-t mt-2">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm" className="w-full justify-center">
+                                                <Download className="mr-2 h-4 w-4" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4"/>PDF</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4"/>JSON</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleExport('excel')}><DatabaseZap className="mr-2 h-4 w-4"/>Excel</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleExport('html')}><File className="mr-2 h-4 w-4"/>HTML</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <Button variant="outline" size="sm" className="w-full justify-center" onClick={() => handleBulkArchive(true)}>
+                                        <Archive className="mr-2 h-4 w-4" />
+                                        Archive
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
 
                   <div className="overflow-y-auto flex-1 p-4">
                       {visibleDefinitions.length > 0 ? (
@@ -817,28 +844,6 @@ export default function Wiki() {
                         </div>
                       )}
                   </div>
-                   {isSelectMode && selectedForExport.length > 0 && (
-                    <div className="p-4 border-t bg-card space-y-2">
-                        <p className="text-sm font-medium text-center">{selectedForExport.length} item(s) selected</p>
-                        <div className="space-y-2">
-                            <h4 className="text-sm font-semibold text-muted-foreground">Export</h4>
-                            <div className="grid grid-cols-2 gap-2">
-                                <Button size="sm" variant="outline" onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4"/>PDF</Button>
-                                <Button size="sm" variant="outline" onClick={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4"/>JSON</Button>
-                                <Button size="sm" variant="outline" onClick={() => handleExport('excel')}><DatabaseZap className="mr-2 h-4 w-4"/>Excel</Button>
-                                <Button size="sm" variant="outline" onClick={() => handleExport('html')}><File className="mr-2 h-4 w-4"/>HTML</Button>
-                            </div>
-                            <Separator className="my-2" />
-                            <h4 className="text-sm font-semibold text-muted-foreground">Actions</h4>
-                            <div className="grid grid-cols-1 gap-2">
-                                <Button variant="outline" onClick={() => handleBulkArchive(true)}>
-                                    <Archive className="mr-2 h-4 w-4" />
-                                    Archive Selected
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                )}
               </div>
               )}
               <div className="flex-1 w-full overflow-y-auto p-6" id="definition-content">
