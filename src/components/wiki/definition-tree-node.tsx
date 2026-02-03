@@ -124,9 +124,8 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
     <Collapsible open={isNodeExpanded} onOpenChange={setIsNodeExpanded}>
         <div 
             className={cn(
-                "flex items-center w-full group/item rounded-md",
-                !isSelectMode && "hover:bg-primary/10",
-                isSelected && !isSelectMode && "bg-primary/10"
+                "flex items-center w-full group/item rounded-md hover:bg-primary/10",
+                (isSelected || isSelectedForExport) && "bg-primary/10"
             )}
             style={{ paddingLeft: `${level * 1}rem` }}
         >
@@ -135,7 +134,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                     id={`select-${node.id}`}
                     checked={isSelectedForExport}
                     onCheckedChange={(checked) => onToggleSelection(node.id, !!checked)}
-                    className={cn("mr-2", !isSelectMode && "opacity-0 group-hover/item:opacity-100 transition-opacity")}
+                    className={cn("mr-2")}
                 />
             </div>
             
@@ -156,10 +155,10 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
             >
                 <Icon className={cn("h-4 w-4 mr-2 shrink-0", hasChildren || isModule ? "text-primary" : "text-muted-foreground")} />
                 <span className="truncate flex-1"><HighlightedText text={node.name} highlight={searchQuery} /></span>
-                {node.isArchived && !isSelectMode && (
+                {node.isArchived && (
                     <Archive className="h-4 w-4 shrink-0 text-muted-foreground ml-auto mr-1" />
                 )}
-                {node.isBookmarked && !isSelectMode && (
+                {node.isBookmarked && (
                   <Bookmark className="h-4 w-4 shrink-0 fill-primary text-primary ml-auto mr-1" />
                 )}
             </div>
