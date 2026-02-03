@@ -83,7 +83,7 @@ const DefinitionSubItems = ({ definition, onSelect, activeSection, level }: { de
 };
 
 
-export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isExportMode, selectedForExport, activeSection, searchQuery }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isExportMode: boolean, selectedForExport: string[], activeSection: string, searchQuery: string }) {
+export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isSelectMode, selectedForExport, activeSection, searchQuery }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isSelectMode: boolean, selectedForExport: string[], activeSection: string, searchQuery: string }) {
   const isModule = !node.description; // Modules usually don't have descriptions
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId !== null && node.id === selectedId;
@@ -125,21 +125,19 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
         <div 
             className={cn(
                 "flex items-center w-full group/item rounded-md",
-                !isExportMode && "hover:bg-primary/10",
-                isSelected && !isExportMode && "bg-primary/10"
+                !isSelectMode && "hover:bg-primary/10",
+                isSelected && !isSelectMode && "bg-primary/10"
             )}
             style={{ paddingLeft: `${level * 1}rem` }}
         >
-            {isExportMode && (
-                <div onClick={handleCheckboxClick} className="p-2">
-                    <Checkbox
-                        id={`select-${node.id}`}
-                        checked={isSelectedForExport}
-                        onCheckedChange={(checked) => onToggleSelection(node.id, !!checked)}
-                        className="mr-2"
-                    />
-                </div>
-            )}
+            <div onClick={handleCheckboxClick} className="p-2">
+                <Checkbox
+                    id={`select-${node.id}`}
+                    checked={isSelectedForExport}
+                    onCheckedChange={(checked) => onToggleSelection(node.id, !!checked)}
+                    className={cn("mr-2", !isSelectMode && "opacity-0 group-hover/item:opacity-100 transition-opacity")}
+                />
+            </div>
             
             <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent" onClick={handleTriggerClick}>
@@ -158,10 +156,10 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
             >
                 <Icon className={cn("h-4 w-4 mr-2 shrink-0", hasChildren || isModule ? "text-primary" : "text-muted-foreground")} />
                 <span className="truncate flex-1"><HighlightedText text={node.name} highlight={searchQuery} /></span>
-                {node.isArchived && !isExportMode && (
+                {node.isArchived && !isSelectMode && (
                     <Archive className="h-4 w-4 shrink-0 text-muted-foreground ml-auto mr-1" />
                 )}
-                {node.isBookmarked && !isExportMode && (
+                {node.isBookmarked && !isSelectMode && (
                   <Bookmark className="h-4 w-4 shrink-0 fill-primary text-primary ml-auto mr-1" />
                 )}
             </div>
@@ -179,7 +177,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                         level={level + 1}
                         onToggleSelection={onToggleSelection}
                         isSelectedForExport={selectedForExport.includes(child.id)}
-                        isExportMode={isExportMode}
+                        isSelectMode={isSelectMode}
                         selectedForExport={selectedForExport}
                         activeSection={activeSection}
                         searchQuery={searchQuery}

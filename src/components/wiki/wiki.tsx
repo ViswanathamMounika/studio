@@ -70,7 +70,6 @@ export default function Wiki() {
   const [searchQuery, setSearchQuery] = useState("");
   const { isMounted, bookmarks, toggleBookmark, isBookmarked } = useBookmarks();
   const [selectedForExport, setSelectedForExport] = useState<string[]>([]);
-  const [isSelectMode, setIsSelectMode] = useState(false);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
@@ -80,6 +79,7 @@ export default function Wiki() {
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
 
+  const isSelectMode = selectedForExport.length > 0;
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -164,15 +164,6 @@ export default function Wiki() {
   };
 
   const allDefinitionIds = useMemo(() => getAllDefinitionIds(definitions), [definitions]);
-  const areAllSelected = selectedForExport.length > 0 && selectedForExport.length === allDefinitionIds.length;
-
-  const handleSelectAllForExport = (checked: boolean) => {
-    if (checked) {
-        setSelectedForExport(allDefinitionIds);
-    } else {
-        setSelectedForExport([]);
-    }
-  };
 
   const toggleSelectionForExport = (id: string, checked: boolean) => {
     const getChildrenIds = (item: Definition): string[] => {
@@ -233,7 +224,6 @@ export default function Wiki() {
         break;
     }
 
-    setIsSelectMode(false);
     setSelectedForExport([]);
   };
 
@@ -556,7 +546,6 @@ export default function Wiki() {
       title: 'Bulk Action Complete',
       description: `${selectedForExport.length} definitions have been ${archive ? 'archived' : 'restored'}.`
     });
-    setIsSelectMode(false);
     setSelectedForExport([]);
   };
 
@@ -648,11 +637,6 @@ export default function Wiki() {
     return itemsWithBookmarks;
   }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
-  const handleCancelSelectMode = () => {
-    setIsSelectMode(false);
-    setSelectedForExport([]);
-  };
-
   if (!isMounted) {
     return null;
   }
@@ -723,7 +707,6 @@ export default function Wiki() {
           <AppHeader
               onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
               onNewDefinitionClick={handleNewDefinitionClick}
-              onSelectClick={() => setIsSelectMode(true)}
               isAdmin={isAdmin}
               notifications={notifications}
               setNotifications={setNotifications}
@@ -734,26 +717,17 @@ export default function Wiki() {
              {activeView === 'definitions' && (
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card">
                   
-                  {isSelectMode ? (
-                        <div className="p-4 border-b space-y-2">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Checkbox
-                                        id="select-all"
-                                        checked={areAllSelected}
-                                        onCheckedChange={handleSelectAllForExport}
-                                    />
-                                    <Label htmlFor="select-all" className="text-sm font-medium">
-                                        {selectedForExport.length > 0 ? `${selectedForExport.length} selected` : 'Select All'}
-                                    </Label>
-                                </div>
-                                <Button variant="ghost" size="sm" onClick={handleCancelSelectMode}>Cancel</Button>
-                            </div>
-                            {selectedForExport.length > 0 && (
-                                <div className="flex items-center gap-2 pt-2 border-t mt-2">
-                                    <DropdownMenu>
+                  <div className="p-4 border-b flex items-center gap-2 h-[65px]">
+                        {isSelectMode ? (
+                            <>
+                                <Button variant="ghost" size="icon" onClick={() => setSelectedForExport([])}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                                <div className="font-semibold">{selectedForExport.length} selected</div>
+                                <div className="ml-auto flex items-center gap-2">
+                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="outline" size="sm" className="w-full justify-center">
+                                            <Button variant="outline">
                                                 <Download className="mr-2 h-4 w-4" />
                                                 Export
                                             </Button>
@@ -765,56 +739,56 @@ export default function Wiki() {
                                             <DropdownMenuItem onClick={() => handleExport('html')}><File className="mr-2 h-4 w-4"/>HTML</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
-                                    <Button variant="outline" size="sm" className="w-full justify-center" onClick={() => handleBulkArchive(true)}>
+                                    <Button variant="outline" onClick={() => handleBulkArchive(true)}>
                                         <Archive className="mr-2 h-4 w-4" />
                                         Archive
                                     </Button>
                                 </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="p-4 border-b flex items-center gap-2">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="search"
-                                    placeholder="Search definitions..."
-                                    className="w-full rounded-lg bg-secondary pl-8"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="icon" className="shrink-0 hover:bg-primary/10">
-                                        <Filter className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuLabel>Filters</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                        <Checkbox
-                                            id="show-archived"
-                                            className="mr-2"
-                                            checked={showArchived}
-                                            onCheckedChange={() => setShowArchived(prev => !prev)}
-                                        />
-                                        <Label htmlFor="show-archived" className="font-normal">Show Archived</Label>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                        <Checkbox
-                                            id="show-bookmarked"
-                                            className="mr-2"
-                                            checked={showBookmarked}
-                                            onCheckedChange={() => setShowBookmarked(prev => !prev)}
-                                        />
-                                        <Label htmlFor="show-bookmarked" className="font-normal">Show Bookmarked</Label>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    )}
+                            </>
+                        ) : (
+                            <>
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        type="search"
+                                        placeholder="Search definitions..."
+                                        className="w-full rounded-lg bg-secondary pl-8"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="icon" className="shrink-0 hover:bg-primary/10">
+                                            <Filter className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuLabel>Filters</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                            <Checkbox
+                                                id="show-archived"
+                                                className="mr-2"
+                                                checked={showArchived}
+                                                onCheckedChange={() => setShowArchived(prev => !prev)}
+                                            />
+                                            <Label htmlFor="show-archived" className="font-normal">Show Archived</Label>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                            <Checkbox
+                                                id="show-bookmarked"
+                                                className="mr-2"
+                                                checked={showBookmarked}
+                                                onCheckedChange={() => setShowBookmarked(prev => !prev)}
+                                            />
+                                            <Label htmlFor="show-bookmarked" className="font-normal">Show Bookmarked</Label>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </>
+                        )}
+                    </div>
 
 
                   <div className="overflow-y-auto flex-1 p-4">
@@ -825,7 +799,7 @@ export default function Wiki() {
                             onSelect={handleSelectDefinition}
                             onToggleSelection={toggleSelectionForExport}
                             selectedForExport={selectedForExport}
-                            isExportMode={isSelectMode}
+                            isSelectMode={isSelectMode}
                             activeSection={activeTab}
                             searchQuery={searchQuery}
                         />
