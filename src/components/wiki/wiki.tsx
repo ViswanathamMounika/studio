@@ -78,8 +78,8 @@ export default function Wiki() {
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
-  const isSelectMode = selectedForExport.length > 0;
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -225,6 +225,7 @@ export default function Wiki() {
     }
 
     setSelectedForExport([]);
+    setIsSelectMode(false);
   };
 
   const handleJsonExport = (data: Definition[]) => {
@@ -547,6 +548,7 @@ export default function Wiki() {
       description: `${selectedForExport.length} definitions have been ${archive ? 'archived' : 'restored'}.`
     });
     setSelectedForExport([]);
+    setIsSelectMode(false);
   };
 
   const handleDelete = (id: string) => {
@@ -698,6 +700,11 @@ export default function Wiki() {
     }
   }
 
+  const handleCancelSelection = () => {
+    setIsSelectMode(false);
+    setSelectedForExport([]);
+  }
+
 
   return (
     <SidebarProvider>
@@ -720,30 +727,42 @@ export default function Wiki() {
                   <div className="p-4 border-b flex items-center gap-2 h-[65px]">
                         {isSelectMode ? (
                             <>
-                                <Button variant="ghost" size="icon" onClick={() => setSelectedForExport([])}>
+                                <Button variant="ghost" size="icon" onClick={handleCancelSelection}>
                                     <X className="h-4 w-4" />
                                 </Button>
                                 <div className="font-semibold">{selectedForExport.length} selected</div>
-                                <div className="ml-auto flex items-center gap-2">
-                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="outline">
-                                                <Download className="mr-2 h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuItem onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4"/>PDF</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4"/>JSON</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleExport('excel')}><DatabaseZap className="mr-2 h-4 w-4"/>Excel</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleExport('html')}><File className="mr-2 h-4 w-4"/>HTML</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <Button variant="outline" onClick={() => handleBulkArchive(true)}>
-                                        <Archive className="mr-2 h-4 w-4" />
-                                        Archive
-                                    </Button>
-                                </div>
+                                {selectedForExport.length > 0 && (
+                                    <div className="ml-auto flex items-center gap-2">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline">
+                                                    <Download className="mr-2 h-4 w-4" />
+                                                    Export
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuItem onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4"/>PDF</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4"/>JSON</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleExport('excel')}><DatabaseZap className="mr-2 h-4 w-4"/>Excel</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleExport('html')}><File className="mr-2 h-4 w-4"/>HTML</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <Button variant="outline" onClick={() => handleBulkArchive(true)}>
+                                            <Archive className="mr-2 h-4 w-4" />
+                                            Archive
+                                        </Button>
+                                    </div>
+                                )}
+                                 <div className="ml-auto flex items-center gap-2">
+                                     <Checkbox
+                                        id="select-all"
+                                        checked={selectedForExport.length === allDefinitionIds.length}
+                                        onCheckedChange={(checked) => {
+                                            setSelectedForExport(checked ? allDefinitionIds : []);
+                                        }}
+                                    />
+                                    <Label htmlFor="select-all">Select All</Label>
+                                 </div>
                             </>
                         ) : (
                             <>
@@ -786,6 +805,7 @@ export default function Wiki() {
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
+                                <Button variant="outline" onClick={() => setIsSelectMode(true)}>Select</Button>
                             </>
                         )}
                     </div>

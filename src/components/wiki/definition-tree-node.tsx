@@ -101,7 +101,11 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
   
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onSelect(node.id);
+    if (isSelectMode) {
+        onToggleSelection(node.id, !isSelectedForExport);
+    } else {
+        onSelect(node.id);
+    }
   };
 
   const handleTriggerClick = (e: React.MouseEvent) => {
@@ -109,7 +113,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
     if(isSelected && !hasChildren){
        setIsNodeExpanded(prev => !prev);
     } else {
-       onSelect(node.id);
+       if (!isSelectMode) onSelect(node.id);
        setIsNodeExpanded(prev => !prev);
     }
   };
@@ -125,18 +129,20 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
         <div 
             className={cn(
                 "flex items-center w-full group/item rounded-md hover:bg-primary/10",
-                (isSelected || isSelectedForExport) && "bg-primary/10"
+                (isSelected || (isSelectMode && isSelectedForExport)) && "bg-primary/10"
             )}
             style={{ paddingLeft: `${level * 1}rem` }}
         >
-            <div onClick={handleCheckboxClick} className="p-2">
-                <Checkbox
-                    id={`select-${node.id}`}
-                    checked={isSelectedForExport}
-                    onCheckedChange={(checked) => onToggleSelection(node.id, !!checked)}
-                    className={cn("mr-2")}
-                />
-            </div>
+            {isSelectMode && (
+                <div onClick={handleCheckboxClick} className="p-2">
+                    <Checkbox
+                        id={`select-${node.id}`}
+                        checked={isSelectedForExport}
+                        onCheckedChange={(checked) => onToggleSelection(node.id, !!checked)}
+                        className={cn("mr-2")}
+                    />
+                </div>
+            )}
             
             <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent" onClick={handleTriggerClick}>
