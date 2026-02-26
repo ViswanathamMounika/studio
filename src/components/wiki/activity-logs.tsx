@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -18,7 +17,7 @@ import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 import { Input } from '../ui/input';
 
-const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Delete', 'Archive', 'Duplicate', 'Search'];
+const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search'];
 
 type MultiSelectFilterProps = {
     title: string;

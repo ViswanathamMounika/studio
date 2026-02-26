@@ -149,7 +149,7 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
     ]
 };
 
-const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Delete', 'Archive', 'Duplicate', 'Search'];
+const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search'];
 
 export const initialActivityLogs: ActivityLog[] = Array.from({ length: 50 }, (_, i) => ({
     id: `log-${i}`,

@@ -68,7 +68,7 @@ export interface Notification {
     read: boolean;
 }
 
-export type ActivityType = 'View' | 'Edit' | 'Create' | 'Download' | 'Delete' | 'Archive' | 'Duplicate' | 'Search';
+export type ActivityType = 'View' | 'Edit' | 'Create' | 'Download' | 'Bookmark' | 'Archive' | 'Duplicate' | 'Search';
 
 export interface ActivityLog {
     id: string;
