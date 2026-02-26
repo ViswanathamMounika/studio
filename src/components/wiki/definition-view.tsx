@@ -195,6 +195,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         
         setPreviewTable(mockTable);
         setPreviewPage(1);
+        setPreviewPageSize(5); // Default to smallest size on open
         setIsPreviewDialogOpen(true);
     };
 
@@ -518,8 +519,12 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="5">5</SelectItem>
-                                <SelectItem value="10">10</SelectItem>
-                                <SelectItem value="20">20</SelectItem>
+                                {previewTable && previewTable.rows.length > 5 && (
+                                    <SelectItem value="10">10</SelectItem>
+                                )}
+                                {previewTable && previewTable.rows.length > 10 && (
+                                    <SelectItem value="20">20</SelectItem>
+                                )}
                             </SelectContent>
                         </Select>
                         <span className="text-sm text-muted-foreground ml-2">
@@ -564,3 +569,4 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     </TooltipProvider>
   );
 }
+
