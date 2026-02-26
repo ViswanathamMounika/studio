@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
@@ -32,13 +31,12 @@ const DefinitionView = dynamic(() => import('@/components/wiki/definition-view')
   loading: () => <div className="space-y-4 p-6"><Skeleton className="h-12 w-1/2"/><Skeleton className="h-[400px] w-full"/></div>
 });
 const DefinitionEdit = dynamic(() => import('@/components/wiki/definition-edit'), { ssr: false });
-const DataTables = dynamic(() => import('@/components/wiki/data-tables'), { ssr: false });
 const ActivityLogs = dynamic(() => import('@/components/wiki/activity-logs'), { ssr: false });
 const AnalyticsModal = dynamic(() => import('@/components/wiki/analytics-modal'), { ssr: false });
 const NewDefinitionModal = dynamic(() => import('@/components/wiki/new-definition-modal'), { ssr: false });
 const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal'), { ssr: false });
 
-type View = 'definitions' | 'supporting-tables' | 'activity-logs';
+type View = 'definitions' | 'activity-logs';
 
 const initialNotifications: NotificationType[] = [
   {
@@ -541,7 +539,6 @@ export default function Wiki() {
 
   const renderContent = () => {
     switch (activeView) {
-        case 'supporting-tables': return <DataTables />;
         case 'activity-logs': return <ActivityLogs />;
         default: return (
                 isEditing && selectedDefinition ? (

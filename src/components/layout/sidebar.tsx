@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import {
-    Database,
     ChevronDown,
     Zap,
     Newspaper,
@@ -31,7 +30,7 @@ import {
 } from "../ui/sidebar";
 import { cn } from '@/lib/utils';
 
-type View = 'definitions' | 'supporting-tables' | 'activity-logs';
+type View = 'definitions' | 'activity-logs';
 
 type AppSidebarProps = {
     activeView: View;
@@ -49,7 +48,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSideb
 
     const wikiNavItems = [
         { id: 'definitions', label: 'MPM Definitions', icon: KeyRound },
-        { id: 'supporting-tables', label: 'Supporting Tables', icon: Database },
         { id: 'activity-logs', label: 'Activity Logs', icon: History, adminOnly: true },
         { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
         { id: 'acronyms', label: 'Healthcare Acronyms', icon: SquareGanttChart },
@@ -59,7 +57,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSideb
     ];
 
     const handleNavigate = (id: string) => {
-        if (id === 'supporting-tables' || id === 'definitions' || id === 'activity-logs') {
+        if (id === 'definitions' || id === 'activity-logs') {
             onNavigate(id as View);
         } else {
             console.log(`Navigating to ${id}`);

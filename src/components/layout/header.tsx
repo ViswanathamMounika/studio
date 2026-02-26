@@ -1,15 +1,12 @@
-
 "use client";
 
 import {
   BarChart,
-  Book,
   Palette,
   Bell,
   PlusCircle,
   File,
   Plus,
-  LayoutGrid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +29,7 @@ type AppHeaderProps = {
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
     onDefinitionClick: (id: string) => void;
-    activeView: 'definitions' | 'supporting-tables';
+    activeView: 'definitions' | 'activity-logs';
 }
 
 export default function AppHeader({ 
@@ -52,8 +49,6 @@ export default function AppHeader({
     switch (activeView) {
       case 'definitions':
         return 'MPM Data Definitions';
-      case 'supporting-tables':
-        return '';
       default:
         return 'MedPoint Wiki';
     }
