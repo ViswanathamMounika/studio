@@ -1,38 +1,125 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType } from '@/lib/types';
 import { initialActivityLogs } from '@/lib/data';
+import { Checkbox } from '../ui/checkbox';
+import { Badge } from '../ui/badge';
+import { ScrollArea } from '../ui/scroll-area';
+import { Input } from '../ui/input';
 
 const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Delete', 'Archive', 'Duplicate', 'Search'];
 
+type MultiSelectFilterProps = {
+    title: string;
+    options: string[];
+    selected: string[];
+    onToggle: (value: string) => void;
+    placeholder: string;
+}
+
+function MultiSelectFilter({ title, options, selected, onToggle, placeholder }: MultiSelectFilterProps) {
+    const [search, setSearch] = useState('');
+    const filteredOptions = options.filter(opt => opt.toLowerCase().includes(search.toLowerCase()));
+
+    return (
+        <div className="space-y-2">
+            <label className="text-xs font-medium">{title}</label>
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between h-auto min-h-[40px] px-3"
+                    >
+                        <div className="flex flex-wrap gap-1 items-center max-w-[200px]">
+                            {selected.length === 0 && <span className="text-muted-foreground">{placeholder}</span>}
+                            {selected.map(val => (
+                                <Badge key={val} variant="secondary" className="mr-1 text-[10px] py-0 px-1">
+                                    {val}
+                                </Badge>
+                            ))}
+                        </div>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0" align="start">
+                    <div className="p-2 border-b">
+                        <Input 
+                            placeholder={`Search ${title.toLowerCase()}...`} 
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="h-8"
+                        />
+                    </div>
+                    <ScrollArea className="h-64">
+                        <div className="p-1">
+                            {filteredOptions.length === 0 && (
+                                <p className="text-sm text-center py-4 text-muted-foreground">No results found.</p>
+                            )}
+                            {filteredOptions.map((option) => (
+                                <div
+                                    key={option}
+                                    className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
+                                    onClick={() => onToggle(option)}
+                                >
+                                    <Checkbox
+                                        id={`${title}-${option}`}
+                                        checked={selected.includes(option)}
+                                        onCheckedChange={() => onToggle(option)}
+                                    />
+                                    <label
+                                        htmlFor={`${title}-${option}`}
+                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                                    >
+                                        {option}
+                                    </label>
+                                    {selected.includes(option) && <Check className="h-4 w-4 text-primary" />}
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </PopoverContent>
+            </Popover>
+        </div>
+    );
+}
+
 export default function ActivityLogs() {
     const [logs] = useState<ActivityLog[]>(initialActivityLogs);
-    const [userFilter, setUserFilter] = useState('all');
-    const [activityFilter, setActivityFilter] = useState('all');
-    const [definitionFilter, setDefinitionFilter] = useState('all');
+    const [userFilters, setUserFilters] = useState<string[]>([]);
+    const [activityFilters, setActivityFilters] = useState<string[]>([]);
+    const [definitionFilters, setDefinitionFilters] = useState<string[]>([]);
     const [timeFrame, setTimeFrame] = useState('all');
     const [customRange, setCustomRange] = useState<{ from: Date; to: Date } | undefined>();
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-    const users = useMemo(() => Array.from(new Set(logs.map(log => log.userName))), [logs]);
-    const definitions = useMemo(() => Array.from(new Set(logs.map(log => log.definitionName))), [logs]);
+    const users = useMemo(() => Array.from(new Set(logs.map(log => log.userName))).sort(), [logs]);
+    const definitions = useMemo(() => Array.from(new Set(logs.map(log => log.definitionName))).sort(), [logs]);
+
+    const handleToggleFilter = (setter: React.Dispatch<React.SetStateAction<string[]>>, current: string[], value: string) => {
+        if (current.includes(value)) {
+            setter(current.filter(v => v !== value));
+        } else {
+            setter([...current, value]);
+        }
+    };
 
     const filteredLogs = useMemo(() => {
         return logs.filter(log => {
-            const userMatch = userFilter === 'all' || log.userName === userFilter;
-            const activityMatch = activityFilter === 'all' || log.activityType === activityFilter;
-            const definitionMatch = definitionFilter === 'all' || log.definitionName === definitionFilter;
+            const userMatch = userFilters.length === 0 || userFilters.includes(log.userName);
+            const activityMatch = activityFilters.length === 0 || activityFilters.includes(log.activityType);
+            const definitionMatch = definitionFilters.length === 0 || definitionFilters.includes(log.definitionName);
 
             let timeMatch = true;
             const logDate = new Date(log.occurredDate);
@@ -60,16 +147,16 @@ export default function ActivityLogs() {
             const dateB = new Date(b.occurredDate).getTime();
             return sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
         });
-    }, [logs, userFilter, activityFilter, definitionFilter, timeFrame, customRange, sortDirection]);
+    }, [logs, userFilters, activityFilters, definitionFilters, timeFrame, customRange, sortDirection]);
 
     const toggleSort = () => {
         setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     };
 
     const resetFilters = () => {
-        setUserFilter('all');
-        setActivityFilter('all');
-        setDefinitionFilter('all');
+        setUserFilters([]);
+        setActivityFilters([]);
+        setDefinitionFilters([]);
         setTimeFrame('all');
         setCustomRange(undefined);
     };
@@ -90,50 +177,29 @@ export default function ActivityLogs() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-medium">User</label>
-                            <Select value={userFilter} onValueChange={setUserFilter}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All Users" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Users</SelectItem>
-                                    {users.map(user => (
-                                        <SelectItem key={user} value={user}>{user}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <MultiSelectFilter 
+                            title="User" 
+                            options={users} 
+                            selected={userFilters} 
+                            onToggle={(val) => handleToggleFilter(setUserFilters, userFilters, val)}
+                            placeholder="All Users"
+                        />
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-medium">Activity Type</label>
-                            <Select value={activityFilter} onValueChange={setActivityFilter}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All Activities" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Activities</SelectItem>
-                                    {activityTypes.map(type => (
-                                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <MultiSelectFilter 
+                            title="Activity Type" 
+                            options={activityTypes} 
+                            selected={activityFilters} 
+                            onToggle={(val) => handleToggleFilter(setActivityFilters, activityFilters, val)}
+                            placeholder="All Activities"
+                        />
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-medium">Definition</label>
-                            <Select value={definitionFilter} onValueChange={setDefinitionFilter}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All Definitions" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Definitions</SelectItem>
-                                    {definitions.map(def => (
-                                        <SelectItem key={def} value={def}>{def}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <MultiSelectFilter 
+                            title="Definition" 
+                            options={definitions} 
+                            selected={definitionFilters} 
+                            onToggle={(val) => handleToggleFilter(setDefinitionFilters, definitionFilters, val)}
+                            placeholder="All Definitions"
+                        />
 
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Time Frame</label>
@@ -204,7 +270,9 @@ export default function ActivityLogs() {
                                 <TableRow key={log.id}>
                                     <TableCell className="font-medium">{log.userName}</TableCell>
                                     <TableCell>{log.definitionName}</TableCell>
-                                    <TableCell>{log.activityType}</TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline">{log.activityType}</Badge>
+                                    </TableCell>
                                     <TableCell className="text-muted-foreground">
                                         {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}
                                     </TableCell>

@@ -4,8 +4,8 @@
 import React from 'react';
 import type { Notification } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Bell, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Bell, Check } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 
@@ -18,20 +18,14 @@ type NotificationsProps = {
 export default function Notifications({ notifications, setNotifications, onDefinitionClick }: NotificationsProps) {
   
   const handleMarkAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    // Soft delete: remove from list when marked as read
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    // Clear all if "Mark All as Read" is clicked
+    setNotifications([]);
   };
-
-  const handleDelete = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
-  
-  const handleDeleteAll = () => {
-      setNotifications([]);
-  }
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -44,7 +38,7 @@ export default function Notifications({ notifications, setNotifications, onDefin
               {unreadCount > 0 && <Badge>{unreadCount} New</Badge>}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} disabled={unreadCount === 0}>
+              <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} disabled={notifications.length === 0}>
                 Mark All as Read
               </Button>
             </div>
@@ -73,13 +67,14 @@ export default function Notifications({ notifications, setNotifications, onDefin
                     <p className="text-xs text-muted-foreground mt-1">{new Date(notification.date).toLocaleString()}</p>
                   </div>
                   <div className="flex items-center gap-1">
-                    {!notification.read && (
-                        <Button variant="ghost" size="sm" onClick={() => handleMarkAsRead(notification.id)}>
-                            Mark Read
-                        </Button>
-                    )}
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(notification.id)}>
-                        <Trash2 className="h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 px-2 flex items-center gap-1 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={() => handleMarkAsRead(notification.id)}
+                    >
+                        <Check className="h-4 w-4" />
+                        Mark Read
                     </Button>
                   </div>
                 </div>
