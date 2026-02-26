@@ -1,5 +1,4 @@
-
-import type { Definition, SupportingTable } from './types';
+import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
     id: 'auth-status-codes',
@@ -71,7 +70,7 @@ const generateRandomDate = () => {
     const start = new Date(2022, 0, 1);
     const end = new Date();
     const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
-    return date.toISOString().slice(0, 19).replace('T', ' ');
+    return date.toISOString();
 }
 
 const defDataTableHeaders = ['ID', 'OBJECT_TYPE', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION', 'CREATEDBY', 'CREATEDDATE', 'LASTCHANGEDBY', 'LASTCHANGEDDATE'];
@@ -97,6 +96,60 @@ export const defDataTable = {
 };
 
 export const allDataTables = [authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable, { ...defDataTable, rows: defDataTable.rows.map(Object.values) }];
+
+export const mpmDatabases: DatabaseMetadata[] = [
+    { id: 'DW_Reporting', name: 'DW_Reporting' },
+    { id: 'Finance', name: 'Finance' },
+    { id: 'Provider_Data', name: 'Provider_Data' },
+    { id: 'Claims', name: 'Claims' },
+];
+
+export const mpmSourceTypes: Record<string, SourceTypeMetadata[]> = {
+    'DW_Reporting': [
+        { id: 'Views', name: 'Views' },
+        { id: 'Tables', name: 'Tables' },
+        { id: 'SQL Functions', name: 'SQL Functions' },
+    ],
+    'Finance': [
+        { id: 'Tables', name: 'Tables' },
+        { id: 'Stored Procedures', name: 'Stored Procedures' },
+    ],
+    'Provider_Data': [
+        { id: 'Views', name: 'Views' },
+        { id: 'Tables', name: 'Tables' },
+    ],
+    'Claims': [
+        { id: 'Views', name: 'Views' },
+        { id: 'Tables', name: 'Tables' },
+        { id: 'Stored Procedures', name: 'Stored Procedures' },
+    ],
+};
+
+export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
+    'DW_Reporting_Views': [
+        { id: 'vw_AuthDecisionDate', name: 'vw_AuthDecisionDate', typeId: 'Views' },
+        { id: 'vw_AuthActionTime', name: 'vw_AuthActionTime', typeId: 'Views' },
+        { id: 'vw_MemberEligibility', name: 'vw_MemberEligibility', typeId: 'Views' },
+    ],
+    'DW_Reporting_Tables': [
+        { id: 'AUTHORIZATION_MASTER', name: 'AUTHORIZATION_MASTER', typeId: 'Tables' },
+        { id: 'MEMBER_MASTER', name: 'MEMBER_MASTER', typeId: 'Tables' },
+    ],
+    'Finance_Tables': [
+        { id: 'FEE_SCHEDULES', name: 'FEE_SCHEDULES', typeId: 'Tables' },
+        { id: 'CLAIM_PAYMENTS', name: 'CLAIM_PAYMENTS', typeId: 'Tables' },
+    ],
+};
+
+const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Delete', 'Archive', 'Duplicate', 'Search'];
+
+export const initialActivityLogs: ActivityLog[] = Array.from({ length: 50 }, (_, i) => ({
+    id: `log-${i}`,
+    userName: names[Math.floor(Math.random() * names.length)],
+    definitionName: ['Auth Decision Date', 'Contracted Rates', 'Service Type Mapping', 'Provider Demographics'][Math.floor(Math.random() * 4)],
+    activityType: activityTypes[Math.floor(Math.random() * activityTypes.length)],
+    occurredDate: generateRandomDate(),
+}));
 
 const definition111_rev1 = {
     id: '1.1.1',
@@ -412,7 +465,7 @@ export const initialDefinitions: Definition[] = [
             revisions: [],
             isArchived: false,
             supportingTables: [],
-attachments: [],
+            attachments: [],
             notes: [],
         },
          {

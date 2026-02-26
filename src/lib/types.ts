@@ -1,5 +1,3 @@
-
-
 export interface Revision {
   ticketId: string;
   date: string;
@@ -68,4 +66,31 @@ export interface Notification {
     message: string;
     date: string;
     read: boolean;
+}
+
+export type ActivityType = 'View' | 'Edit' | 'Create' | 'Download' | 'Delete' | 'Archive' | 'Duplicate' | 'Search';
+
+export interface ActivityLog {
+    id: string;
+    userName: string;
+    definitionName: string;
+    activityType: ActivityType;
+    occurredDate: string;
+    details?: string;
+}
+
+export interface DatabaseMetadata {
+    id: string;
+    name: string;
+}
+
+export interface SourceTypeMetadata {
+    id: string;
+    name: string;
+}
+
+export interface SourceObjectMetadata {
+    id: string;
+    name: string;
+    typeId: string;
 }

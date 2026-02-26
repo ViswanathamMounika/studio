@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { Definition, Attachment } from '@/lib/types';
 import {
   Dialog,
@@ -23,6 +22,7 @@ import AttachmentList from './attachments';
 import { ScrollArea } from '../ui/scroll-area';
 import { DraftedDefinition } from './draft-from-sql-modal';
 import { Textarea } from '../ui/textarea';
+import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
 
 type NewDefinitionModalProps = {
   open: boolean;
@@ -32,7 +32,6 @@ type NewDefinitionModalProps = {
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
-const sourceTypes = ['Table', 'View', 'SQL Query'];
 
 const initialDefinitionState = {
   name: '',
@@ -43,7 +42,7 @@ const initialDefinitionState = {
   technicalDetails: '',
   usageExamples: '',
   attachments: [],
-  sourceType: 'View',
+  sourceType: '',
   sourceDb: '',
   sourceName: '',
   sourceServer: '',
@@ -59,10 +58,12 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [technicalDetails, setTechnicalDetails] = useState(initialDefinitionState.technicalDetails);
   const [usageExamples, setUsageExamples] = useState(initialDefinitionState.usageExamples);
   const [attachments, setAttachments] = useState<Attachment[]>(initialDefinitionState.attachments);
-  const [sourceType, setSourceType] = useState(initialDefinitionState.sourceType);
+  
   const [sourceDb, setSourceDb] = useState(initialDefinitionState.sourceDb);
+  const [sourceType, setSourceType] = useState(initialDefinitionState.sourceType);
   const [sourceName, setSourceName] = useState(initialDefinitionState.sourceName);
   const [sourceServer, setSourceServer] = useState(initialDefinitionState.sourceServer);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -90,11 +91,21 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     }
   }, [open, initialData]);
 
+  const availableSourceTypes = useMemo(() => {
+    return sourceDb ? mpmSourceTypes[sourceDb] || [] : [];
+  }, [sourceDb]);
+
+  const availableSourceNames = useMemo(() => {
+    if (!sourceDb || !sourceType) return [];
+    const key = `${sourceDb}_${sourceType}`;
+    return mpmSourceObjects[key] || [];
+  }, [sourceDb, sourceType]);
+
   const handleSave = () => {
     const newDefinitionData = {
       name: name,
       shortDescription: shortDescription,
-      description: description, // This is long description
+      description: description,
       keywords: keywords,
       module: module,
       sourceType: sourceType,
@@ -104,7 +115,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       technicalDetails: technicalDetails,
       usageExamples: usageExamples,
       attachments: attachments,
-      supportingTables: [], // Defaulting to empty for new definitions
+      supportingTables: [],
     };
     onSave(newDefinitionData);
   };
@@ -213,22 +224,24 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
               
               <Card>
                 <CardHeader>
-                    <CardTitle>Data Source</CardTitle>
+                    <CardTitle>Source of Truth</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                    <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="new-def-source-type">Source Type (DEF_SOURCE_TYPE)</Label>
-                            <Select value={sourceType} onValueChange={setSourceType}>
-                                <SelectTrigger id="new-def-source-type">
-                                <SelectValue placeholder="Select a source type" />
+                            <Label htmlFor="new-def-source-db">Database</Label>
+                            <Select value={sourceDb} onValueChange={(val) => {
+                                setSourceDb(val);
+                                setSourceType('');
+                                setSourceName('');
+                            }}>
+                                <SelectTrigger id="new-def-source-db">
+                                    <SelectValue placeholder="Select Database" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                {sourceTypes.map((type) => (
-                                    <SelectItem key={type} value={type}>
-                                    {type}
-                                    </SelectItem>
-                                ))}
+                                    {mpmDatabases.map(db => (
+                                        <SelectItem key={db.id} value={db.id}>{db.name}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -237,12 +250,41 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                             <Input id="new-def-source-server" value={sourceServer} onChange={(e) => setSourceServer(e.target.value)} />
                         </div>
                         <div>
-                            <Label htmlFor="new-def-source-db">Source Database (DEF_SOURCE_DB)</Label>
-                            <Input id="new-def-source-db" value={sourceDb} onChange={(e) => setSourceDb(e.target.value)} />
+                            <Label htmlFor="new-def-source-type">Source Type</Label>
+                            <Select 
+                                value={sourceType} 
+                                onValueChange={(val) => {
+                                    setSourceType(val);
+                                    setSourceName('');
+                                }}
+                                disabled={!sourceDb}
+                            >
+                                <SelectTrigger id="new-def-source-type">
+                                    <SelectValue placeholder={sourceDb ? "Select Source Type" : "Select Database first"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableSourceTypes.map(type => (
+                                        <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div>
-                            <Label htmlFor="new-def-source-name">Source Name (DEF_SOURCE_NAME)</Label>
-                            <Input id="new-def-source-name" value={sourceName} onChange={(e) => setSourceName(e.target.value)} />
+                            <Label htmlFor="new-def-source-name">Source Name</Label>
+                            <Select 
+                                value={sourceName} 
+                                onValueChange={setSourceName}
+                                disabled={!sourceType}
+                            >
+                                <SelectTrigger id="new-def-source-name">
+                                    <SelectValue placeholder={sourceType ? "Select Source Name" : "Select Source Type first"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableSourceObjects[`${sourceDb}_${sourceType}`]?.map(obj => (
+                                        <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
+                                    )) || []}
+                                </SelectContent>
+                            </Select>
                         </div>
                    </div>
                 </CardContent>

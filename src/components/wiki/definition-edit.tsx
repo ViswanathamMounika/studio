@@ -1,6 +1,5 @@
-
 "use client";
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import type { Definition, Attachment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
+import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
 
 type DefinitionEditProps = {
   definition: Definition;
@@ -20,7 +20,6 @@ type DefinitionEditProps = {
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
-const sourceTypes = ['Table', 'View', 'SQL Query'];
 
 export default function DefinitionEdit({ definition, onSave, onCancel }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
@@ -32,11 +31,23 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const [technicalDetails, setTechnicalDetails] = useState(definition.technicalDetails || '');
   const [usageExamples, setUsageExamples] = useState(definition.usageExamples || '');
   const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments);
-  const [sourceType, setSourceType] = useState(definition.sourceType || 'View');
+  
   const [sourceDb, setSourceDb] = useState(definition.sourceDb || '');
+  const [sourceType, setSourceType] = useState(definition.sourceType || '');
   const [sourceName, setSourceName] = useState(definition.sourceName || '');
   const [sourceServer, setSourceServer] = useState(definition.sourceServer || '');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const availableSourceTypes = useMemo(() => {
+    return sourceDb ? mpmSourceTypes[sourceDb] || [] : [];
+  }, [sourceDb]);
+
+  const availableSourceNames = useMemo(() => {
+    if (!sourceDb || !sourceType) return [];
+    const key = `${sourceDb}_${sourceType}`;
+    return mpmSourceObjects[key] || [];
+  }, [sourceDb, sourceType]);
 
   const handleSave = () => {
     onSave({
@@ -86,7 +97,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       };
       setAttachments([...attachments, newAttachment]);
     }
-    // Reset file input to allow selecting the same file again
     if(fileInputRef.current) {
         fileInputRef.current.value = "";
     }
@@ -163,22 +173,24 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       
       <Card>
         <CardHeader>
-            <CardTitle>Data Source</CardTitle>
+            <CardTitle>Source of Truth</CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <Label htmlFor="source_type">Source Type (DEF_SOURCE_TYPE)</Label>
-                    <Select value={sourceType} onValueChange={setSourceType}>
-                        <SelectTrigger id="source_type">
-                        <SelectValue placeholder="Select a source type" />
+                    <Label htmlFor="source_db">Database</Label>
+                    <Select value={sourceDb} onValueChange={(val) => {
+                        setSourceDb(val);
+                        setSourceType('');
+                        setSourceName('');
+                    }}>
+                        <SelectTrigger id="source_db">
+                            <SelectValue placeholder="Select Database" />
                         </SelectTrigger>
                         <SelectContent>
-                        {sourceTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                            {type}
-                            </SelectItem>
-                        ))}
+                            {mpmDatabases.map(db => (
+                                <SelectItem key={db.id} value={db.id}>{db.name}</SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
@@ -187,12 +199,41 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
                     <Input id="source_server" value={sourceServer} onChange={(e) => setSourceServer(e.target.value)} />
                 </div>
                 <div>
-                    <Label htmlFor="source_db">Source Database (DEF_SOURCE_DB)</Label>
-                    <Input id="source_db" value={sourceDb} onChange={(e) => setSourceDb(e.target.value)} />
+                    <Label htmlFor="source_type">Source Type</Label>
+                    <Select 
+                        value={sourceType} 
+                        onValueChange={(val) => {
+                            setSourceType(val);
+                            setSourceName('');
+                        }}
+                        disabled={!sourceDb}
+                    >
+                        <SelectTrigger id="source_type">
+                            <SelectValue placeholder={sourceDb ? "Select Source Type" : "Select Database first"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableSourceTypes.map(type => (
+                                <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div>
-                    <Label htmlFor="source_name">Source Name (DEF_SOURCE_NAME)</Label>
-                    <Input id="source_name" value={sourceName} onChange={(e) => setSourceName(e.target.value)} />
+                    <Label htmlFor="source_name">Source Name</Label>
+                    <Select 
+                        value={sourceName} 
+                        onValueChange={setSourceName}
+                        disabled={!sourceType}
+                    >
+                        <SelectTrigger id="source_name">
+                            <SelectValue placeholder={sourceType ? "Select Source Name" : "Select Source Type first"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableSourceNames.map(obj => (
+                                <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
         </CardContent>

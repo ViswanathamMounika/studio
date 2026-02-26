@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -13,7 +12,8 @@ import {
     HeartPulse,
     BadgePercent,
     ShoppingCart,
-    SquareGanttChart
+    SquareGanttChart,
+    History
 } from "lucide-react";
 import {
     Collapsible,
@@ -31,9 +31,12 @@ import {
 } from "../ui/sidebar";
 import { cn } from '@/lib/utils';
 
+type View = 'definitions' | 'supporting-tables' | 'activity-logs';
+
 type AppSidebarProps = {
-    activeView: 'definitions' | 'supporting-tables';
-    onNavigate: (view: 'definitions' | 'supporting-tables' | string) => void;
+    activeView: View;
+    onNavigate: (view: View) => void;
+    isAdmin: boolean;
 };
 
 const topNavItems = [
@@ -41,24 +44,24 @@ const topNavItems = [
     { id: 'posts', label: 'Posts', icon: Newspaper },
 ];
 
-const wikiNavItems = [
-    { id: 'definitions', label: 'MPM Definitions', icon: KeyRound },
-    { id: 'supporting-tables', label: 'Supporting Tables', icon: Database },
-    { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
-    { id: 'acronyms', label: 'Healthcare Acronyms', icon: SquareGanttChart },
-    { id: 'clients', label: 'Clients', icon: Users },
-    { id: 'health-plans', label: 'Health Plans', icon: HeartPulse },
-    { id: 'lob-codes', label: 'LOB Codes', icon: BadgePercent },
-];
-
-export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) {
+export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSidebarProps) {
     const [isWikiOpen, setIsWikiOpen] = useState(true);
 
+    const wikiNavItems = [
+        { id: 'definitions', label: 'MPM Definitions', icon: KeyRound },
+        { id: 'supporting-tables', label: 'Supporting Tables', icon: Database },
+        { id: 'activity-logs', label: 'Activity Logs', icon: History, adminOnly: true },
+        { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
+        { id: 'acronyms', label: 'Healthcare Acronyms', icon: SquareGanttChart },
+        { id: 'clients', label: 'Clients', icon: Users },
+        { id: 'health-plans', label: 'Health Plans', icon: HeartPulse },
+        { id: 'lob-codes', label: 'LOB Codes', icon: BadgePercent },
+    ];
+
     const handleNavigate = (id: string) => {
-        if (id === 'supporting-tables' || id === 'definitions') {
-            onNavigate(id);
+        if (id === 'supporting-tables' || id === 'definitions' || id === 'activity-logs') {
+            onNavigate(id as View);
         } else {
-            // Placeholder for other navigation items
             console.log(`Navigating to ${id}`);
         }
     }
@@ -100,25 +103,27 @@ export default function AppSidebar({ activeView, onNavigate }: AppSidebarProps) 
 
                         <CollapsibleContent className="py-1">
                             <SidebarMenu className='pl-4'>
-                                {wikiNavItems.map(item => (
-                                    <SidebarMenuItem key={item.id}>
-                                        <SidebarMenuButton
-                                            isActive={activeView === item.id}
-                                            onClick={() => handleNavigate(item.id)}
-                                            className="h-8"
-                                        >
-                                            <item.icon />
-                                            {item.label}
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                ))}
+                                {wikiNavItems.map(item => {
+                                    if (item.adminOnly && !isAdmin) return null;
+                                    return (
+                                        <SidebarMenuItem key={item.id}>
+                                            <SidebarMenuButton
+                                                isActive={activeView === item.id}
+                                                onClick={() => handleNavigate(item.id)}
+                                                className="h-8"
+                                            >
+                                                <item.icon />
+                                                {item.label}
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    );
+                                })}
                             </SidebarMenu>
                         </CollapsibleContent>
                     </Collapsible>
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter>
-                {/* Optional Footer Content */}
             </SidebarFooter>
         </Sidebar>
     );

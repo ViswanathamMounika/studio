@@ -6,7 +6,7 @@ import DefinitionTree from '@/components/wiki/definition-tree';
 import DefinitionView from '@/components/wiki/definition-view';
 import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
-import type { Definition, Notification as NotificationType } from '@/lib/types';
+import type { Definition, Notification as NotificationType, ActivityLog } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
 import { Filter, Search, X, Download, FileText, FileJson, Archive, File, DatabaseZap, CheckSquare, ListTodo } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -22,13 +22,14 @@ import NewDefinitionModal from '@/components/wiki/new-definition-modal';
 import TemplatesModal from '@/components/wiki/templates-modal';
 import useLocalStorage from '@/hooks/use-local-storage';
 import DataTables from '@/components/wiki/data-tables';
+import ActivityLogs from '@/components/wiki/activity-logs';
 import { diff_match_patch } from 'diff-match-patch';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { useToast } from '@/hooks/use-toast';
 
-type View = 'definitions' | 'supporting-tables';
+type View = 'definitions' | 'supporting-tables' | 'activity-logs';
 
 const initialNotifications: NotificationType[] = [
   {
@@ -129,6 +130,10 @@ export default function Wiki() {
   };
 
   const handleNavigate = (view: View, shouldUpdateUrl = true) => {
+    if (view === 'activity-logs' && !isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can view activity logs.' });
+        return;
+    }
     setActiveView(view);
     if (view === 'definitions') {
         handleSelectDefinition('1.1.1', undefined, shouldUpdateUrl);
@@ -178,6 +183,10 @@ export default function Wiki() {
   };
 
   const handleExport = (format: 'json' | 'pdf' | 'excel' | 'html') => {
+    if (!isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can export definitions.' });
+        return;
+    }
     const flatten = (items: Definition[]): Definition[] => {
         let flat: Definition[] = [];
         items.forEach(item => {
@@ -327,6 +336,10 @@ export default function Wiki() {
   };
 
   const handleSave = (updatedDefinition: Definition) => {
+    if (!isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can edit definitions.' });
+        return;
+    }
     const originalDefinition = findDefinition(definitions, updatedDefinition.id);
     const update = (items: Definition[]): Definition[] => {
       return items.map(def => {
@@ -359,6 +372,10 @@ export default function Wiki() {
   };
   
   const handleCreateDefinition = (newDefinitionData: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => {
+    if (!isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can create definitions.' });
+        return;
+    }
     const newDefinition: Definition = {
         ...newDefinitionData,
         id: Date.now().toString(),
@@ -394,6 +411,10 @@ export default function Wiki() {
   };
 
   const handleDuplicate = (id: string) => {
+    if (!isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can duplicate definitions.' });
+        return;
+    }
     const definitionToDuplicate = findDefinition(definitions, id);
     if (!definitionToDuplicate) return;
     const newId = Date.now().toString();
@@ -417,6 +438,10 @@ export default function Wiki() {
   };
 
   const handleArchive = (id: string, archive: boolean) => {
+     if (!isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can archive definitions.' });
+        return;
+    }
      const updateArchiveStatus = (items: Definition[]): Definition[] => {
       return items.map(def => {
         if (def.id === id) return { ...def, isArchived: archive };
@@ -429,6 +454,10 @@ export default function Wiki() {
   };
 
   const handleBulkArchive = (archive: boolean) => {
+    if (!isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can bulk archive definitions.' });
+        return;
+    }
     if (selectedForExport.length === 0) return;
     const updateArchiveStatusRecursive = (items: Definition[]): Definition[] => {
       return items.map(def => {
@@ -445,6 +474,10 @@ export default function Wiki() {
   };
 
   const handleDelete = (id: string) => {
+    if (!isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can delete definitions.' });
+        return;
+    }
     const remove = (items: Definition[], idToDelete: string): Definition[] => {
       return items.filter(def => def.id !== idToDelete).map(def => {
           if (def.children) def.children = remove(def.children, idToDelete);
@@ -516,6 +549,7 @@ export default function Wiki() {
   const renderContent = () => {
     switch (activeView) {
         case 'supporting-tables': return <DataTables />;
+        case 'activity-logs': return <ActivityLogs />;
         default: return (
                 isEditing && selectedDefinition ? (
                     <DefinitionEdit definition={selectedDefinition} onSave={handleSave} onCancel={() => setIsEditing(false)} />
@@ -535,7 +569,7 @@ export default function Wiki() {
 
   return (
     <SidebarProvider>
-      <AppSidebar activeView={activeView} onNavigate={handleNavigate} />
+      <AppSidebar activeView={activeView} onNavigate={handleNavigate} isAdmin={isAdmin} />
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background">
           <AppHeader
@@ -550,7 +584,6 @@ export default function Wiki() {
           <main className="flex-1 flex overflow-hidden">
              {activeView === 'definitions' && (
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card relative">
-                  {/* Fixed Header */}
                   <div className="p-4 border-b flex items-center justify-between">
                       <h2 className="font-bold text-lg">MPM Definitions</h2>
                       {!isSelectMode && (
@@ -565,7 +598,6 @@ export default function Wiki() {
                       )}
                   </div>
 
-                  {/* Sticky Action/Search Bar */}
                   <div className="p-3 border-b bg-card/95 backdrop-blur-sm sticky top-0 z-20 h-[60px] flex items-center">
                     {isSelectMode ? (
                       <div className="flex items-center justify-between w-full">
