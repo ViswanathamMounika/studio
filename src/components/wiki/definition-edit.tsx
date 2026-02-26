@@ -35,7 +35,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const [sourceDb, setSourceDb] = useState(definition.sourceDb || '');
   const [sourceType, setSourceType] = useState(definition.sourceType || '');
   const [sourceName, setSourceName] = useState(definition.sourceName || '');
-  const [sourceServer, setSourceServer] = useState(definition.sourceServer || '');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,7 +62,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       sourceType,
       sourceDb,
       sourceName,
-      sourceServer,
     });
   };
 
@@ -193,10 +191,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
                             ))}
                         </SelectContent>
                     </Select>
-                </div>
-                <div>
-                    <Label htmlFor="source_server">Source Server (DEF_SOURCE_SERVERS)</Label>
-                    <Input id="source_server" value={sourceServer} onChange={(e) => setSourceServer(e.target.value)} />
                 </div>
                 <div>
                     <Label htmlFor="source_type">Source Type</Label>

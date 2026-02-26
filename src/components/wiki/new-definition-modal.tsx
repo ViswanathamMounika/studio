@@ -45,7 +45,6 @@ const initialDefinitionState = {
   sourceType: '',
   sourceDb: '',
   sourceName: '',
-  sourceServer: '',
 };
 
 export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData }: NewDefinitionModalProps) {
@@ -62,7 +61,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [sourceDb, setSourceDb] = useState(initialDefinitionState.sourceDb);
   const [sourceType, setSourceType] = useState(initialDefinitionState.sourceType);
   const [sourceName, setSourceName] = useState(initialDefinitionState.sourceName);
-  const [sourceServer, setSourceServer] = useState(initialDefinitionState.sourceServer);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,8 +84,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       setSourceDb(data.sourceDb || initialDefinitionState.sourceDb);
        // @ts-ignore
       setSourceName(data.sourceName || initialDefinitionState.sourceName);
-      // @ts-ignore
-      setSourceServer(data.sourceServer || initialDefinitionState.sourceServer);
     }
   }, [open, initialData]);
 
@@ -111,7 +107,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       sourceType: sourceType,
       sourceDb: sourceDb,
       sourceName: sourceName,
-      sourceServer: sourceServer,
       technicalDetails: technicalDetails,
       usageExamples: usageExamples,
       attachments: attachments,
@@ -244,10 +239,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                     ))}
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div>
-                            <Label htmlFor="new-def-source-server">Source Server (DEF_SOURCE_SERVERS)</Label>
-                            <Input id="new-def-source-server" value={sourceServer} onChange={(e) => setSourceServer(e.target.value)} />
                         </div>
                         <div>
                             <Label htmlFor="new-def-source-type">Source Type</Label>
