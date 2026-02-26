@@ -269,7 +269,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                         <TabsTrigger 
                             key={tab.value} 
                             value={tab.value} 
-                            className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 py-2 text-sm font-medium transition-all"
+                            className="bg-transparent hover:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 py-2 text-sm font-medium transition-all"
                         >
                             {tab.label}
                         </TabsTrigger>
@@ -286,7 +286,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="pb-4">
-                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div className="flex flex-col gap-4 text-sm">
                                     <div>
                                         <p className="font-medium text-muted-foreground">Database</p>
                                         <p className="mt-1">{dbName || 'N/A'}</p>
