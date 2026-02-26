@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -9,10 +10,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Save, Info } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import DefinitionActions from './definition-actions';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable, initialDefinitions, mpmDatabases, mpmSourceTypes } from '@/lib/data';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { 
+    authorizationStatusCodes, 
+    cmsComplianceMatrix, 
+    timestampChangedTable, 
+    vwAuthActionTimeTable, 
+    initialDefinitions, 
+    mpmDatabases, 
+    mpmSourceTypes,
+    allDataTables
+} from '@/lib/data';
 import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
 import AttachmentList from './attachments';
@@ -21,9 +31,9 @@ import { Label } from '../ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { Switch } from '../ui/switch';
 import RelatedDefinitions from './related-definitions';
 import useLocalStorage from '@/hooks/use-local-storage';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
 
@@ -59,9 +69,13 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     const [showComparison, setShowComparison] = useState(false);
     const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
     
+    // Preview States
+    const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+    const [previewTable, setPreviewTable] = useState<SupportingTable | null>(null);
+    const [previewPage, setPreviewPage] = useState(1);
+    const [previewPageSize, setPreviewPageSize] = useState(5);
+
     const [noteText, setNoteText] = useState('');
-    const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-    const [editingNoteText, setEditingNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
     const [notesView, setNotesView] = useState<'my' | 'others'>('my');
     const { toast } = useToast();
@@ -150,11 +164,6 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         onSave(updatedDefinition);
     };
 
-    const handleToggleShareNote = (noteId: string, isShared: boolean) => {
-        const updatedDefinition = { ...definition, notes: definition.notes?.map(note => note.id === noteId ? { ...note, isShared } : note) };
-        onSave(updatedDefinition);
-    };
-
     const filteredNotes = definition.notes?.filter(note => {
         if (notesView === 'my') return note.authorId === currentUser.id;
         return note.isShared && note.authorId !== currentUser.id;
@@ -178,6 +187,27 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             name: definition.sourceName || 'N/A'
         };
     }, [definition]);
+
+    const handleOpenPreview = (sourceName: string) => {
+        // Find matching mock data or use a default one from allDataTables
+        const mockTable = allDataTables.find(t => t.name.toLowerCase().includes(sourceName.toLowerCase())) 
+                          || allDataTables[Math.floor(Math.random() * allDataTables.length)];
+        
+        setPreviewTable(mockTable);
+        setPreviewPage(1);
+        setIsPreviewDialogOpen(true);
+    };
+
+    const paginatedPreviewRows = useMemo(() => {
+        if (!previewTable) return [];
+        const start = (previewPage - 1) * previewPageSize;
+        return previewTable.rows.slice(start, start + previewPageSize);
+    }, [previewTable, previewPage, previewPageSize]);
+
+    const totalPreviewPages = useMemo(() => {
+        if (!previewTable) return 0;
+        return Math.ceil(previewTable.rows.length / previewPageSize);
+    }, [previewTable, previewPageSize]);
 
   return (
     <TooltipProvider>
@@ -252,7 +282,16 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                         </div>
                                         <div>
                                             <p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Source Name</p>
-                                            <p className="mt-1 font-medium">{resolvedSourceInfo.name}</p>
+                                            <p className="mt-1 font-medium">
+                                                {resolvedSourceInfo.name !== 'N/A' ? (
+                                                    <button 
+                                                        onClick={() => handleOpenPreview(resolvedSourceInfo.name)}
+                                                        className="text-primary font-bold hover:underline"
+                                                    >
+                                                        {resolvedSourceInfo.name}
+                                                    </button>
+                                                ) : 'N/A'}
+                                            </p>
                                         </div>
                                     </div>
                                 </AccordionContent>
@@ -353,7 +392,27 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
                     <TabsContent value="notes" className="mt-6">
                         <Card>
-                            <CardHeader><CardTitle>Notes</CardTitle></CardHeader>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle>Notes</CardTitle>
+                                    <div className="flex items-center gap-2">
+                                        <Button 
+                                            variant={notesView === 'my' ? 'default' : 'outline'} 
+                                            size="sm"
+                                            onClick={() => setNotesView('my')}
+                                        >
+                                            My Notes
+                                        </Button>
+                                        <Button 
+                                            variant={notesView === 'others' ? 'default' : 'outline'} 
+                                            size="sm"
+                                            onClick={() => setNotesView('others')}
+                                        >
+                                            Shared Notes
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="p-4 border rounded-lg">
                                     <Textarea placeholder="Add a note..." value={noteText} onChange={(e) => setNoteText(e.target.value)} />
@@ -378,6 +437,9 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                             </div>
                                         </div>
                                     ))}
+                                    {filteredNotes?.length === 0 && (
+                                        <p className="text-center py-8 text-muted-foreground text-sm">No notes found in this view.</p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -394,13 +456,110 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             {selectedTable && (
                 <DialogContent className="max-w-4xl">
                     <DialogHeader><DialogTitle>{selectedTable.name}</DialogTitle></DialogHeader>
-                    <div className="max-h-[60vh] overflow-auto"><Table><TableHeader><TableRow>{selectedTable.headers.map(h => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader><TableBody>{selectedTable.rows.map((r, i) => <TableRow key={i}>{r.map((c, ci) => <TableCell key={ci}>{c ?? 'NULL'}</TableCell>)}</TableRow>)}</TableBody></Table></div>
+                    <div className="max-h-[60vh] overflow-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>{selectedTable.headers.map(h => <TableHead key={h}>{h}</TableHead>)}</TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {selectedTable.rows.map((r, i) => <TableRow key={i}>{r.map((c, ci) => <TableCell key={ci}>{c ?? 'NULL'}</TableCell>)}</TableRow>)}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </DialogContent>
             )}
         </Dialog>
 
+        {/* Source Data Preview Dialog */}
+        <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+            <DialogContent className="max-w-5xl h-[80vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>{previewTable?.name || 'Data Preview'}</DialogTitle>
+                    <DialogDescription>
+                        Displaying top rows from {resolvedSourceInfo.name}. Showing sample data for documentation purposes.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div className="flex-1 min-h-0 overflow-auto border rounded-md my-4">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                {previewTable?.headers.map((header) => (
+                                    <TableHead key={header} className="whitespace-nowrap bg-muted/50">{header}</TableHead>
+                                ))}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {paginatedPreviewRows.map((row, rowIndex) => (
+                                <TableRow key={rowIndex}>
+                                    {row.map((cell, cellIndex) => (
+                                        <TableCell key={cellIndex} className="whitespace-nowrap">
+                                            {cell !== null ? String(cell) : <span className="text-muted-foreground italic">NULL</span>}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    {paginatedPreviewRows.length === 0 && (
+                        <div className="p-8 text-center text-muted-foreground">No data available for this source.</div>
+                    )}
+                </div>
+
+                <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page:</span>
+                        <Select value={String(previewPageSize)} onValueChange={(v) => {
+                            setPreviewPageSize(Number(v));
+                            setPreviewPage(1);
+                        }}>
+                            <SelectTrigger className="w-20 h-8">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="5">5</SelectItem>
+                                <SelectItem value="10">10</SelectItem>
+                                <SelectItem value="20">20</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <span className="text-sm text-muted-foreground ml-2">
+                            Page {previewPage} of {totalPreviewPages}
+                        </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => setPreviewPage(p => Math.max(1, p - 1))}
+                            disabled={previewPage === 1}
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => setPreviewPage(p => Math.min(totalPreviewPages, p + 1))}
+                            disabled={previewPage === totalPreviewPages}
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button variant="secondary" size="sm" onClick={() => setIsPreviewDialogOpen(false)}>Close</Button>
+                    </div>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
         {showComparison && selectedRevisions.length === 2 && (
-             <RevisionComparisonDialog open={showComparison} onOpenChange={setShowComparison} revision1={selectedRevisions[0]} revision2={selectedRevisions[1]} currentDefinitionName={definition.name} />
+             <RevisionComparisonDialog 
+                open={showComparison} 
+                onOpenChange={setShowComparison} 
+                revision1={selectedRevisions[0]} 
+                revision2={selectedRevisions[1]} 
+                currentDefinitionName={definition.name} 
+             />
         )}
     </TooltipProvider>
   );
