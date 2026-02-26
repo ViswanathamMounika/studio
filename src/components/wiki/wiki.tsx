@@ -1,14 +1,15 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import DefinitionTree from '@/components/wiki/definition-tree';
 import DefinitionView from '@/components/wiki/definition-view';
-import DefinitionEdit from '@/components/wiki/definition-edit';
 import { initialDefinitions, findDefinition } from '@/lib/data';
-import type { Definition, Notification as NotificationType, ActivityLog } from '@/lib/types';
+import type { Definition, Notification as NotificationType } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Filter, Search, X, Download, FileText, FileJson, Archive, File, DatabaseZap, CheckSquare, ListTodo } from 'lucide-react';
+import { Filter, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -17,17 +18,18 @@ import { useBookmarks } from '@/hooks/use-bookmarks';
 import { Checkbox } from '@/components/ui/checkbox';
 import { trackSearch, trackView } from '@/lib/analytics';
 import { useDebounce } from '@/hooks/use-debounce';
-import AnalyticsModal from '@/components/wiki/analytics-modal';
-import NewDefinitionModal from '@/components/wiki/new-definition-modal';
-import TemplatesModal from '@/components/wiki/templates-modal';
 import useLocalStorage from '@/hooks/use-local-storage';
-import DataTables from '@/components/wiki/data-tables';
-import ActivityLogs from '@/components/wiki/activity-logs';
 import { diff_match_patch } from 'diff-match-patch';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import jsPDF from 'jspdf';
-import * as XLSX from 'xlsx';
 import { useToast } from '@/hooks/use-toast';
+
+// Dynamic imports for heavy components
+const DefinitionEdit = dynamic(() => import('@/components/wiki/definition-edit'), { ssr: false });
+const DataTables = dynamic(() => import('@/components/wiki/data-tables'), { ssr: false });
+const ActivityLogs = dynamic(() => import('@/components/wiki/activity-logs'), { ssr: false });
+const AnalyticsModal = dynamic(() => import('@/components/wiki/analytics-modal'), { ssr: false });
+const NewDefinitionModal = dynamic(() => import('@/components/wiki/new-definition-modal'), { ssr: false });
+const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal'), { ssr: false });
 
 type View = 'definitions' | 'supporting-tables' | 'activity-logs';
 
@@ -182,7 +184,7 @@ export default function Wiki() {
     });
   };
 
-  const handleExport = (format: 'json' | 'pdf' | 'excel' | 'html') => {
+  const handleExport = async (formatType: 'json' | 'pdf' | 'excel' | 'html') => {
     if (!isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can export definitions.' });
         return;
@@ -201,15 +203,15 @@ export default function Wiki() {
     
     if (definitionsToExport.length === 0) return;
 
-    switch (format) {
+    switch (formatType) {
       case 'json':
         handleJsonExport(definitionsToExport);
         break;
       case 'pdf':
-        handlePdfExport(definitionsToExport);
+        await handlePdfExport(definitionsToExport);
         break;
       case 'excel':
-        handleExcelExport(definitionsToExport);
+        await handleExcelExport(definitionsToExport);
         break;
       case 'html':
         handleHtmlExport(definitionsToExport);
@@ -234,7 +236,8 @@ export default function Wiki() {
     downloadAnchorNode.remove();
   }
 
-  const handlePdfExport = (data: Definition[]) => {
+  const handlePdfExport = async (data: Definition[]) => {
+    const { default: jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     let y = 20;
     data.forEach((def, index) => {
@@ -255,7 +258,8 @@ export default function Wiki() {
     doc.save(`definitions-export.pdf`);
   };
 
-  const handleExcelExport = (data: Definition[]) => {
+  const handleExcelExport = async (data: Definition[]) => {
+    const XLSX = await import('xlsx');
     const sheetData = data.map(def => ({
       ID: def.id,
       Name: def.name,

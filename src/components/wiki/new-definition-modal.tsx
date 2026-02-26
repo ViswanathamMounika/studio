@@ -1,6 +1,8 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import type { Definition, Attachment } from '@/lib/types';
 import {
   Dialog,
@@ -15,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { X, Upload } from 'lucide-react';
-import WysiwygEditor from './wysiwyg-editor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AttachmentList from './attachments';
@@ -23,6 +24,8 @@ import { ScrollArea } from '../ui/scroll-area';
 import { DraftedDefinition } from './draft-from-sql-modal';
 import { Textarea } from '../ui/textarea';
 import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
+
+const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
 type NewDefinitionModalProps = {
   open: boolean;

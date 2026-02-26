@@ -26,10 +26,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import jsPDF from "jspdf";
-import * as XLSX from 'xlsx';
-import html2canvas from "html2canvas";
-
 
 type DefinitionActionsProps = {
   definition: Definition;
@@ -57,7 +53,8 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
     downloadAnchorNode.remove();
   };
 
-  const handlePdfExport = () => {
+  const handlePdfExport = async () => {
+    const { default: jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     doc.setFont('helvetica', 'bold');
     doc.text(definition.name, 20, 20);
@@ -72,7 +69,8 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
     doc.save(`${definition.name.replace(/\s+/g, '_')}.pdf`);
   };
 
-  const handleExcelExport = () => {
+  const handleExcelExport = async () => {
+    const XLSX = await import('xlsx');
     const data = [
       {
         ID: definition.id,

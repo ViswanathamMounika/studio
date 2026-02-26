@@ -2,18 +2,18 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import type { Definition, Revision, SupportingTable, Note } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Pencil, Bookmark, Trash2, Share2, Save, Link } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Save } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable, initialDefinitions } from '@/lib/data';
 import { Checkbox } from '../ui/checkbox';
-import RevisionComparisonDialog from './revision-comparison-dialog';
 import { cn } from '@/lib/utils';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
@@ -24,6 +24,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 import { Switch } from '../ui/switch';
 import RelatedDefinitions from './related-definitions';
 import useLocalStorage from '@/hooks/use-local-storage';
+
+const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
 
 type DefinitionViewProps = {
   definition: Definition;
