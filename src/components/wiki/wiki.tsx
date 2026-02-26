@@ -4,8 +4,6 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
-import DefinitionTree from '@/components/wiki/definition-tree';
-import DefinitionView from '@/components/wiki/definition-view';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
@@ -19,11 +17,19 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { trackSearch, trackView } from '@/lib/analytics';
 import { useDebounce } from '@/hooks/use-debounce';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { diff_match_patch } from 'diff-match-patch';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Dynamic imports for heavy components
+// Dynamic imports for major and heavy components to prevent ChunkLoadError
+const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
+  ssr: false,
+  loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
+});
+const DefinitionView = dynamic(() => import('@/components/wiki/definition-view'), { 
+  ssr: false,
+  loading: () => <div className="space-y-4 p-6"><Skeleton className="h-12 w-1/2"/><Skeleton className="h-[400px] w-full"/></div>
+});
 const DefinitionEdit = dynamic(() => import('@/components/wiki/definition-edit'), { ssr: false });
 const DataTables = dynamic(() => import('@/components/wiki/data-tables'), { ssr: false });
 const ActivityLogs = dynamic(() => import('@/components/wiki/activity-logs'), { ssr: false });
@@ -203,6 +209,7 @@ export default function Wiki() {
     
     if (definitionsToExport.length === 0) return;
 
+    // Heavy libraries are imported dynamically only when needed
     switch (formatType) {
       case 'json':
         handleJsonExport(definitionsToExport);
@@ -344,7 +351,6 @@ export default function Wiki() {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can edit definitions.' });
         return;
     }
-    const originalDefinition = findDefinition(definitions, updatedDefinition.id);
     const update = (items: Definition[]): Definition[] => {
       return items.map(def => {
         if (def.id === updatedDefinition.id) return updatedDefinition;
@@ -356,18 +362,11 @@ export default function Wiki() {
     setIsEditing(false);
 
     if (isBookmarked(updatedDefinition.id)) {
-        let notifMessage = `Definition "${updatedDefinition.name}" was updated.`;
-        if (originalDefinition) {
-            const dmp = new diff_match_patch();
-            const descriptionDiff = dmp.diff_main(originalDefinition.description || '', updatedDefinition.description);
-            const hasDescriptionChanges = descriptionDiff.some(d => d[0] !== 0);
-            if (hasDescriptionChanges) notifMessage = `The description of "${updatedDefinition.name}" was updated.`;
-        }
         const newNotification: NotificationType = {
             id: Date.now().toString(),
             definitionId: updatedDefinition.id,
             definitionName: updatedDefinition.name,
-            message: notifMessage,
+            message: `Definition "${updatedDefinition.name}" was updated.`,
             date: new Date().toISOString(),
             read: false,
         };
