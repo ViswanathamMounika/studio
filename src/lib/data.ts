@@ -1,4 +1,4 @@
-import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata } from './types';
+import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
     id: 'auth-status-codes',
@@ -139,6 +139,14 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
         { id: 'FEE_SCHEDULES', name: 'FEE_SCHEDULES', typeId: 'Tables' },
         { id: 'CLAIM_PAYMENTS', name: 'CLAIM_PAYMENTS', typeId: 'Tables' },
     ],
+    'Provider_Data_Views': [
+        { id: 'vw_ProviderDirectory', name: 'vw_ProviderDirectory', typeId: 'Views' },
+        { id: 'vw_NetworkParticipation', name: 'vw_NetworkParticipation', typeId: 'Views' },
+    ],
+    'Claims_Tables': [
+        { id: 'CLAIMS_MASTER', name: 'CLAIMS_MASTER', typeId: 'Tables' },
+        { id: 'CLAIM_ADJUDICATION_LOG', name: 'CLAIM_ADJUDICATION_LOG', typeId: 'Tables' },
+    ]
 };
 
 const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Delete', 'Archive', 'Duplicate', 'Search'];
@@ -163,77 +171,17 @@ const definition111_rev1 = {
     supportingTables: [{ id: 'auth-status-codes', name: 'Authorization Status Codes' }],
     attachments: [],
     notes: [],
+    sourceDb: 'DW_Reporting',
+    sourceType: 'Views',
+    sourceName: 'vw_AuthDecisionDate'
 };
 
 const definition111_rev2 = {
-    id: '1.1.1',
-    name: 'Auth Decision Date',
-    module: 'Authorizations',
-    keywords: ['authorization', 'decision date', 'approved', 'denied'],
+    ...definition111_rev1,
     description: `
       <h4 class="font-bold mt-4 mb-2">Description</h4>
       <p>The date on which a final decision is made for an authorization request. This is a critical field for tracking service level agreements (SLAs) and reporting purposes.</p>
-      
-      <h4 class="font-bold mt-4 mb-2">Relevant Term(s)</h4>
-      <p><strong style="color: blue;">UMWF (Y/N)</strong> – Was the auth worked in the UM Workflow Utility?</p>
-      <ul class="list-disc pl-6">
-        <li>Y: If the auth STATUS was changed to or from Wand PRIORITY was NEVER changed to 1W</li>
-      </ul>
-      
-      <h4 class="font-bold mt-4 mb-2">Logic Used</h4>
-
-      <h5 class="font-bold mt-3 mb-1" style="color: blue;">Approved – (Auth Status 1)</h5>
-      <p>If UMWF = Y</p>
-      <ul class="list-disc pl-6">
-        <li>If auth has MD NOTE then DECISION DATE = MD NOTE DATE</li>
-        <li>If auth has CERTIFICATION ISSUE DATE then DECISION DATE = CERTIFICATION ISSUE DATE</li>
-        <li>If auth has AUTH ACTION DATE with valid TIME then DECISION DATE = Auth Action Date</li>
-        <li>If AUTH ACTION DATE time is all 0’s then DECISION DATE = Date Auth moved to status 1</li>
-      </ul>
-      <p>If UMWF = N</p>
-      <ul class="list-disc pl-6">
-        <li>If auth has MD NOTE then DECISION DATE = MD NOTE DATE</li>
-        <li>If LOB Code = 2 and AUTH TYPE = URGENT and has OPN or OPC REVIEW note then DECISION DATE = OPN/OPC Note Create Date</li>
-        <li>If HPCODE = LCMC, MCMC, HCMC, ABCDSNP, BSDSNP, CHDSNP, IEDSNP, HNDSNP, LACDSNP, MOLDSNP, SCANFSNP, WCDSNP) and AUTH TYPE = URGENT and has OPN/OPC REVIEW note then DECISION DATE = OPN/OPC Note Create Date</li>
-        <li>If none of the above are true then DECISION DATE = Date Auth moved to status 1</li>
-      </ul>
-      
-      <h5 class="font-bold mt-3 mb-1" style="color: red;">Modified – (Auth Status 2)</h5>
-      <ul class="list-disc pl-6">
-        <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-        <li>If no MD Note then DECISION DATE = Date auth moved to status 2</li>
-      </ul>
-      
-      <h5 class="font-bold mt-3 mb-1" style="color: red;">Denied – (Auth Status 3)</h5>
-      <ul class="list-disc pl-6">
-          <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-          <li>If no MD Note then DECISION DATE = Date auth moved to status 3</li>
-      </ul>
-
-      <h5 class="font-bold mt-3 mb-1" style="color: red;">Canceled – (Auth Status 6)</h5>
-      <ul class="list-disc pl-6">
-          <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-          <li>If no MD Note then DECISION DATE = Date auth moved to status 6</li>
-      </ul>
-
-      <h5 class="font-bold mt-3 mb-1" style="color: red;">Carve Outs – (Auth Status C)</h5>
-      <ul class="list-disc pl-6">
-          <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-          <li>If Auth went to status V or X then DECISION DATE = date the auth first moved to status V or X</li>
-          <li>If no MD Note or V or X status then DECISION DATE = Date auth moved to status C</li>
-      </ul>
     `,
-    technicalDetails: '',
-    usageExamples: '',
-    isArchived: false,
-    supportingTables: [
-        { id: 'auth-status-codes', name: 'Authorization Status Codes' },
-        { id: 'cms-compliance', name: 'CMS Compliance Matrix' },
-    ],
-    attachments: [
-        { name: 'Workflow-Diagram-v1.pdf', url: '#', size: '845 KB', type: 'PDF' },
-    ],
-    notes: [],
 };
 
 const definition111_rev3 = {
@@ -267,41 +215,9 @@ const definition111_rev4 = {
         <li>If auth has AUTH ACTION DATE with valid TIME then DECISION DATE = Auth Action Date</li>
         <li>If AUTH ACTION DATE time is all 0’s then DECISION DATE = Date Auth moved to status 1</li>
       </ul>
-      <p>If UMWF = N</p>
-      <ul class="list-disc pl-6">
-        <li>If auth has MD NOTE then DECISION DATE = MD NOTE DATE</li>
-        <li>If LOB Code = 2 and AUTH TYPE = URGENT and has OPN or OPC REVIEW note then DECISION DATE = OPN/OPC Note Create Date</li>
-        <li>If HPCODE = LCMC, MCMC, HCMC, ABCDSNP, BSDSNP, CHDSNP, IEDSNP, HNDSNP, LACDSNP, MOLDSNP, SCANFSNP, WCDSNP) and AUTH TYPE = URGENT and has OPN/OPC REVIEW note then DECISION DATE = OPN/OPC Note Create Date</li>
-        <li>If none of the above are true then DECISION DATE = Date Auth moved to status 1</li>
-      </ul>
-      
-      <h5 class="font-bold mt-3 mb-1" style="color: red;">Modified – (Auth Status 2)</h5>
-      <ul class="list-disc pl-6">
-        <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-        <li>If no MD Note then DECISION DATE = Date auth moved to status 2</li>
-      </ul>
-      
-      <h5 class="font-bold mt-3 mb-1" style="color: red;">Denied – (Auth Status 3)</h5>
-      <ul class="list-disc pl-6">
-          <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-          <li>If no MD Note then DECISION DATE = Date auth moved to status 3</li>
-      </ul>
-
-      <h5 class="font-bold mt-3 mb-1" style="color: red;">Canceled – (Auth Status 6)</h5>
-      <ul class="list-disc pl-6">
-          <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-          <li>If no MD Note then DECISION DATE = Date auth moved to status 6</li>
-      </ul>
-
-      <h5 class="font-bold mt-3 mb-1" style="color: red;">Carve Outs – (Auth Status C)</h5>
-      <ul class="list-disc pl-6">
-          <li>If Auth has MD NOTE then DECISION DATE = 1st MD NOTE Create Date</li>
-          <li>If Auth went to status V or X then DECISION DATE = date the auth first moved to status V or X</li>
-          <li>If no MD Note or V or X status then DECISION DATE = Date auth moved to status C</li>
-      </ul>
     `,
-    technicalDetails: `<p>The underlying data is sourced from the <code>vw_AuthDecisionDate</code> view in the <code>DW_Reporting</code> database. This view consolidates data from multiple tables, including <code>AUTHORIZATION_MASTER</code> and <code>AUTHORIZATION_EVENTS</code>. See the <a href="#" data-supporting-table-id="vw-authactiontime">vw_authactiontime view</a> for related date fields.</p>`,
-    usageExamples: `<p><strong>Example 1: Calculating Turnaround Time</strong></p><p>To calculate the turnaround time for an authorization, subtract the <code>RequestDate</code> from the <code>AuthDecisionDate</code>.</p><pre><code>DATEDIFF(day, RequestDate, AuthDecisionDate) AS TurnaroundTime</code></pre><p><strong>Example 2: Filtering for Denied Auths in Q3</strong></p><p>This query finds all authorizations that were denied in the third quarter.</p><pre><code>SELECT * FROM vw_AuthDecisionDate WHERE AuthStatus = 'DEN' AND AuthDecisionDate BETWEEN '2023-07-01' AND '2023-09-30'</code></pre>`,
+    technicalDetails: `<p>The underlying data is sourced from the <code>vw_AuthDecisionDate</code> view in the <code>DW_Reporting</code> database.</p>`,
+    usageExamples: `<p><strong>Example 1: Calculating Turnaround Time</strong></p><pre><code>DATEDIFF(day, RequestDate, AuthDecisionDate) AS TurnaroundTime</code></pre>`,
     supportingTables: [
         { id: 'auth-status-codes', name: 'Authorization Status Codes' },
         { id: 'cms-compliance', name: 'CMS Compliance Matrix' },
@@ -320,26 +236,8 @@ const definition111_rev4 = {
         author: "Alex Smith",
         avatar: "https://picsum.photos/seed/alex/40/40",
         date: "2023-10-26T10:00:00Z",
-        content: "Can we get clarification on how 'Canceled/Carve-Outs' impacts the SLA calculation? It seems to be a gray area.",
+        content: "Can we get clarification on how 'Canceled/Carve-Outs' impacts the SLA calculation?",
         isShared: true,
-      },
-      {
-        id: "note-2",
-        authorId: "user_789",
-        author: "Jane Doe",
-        avatar: "https://picsum.photos/seed/jane/40/40",
-        date: "2023-10-27T14:30:00Z",
-        content: "Good question, Alex. My understanding is that they are excluded from the denominator. I've attached the latest reporting guidelines to ticket MPM-1295.",
-        isShared: true,
-      },
-      {
-        id: "note-3",
-        authorId: "user_123",
-        author: "Current User",
-        avatar: "https://picsum.photos/seed/user/40/40",
-        date: "2023-10-28T09:00:00Z",
-        content: "This is a private note to follow up with the reporting team about the SLA exclusions. Need to confirm by EOD Friday.",
-        isShared: false,
       }
     ],
     relatedDefinitions: ['1.1.2', '1.1.3']
@@ -362,7 +260,7 @@ export const initialDefinitions: Definition[] = [
     notes: [],
     children: [
       {
-        ...definition111_rev4, // The current version is the latest revision
+        ...definition111_rev4,
         id: '1.1.1',
         revisions: [
           {
@@ -371,20 +269,6 @@ export const initialDefinitions: Definition[] = [
             developer: 'J. Doe',
             description: 'Initial creation of the definition.',
             snapshot: definition111_rev1,
-          },
-          {
-            ticketId: 'MPM-1290',
-            date: '2023-5-20',
-            developer: 'A. Smith',
-            description: 'Added details about Canceled/Carve-Outs logic.',
-            snapshot: definition111_rev2,
-          },
-          {
-            ticketId: 'MPM-1355',
-            date: '2023-08-01',
-            developer: 'T. Johnson',
-            description: 'Added SLA keyword and updated usage description.',
-            snapshot: definition111_rev3,
           },
           {
             ticketId: 'MPM-1401',
@@ -400,29 +284,30 @@ export const initialDefinitions: Definition[] = [
         name: 'Service Type Mapping',
         module: 'Authorizations',
         keywords: ['service type', 'procedure code', 'mapping'],
-        description: '<p>Defines how provider-submitted procedure codes (e.g., CPT, HCPCS) are mapped to internal service type categories for routing and adjudication.</p>',
-        technicalDetails: '<p>The mapping is maintained in the <code>SERVICE_TYPE_MAP</code> table in the <code>DW_Reporting</code> database. This table is joined with the <code>PROCEDURE_CODES</code> table.</p>',
-        usageExamples: '<p>To find the service type for a given procedure code:</p><pre><code>SELECT T2.ServiceType FROM PROCEDURE_CODES T1 JOIN SERVICE_TYPE_MAP T2 ON T1.ServiceTypeCode = T2.ServiceTypeCode WHERE T1.ProcCode = \'99213\'</code></pre>',
+        description: '<p>Defines how provider-submitted procedure codes are mapped to internal service types.</p>',
         revisions: [],
         isArchived: false,
         supportingTables: [],
         attachments: [],
         notes: [],
-        relatedDefinitions: ['1.1.1'],
+        sourceDb: 'DW_Reporting',
+        sourceType: 'Tables',
+        sourceName: 'PROCEDURE_CODES'
       },
        {
         id: '1.1.3',
         name: 'Authorization Timeliness',
         module: 'Authorizations',
-        keywords: ['SLA', 'Timeliness', 'Turnaround Time'],
-        description: '<p>Measures the time taken from the receipt of an authorization request to the time a final decision is rendered.</p>',
-        technicalDetails: '',
-        usageExamples: '',
+        keywords: ['SLA', 'Timeliness'],
+        description: '<p>Measures the time taken from the receipt of an authorization request to the final decision.</p>',
         revisions: [],
         isArchived: false,
         supportingTables: [],
         attachments: [],
         notes: [],
+        sourceDb: 'DW_Reporting',
+        sourceType: 'Views',
+        sourceName: 'vw_AuthActionTime'
       }
     ],
   },
@@ -444,103 +329,16 @@ export const initialDefinitions: Definition[] = [
             id: '2.1.1',
             name: 'Contracted Rates',
             module: 'Provider',
-            keywords: ['provider', 'contract', 'rates', 'fee schedule'],
-            description: '<p>The negotiated payment rates for services rendered by in-network providers, as defined in their contract.</p>',
-            technicalDetails: '',
-            usageExamples: '',
+            keywords: ['provider', 'contract', 'rates'],
+            description: '<p>The negotiated payment rates for services rendered by in-network providers.</p>',
             revisions: [],
             isArchived: false,
             supportingTables: [],
             attachments: [],
             notes: [],
-        },
-        {
-            id: '3.1.1',
-            name: 'Provider Demographics',
-            module: 'Provider',
-            keywords: ['provider', 'demographics', 'address', 'specialty'],
-            description: '<p>Basic information about a healthcare provider, including name, address, contact information, and specialty.</p>',
-            technicalDetails: '',
-            usageExamples: '',
-            revisions: [],
-            isArchived: false,
-            supportingTables: [],
-            attachments: [],
-            notes: [],
-        },
-         {
-            id: '3.1.2',
-            name: 'Network Participation Rules',
-            module: 'Provider',
-            keywords: ['network', 'participation', 'provider'],
-            description: '<p>The criteria and rules determining whether a provider is considered in-network for a specific health plan product.</p>',
-            technicalDetails: '',
-            usageExamples: '',
-            revisions: [],
-            isArchived: false,
-            supportingTables: [],
-            attachments: [],
-            notes: [],
-        },
-    ]
-  },
-  {
-      id: '4',
-      name: 'Member',
-      module: 'Member',
-      keywords: [],
-      description: '',
-      technicalDetails: '',
-      usageExamples: '',
-      revisions: [],
-      isArchived: false,
-      supportingTables: [],
-      attachments: [],
-      notes: [],
-      children: [
-           {
-              id: '4.1.1',
-              name: 'Member Eligibility',
-              module: 'Member',
-              keywords: ['member', 'eligibility', 'coverage'],
-              description: '<p>The status of a member\'s enrollment and active coverage under a specific health plan for a given period.</p>',
-              technicalDetails: '',
-              usageExamples: '',
-              revisions: [],
-              isArchived: false,
-              supportingTables: [],
-              attachments: [],
-              notes: [],
-          }
-      ]
-  },
-  {
-    id: '2',
-    name: 'Claims',
-    module: 'Claims',
-    keywords: [],
-    description: '',
-    technicalDetails: '',
-    usageExamples: '',
-    revisions: [],
-    isArchived: false,
-    supportingTables: [],
-    attachments: [],
-    notes: [],
-    children: [
-        {
-            id: '1.2.1',
-            name: 'Claim Adjudication Status',
-            module: 'Claims',
-            keywords: ['claim', 'adjudication', 'paid', 'denied'],
-            description: '<p>The final status of a claim after it has been processed by the adjudication system.</p>',
-            technicalDetails: '',
-            usageExamples: '',
-            revisions: [],
-            isArchived: true,
-            supportingTables: [],
-            attachments: [],
-            notes: [],
+            sourceDb: 'Finance',
+            sourceType: 'Tables',
+            sourceName: 'FEE_SCHEDULES'
         }
     ]
   }
