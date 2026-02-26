@@ -7,7 +7,7 @@ import AppHeader from '@/components/layout/header';
 import { initialDefinitions, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Filter, Search, X } from 'lucide-react';
+import { Filter, Search, X, CheckSquare, Download, Archive, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -20,6 +20,7 @@ import useLocalStorage from '@/hooks/use-local-storage';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 // Dynamic imports for major and heavy components to prevent ChunkLoadError
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
@@ -164,168 +165,10 @@ export default function Wiki() {
     return ids;
   }, []);
 
-  const allDefinitionIds = useMemo(() => getAllDefinitionIds(definitions), [definitions, getAllDefinitionIds]);
-
-  const toggleSelectionForExport = (id: string, checked: boolean) => {
-    const getChildrenIds = (item: Definition): string[] => {
-        let ids = [item.id];
-        if (item.children) {
-            item.children.forEach(child => {
-                ids = [...ids, ...getChildrenIds(child)];
-            });
-        }
-        return ids;
-    };
-    const definition = findDefinition(definitions, id);
-    if (!definition) return;
-    
-    const idsToToggle = getChildrenIds(definition);
-    
-    setSelectedForExport(prev => {
-        if (checked) {
-            return [...new Set([...prev, ...idsToToggle])];
-        } else {
-            return prev.filter(selectedId => !idsToToggle.includes(selectedId));
-        }
-    });
+  const handleTabChange = (tab: string) => {
+      setActiveTab(tab);
+      if (selectedDefinitionId) updateUrl(selectedDefinitionId, tab);
   };
-
-  const handleExport = async (formatType: 'json' | 'pdf' | 'excel' | 'html') => {
-    if (!isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can export definitions.' });
-        return;
-    }
-    const flatten = (items: Definition[]): Definition[] => {
-        let flat: Definition[] = [];
-        items.forEach(item => {
-            flat.push(item);
-            if (item.children) flat = [...flat, ...flatten(item.children)];
-        });
-        return flat;
-    };
-    
-    const allFlat = flatten(definitions);
-    const definitionsToExport = allFlat.filter(d => selectedForExport.includes(d.id));
-    
-    if (definitionsToExport.length === 0) return;
-
-    // Heavy libraries are imported dynamically only when needed
-    switch (formatType) {
-      case 'json':
-        handleJsonExport(definitionsToExport);
-        break;
-      case 'pdf':
-        await handlePdfExport(definitionsToExport);
-        break;
-      case 'excel':
-        await handleExcelExport(definitionsToExport);
-        break;
-      case 'html':
-        handleHtmlExport(definitionsToExport);
-        break;
-    }
-
-    setSelectedForExport([]);
-    setIsSelectMode(false);
-  };
-
-  const handleJsonExport = (data: Definition[]) => {
-    const exportData = {
-        disclaimer: `This is a copy of definitions as of ${new Date().toLocaleDateString()}. Please go to ${window.location.origin} to view the updated definitions.`,
-        data: data
-    };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "definitions-export.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-  }
-
-  const handlePdfExport = async (data: Definition[]) => {
-    const { default: jsPDF } = await import('jspdf');
-    const doc = new jsPDF();
-    let y = 20;
-    data.forEach((def, index) => {
-      if (index > 0) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.setFont('helvetica', 'bold');
-      doc.text(def.name, 20, y);
-      y += 10;
-      doc.setFont('helvetica', 'normal');
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = def.description;
-      const text = doc.splitTextToSize(tempDiv.innerText, 170);
-      doc.text(text, 20, y);
-      y += text.length * 5 + 10;
-    });
-    doc.save(`definitions-export.pdf`);
-  };
-
-  const handleExcelExport = async (data: Definition[]) => {
-    const XLSX = await import('xlsx');
-    const sheetData = data.map(def => ({
-      ID: def.id,
-      Name: def.name,
-      Module: def.module,
-      Keywords: def.keywords.join(', '),
-      Description: def.description.replace(/<[^>]+>/g, ''),
-      Archived: def.isArchived,
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(sheetData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Definitions');
-    XLSX.writeFile(workbook, `definitions-export.xlsx`);
-  };
-
-  const handleHtmlExport = (data: Definition[]) => {
-     const htmlContent = `
-      <html>
-        <head>
-          <title>Definitions Export</title>
-          <style>
-            body { font-family: sans-serif; line-height: 1.6; padding: 2rem; }
-            h1, h2 { color: #333; }
-            .definition { border-bottom: 1px solid #ccc; padding-bottom: 1rem; margin-bottom: 1rem; }
-            .keywords { font-style: italic; color: #777; }
-          </style>
-        </head>
-        <body>
-          <h1>Definitions Export</h1>
-          <p>Exported on: ${new Date().toLocaleDateString()}</p>
-          <hr/>
-          ${data.map(def => `
-            <div class="definition">
-              <h2>${def.name}</h2>
-              <p><strong>Module:</strong> ${def.module}</p>
-              <div class="keywords"><strong>Keywords:</strong> ${def.keywords.join(', ')}</div>
-              <div>${def.description}</div>
-            </div>
-          `).join('')}
-        </body>
-      </html>
-    `;
-    const dataStr = "data:text/html;charset=utf-8," + encodeURIComponent(htmlContent);
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `definitions-export.html`);
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-  };
-
-  const selectedDefinition = useMemo(() => {
-    if (!selectedDefinitionId) return null;
-    const def = findDefinition(definitions, selectedDefinitionId);
-    if (!def) return null;
-    return {
-      ...def,
-      isBookmarked: isBookmarked(def.id)
-    }
-  }, [definitions, selectedDefinitionId, isBookmarked]);
 
   const handleSelectDefinition = useCallback((id: string, sectionId?: string, shouldUpdateUrl = true) => {
     const isSameDefinition = id === selectedDefinitionId;
@@ -340,11 +183,6 @@ export default function Wiki() {
     setActiveTab(targetSection);
     if (shouldUpdateUrl) updateUrl(id, targetSection);
   }, [definitions, selectedDefinitionId]);
-
-  const handleTabChange = (tab: string) => {
-      setActiveTab(tab);
-      if (selectedDefinitionId) updateUrl(selectedDefinitionId, tab);
-  };
 
   const handleSave = (updatedDefinition: Definition) => {
     if (!isAdmin) {
@@ -533,21 +371,173 @@ export default function Wiki() {
     return itemsWithBookmarks;
   }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
-  if (!isMounted) return null;
+  const visibleDefinitionIds = useMemo(() => getAllDefinitionIds(visibleDefinitions), [visibleDefinitions, getAllDefinitionIds]);
 
-  const handleNewDefinitionClick = (type: 'template' | 'blank') => {
-    if (type === 'template') setIsTemplatesModalOpen(true);
-    else {
-      setDraftedDefinitionData({ name: 'New Blank Definition', module: 'Core', keywords: [], description: '' });
-      setIsNewDefinitionModalOpen(true);
+  const toggleSelectionForExport = (id: string, checked: boolean) => {
+    const getChildrenIds = (item: Definition): string[] => {
+        let ids = [item.id];
+        if (item.children) {
+            item.children.forEach(child => {
+                ids = [...ids, ...getChildrenIds(child)];
+            });
+        }
+        return ids;
+    };
+    const definition = findDefinition(definitions, id);
+    if (!definition) return;
+    
+    const idsToToggle = getChildrenIds(definition);
+    
+    setSelectedForExport(prev => {
+        if (checked) {
+            return [...new Set([...prev, ...idsToToggle])];
+        } else {
+            return prev.filter(selectedId => !idsToToggle.includes(selectedId));
+        }
+    });
+  };
+
+  const handleExport = async (formatType: 'json' | 'pdf' | 'excel' | 'html') => {
+    if (!isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can export definitions.' });
+        return;
     }
+    const flatten = (items: Definition[]): Definition[] => {
+        let flat: Definition[] = [];
+        items.forEach(item => {
+            flat.push(item);
+            if (item.children) flat = [...flat, ...flatten(item.children)];
+        });
+        return flat;
+    };
+    
+    const allFlat = flatten(definitions);
+    const definitionsToExport = allFlat.filter(d => selectedForExport.includes(d.id));
+    
+    if (definitionsToExport.length === 0) return;
+
+    // Heavy libraries are imported dynamically only when needed
+    switch (formatType) {
+      case 'json':
+        handleJsonExport(definitionsToExport);
+        break;
+      case 'pdf':
+        await handlePdfExport(definitionsToExport);
+        break;
+      case 'excel':
+        await handleExcelExport(definitionsToExport);
+        break;
+      case 'html':
+        handleHtmlExport(definitionsToExport);
+        break;
+    }
+
+    setSelectedForExport([]);
+    setIsSelectMode(false);
   };
-  
-  const handleUseTemplate = (templateData: Partial<Definition>) => {
-      setDraftedDefinitionData(templateData);
-      setIsNewDefinitionModalOpen(true);
-      setIsTemplatesModalOpen(false);
+
+  const handleJsonExport = (data: Definition[]) => {
+    const exportData = {
+        disclaimer: `This is a copy of definitions as of ${new Date().toLocaleDateString()}. Please go to ${window.location.origin} to view the updated definitions.`,
+        data: data
+    };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "definitions-export.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  }
+
+  const handlePdfExport = async (data: Definition[]) => {
+    const { default: jsPDF } = await import('jspdf');
+    const doc = new jsPDF();
+    let y = 20;
+    data.forEach((def, index) => {
+      if (index > 0) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.text(def.name, 20, y);
+      y += 10;
+      doc.setFont('helvetica', 'normal');
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = def.description;
+      const text = doc.splitTextToSize(tempDiv.innerText, 170);
+      doc.text(text, 20, y);
+      y += text.length * 5 + 10;
+    });
+    doc.save(`definitions-export.pdf`);
   };
+
+  const handleExcelExport = async (data: Definition[]) => {
+    const XLSX = await import('xlsx');
+    const sheetData = data.map(def => ({
+      ID: def.id,
+      Name: def.name,
+      Module: def.module,
+      Keywords: def.keywords.join(', '),
+      Description: def.description.replace(/<[^>]+>/g, ''),
+      Archived: def.isArchived,
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(sheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Definitions');
+    XLSX.writeFile(workbook, `definitions-export.xlsx`);
+  };
+
+  const handleHtmlExport = (data: Definition[]) => {
+     const htmlContent = `
+      <html>
+        <head>
+          <title>Definitions Export</title>
+          <style>
+            body { font-family: sans-serif; line-height: 1.6; padding: 2rem; }
+            h1, h2 { color: #333; }
+            .definition { border-bottom: 1px solid #ccc; padding-bottom: 1rem; margin-bottom: 1rem; }
+            .keywords { font-style: italic; color: #777; }
+          </style>
+        </head>
+        <body>
+          <h1>Definitions Export</h1>
+          <p>Exported on: ${new Date().toLocaleDateString()}</p>
+          <hr/>
+          ${data.map(def => `
+            <div class="definition">
+              <h2>${def.name}</h2>
+              <p><strong>Module:</strong> ${def.module}</p>
+              <div class="keywords"><strong>Keywords:</strong> ${def.keywords.join(', ')}</div>
+              <div>${def.description}</div>
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `;
+    const dataStr = "data:text/html;charset=utf-8," + encodeURIComponent(htmlContent);
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `definitions-export.html`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const selectedDefinition = useMemo(() => {
+    if (!selectedDefinitionId) return null;
+    const def = findDefinition(definitions, selectedDefinitionId);
+    if (!def) return null;
+    return {
+      ...def,
+      isBookmarked: isBookmarked(def.id)
+    }
+  }, [definitions, selectedDefinitionId, isBookmarked]);
+
+  const handleCancelSelection = () => {
+    setIsSelectMode(false);
+    setSelectedForExport([]);
+  }
 
   const renderContent = () => {
     switch (activeView) {
@@ -565,10 +555,21 @@ export default function Wiki() {
     }
   }
 
-  const handleCancelSelection = () => {
-    setIsSelectMode(false);
-    setSelectedForExport([]);
-  }
+  if (!isMounted) return null;
+
+  const handleNewDefinitionClick = (type: 'template' | 'blank') => {
+    if (type === 'template') setIsTemplatesModalOpen(true);
+    else {
+      setDraftedDefinitionData({ name: 'New Blank Definition', module: 'Core', keywords: [], description: '' });
+      setIsNewDefinitionModalOpen(true);
+    }
+  };
+  
+  const handleUseTemplate = (templateData: Partial<Definition>) => {
+      setDraftedDefinitionData(templateData);
+      setIsNewDefinitionModalOpen(true);
+      setIsTemplatesModalOpen(false);
+  };
 
   return (
     <SidebarProvider>
@@ -587,72 +588,84 @@ export default function Wiki() {
           <main className="flex-1 flex overflow-hidden">
              {activeView === 'definitions' && (
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card relative">
-                  <div className="p-4 border-b flex items-center justify-between">
-                      <h2 className="font-bold text-lg">MPM Definitions</h2>
+                  <div className="p-4 border-b flex items-center justify-between bg-muted/30">
+                      <h2 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">MPM Definitions</h2>
                       {!isSelectMode && (
                         <Button 
                           variant="ghost" 
                           size="sm" 
                           onClick={() => setIsSelectMode(true)}
-                          className="h-8 px-2"
+                          className="h-7 px-2 text-xs font-semibold hover:bg-primary/10 hover:text-primary"
                         >
+                          <CheckSquare className="h-3.5 w-3.5 mr-1" />
                           Select
                         </Button>
                       )}
                   </div>
 
-                  <div className="p-3 border-b bg-card/95 backdrop-blur-sm sticky top-0 z-20 h-[60px] flex items-center">
+                  <div className="p-3 border-b bg-background sticky top-0 z-20 h-[60px] flex items-center shadow-sm">
                     {isSelectMode ? (
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelSelection}>
+                      <div className="flex items-center justify-between w-full animate-in fade-in slide-in-from-top-1">
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive" onClick={handleCancelSelection}>
                             <X className="h-4 w-4" />
                           </Button>
-                          <span className="text-sm font-medium whitespace-nowrap">{selectedForExport.length} items</span>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold leading-none">{selectedForExport.length}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase">Selected</span>
+                          </div>
                         </div>
                         <div className="flex items-center gap-1">
                           {selectedForExport.length > 0 && (
                             <>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="sm" className="h-8">Export</Button>
+                                  <Button variant="default" size="sm" className="h-8 px-2 text-xs shadow-md">
+                                    <Download className="h-3.5 w-3.5 mr-1" />
+                                    Export
+                                    <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
+                                  </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-32">
-                                  <DropdownMenuItem onClick={() => handleExport('pdf')}>PDF</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleExport('json')}>JSON</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleExport('excel')}>Excel</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleExport('html')}>HTML</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleExport('pdf')}>PDF Document</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleExport('json')}>JSON Data</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleExport('excel')}>Excel Spreadsheet</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleExport('html')}>HTML Page</DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
-                              <Button variant="outline" size="sm" className="h-8" onClick={() => handleBulkArchive(true)}>Archive</Button>
+                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-dashed" onClick={() => handleBulkArchive(true)}>
+                                <Archive className="h-3.5 w-3.5 mr-1" />
+                                Archive
+                              </Button>
                             </>
                           )}
                           <div className="flex items-center gap-1.5 ml-1 border-l pl-2">
                              <Checkbox 
                                 id="sidebar-select-all"
-                                checked={selectedForExport.length === allDefinitionIds.length && allDefinitionIds.length > 0}
-                                onCheckedChange={(checked) => setSelectedForExport(checked ? allDefinitionIds : [])}
+                                checked={visibleDefinitionIds.length > 0 && selectedForExport.length === visibleDefinitionIds.length}
+                                onCheckedChange={(checked) => setSelectedForExport(checked ? visibleDefinitionIds : [])}
+                                className="h-4 w-4 border-primary/50"
                              />
-                             <Label htmlFor="sidebar-select-all" className="text-xs font-normal">All</Label>
+                             <Label htmlFor="sidebar-select-all" className="text-[10px] font-bold uppercase cursor-pointer">All</Label>
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 w-full">
+                      <div className="flex items-center gap-2 w-full animate-in fade-in">
                         <div className="relative flex-1">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="search"
                                 placeholder="Search definitions..."
-                                className="w-full h-9 rounded-lg bg-secondary pl-8"
+                                className="w-full h-9 rounded-lg bg-muted/50 pl-8 focus-visible:bg-background border-none"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 hover:bg-primary/10">
-                                    <Filter className="h-4 w-4" />
+                                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 hover:bg-muted">
+                                    <Filter className="h-4 w-4 text-muted-foreground" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -695,8 +708,11 @@ export default function Wiki() {
                             searchQuery={searchQuery}
                         />
                       ) : (
-                        <div className="text-center text-muted-foreground py-12 px-4">
-                            <p className="text-sm">No results found.</p>
+                        <div className="text-center text-muted-foreground py-12 px-4 flex flex-col items-center">
+                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+                              <Search className="h-5 w-5 opacity-20" />
+                            </div>
+                            <p className="text-xs font-medium">No results found for "{searchQuery}"</p>
                         </div>
                       )}
                   </div>

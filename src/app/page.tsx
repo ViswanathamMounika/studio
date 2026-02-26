@@ -1,8 +1,12 @@
 
+'use client';
+
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Dynamically import the main Wiki component to reduce initial bundle size
+// We use ssr: false here because the Wiki component relies heavily on browser APIs
+// and local storage which are not available during server-side rendering.
 const Wiki = dynamic(() => import('@/components/wiki/wiki'), {
   ssr: false,
   loading: () => (

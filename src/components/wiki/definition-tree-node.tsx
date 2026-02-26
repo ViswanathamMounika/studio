@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link, Archive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
-import RelatedDefinitions from './related-definitions';
 
 function isParent(node: Definition, selectedId: string): boolean {
     if (!node.children) {
@@ -27,15 +26,15 @@ function isParent(node: Definition, selectedId: string): boolean {
 
 const HighlightedText = ({ text, highlight }: { text: string; highlight: string }) => {
     if (!highlight.trim()) {
-        return <span>{text}</span>;
+        return <span className="truncate">{text}</span>;
     }
     const regex = new RegExp(`(${highlight})`, 'gi');
     const parts = text.split(regex);
     return (
-        <span>
+        <span className="truncate">
             {parts.map((part, i) =>
                 regex.test(part) ? (
-                    <span key={i} className="bg-yellow-300/50 rounded">
+                    <span key={i} className="bg-yellow-300/40 font-semibold rounded-sm">
                         {part}
                     </span>
                 ) : (
@@ -55,12 +54,8 @@ const DefinitionSubItems = ({ definition, onSelect, activeSection, level }: { de
         { id: 'related-definitions', label: 'Related Definitions', icon: Link },
     ];
 
-    const handleDefinitionClick = (id: string) => {
-        onSelect(id, 'description');
-    };
-
     return (
-        <div className="space-y-1" style={{ paddingLeft: `${(level) * 1}rem` }}>
+        <div className="space-y-0.5" style={{ paddingLeft: `${(level + 1) * 0.75}rem` }}>
             {subItems.map(item => (
                 <div
                     key={item.id}
@@ -69,12 +64,12 @@ const DefinitionSubItems = ({ definition, onSelect, activeSection, level }: { de
                         onSelect(definition.id, item.id)
                     }}
                     className={cn(
-                        "flex items-center gap-2 p-1.5 rounded-md cursor-pointer text-sm ml-8",
-                        "hover:bg-primary/10",
-                        activeSection === item.id && "bg-primary/10 text-primary"
+                        "flex items-center gap-2 p-1.5 rounded-md cursor-pointer text-[13px] ml-6 transition-colors",
+                        "hover:bg-primary/5 hover:text-primary",
+                        activeSection === item.id ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground"
                     )}
                 >
-                    <item.icon className="h-4 w-4 shrink-0" />
+                    <item.icon className="h-3.5 w-3.5 shrink-0" />
                     <span>{item.label}</span>
                 </div>
             ))}
@@ -128,51 +123,60 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
     <Collapsible open={isNodeExpanded} onOpenChange={setIsNodeExpanded}>
         <div 
             className={cn(
-                "flex items-center w-full group/item rounded-md hover:bg-primary/10",
-                (isSelected || (isSelectMode && isSelectedForExport)) && "bg-primary/10"
+                "flex items-center w-full group/item rounded-md transition-all h-9 px-1",
+                (isSelected && !isSelectMode) && "bg-primary/10 text-primary font-medium",
+                (isSelectMode && isSelectedForExport) ? "bg-primary/10" : "hover:bg-muted/50"
             )}
-            style={{ paddingLeft: `${level * 1}rem` }}
+            style={{ paddingLeft: `${level * 0.75}rem` }}
         >
             {isSelectMode && (
-                <div onClick={handleCheckboxClick} className="p-2">
+                <div onClick={handleCheckboxClick} className="flex items-center justify-center w-7 h-7">
                     <Checkbox
                         id={`select-${node.id}`}
                         checked={isSelectedForExport}
                         onCheckedChange={(checked) => onToggleSelection(node.id, !!checked)}
-                        className={cn("mr-2")}
+                        className="h-4 w-4 border-primary/40 data-[state=checked]:border-primary"
                     />
                 </div>
             )}
             
             <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent" onClick={handleTriggerClick}>
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 hover:bg-transparent" onClick={handleTriggerClick}>
                     { (hasChildren || !isModule) ? (
-                        <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isNodeExpanded && "rotate-90")} />
-                    ) : ( <div className="w-4 h-4"></div>)
+                        <ChevronRight className={cn("h-3.5 w-3.5 transition-transform duration-200 text-muted-foreground", isNodeExpanded && "rotate-90")} />
+                    ) : ( <div className="w-3.5 h-3.5"></div>)
                     }
                 </Button>
             </CollapsibleTrigger>
             
             <div
                 className={cn(
-                    "w-full justify-start text-left h-8 pl-0 flex items-center cursor-pointer"
+                    "flex-1 flex items-center min-w-0 cursor-pointer h-full px-1"
                 )}
                 onClick={handleNodeSelect}
             >
-                <Icon className={cn("h-4 w-4 mr-2 shrink-0", hasChildren || isModule ? "text-primary" : "text-muted-foreground")} />
-                <span className="truncate flex-1"><HighlightedText text={node.name} highlight={searchQuery} /></span>
-                {node.isArchived && (
-                    <Archive className="h-4 w-4 shrink-0 text-muted-foreground ml-auto mr-1" />
-                )}
-                {node.isBookmarked && (
-                  <Bookmark className="h-4 w-4 shrink-0 fill-primary text-primary ml-auto mr-1" />
-                )}
+                <Icon className={cn(
+                    "h-4 w-4 mr-2 shrink-0 transition-colors", 
+                    (hasChildren || isModule) ? "text-primary/70" : "text-muted-foreground/60",
+                    isSelected && !isSelectMode && "text-primary"
+                )} />
+                <span className="truncate text-[13px]">
+                    <HighlightedText text={node.name} highlight={searchQuery} />
+                </span>
+                <div className="ml-auto flex items-center gap-1.5 opacity-60 group-hover/item:opacity-100 transition-opacity pr-1">
+                    {node.isArchived && (
+                        <Archive className="h-3 w-3 text-destructive" />
+                    )}
+                    {node.isBookmarked && (
+                      <Bookmark className="h-3 w-3 fill-primary text-primary" />
+                    )}
+                </div>
             </div>
         </div>
       
       <CollapsibleContent>
             {hasChildren && isNodeExpanded && (
-                <div className="space-y-1 mt-1">
+                <div className="space-y-0.5 mt-0.5">
                     {node.children?.map(child => (
                     <DefinitionTreeNode
                         key={child.id}
@@ -190,7 +194,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                     ))}
                 </div>
             )}
-            {!isModule && isSelected && isNodeExpanded && (
+            {!isModule && isSelected && isNodeExpanded && !isSelectMode && (
                 <DefinitionSubItems definition={node} onSelect={onSelect} activeSection={activeSection} level={level}/>
             )}
       </CollapsibleContent>
