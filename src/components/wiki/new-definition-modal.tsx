@@ -280,9 +280,9 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                     <SelectValue placeholder={sourceType ? "Select Source Name" : "Select Source Type first"} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {availableSourceObjects[`${sourceDb}_${sourceType}`]?.map(obj => (
+                                    {availableSourceNames.map(obj => (
                                         <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
-                                    )) || []}
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
