@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -238,6 +239,7 @@ export default function ActivityLogs() {
                                                 selected={customRange as any}
                                                 onSelect={(range: any) => setCustomRange(range)}
                                                 numberOfMonths={2}
+                                                disabled={{ after: new Date() }}
                                             />
                                         </PopoverContent>
                                     </Popover>
