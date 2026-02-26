@@ -9,10 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Pencil, Bookmark, Trash2, Share2, Save } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Pencil, Bookmark, Trash2, Share2, Save, Info, Database } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable, initialDefinitions } from '@/lib/data';
+import { authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable, initialDefinitions, mpmDatabases } from '@/lib/data';
 import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
 import AttachmentList from './attachments';
@@ -68,23 +69,12 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     const [definitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
 
     const tabs = [
-        { value: 'description', label: 'Description', condition: !!definition.description },
-        { value: 'technical-details', label: 'Technical Details', condition: !!definition.technicalDetails },
-        { value: 'usage-examples', label: 'Usage Examples', condition: !!definition.usageExamples },
-        { value: 'revisions', label: 'Version History', condition: true },
-        { value: 'attachments', label: 'Attachments', condition: true },
-        { value: 'notes', label: 'Notes', condition: true },
-        { value: 'related-definitions', label: 'Related Definitions', condition: true },
+        { value: 'description', label: 'Description' },
+        { value: 'revisions', label: 'Version History' },
+        { value: 'attachments', label: 'Attachments' },
+        { value: 'notes', label: 'Notes' },
+        { value: 'related-definitions', label: 'Related Definitions' },
     ];
-
-    const visibleTabs = tabs.filter(tab => tab.condition);
-    
-    useEffect(() => {
-        const validTabs = visibleTabs.map(t => t.value);
-        if (activeTab && !validTabs.includes(activeTab)) {
-            onTabChange('description');
-        }
-    }, [definition, activeTab, onTabChange, visibleTabs]);
 
     useEffect(() => {
         const handleContentClick = (e: MouseEvent) => {
@@ -222,9 +212,10 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             url.searchParams.delete('section');
         }
         window.history.pushState({}, '', url.toString());
-        // This is a simple way to trigger a re-render and navigation in the parent
         window.dispatchEvent(new PopStateEvent('popstate'));
     };
+
+    const dbName = mpmDatabases.find(db => db.id === definition.sourceDb)?.name || definition.sourceDb;
 
   return (
     <TooltipProvider>
@@ -273,42 +264,104 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
         <div id="definition-content-area">
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
-                <TabsList className="w-full">
-                    {visibleTabs.map(tab => (
-                        <TabsTrigger key={tab.value} value={tab.value} className="flex-1">{tab.label}</TabsTrigger>
+                <TabsList className="w-full bg-transparent border-b rounded-none p-0 h-auto justify-start gap-8">
+                    {tabs.map(tab => (
+                        <TabsTrigger 
+                            key={tab.value} 
+                            value={tab.value} 
+                            className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 py-2 text-sm font-medium transition-all"
+                        >
+                            {tab.label}
+                        </TabsTrigger>
                     ))}
                 </TabsList>
 
-                {visibleTabs.find(t => t.value === 'description') &&
-                    <TabsContent value="description" id="section-description" className="mt-4 space-y-4">
-                        <Card>
-                            <CardContent className="p-6">
-                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                }
-                {visibleTabs.find(t => t.value === 'technical-details') &&
-                    <TabsContent value="technical-details" id="section-technical-details" className="mt-4 space-y-4">
-                        <Card>
-                            <CardHeader><CardTitle>Technical Details</CardTitle></CardHeader>
-                            <CardContent className="p-6">
-                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.technicalDetails! }} />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                }
-                {visibleTabs.find(t => t.value === 'usage-examples') &&
-                    <TabsContent value="usage-examples" id="section-usage-examples" className="mt-4 space-y-4">
-                        <Card>
-                            <CardHeader><CardTitle>Usage Examples</CardTitle></CardHeader>
-                            <CardContent className="p-6">
-                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.usageExamples! }} />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                }
-                <TabsContent value="revisions" id="section-revisions" className="mt-4">
+                <TabsContent value="description" id="section-description" className="mt-6 space-y-4">
+                    <Accordion type="multiple" defaultValue={['description', 'short-description']} className="space-y-4">
+                        <AccordionItem value="data-source" className="bg-card border rounded-lg shadow-sm px-4">
+                            <AccordionTrigger className="hover:no-underline py-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-base">Data Source</span>
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-4">
+                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                    <div>
+                                        <p className="font-medium text-muted-foreground">Database</p>
+                                        <p className="mt-1">{dbName || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-muted-foreground">Source Type</p>
+                                        <p className="mt-1">{definition.sourceType || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-muted-foreground">Source Name</p>
+                                        <p className="mt-1">{definition.sourceName || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="short-description" className="bg-card border rounded-lg shadow-sm px-4">
+                            <AccordionTrigger className="hover:no-underline py-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-base">Short Description</span>
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-4">
+                                <p className="text-sm">{definition.shortDescription || 'No short description available.'}</p>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="description" className="bg-card border rounded-lg shadow-sm px-4">
+                            <AccordionTrigger className="hover:no-underline py-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-base">Description</span>
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-4">
+                                <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.description }} />
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="technical-details" className="bg-card border rounded-lg shadow-sm px-4">
+                            <AccordionTrigger className="hover:no-underline py-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-base">Technical Details</span>
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-4">
+                                {definition.technicalDetails ? (
+                                    <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.technicalDetails }} />
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No technical details provided.</p>
+                                )}
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="usage-examples" className="bg-card border rounded-lg shadow-sm px-4">
+                            <AccordionTrigger className="hover:no-underline py-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-base">Usage Examples / SQL View</span>
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-4">
+                                {definition.usageExamples ? (
+                                    <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.usageExamples }} />
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No usage examples or SQL views available.</p>
+                                )}
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                </TabsContent>
+
+                <TabsContent value="revisions" id="section-revisions" className="mt-6">
                 <Card>
                     <CardHeader>
                         <div className="flex justify-end">
@@ -357,7 +410,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                     </CardContent>
                 </Card>
                 </TabsContent>
-                <TabsContent value="attachments" id="section-attachments" className="mt-4">
+                <TabsContent value="attachments" id="section-attachments" className="mt-6">
                     <Card>
                         <CardHeader><CardTitle>Attachments</CardTitle></CardHeader>
                         <CardContent>
@@ -365,7 +418,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="notes" id="section-notes" className="mt-4">
+                <TabsContent value="notes" id="section-notes" className="mt-6">
                     <Card>
                         <CardHeader>
                             <CardTitle>Notes</CardTitle>
@@ -458,7 +511,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                         </CardContent>
                     </Card>
                 </TabsContent>
-                 <TabsContent value="related-definitions" id="section-related-definitions" className="mt-4">
+                 <TabsContent value="related-definitions" id="section-related-definitions" className="mt-6">
                     <RelatedDefinitions
                         currentDefinition={definition}
                         allDefinitions={definitions}
