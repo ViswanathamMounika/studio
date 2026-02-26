@@ -60,7 +60,7 @@ export const vwAuthActionTimeTable: SupportingTable = {
     ]
 }
 
-const names = ['J. Doe', 'A. Smith', 'T. Johnson', 'S. Lee', 'M. Garcia', 'P. Williams', 'D. Brown', 'K. Nguyen'];
+const names = ['J. Doe', 'A. Smith', 'T. Johnson', 'S. Lee', 'M. Garcia', 'P. Williams', 'D. Brown', 'K. Nguyen', 'Dhilip Sagadevan'];
 
 const getRandomName = () => {
     return names[Math.floor(Math.random() * names.length)];
@@ -194,7 +194,8 @@ const definition111_rev3 = {
 };
 
 const definition111_rev4 = {
-    ...definition111_rev3,
+    ...definition111_rev2,
+    keywords: ['authorization', 'decision date', 'approved', 'denied', 'SLA'],
     description: `
       <h4 class="font-bold mt-4 mb-2">Description</h4>
       <p>The date on which a final decision is made for an authorization request. This is a critical field for tracking service level agreements (SLAs) and reporting purposes according to the <a href="#" data-supporting-table-id="cms-compliance">CMS Compliance Matrix</a>.</p>
@@ -232,11 +233,20 @@ const definition111_rev4 = {
     notes: [
       {
         id: "note-1",
+        authorId: "user_123",
+        author: "Dhilip Sagadevan",
+        avatar: "https://picsum.photos/seed/dhilip/40/40",
+        date: "2026-02-10T12:01:42Z",
+        content: "newehwjr",
+        isShared: true,
+      },
+      {
+        id: "note-2",
         authorId: "user_456",
         author: "Alex Smith",
         avatar: "https://picsum.photos/seed/alex/40/40",
         date: "2023-10-26T10:00:00Z",
-        content: "Can we get clarification on how 'Canceled/Carve-Outs' impacts the SLA calculation?",
+        content: "We need to double check the MD NOTE logic for TX mandates specifically.",
         isShared: true,
       }
     ],
@@ -289,7 +299,17 @@ export const initialDefinitions: Definition[] = [
         isArchived: false,
         supportingTables: [],
         attachments: [],
-        notes: [],
+        notes: [
+            {
+                id: "note-3",
+                authorId: "user_456",
+                author: "Alex Smith",
+                avatar: "https://picsum.photos/seed/alex2/40/40",
+                date: "2024-01-05T09:00:00Z",
+                content: "Updated the CPT mapping for 2024 compliance.",
+                isShared: true,
+            }
+        ],
         sourceDb: 'DW_Reporting',
         sourceType: 'Tables',
         sourceName: 'PROCEDURE_CODES'

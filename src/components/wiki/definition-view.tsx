@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -59,8 +58,8 @@ const supportingTablesData: Record<string, SupportingTable> = {
 
 const currentUser = {
     id: "user_123",
-    name: "Current User",
-    avatar: "https://picsum.photos/seed/user/40/40"
+    name: "Dhilip Sagadevan",
+    avatar: "https://picsum.photos/seed/dhilip/40/40"
 };
 
 export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, activeTab, onTabChange, onSave, isAdmin }: DefinitionViewProps) {
@@ -77,7 +76,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
 
     const [noteText, setNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
-    const [notesView, setNotesView] = useState<'my' | 'others'>('my');
+    const [notesViewTab, setNotesViewTab] = useState<'my' | 'others'>('my');
     const { toast } = useToast();
     const [definitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
 
@@ -165,7 +164,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     };
 
     const filteredNotes = definition.notes?.filter(note => {
-        if (notesView === 'my') return note.authorId === currentUser.id;
+        if (notesViewTab === 'my') return note.authorId === currentUser.id;
         return note.isShared && note.authorId !== currentUser.id;
     });
 
@@ -189,13 +188,12 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     }, [definition]);
 
     const handleOpenPreview = (sourceName: string) => {
-        // Find matching mock data or use a default one from allDataTables
         const mockTable = allDataTables.find(t => t.name.toLowerCase().includes(sourceName.toLowerCase())) 
                           || allDataTables[Math.floor(Math.random() * allDataTables.length)];
         
         setPreviewTable(mockTable);
         setPreviewPage(1);
-        setPreviewPageSize(5); // Default to smallest size on open
+        setPreviewPageSize(5);
         setIsPreviewDialogOpen(true);
     };
 
@@ -392,58 +390,108 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                     </TabsContent>
 
                     <TabsContent value="notes" className="mt-6">
-                        <Card>
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <CardTitle>Notes</CardTitle>
-                                    <div className="flex items-center gap-2">
-                                        <Button 
-                                            variant={notesView === 'my' ? 'default' : 'outline'} 
-                                            size="sm"
-                                            onClick={() => setNotesView('my')}
-                                        >
-                                            My Notes
-                                        </Button>
-                                        <Button 
-                                            variant={notesView === 'others' ? 'default' : 'outline'} 
-                                            size="sm"
-                                            onClick={() => setNotesView('others')}
-                                        >
-                                            Shared Notes
-                                        </Button>
-                                    </div>
+                        <div className="space-y-8">
+                            <div className="flex flex-col gap-4">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-xl font-bold my-0">Notes</h3>
+                                    <Info className="h-4 w-4 text-muted-foreground" />
                                 </div>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="p-4 border rounded-lg">
-                                    <Textarea placeholder="Add a note..." value={noteText} onChange={(e) => setNoteText(e.target.value)} />
-                                    <div className="flex items-center justify-between mt-2">
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="share-note" checked={shareNote} onCheckedChange={(checked) => setShareNote(!!checked)} />
-                                            <Label htmlFor="share-note">Share with everyone</Label>
+                                <Card className="bg-card border shadow-sm">
+                                    <CardHeader className="py-4">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold">Add a Note</span>
+                                            <Info className="h-4 w-4 text-muted-foreground" />
                                         </div>
-                                        <Button onClick={handleSaveNote}>Save</Button>
-                                    </div>
-                                </div>
-                                <div className="space-y-4">
-                                    {filteredNotes?.map(note => (
-                                        <div key={note.id} className="flex items-start gap-4 p-3 border rounded-md">
-                                            <Avatar><AvatarImage src={note.avatar} /><AvatarFallback>{note.author.charAt(0)}</AvatarFallback></Avatar>
-                                            <div className="flex-1">
-                                                <div className="flex justify-between">
-                                                    <div><span className="font-semibold">{note.author}</span><span className="text-xs text-muted-foreground ml-2">{new Date(note.date).toLocaleString()}</span></div>
-                                                    {note.authorId === currentUser.id && <Button variant="ghost" size="icon" onClick={() => handleDeleteNote(note.id)}><Trash2 className="h-4 w-4" /></Button>}
-                                                </div>
-                                                <p className="text-sm mt-1">{note.content}</p>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="relative">
+                                            <Textarea 
+                                                placeholder="Add a personal or shared note..." 
+                                                className="min-h-[120px] resize-none pr-4 pt-4"
+                                                value={noteText}
+                                                onChange={(e) => setNoteText(e.target.value.slice(0, 5000))}
+                                            />
+                                            <div className="text-right text-[10px] text-muted-foreground mt-1">
+                                                {noteText.length}/5000
                                             </div>
                                         </div>
-                                    ))}
-                                    {filteredNotes?.length === 0 && (
-                                        <p className="text-center py-8 text-muted-foreground text-sm">No notes found in this view.</p>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-2">
+                                                <Checkbox id="share-note-check" checked={shareNote} onCheckedChange={(checked) => setShareNote(!!checked)} />
+                                                <Label htmlFor="share-note-check" className="text-sm cursor-pointer">Share with everyone</Label>
+                                            </div>
+                                            <Button onClick={handleSaveNote} className="px-8">Save</Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className="flex flex-col gap-4">
+                                <Card className="bg-card border shadow-sm p-6">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-lg">Saved Notes</span>
+                                            <Info className="h-4 w-4 text-muted-foreground" />
+                                        </div>
+                                        <Tabs value={notesViewTab} onValueChange={(val: any) => setNotesViewTab(val)} className="h-auto">
+                                            <TabsList className="bg-transparent border-none p-0 h-auto gap-4">
+                                                <TabsTrigger 
+                                                    value="my" 
+                                                    className="bg-transparent text-muted-foreground hover:text-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none p-0 py-1 text-sm font-semibold transition-all"
+                                                >
+                                                    My Notes
+                                                </TabsTrigger>
+                                                <TabsTrigger 
+                                                    value="others" 
+                                                    className="bg-transparent text-muted-foreground hover:text-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none p-0 py-1 text-sm font-semibold transition-all"
+                                                >
+                                                    Other's Notes
+                                                </TabsTrigger>
+                                            </TabsList>
+                                        </Tabs>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        {filteredNotes?.map(note => (
+                                            <div key={note.id} className="p-4 border rounded-lg bg-background group transition-colors hover:border-primary/20">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-sm text-foreground">{note.author}</span>
+                                                            <span className="text-xs text-muted-foreground">{new Date(note.date).toLocaleString('en-US', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                                                        </div>
+                                                        <p className="text-sm mt-3 text-muted-foreground leading-relaxed">{note.content}</p>
+                                                    </div>
+                                                    {note.authorId === currentUser.id && (
+                                                        <div className="flex items-center gap-1">
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 hover:bg-primary/10"
+                                                                onClick={() => toast({ title: "Edit Note", description: "Edit functionality coming soon." })}
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                                                onClick={() => handleDeleteNote(note.id)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {filteredNotes?.length === 0 && (
+                                            <p className="text-center py-12 text-muted-foreground text-sm italic">No {notesViewTab === 'my' ? 'personal' : 'shared'} notes found for this definition.</p>
+                                        )}
+                                    </div>
+                                </Card>
+                            </div>
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="related-definitions" className="mt-6">
@@ -569,4 +617,3 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     </TooltipProvider>
   );
 }
-
