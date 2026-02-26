@@ -269,7 +269,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                         <TabsTrigger 
                             key={tab.value} 
                             value={tab.value} 
-                            className="bg-transparent hover:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 py-2 text-sm font-medium transition-all"
+                            className="bg-transparent text-muted-foreground hover:text-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 py-2 text-sm font-medium transition-all"
                         >
                             {tab.label}
                         </TabsTrigger>
@@ -288,16 +288,16 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                             <AccordionContent className="pb-4">
                                 <div className="flex flex-col gap-4 text-sm">
                                     <div>
-                                        <p className="font-medium text-muted-foreground">Database</p>
-                                        <p className="mt-1">{dbName || 'N/A'}</p>
+                                        <p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Database</p>
+                                        <p className="mt-1 font-medium">{dbName || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="font-medium text-muted-foreground">Source Type</p>
-                                        <p className="mt-1">{definition.sourceType || 'N/A'}</p>
+                                        <p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Source Type</p>
+                                        <p className="mt-1 font-medium">{definition.sourceType || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="font-medium text-muted-foreground">Source Name</p>
-                                        <p className="mt-1">{definition.sourceName || 'N/A'}</p>
+                                        <p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Source Name</p>
+                                        <p className="mt-1 font-medium">{definition.sourceName || 'N/A'}</p>
                                     </div>
                                 </div>
                             </AccordionContent>
