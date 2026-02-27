@@ -1,3 +1,4 @@
+
 export interface Revision {
   ticketId: string;
   date: string;
@@ -28,6 +29,15 @@ export interface Note {
     isShared: boolean;
 }
 
+export interface DynamicSection {
+  sectionId: string;
+  name: string;
+  content: string;
+  contentType: 'Rich Text' | 'Plain Text';
+  isMandatory: boolean;
+  order: number;
+}
+
 export interface Definition {
   id: string;
   name: string;
@@ -49,6 +59,8 @@ export interface Definition {
   relatedDefinitions?: string[];
   technicalDetails?: string;
   usageExamples?: string;
+  templateId?: string;
+  dynamicSections?: DynamicSection[];
 }
 
 export interface SupportingTable {
@@ -93,4 +105,20 @@ export interface SourceObjectMetadata {
     id: string;
     name: string;
     typeId: string;
+}
+
+export interface TemplateSection {
+  id: string;
+  name: string;
+  order: number;
+  isMandatory: boolean;
+  contentType: 'Rich Text' | 'Plain Text';
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  description?: string;
+  status: 'Active' | 'Inactive';
+  sections: TemplateSection[];
 }

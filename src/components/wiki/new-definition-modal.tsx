@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Attachment } from '@/lib/types';
+import type { Definition, Attachment, Template, DynamicSection } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload } from 'lucide-react';
+import { X, Upload, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AttachmentList from './attachments';
@@ -32,6 +32,7 @@ type NewDefinitionModalProps = {
   onOpenChange: (open: boolean) => void;
   onSave: (definition: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => void;
   initialData?: Partial<Definition> | DraftedDefinition | null;
+  templates?: Template[];
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
@@ -48,9 +49,10 @@ const initialDefinitionState = {
   sourceType: '',
   sourceDb: '',
   sourceName: '',
+  dynamicSections: [],
 };
 
-export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData }: NewDefinitionModalProps) {
+export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [] }: NewDefinitionModalProps) {
   const [name, setName] = useState(initialDefinitionState.name);
   const [module, setModule] = useState(initialDefinitionState.module);
   const [keywords, setKeywords] = useState<string[]>(initialDefinitionState.keywords);
@@ -64,6 +66,9 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [sourceDb, setSourceDb] = useState(initialDefinitionState.sourceDb);
   const [sourceType, setSourceType] = useState(initialDefinitionState.sourceType);
   const [sourceName, setSourceName] = useState(initialDefinitionState.sourceName);
+
+  const [templateId, setTemplateId] = useState<string | undefined>();
+  const [dynamicSections, setDynamicSections] = useState<DynamicSection[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,12 +86,11 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       setTechnicalDetails(data.technicalDetails || initialDefinitionState.technicalDetails);
       setUsageExamples(data.usageExamples || initialDefinitionState.usageExamples);
       setAttachments(data.attachments || initialDefinitionState.attachments);
-       // @ts-ignore
       setSourceType(data.sourceType || initialDefinitionState.sourceType);
-       // @ts-ignore
       setSourceDb(data.sourceDb || initialDefinitionState.sourceDb);
-       // @ts-ignore
       setSourceName(data.sourceName || initialDefinitionState.sourceName);
+      setTemplateId(data.templateId);
+      setDynamicSections(data.dynamicSections || []);
     }
   }, [open, initialData]);
 
@@ -99,6 +103,14 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     const key = `${sourceDb}_${sourceType}`;
     return mpmSourceObjects[key] || [];
   }, [sourceDb, sourceType]);
+
+  const isMandatoryComplete = useMemo(() => {
+    if (!name.trim()) return false;
+    if (templateId) {
+      return dynamicSections.every(s => !s.isMandatory || s.content.trim() !== '');
+    }
+    return true;
+  }, [name, templateId, dynamicSections]);
 
   const handleSave = () => {
     const newDefinitionData = {
@@ -113,6 +125,8 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       technicalDetails: technicalDetails,
       usageExamples: usageExamples,
       attachments: attachments,
+      templateId,
+      dynamicSections,
       supportingTables: [],
     };
     onSave(newDefinitionData);
@@ -157,11 +171,17 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     setAttachments(attachments.filter(att => att.name !== name));
   };
 
+  const handleDynamicSectionChange = (sectionId: string, content: string) => {
+    setDynamicSections(prev => prev.map(s => s.sectionId === sectionId ? { ...s, content } : s));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-full h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Create New Definition</DialogTitle>
+          <DialogTitle>
+            {templateId ? `Create from Template: ${templates.find(t => t.id === templateId)?.name}` : 'Create New Definition'}
+          </DialogTitle>
         </DialogHeader>
         <div className="flex-1 min-h-0">
           <ScrollArea className="h-full pr-6">
@@ -173,8 +193,8 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                 <CardContent className="p-6 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="new-def-name">Definition Name (DEF_NAME)</Label>
-                      <Input id="new-def-name" value={name} onChange={(e) => setName(e.target.value)} />
+                      <Label htmlFor="new-def-name">Definition Name (DEF_NAME) <span className="text-destructive">*</span></Label>
+                      <Input id="new-def-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Required" />
                     </div>
                     <div>
                       <Label htmlFor="new-def-module">Module (EZ_Module)</Label>
@@ -284,32 +304,71 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                 </CardContent>
               </Card>
 
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Definition Content (DEF_LONG_DESCR)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <WysiwygEditor value={description} onChange={setDescription} />
-                  </CardContent>
-              </Card>
-              
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Technical Details</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <WysiwygEditor value={technicalDetails} onChange={setTechnicalDetails} />
-                  </CardContent>
-              </Card>
+              {/* Template Sections */}
+              {templateId && dynamicSections.length > 0 && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 border-b pb-2">
+                    <h3 className="font-bold text-lg">Template Content</h3>
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  {dynamicSections.sort((a,b) => a.order - b.order).map(section => (
+                    <Card key={section.sectionId}>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          {section.name}
+                          {section.isMandatory && <span className="text-destructive font-bold">*</span>}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {section.contentType === 'Rich Text' ? (
+                          <WysiwygEditor 
+                            value={section.content} 
+                            onChange={(content) => handleDynamicSectionChange(section.sectionId, content)} 
+                          />
+                        ) : (
+                          <Textarea 
+                            value={section.content} 
+                            onChange={(e) => handleDynamicSectionChange(section.sectionId, e.target.value)}
+                            placeholder={`Enter ${section.name}...`}
+                          />
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
 
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Usage Examples / SQL View</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <WysiwygEditor value={usageExamples} onChange={setUsageExamples} />
-                  </CardContent>
-              </Card>
+              {/* Default Sections (Fallback for Blank) */}
+              {!templateId && (
+                <>
+                  <Card>
+                      <CardHeader>
+                          <CardTitle>Definition Content (DEF_LONG_DESCR)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <WysiwygEditor value={description} onChange={setDescription} />
+                      </CardContent>
+                  </Card>
+                  
+                  <Card>
+                      <CardHeader>
+                          <CardTitle>Technical Details</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <WysiwygEditor value={technicalDetails} onChange={setTechnicalDetails} />
+                      </CardContent>
+                  </Card>
+
+                  <Card>
+                      <CardHeader>
+                          <CardTitle>Usage Examples / SQL View</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <WysiwygEditor value={usageExamples} onChange={setUsageExamples} />
+                      </CardContent>
+                  </Card>
+                </>
+              )}
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -332,11 +391,16 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
             </div>
           </ScrollArea>
         </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <Button onClick={handleSave}>Save Definition</Button>
+        <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t pt-4">
+          <div className="text-sm text-muted-foreground">
+            <span className="text-destructive font-bold">*</span> Indicates required fields
+          </div>
+          <div className="flex gap-2">
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleSave} disabled={!isMandatoryComplete}>Save Definition</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -261,7 +262,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                     </TabsList>
 
                     <TabsContent value="description" className="mt-6 space-y-4">
-                        <Accordion type="multiple" defaultValue={['description', 'short-description']} className="space-y-4">
+                        <Accordion type="multiple" defaultValue={['description', 'short-description', 'template-content']} className="space-y-4">
                             <AccordionItem value="data-source" className="bg-card border rounded-lg shadow-sm px-4">
                                 <AccordionTrigger className="hover:no-underline py-4">
                                     <div className="flex items-center gap-2">
@@ -308,41 +309,68 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                 </AccordionContent>
                             </AccordionItem>
 
-                            <AccordionItem value="description" className="bg-card border rounded-lg shadow-sm px-4">
-                                <AccordionTrigger className="hover:no-underline py-4">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-base">Description</span>
-                                        <Info className="h-4 w-4 text-muted-foreground" />
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pb-4">
-                                    <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.description }} />
-                                </AccordionContent>
-                            </AccordionItem>
+                            {/* Template Dynamic Sections */}
+                            {definition.templateId && definition.dynamicSections && definition.dynamicSections.length > 0 && (
+                                <AccordionItem value="template-content" className="bg-card border rounded-lg shadow-sm px-4 border-primary/20">
+                                    <AccordionTrigger className="hover:no-underline py-4">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-base">Template Sections</span>
+                                            <Badge variant="outline" className="ml-2 text-[10px] uppercase">Structured</Badge>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="pb-4 space-y-6">
+                                        {definition.dynamicSections.sort((a,b) => a.order - b.order).map(section => (
+                                            <div key={section.sectionId} className="space-y-2">
+                                                <h4 className="font-bold text-sm text-primary flex items-center gap-2">
+                                                    {section.name}
+                                                    {section.isMandatory && <span className="text-destructive">*</span>}
+                                                </h4>
+                                                <div className="text-sm prose prose-sm max-w-none border-l-2 pl-4 py-1" dangerouslySetInnerHTML={{ __html: section.content }} />
+                                            </div>
+                                        ))}
+                                    </AccordionContent>
+                                </AccordionItem>
+                            )}
 
-                            <AccordionItem value="technical-details" className="bg-card border rounded-lg shadow-sm px-4">
-                                <AccordionTrigger className="hover:no-underline py-4">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-base">Technical Details</span>
-                                        <Info className="h-4 w-4 text-muted-foreground" />
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pb-4">
-                                    <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.technicalDetails || 'No technical details provided.' }} />
-                                </AccordionContent>
-                            </AccordionItem>
+                            {!definition.templateId && (
+                                <>
+                                    <AccordionItem value="description" className="bg-card border rounded-lg shadow-sm px-4">
+                                        <AccordionTrigger className="hover:no-underline py-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-base">Description</span>
+                                                <Info className="h-4 w-4 text-muted-foreground" />
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pb-4">
+                                            <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.description }} />
+                                        </AccordionContent>
+                                    </AccordionItem>
 
-                            <AccordionItem value="usage-examples" className="bg-card border rounded-lg shadow-sm px-4">
-                                <AccordionTrigger className="hover:no-underline py-4">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-base">Usage Examples / SQL View</span>
-                                        <Info className="h-4 w-4 text-muted-foreground" />
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pb-4">
-                                    <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.usageExamples || 'No usage examples or SQL views available.' }} />
-                                </AccordionContent>
-                            </AccordionItem>
+                                    <AccordionItem value="technical-details" className="bg-card border rounded-lg shadow-sm px-4">
+                                        <AccordionTrigger className="hover:no-underline py-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-base">Technical Details</span>
+                                                <Info className="h-4 w-4 text-muted-foreground" />
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pb-4">
+                                            <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.technicalDetails || 'No technical details provided.' }} />
+                                        </AccordionContent>
+                                    </AccordionItem>
+
+                                    <AccordionItem value="usage-examples" className="bg-card border rounded-lg shadow-sm px-4">
+                                        <AccordionTrigger className="hover:no-underline py-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-base">Usage Examples / SQL View</span>
+                                                <Info className="h-4 w-4 text-muted-foreground" />
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pb-4">
+                                            <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.usageExamples || 'No usage examples or SQL views available.' }} />
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </>
+                            )}
                         </Accordion>
                     </TabsContent>
 

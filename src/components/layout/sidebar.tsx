@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -12,7 +13,8 @@ import {
     BadgePercent,
     ShoppingCart,
     SquareGanttChart,
-    History
+    History,
+    LayoutTemplate
 } from "lucide-react";
 import {
     Collapsible,
@@ -30,7 +32,7 @@ import {
 } from "../ui/sidebar";
 import { cn } from '@/lib/utils';
 
-type View = 'definitions' | 'activity-logs';
+type View = 'definitions' | 'activity-logs' | 'template-management';
 
 type AppSidebarProps = {
     activeView: View;
@@ -48,6 +50,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSideb
 
     const wikiNavItems = [
         { id: 'definitions', label: 'MPM Definitions', icon: KeyRound },
+        { id: 'template-management', label: 'Templates', icon: LayoutTemplate, adminOnly: true },
         { id: 'activity-logs', label: 'Activity Logs', icon: History, adminOnly: true },
         { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
         { id: 'acronyms', label: 'Healthcare Acronyms', icon: SquareGanttChart },
@@ -57,7 +60,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSideb
     ];
 
     const handleNavigate = (id: string) => {
-        if (id === 'definitions' || id === 'activity-logs') {
+        if (id === 'definitions' || id === 'activity-logs' || id === 'template-management') {
             onNavigate(id as View);
         } else {
             console.log(`Navigating to ${id}`);

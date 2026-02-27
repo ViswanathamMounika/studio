@@ -1,10 +1,11 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
-import { initialDefinitions, findDefinition } from '@/lib/data';
-import type { Definition, Notification as NotificationType } from '@/lib/types';
+import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
+import type { Definition, Notification as NotificationType, Template } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
 import { Filter, Search, X, CheckSquare, Download, Archive, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-// Dynamic imports for major and heavy components to prevent ChunkLoadError
+// Dynamic imports
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
   ssr: false,
   loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
@@ -35,8 +36,9 @@ const ActivityLogs = dynamic(() => import('@/components/wiki/activity-logs'), { 
 const AnalyticsModal = dynamic(() => import('@/components/wiki/analytics-modal'), { ssr: false });
 const NewDefinitionModal = dynamic(() => import('@/components/wiki/new-definition-modal'), { ssr: false });
 const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal'), { ssr: false });
+const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
 
-type View = 'definitions' | 'activity-logs';
+type View = 'definitions' | 'activity-logs' | 'template-management';
 
 const initialNotifications: NotificationType[] = [
   {
@@ -67,6 +69,7 @@ const initialNotifications: NotificationType[] = [
 
 export default function Wiki() {
   const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates', initialTemplates);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -137,8 +140,8 @@ export default function Wiki() {
   };
 
   const handleNavigate = (view: View, shouldUpdateUrl = true) => {
-    if (view === 'activity-logs' && !isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can view activity logs.' });
+    if ((view === 'activity-logs' || view === 'template-management') && !isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
         return;
     }
     setActiveView(view);
@@ -414,7 +417,6 @@ export default function Wiki() {
     
     if (definitionsToExport.length === 0) return;
 
-    // Heavy libraries are imported dynamically only when needed
     switch (formatType) {
       case 'json':
         handleJsonExport(definitionsToExport);
@@ -540,6 +542,7 @@ export default function Wiki() {
   const renderContent = () => {
     switch (activeView) {
         case 'activity-logs': return <ActivityLogs />;
+        case 'template-management': return <TemplateManagement templates={templates} onSaveTemplates={setTemplates} />;
         default: return (
                 isEditing && selectedDefinition ? (
                     <DefinitionEdit definition={selectedDefinition} onSave={handleSave} onCancel={() => setIsEditing(false)} />
@@ -562,8 +565,25 @@ export default function Wiki() {
     }
   };
   
-  const handleUseTemplate = (templateData: Partial<Definition>) => {
-      setDraftedDefinitionData(templateData);
+  const handleUseTemplate = (templateData: Partial<Definition>, templateId?: string) => {
+      const template = templates.find(t => t.id === templateId);
+      if (template) {
+        const dynamicSections = template.sections.map(s => ({
+          sectionId: s.id,
+          name: s.name,
+          content: '',
+          contentType: s.contentType,
+          isMandatory: s.isMandatory,
+          order: s.order
+        }));
+        setDraftedDefinitionData({ 
+          ...templateData, 
+          templateId: template.id,
+          dynamicSections 
+        });
+      } else {
+        setDraftedDefinitionData(templateData);
+      }
       setIsNewDefinitionModalOpen(true);
       setIsTemplatesModalOpen(false);
   };
@@ -728,11 +748,13 @@ export default function Wiki() {
           onOpenChange={setIsNewDefinitionModalOpen}
           onSave={handleCreateDefinition}
           initialData={draftedDefinitionData}
+          templates={templates}
       />
       <TemplatesModal
           open={isTemplatesModalOpen}
           onOpenChange={setIsTemplatesModalOpen}
           onUseTemplate={handleUseTemplate}
+          managedTemplates={templates}
       />
     </SidebarProvider>
   );

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React from 'react';
@@ -20,9 +19,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, Code, Plus, DatabaseZap } from 'lucide-react';
-import type { Definition } from '@/lib/types';
+import type { Definition, Template } from '@/lib/types';
 
-type Template = {
+type TemplateOption = {
   id: string;
   title: string;
   description: string;
@@ -30,7 +29,7 @@ type Template = {
   data: Partial<Omit<Definition, 'id' | 'revisions' | 'isArchived'>>;
 };
 
-const templates: Template[] = [
+const defaultTemplates: TemplateOption[] = [
   {
     id: 'blank',
     title: 'Blank Definition',
@@ -43,43 +42,22 @@ const templates: Template[] = [
       description: '',
     },
   },
-  {
-    id: 'standard',
-    title: 'Standard Definition',
-    description: 'A basic template with a description section.',
-    icon: FileText,
-    data: {
-        name: 'New Standard Definition',
-        module: 'Core',
-        keywords: ['standard'],
-        description: '<h3>Overview</h3><p>A clear and concise summary of what this term means.</p>',
-    }
-  },
-  {
-    id: 'technical-spec',
-    title: 'Technical Specification',
-    description: 'A detailed template for technical terms.',
-    icon: Code,
-    data: {
-        name: 'New Technical Specification',
-        module: 'Core',
-        keywords: ['technical', 'sql'],
-        description: '<h3>Purpose</h3><p>What is the goal of this technical component?</p>',
-    }
-  },
 ];
 
 type TemplatesModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUseTemplate: (templateData: Partial<Definition>, templateId: string) => void;
+  managedTemplates?: Template[];
 };
 
-export default function TemplatesModal({ open, onOpenChange, onUseTemplate }: TemplatesModalProps) {
+export default function TemplatesModal({ open, onOpenChange, onUseTemplate, managedTemplates = [] }: TemplatesModalProps) {
 
-  const handleUseTemplate = (template: Template) => {
-    onUseTemplate(template.data, template.id);
+  const handleUseTemplate = (templateId: string, templateData: Partial<Definition>) => {
+    onUseTemplate(templateData, templateId);
   };
+
+  const activeManagedTemplates = managedTemplates.filter(t => t.status === 'Active');
 
   return (
     <>
@@ -93,8 +71,8 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate }: Te
           </DialogHeader>
           <ScrollArea className="max-h-[70vh] p-1">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-              {templates.map((template) => (
-                <Card key={template.id} className="flex flex-col">
+              {defaultTemplates.map((template) => (
+                <Card key={template.id} className="flex flex-col border-dashed">
                   <CardHeader>
                     <div className="flex items-center gap-3 mb-2">
                         <template.icon className="h-6 w-6 text-primary" />
@@ -104,8 +82,32 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate }: Te
                   </CardHeader>
                   <CardContent className="flex-grow flex items-end">
                     <Button 
+                      variant="outline"
                       className="w-full mt-auto"
-                      onClick={() => handleUseTemplate(template)}
+                      onClick={() => handleUseTemplate(template.id, template.data)}
+                    >
+                      Use Template
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {activeManagedTemplates.map((template) => (
+                <Card key={template.id} className="flex flex-col">
+                  <CardHeader>
+                    <div className="flex items-center gap-3 mb-2">
+                        <FileText className="h-6 w-6 text-primary" />
+                        <CardTitle className="text-lg">{template.name}</CardTitle>
+                    </div>
+                    <CardDescription>{template.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow flex items-end">
+                    <Button 
+                      className="w-full mt-auto"
+                      onClick={() => handleUseTemplate(template.id, {
+                        name: `New ${template.name}`,
+                        module: 'Core',
+                      })}
                     >
                       Use Template
                     </Button>

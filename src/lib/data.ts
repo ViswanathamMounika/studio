@@ -1,4 +1,5 @@
-import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType } from './types';
+
+import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
     id: 'auth-status-codes',
@@ -158,6 +159,31 @@ export const initialActivityLogs: ActivityLog[] = Array.from({ length: 50 }, (_,
     activityType: activityTypes[Math.floor(Math.random() * activityTypes.length)],
     occurredDate: generateRandomDate(),
 }));
+
+export const initialTemplates: Template[] = [
+  {
+    id: 't-1',
+    name: 'Standard Data Definition',
+    description: 'Basic template for standard data entities.',
+    status: 'Active',
+    sections: [
+      { id: 's-1', name: 'Overview', order: 1, isMandatory: true, contentType: 'Rich Text' },
+      { id: 's-2', name: 'Business Logic', order: 2, isMandatory: true, contentType: 'Rich Text' },
+      { id: 's-3', name: 'Usage Notes', order: 3, isMandatory: false, contentType: 'Plain Text' },
+    ]
+  },
+  {
+    id: 't-2',
+    name: 'Technical Specification',
+    description: 'Detailed template for technical objects like views or stored procs.',
+    status: 'Active',
+    sections: [
+      { id: 's-4', name: 'Technical Purpose', order: 1, isMandatory: true, contentType: 'Rich Text' },
+      { id: 's-5', name: 'Input/Output Parameters', order: 2, isMandatory: false, contentType: 'Rich Text' },
+      { id: 's-6', name: 'SQL Implementation', order: 3, isMandatory: true, contentType: 'Rich Text' },
+    ]
+  }
+];
 
 const definition111_rev1 = {
     id: '1.1.1',
