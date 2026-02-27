@@ -33,7 +33,7 @@ const DefinitionView = dynamic(() => import('@/components/wiki/definition-view')
 });
 const DefinitionEdit = dynamic(() => import('@/components/wiki/definition-edit'), { ssr: false });
 const ActivityLogs = dynamic(() => import('@/components/wiki/activity-logs'), { ssr: false });
-const AnalyticsModal = dynamic(() => import('@/components/wiki/analytics-modal'), { ssr: false });
+const RecentViewsModal = dynamic(() => import('@/components/wiki/recent-views-modal'), { ssr: false });
 const NewDefinitionModal = dynamic(() => import('@/components/wiki/new-definition-modal'), { ssr: false });
 const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal'), { ssr: false });
 const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
@@ -78,7 +78,7 @@ export default function Wiki() {
   const [searchQuery, setSearchQuery] = useState("");
   const { isMounted, bookmarks, toggleBookmark, isBookmarked } = useBookmarks();
   const [selectedForExport, setSelectedForExport] = useState<string[]>([]);
-  const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
+  const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(true);
@@ -594,7 +594,7 @@ export default function Wiki() {
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background">
           <AppHeader
-              onAnalyticsClick={() => setIsAnalyticsModalOpen(true)}
+              onRecentClick={() => setIsRecentModalOpen(true)}
               onNewDefinitionClick={handleNewDefinitionClick}
               isAdmin={isAdmin}
               notifications={notifications}
@@ -742,7 +742,7 @@ export default function Wiki() {
         </div>
       </SidebarInset>
       <Toaster />
-      <AnalyticsModal open={isAnalyticsModalOpen} onOpenChange={setIsAnalyticsModalOpen} onDefinitionClick={handleSelectDefinition} />
+      <RecentViewsModal open={isRecentModalOpen} onOpenChange={setIsRecentModalOpen} onDefinitionClick={handleSelectDefinition} />
       <NewDefinitionModal
           open={isNewDefinitionModalOpen}
           onOpenChange={setIsNewDefinitionModalOpen}

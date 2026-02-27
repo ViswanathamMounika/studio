@@ -1,7 +1,8 @@
+
 "use client";
 
 import {
-  BarChart,
+  Clock,
   Palette,
   Bell,
   PlusCircle,
@@ -23,7 +24,7 @@ import { SidebarTrigger } from "../ui/sidebar";
 
 type AppHeaderProps = {
     children?: React.ReactNode;
-    onAnalyticsClick?: () => void;
+    onRecentClick?: () => void;
     onNewDefinitionClick: (type: 'template' | 'blank') => void;
     isAdmin: boolean;
     notifications: Notification[];
@@ -34,7 +35,7 @@ type AppHeaderProps = {
 
 export default function AppHeader({ 
     children, 
-    onAnalyticsClick,
+    onRecentClick,
     onNewDefinitionClick,
     isAdmin,
     notifications,
@@ -85,9 +86,9 @@ export default function AppHeader({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button variant="outline" size="sm" onClick={onAnalyticsClick}>
-                  <BarChart className="h-4 w-4 mr-2" />
-                  Analytics
+              <Button variant="outline" size="sm" onClick={onRecentClick}>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Recent
               </Button>
               <DropdownMenu>
                   <DropdownMenuTrigger asChild>

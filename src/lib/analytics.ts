@@ -80,11 +80,13 @@ export const getTopViews = (count: number, dateRange?: DateRange): { name: strin
         .map(([, value]) => ({ name: value.name, count: value.count, id: value.id }));
 }
 
-export const getRecentViews = (count: number): { name: string, id: string, date: string, module: string }[] => {
+export const getRecentViews = (count?: number): { name: string, id: string, date: string, module: string }[] => {
     const data = getFromStorage<ViewCountData>('analytics_views', {});
 
-    return Object.values(data)
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, count)
-        .map(value => ({ name: value.name, id: value.id, date: value.date, module: value.module }));
+    const sorted = Object.values(data)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const result = count ? sorted.slice(0, count) : sorted;
+
+    return result.map(value => ({ name: value.name, id: value.id, date: value.date, module: value.module }));
 }
