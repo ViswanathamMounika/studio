@@ -1,6 +1,7 @@
 
 "use client";
 
+import React, { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { type Revision } from "@/lib/types";
 import diff_match_patch, { type Diff } from 'diff-match-patch';
 import { Separator } from "../ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 type RevisionComparisonDialogProps = {
   open: boolean;
@@ -41,35 +44,7 @@ function createDiffHtml(diffs: Diff[], type: 'insertion' | 'deletion'): string {
                 break;
         }
     }
-    // Clean up empty tags that might be generated
     return html.replace(/<ins><\/ins>/g, '').replace(/<del><\/del>/g, '');
-}
-
-
-function DiffView({ title, text1, text2 }: { title: string; text1: string; text2: string }) {
-    if (text1 === text2) return null;
-    
-    const diffs = dmp.diff_main(text1, text2);
-    dmp.diff_cleanupSemantic(diffs);
-
-    const deletionHtml = createDiffHtml(diffs, 'deletion');
-    const insertionHtml = createDiffHtml(diffs, 'insertion');
-
-    return (
-      <div className="space-y-2">
-        <h4 className="font-semibold text-lg">{title}</h4>
-        <div className="grid grid-cols-2 gap-4">
-            <div 
-              className="prose prose-sm max-w-none border rounded-md p-4"
-              dangerouslySetInnerHTML={{ __html: deletionHtml || '<p class="text-muted-foreground">No content</p>' }}
-            />
-            <div 
-              className="prose prose-sm max-w-none border rounded-md p-4"
-              dangerouslySetInnerHTML={{ __html: insertionHtml || '<p class="text-muted-foreground">No content</p>' }}
-            />
-        </div>
-      </div>
-    );
 }
 
 export default function RevisionComparisonDialog({
@@ -80,40 +55,121 @@ export default function RevisionComparisonDialog({
   currentDefinitionName
 }: RevisionComparisonDialogProps) {
     const [revA, revB] = [revision1, revision2].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const [scrollMode, setScrollMode] = useState<'sync' | 'independent'>('sync');
+    
+    const leftScrollRef = useRef<HTMLDivElement>(null);
+    const rightScrollRef = useRef<HTMLDivElement>(null);
+    const isSyncingRef = useRef(false);
 
     const snapshotA = revA.snapshot;
     const snapshotB = revB.snapshot;
 
+    const handleScroll = (source: 'left' | 'right') => {
+        if (scrollMode !== 'sync' || isSyncingRef.current) return;
+
+        const sourceEl = source === 'left' ? leftScrollRef.current : rightScrollRef.current;
+        const targetEl = source === 'left' ? rightScrollRef.current : leftScrollRef.current;
+
+        if (sourceEl && targetEl) {
+            isSyncingRef.current = true;
+            targetEl.scrollTop = sourceEl.scrollTop;
+            // Timeout to prevent infinite feedback loops between the two listeners
+            setTimeout(() => {
+                isSyncingRef.current = false;
+            }, 50);
+        }
+    };
+
+    const diffs = {
+        description: dmp.diff_main(snapshotA.description, snapshotB.description),
+        technical: dmp.diff_main(snapshotA.technicalDetails || '', snapshotB.technicalDetails || ''),
+        usage: dmp.diff_main(snapshotA.usageExamples || '', snapshotB.usageExamples || '')
+    };
+
+    Object.values(diffs).forEach(d => dmp.diff_cleanupSemantic(d));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-full h-[90vh] flex flex-col">
+      <DialogContent className="max-w-7xl w-full h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Compare Revisions for: {currentDefinitionName}</DialogTitle>
-        </DialogHeader>
-        <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full pr-6">
-            <div className="space-y-4">
-              {/* Headers */}
-              <div className="grid grid-cols-2 gap-x-6 p-1">
-                  <div>
-                      <h3 className="font-bold text-xl">
-                          Revision: {revA.ticketId}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">{revA.date} by {revA.developer}</p>
-                  </div>
-                  <div>
-                      <h3 className="font-bold text-xl">
-                          Revision: {revB.ticketId}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">{revB.date} by {revB.developer}</p>
-                  </div>
-              </div>
-              <Separator />
-              <DiffView title="Description" text1={snapshotA.description} text2={snapshotB.description} />
-              <DiffView title="Technical Details" text1={snapshotA.technicalDetails || ''} text2={snapshotB.technicalDetails || ''} />
-              <DiffView title="Usage Examples" text1={snapshotA.usageExamples || ''} text2={snapshotB.usageExamples || ''} />
+          <div className="flex items-center justify-between pr-8">
+            <DialogTitle>Compare Revisions: {currentDefinitionName}</DialogTitle>
+            <div className="flex items-center gap-4 bg-muted/50 px-4 py-2 rounded-lg border">
+                <span className="text-sm font-medium">Scroll Mode:</span>
+                <RadioGroup 
+                    value={scrollMode} 
+                    onValueChange={(val) => setScrollMode(val as 'sync' | 'independent')}
+                    className="flex items-center gap-4"
+                >
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="sync" id="sync" />
+                        <Label htmlFor="sync" className="cursor-pointer">Simultaneous</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="independent" id="independent" />
+                        <Label htmlFor="independent" className="cursor-pointer">Independent</Label>
+                    </div>
+                </RadioGroup>
             </div>
-          </ScrollArea>
+          </div>
+        </DialogHeader>
+        
+        <div className="flex-1 min-h-0 grid grid-cols-2 gap-x-6">
+            {/* Left Panel - Revision A */}
+            <div className="flex flex-col border rounded-lg bg-background overflow-hidden">
+                <div className="p-4 border-b bg-muted/30">
+                    <h3 className="font-bold text-lg">Revision: {revA.ticketId}</h3>
+                    <p className="text-xs text-muted-foreground">{revA.date} by {revA.developer}</p>
+                </div>
+                <div 
+                    ref={leftScrollRef}
+                    onScroll={() => handleScroll('left')}
+                    className="flex-1 overflow-y-auto p-6 space-y-8"
+                >
+                    <section>
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Description</h4>
+                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.description, 'deletion') || 'No content' }} />
+                    </section>
+                    <Separator />
+                    <section>
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Technical Details</h4>
+                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.technical, 'deletion') || 'No content' }} />
+                    </section>
+                    <Separator />
+                    <section>
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Usage Examples</h4>
+                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.usage, 'deletion') || 'No content' }} />
+                    </section>
+                </div>
+            </div>
+
+            {/* Right Panel - Revision B */}
+            <div className="flex flex-col border rounded-lg bg-background overflow-hidden">
+                <div className="p-4 border-b bg-muted/30">
+                    <h3 className="font-bold text-lg">Revision: {revB.ticketId}</h3>
+                    <p className="text-xs text-muted-foreground">{revB.date} by {revB.developer}</p>
+                </div>
+                <div 
+                    ref={rightScrollRef}
+                    onScroll={() => handleScroll('right')}
+                    className="flex-1 overflow-y-auto p-6 space-y-8"
+                >
+                    <section>
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Description</h4>
+                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.description, 'insertion') || 'No content' }} />
+                    </section>
+                    <Separator />
+                    <section>
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Technical Details</h4>
+                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.technical, 'insertion') || 'No content' }} />
+                    </section>
+                    <Separator />
+                    <section>
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Usage Examples</h4>
+                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.usage, 'insertion') || 'No content' }} />
+                    </section>
+                </div>
+            </div>
         </div>
       </DialogContent>
     </Dialog>
