@@ -701,29 +701,25 @@ export default function Wiki() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto">
-                      {isSelectMode && selectedForExport.length > 0 && (
-                          <div className="p-3 bg-primary/5 border-b flex items-center justify-between sticky top-0 z-20">
-                              <div className="flex flex-col">
-                                <span className="text-xs font-bold">{selectedForExport.length} Selected</span>
+                      {isSelectMode && (
+                          <div className="mx-4 my-2 p-3 bg-primary/5 border rounded-lg flex flex-col gap-3 sticky top-2 z-20 shadow-sm">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                                    <Check className="h-3 w-3 text-primary-foreground" />
+                                  </div>
+                                  <span className="text-sm font-bold">{selectedForExport.length} selected</span>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCancelSelection}>
+                                    <X className="h-4 w-4" />
+                                </Button>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="default" size="sm" className="h-8 px-2 text-xs">
-                                            <Download className="h-3.5 w-3.5 mr-1" />
-                                            Export
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => handleExport('pdf')}>PDF</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleExport('json')}>JSON</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleExport('excel')}>Excel</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleExport('html')}>HTML</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                <Button variant="outline" size="sm" className="h-8 px-2 text-xs" onClick={() => handleBulkArchive(true)}>
-                                    <Archive className="h-3.5 w-3.5 mr-1" />
-                                    Archive
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => handleExport('pdf')} disabled={selectedForExport.length === 0}>
+                                    Export Selected
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => handleBulkArchive(true)} disabled={selectedForExport.length === 0}>
+                                    Archive Selected
                                 </Button>
                               </div>
                           </div>

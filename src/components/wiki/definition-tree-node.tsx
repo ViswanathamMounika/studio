@@ -55,7 +55,7 @@ const DefinitionSubItems = ({ definition, onSelect, activeSection, level }: { de
     ];
 
     return (
-        <div className="space-y-0.5" style={{ paddingLeft: `${(level + 1) * 0.75}rem` }}>
+        <div className="space-y-0.5" style={{ paddingLeft: `${(level + 1) * 1.5}rem` }}>
             {subItems.map(item => (
                 <div
                     key={item.id}
@@ -127,10 +127,10 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                 (isSelected && !isSelectMode) && "bg-primary/10 text-primary font-medium",
                 (isSelectMode && isSelectedForExport) ? "bg-primary/10" : "hover:bg-muted/50"
             )}
-            style={{ paddingLeft: `${level * 0.75}rem` }}
+            style={{ paddingLeft: `${level * 1.5}rem` }}
         >
             {isSelectMode && (
-                <div onClick={handleCheckboxClick} className="flex items-center justify-center w-7 h-7">
+                <div onClick={handleCheckboxClick} className="flex items-center justify-center w-8 h-8 mr-1">
                     <Checkbox
                         id={`select-${node.id}`}
                         checked={isSelectedForExport}
@@ -160,7 +160,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                     (hasChildren || isModule) ? "text-primary/70" : "text-muted-foreground/60",
                     isSelected && !isSelectMode && "text-primary"
                 )} />
-                <span className="truncate text-[13px]">
+                <span className="truncate text-[13px] font-medium">
                     <HighlightedText text={node.name} highlight={searchQuery} />
                 </span>
                 <div className="ml-auto flex items-center gap-1.5 opacity-60 group-hover/item:opacity-100 transition-opacity pr-1">
