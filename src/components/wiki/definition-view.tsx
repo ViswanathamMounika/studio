@@ -10,9 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info } from 'lucide-react';
 import DefinitionActions from './definition-actions';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
     authorizationStatusCodes, 
     cmsComplianceMatrix, 
@@ -20,20 +20,18 @@ import {
     vwAuthActionTimeTable, 
     initialDefinitions, 
     mpmDatabases, 
-    mpmSourceTypes,
-    allDataTables
+    mpmSourceTypes
 } from '@/lib/data';
 import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import RelatedDefinitions from './related-definitions';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import DataSourcePreviewDialog from './data-source-preview-dialog';
 
 const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
 
@@ -69,11 +67,8 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
     const [showComparison, setShowComparison] = useState(false);
     const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
     
-    // Preview States
+    // Preview State
     const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
-    const [previewTable, setPreviewTable] = useState<SupportingTable | null>(null);
-    const [previewPage, setPreviewPage] = useState(1);
-    const [previewPageSize, setPreviewPageSize] = useState(5);
 
     const [noteText, setNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
@@ -188,27 +183,6 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         };
     }, [definition]);
 
-    const handleOpenPreview = (sourceName: string) => {
-        const mockTable = allDataTables.find(t => t.name.toLowerCase().includes(sourceName.toLowerCase())) 
-                          || allDataTables[Math.floor(Math.random() * allDataTables.length)];
-        
-        setPreviewTable(mockTable);
-        setPreviewPage(1);
-        setPreviewPageSize(5);
-        setIsPreviewDialogOpen(true);
-    };
-
-    const paginatedPreviewRows = useMemo(() => {
-        if (!previewTable) return [];
-        const start = (previewPage - 1) * previewPageSize;
-        return previewTable.rows.slice(start, start + previewPageSize);
-    }, [previewTable, previewPage, previewPageSize]);
-
-    const totalPreviewPages = useMemo(() => {
-        if (!previewTable) return 0;
-        return Math.ceil(previewTable.rows.length / previewPageSize);
-    }, [previewTable, previewPageSize]);
-
   return (
     <TooltipProvider>
         <article className="prose prose-sm max-w-none my-6">
@@ -285,7 +259,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                             <p className="mt-1 font-medium">
                                                 {resolvedSourceInfo.name !== 'N/A' ? (
                                                     <button 
-                                                        onClick={() => handleOpenPreview(resolvedSourceInfo.name)}
+                                                        onClick={() => setIsPreviewDialogOpen(true)}
                                                         className="text-primary font-bold hover:underline"
                                                     >
                                                         {resolvedSourceInfo.name}
@@ -548,90 +522,12 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
         </Dialog>
 
         {/* Source Data Preview Dialog */}
-        <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-            <DialogContent className="max-w-5xl h-[80vh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>{previewTable?.name || 'Data Preview'}</DialogTitle>
-                    <DialogDescription>
-                        Displaying top rows from {resolvedSourceInfo.name}. Showing sample data for documentation purposes.
-                    </DialogDescription>
-                </DialogHeader>
-                
-                <div className="flex-1 min-h-0 overflow-auto border rounded-md my-4">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                {previewTable?.headers.map((header) => (
-                                    <TableHead key={header} className="whitespace-nowrap bg-muted/50">{header}</TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {paginatedPreviewRows.map((row, rowIndex) => (
-                                <TableRow key={rowIndex}>
-                                    {row.map((cell, cellIndex) => (
-                                        <TableCell key={cellIndex} className="whitespace-nowrap">
-                                            {cell !== null ? String(cell) : <span className="text-muted-foreground italic">NULL</span>}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                    {paginatedPreviewRows.length === 0 && (
-                        <div className="p-8 text-center text-muted-foreground">No data available for this source.</div>
-                    )}
-                </div>
-
-                <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page:</span>
-                        <Select value={String(previewPageSize)} onValueChange={(v) => {
-                            setPreviewPageSize(Number(v));
-                            setPreviewPage(1);
-                        }}>
-                            <SelectTrigger className="w-20 h-8">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="5">5</SelectItem>
-                                {previewTable && previewTable.rows.length > 5 && (
-                                    <SelectItem value="10">10</SelectItem>
-                                )}
-                                {previewTable && previewTable.rows.length > 10 && (
-                                    <SelectItem value="20">20</SelectItem>
-                                )}
-                            </SelectContent>
-                        </Select>
-                        <span className="text-sm text-muted-foreground ml-2">
-                            Page {previewPage} of {totalPreviewPages}
-                        </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                        <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8"
-                            onClick={() => setPreviewPage(p => Math.max(1, p - 1))}
-                            disabled={previewPage === 1}
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8"
-                            onClick={() => setPreviewPage(p => Math.min(totalPreviewPages, p + 1))}
-                            disabled={previewPage === totalPreviewPages}
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                        <Button variant="secondary" size="sm" onClick={() => setIsPreviewDialogOpen(false)}>Close</Button>
-                    </div>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <DataSourcePreviewDialog 
+            open={isPreviewDialogOpen} 
+            onOpenChange={setIsPreviewDialogOpen} 
+            sourceName={definition.sourceName || null} 
+            databaseName={resolvedSourceInfo.database} 
+        />
 
         {showComparison && selectedRevisions.length === 2 && (
              <RevisionComparisonDialog 

@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload } from 'lucide-react';
+import { X, Upload, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
 import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
+import DataSourcePreviewDialog from './data-source-preview-dialog';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -38,6 +39,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const [sourceDb, setSourceDb] = useState(definition.sourceDb || '');
   const [sourceType, setSourceType] = useState(definition.sourceType || '');
   const [sourceName, setSourceName] = useState(definition.sourceName || '');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -107,6 +109,8 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const handleRemoveAttachment = (name: string) => {
     setAttachments(attachments.filter(att => att.name !== name));
   };
+
+  const isPreviewAvailable = sourceName && (sourceType === 'Views' || sourceType === 'Tables');
 
   return (
     <div className="space-y-6">
@@ -215,22 +219,33 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
                         </SelectContent>
                     </Select>
                 </div>
-                <div>
+                <div className="col-span-2">
                     <Label htmlFor="source_name">Source Name</Label>
-                    <Select 
-                        value={sourceName} 
-                        onValueChange={setSourceName}
-                        disabled={!sourceType}
-                    >
-                        <SelectTrigger id="source_name">
-                            <SelectValue placeholder={sourceType ? "Select Source Name" : "Select Source Type first"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availableSourceNames.map(obj => (
-                                <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Select 
+                          value={sourceName} 
+                          onValueChange={setSourceName}
+                          disabled={!sourceType}
+                      >
+                          <SelectTrigger id="source_name" className="flex-1">
+                              <SelectValue placeholder={sourceType ? "Select Source Name" : "Select Source Type first"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                              {availableSourceNames.map(obj => (
+                                  <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        disabled={!isPreviewAvailable}
+                        onClick={() => setIsPreviewOpen(true)}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview
+                      </Button>
+                    </div>
                 </div>
             </div>
         </CardContent>
@@ -281,7 +296,12 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
           <AttachmentList attachments={attachments} onRemove={handleRemoveAttachment} isEditing />
         </CardContent>
       </Card>
-
+      <DataSourcePreviewDialog 
+        open={isPreviewOpen} 
+        onOpenChange={setIsPreviewOpen} 
+        sourceName={sourceName} 
+        databaseName={mpmDatabases.find(d => d.id === sourceDb)?.name} 
+      />
     </div>
   );
 }

@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Info } from 'lucide-react';
+import { X, Upload, Info, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AttachmentList from './attachments';
@@ -24,6 +24,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { DraftedDefinition } from './draft-from-sql-modal';
 import { Textarea } from '../ui/textarea';
 import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
+import DataSourcePreviewDialog from './data-source-preview-dialog';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -69,6 +70,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
 
   const [templateId, setTemplateId] = useState<string | undefined>();
   const [dynamicSections, setDynamicSections] = useState<DynamicSection[]>([]);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -174,6 +176,8 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const handleDynamicSectionChange = (sectionId: string, content: string) => {
     setDynamicSections(prev => prev.map(s => s.sectionId === sectionId ? { ...s, content } : s));
   };
+
+  const isPreviewAvailable = sourceName && (sourceType === 'Views' || sourceType === 'Tables');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -283,22 +287,33 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div>
+                        <div className="col-span-2">
                             <Label htmlFor="new-def-source-name">Source Name</Label>
-                            <Select 
-                                value={sourceName} 
-                                onValueChange={setSourceName}
-                                disabled={!sourceType}
-                            >
-                                <SelectTrigger id="new-def-source-name">
-                                    <SelectValue placeholder={sourceType ? "Select Source Name" : "Select Source Type first"} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {availableSourceNames.map(obj => (
-                                        <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Select 
+                                  value={sourceName} 
+                                  onValueChange={setSourceName}
+                                  disabled={!sourceType}
+                              >
+                                  <SelectTrigger id="new-def-source-name" className="flex-1">
+                                      <SelectValue placeholder={sourceType ? "Select Source Name" : "Select Source Type first"} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      {availableSourceNames.map(obj => (
+                                          <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
+                                      ))}
+                                  </SelectContent>
+                              </Select>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                disabled={!isPreviewAvailable}
+                                onClick={() => setIsPreviewOpen(true)}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                Preview
+                              </Button>
+                            </div>
                         </div>
                    </div>
                 </CardContent>
@@ -403,6 +418,12 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
           </div>
         </DialogFooter>
       </DialogContent>
+      <DataSourcePreviewDialog 
+        open={isPreviewOpen} 
+        onOpenChange={setIsPreviewOpen} 
+        sourceName={sourceName} 
+        databaseName={mpmDatabases.find(d => d.id === sourceDb)?.name} 
+      />
     </Dialog>
   );
 }
