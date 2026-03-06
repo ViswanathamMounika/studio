@@ -7,7 +7,7 @@ import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Filter, Search, X, CheckSquare, Download, Archive, ChevronDown } from 'lucide-react';
+import { Filter, Search, X, CheckSquare, Download, Archive, ChevronDown, Lock, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -20,6 +20,7 @@ import useLocalStorage from '@/hooks/use-local-storage';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 
 // Dynamic imports
@@ -87,6 +88,9 @@ export default function Wiki() {
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
+  
+  // Edit Lock Management
+  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock', null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -121,6 +125,13 @@ export default function Wiki() {
         window.removeEventListener('popstate', handlePopState);
     };
   }, [isMounted, handlePopState]);
+
+  // Check for lock on mount or definition change
+  useEffect(() => {
+    if (selectedDefinitionId && selectedDefinitionId === editLockId) {
+      setIsEditing(true);
+    }
+  }, [selectedDefinitionId, editLockId]);
 
   const updateUrl = (definitionId: string, sectionId?: string, view?: View) => {
     const url = new URL(window.location.href);
@@ -174,7 +185,14 @@ export default function Wiki() {
   const handleSelectDefinition = useCallback((id: string, sectionId?: string, shouldUpdateUrl = true) => {
     const isSameDefinition = id === selectedDefinitionId;
     setActiveView('definitions');
-    setIsEditing(false);
+    
+    // Check if this definition has an active lock
+    if (id === editLockId) {
+      setIsEditing(true);
+    } else {
+      setIsEditing(false);
+    }
+    
     setSelectedDefinitionId(id);
     if (!isSameDefinition) {
         const def = findDefinition(definitions, id);
@@ -183,7 +201,7 @@ export default function Wiki() {
     const targetSection = sectionId || 'description';
     setActiveTab(targetSection);
     if (shouldUpdateUrl) updateUrl(id, targetSection);
-  }, [definitions, selectedDefinitionId]);
+  }, [definitions, selectedDefinitionId, editLockId]);
 
   const handleSave = (updatedDefinition: Definition) => {
     if (!isAdmin) {
@@ -199,6 +217,7 @@ export default function Wiki() {
     };
     setDefinitions(update(definitions));
     setIsEditing(false);
+    setEditLockId(null); // Clear lock on save
 
     if (isBookmarked(updatedDefinition.id)) {
         const newNotification: NotificationType = {
@@ -538,19 +557,43 @@ export default function Wiki() {
     setIsSelectMode(false);
     setSelectedForExport([]);
   }
+  
+  const handleEditClick = () => {
+    setIsEditing(true);
+    setEditLockId(selectedDefinitionId); // Set lock when editing starts
+  };
+  
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditLockId(null); // Clear lock on cancel
+  };
 
   const renderContent = () => {
     switch (activeView) {
         case 'activity-logs': return <ActivityLogs />;
         case 'template-management': return <TemplateManagement templates={templates} onSaveTemplates={setTemplates} />;
         default: return (
-                isEditing && selectedDefinition ? (
-                    <DefinitionEdit definition={selectedDefinition} onSave={handleSave} onCancel={() => setIsEditing(false)} />
-                ) : selectedDefinition ? (
-                    <DefinitionView definition={selectedDefinition} onEdit={() => setIsEditing(true)} onDuplicate={handleDuplicate} onArchive={handleArchive} onDelete={handleDelete} onToggleBookmark={toggleBookmark} activeTab={activeTab} onTabChange={handleTabChange} onSave={handleSave} isAdmin={isAdmin} />
-                ) : (
-                    <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Select a definition to view its details.</p></div>
-                )
+                <>
+                  {editLockId === selectedDefinitionId && (
+                    <Alert className="mb-4 bg-primary/5 border-primary/20">
+                      <Lock className="h-4 w-4 text-primary" />
+                      <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>
+                      <AlertDescription className="text-muted-foreground flex items-center justify-between">
+                        <span>This definition is currently being modified. Your session is locked.</span>
+                        { !isEditing && (
+                           <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Resume Editing</Button>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {isEditing && selectedDefinition ? (
+                      <DefinitionEdit definition={selectedDefinition} onSave={handleSave} onCancel={handleCancelEdit} />
+                  ) : selectedDefinition ? (
+                      <DefinitionView definition={selectedDefinition} onEdit={handleEditClick} onDuplicate={handleDuplicate} onArchive={handleArchive} onDelete={handleDelete} onToggleBookmark={toggleBookmark} activeTab={activeTab} onTabChange={handleTabChange} onSave={handleSave} isAdmin={isAdmin} />
+                  ) : (
+                      <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Select a definition to view its details.</p></div>
+                  )}
+                </>
             );
     }
   }
