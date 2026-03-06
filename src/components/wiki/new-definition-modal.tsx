@@ -182,7 +182,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      const new Attachment: Attachment = {
+      const newAttachment: Attachment = {
         name: file.name,
         url: URL.createObjectURL(file),
         size: `${(file.size / 1024).toFixed(2)} KB`,
