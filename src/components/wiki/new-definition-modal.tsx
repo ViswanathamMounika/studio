@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -120,7 +119,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
         setTechnicalDetails(`<pre><code>${mockComments}</code></pre>`);
       }
     }
-  }, [sourceName, sourceType, sourceDb, open]);
+  }, [sourceName, sourceType, sourceDb, open, technicalDetails]);
 
   const availableSourceTypes = useMemo(() => {
     return sourceDb ? mpmSourceTypes[sourceDb] || [] : [];
@@ -384,15 +383,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                 <>
                   <Card>
                       <CardHeader>
-                          <CardTitle>Definition Content (DEF_LONG_DESCR)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <WysiwygEditor value={description} onChange={setDescription} />
-                      </CardContent>
-                  </Card>
-                  
-                  <Card>
-                      <CardHeader>
                           <CardTitle>Technical Details</CardTitle>
                       </CardHeader>
                       <CardContent>
@@ -400,6 +390,15 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                       </CardContent>
                   </Card>
 
+                  <Card>
+                      <CardHeader>
+                          <CardTitle>Definition Content (DEF_LONG_DESCR)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <WysiwygEditor value={description} onChange={setDescription} />
+                      </CardContent>
+                  </Card>
+                  
                   <Card>
                       <CardHeader>
                           <CardTitle>Usage Examples / SQL View</CardTitle>

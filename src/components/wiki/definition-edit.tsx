@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
@@ -67,7 +66,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
         setTechnicalDetails(`<pre><code>${mockComments}</code></pre>`);
       }
     }
-  }, [sourceName, sourceType, sourceDb]);
+  }, [sourceName, sourceType, sourceDb, technicalDetails]);
 
   const availableSourceTypes = useMemo(() => {
     return sourceDb ? mpmSourceTypes[sourceDb] || [] : [];
@@ -279,19 +278,19 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
 
       <Card>
           <CardHeader>
-              <CardTitle>Definition Content (DEF_LONG_DESCR)</CardTitle>
+              <CardTitle>Technical Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <WysiwygEditor value={description} onChange={setDescription} />
+            <WysiwygEditor value={technicalDetails} onChange={setTechnicalDetails} />
           </CardContent>
       </Card>
 
       <Card>
           <CardHeader>
-              <CardTitle>Technical Details</CardTitle>
+              <CardTitle>Definition Content (DEF_LONG_DESCR)</CardTitle>
           </CardHeader>
           <CardContent>
-            <WysiwygEditor value={technicalDetails} onChange={setTechnicalDetails} />
+            <WysiwygEditor value={description} onChange={setDescription} />
           </CardContent>
       </Card>
 
