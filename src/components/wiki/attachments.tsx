@@ -3,7 +3,7 @@
 
 import { Attachment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { File, Download, Trash2, FileText, FileJson, FileQuestion } from "lucide-react";
+import { File, Download, Trash2, FileText, FileJson, FileQuestion, Eye } from "lucide-react";
 
 const getFileIcon = (type: string) => {
   switch (type.toUpperCase()) {
@@ -31,28 +31,48 @@ export default function AttachmentList({ attachments = [], isEditing = false, on
     return <p className="text-muted-foreground text-center py-4">No attachments found.</p>;
   }
 
+  const handleView = (url: string) => {
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="space-y-3">
       {attachments.map((attachment) => (
-        <div key={attachment.name} className="flex items-center justify-between rounded-md border p-3">
+        <div key={attachment.name} className="flex items-center justify-between rounded-md border p-3 bg-card hover:bg-accent/5 transition-colors">
           <div className="flex items-center gap-3">
             {getFileIcon(attachment.type)}
             <div>
-              <p className="font-medium">{attachment.name}</p>
-              <p className="text-sm text-muted-foreground">{attachment.size}</p>
+              <p className="font-medium text-sm">{attachment.name}</p>
+              <p className="text-xs text-muted-foreground">{attachment.size}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8"
+              onClick={() => handleView(attachment.url)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              View
+            </Button>
+            
             {!isEditing && (
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="h-8">
                 <a href={attachment.url} download>
                   <Download className="mr-2 h-4 w-4" />
                   Download
                 </a>
               </Button>
             )}
+            
             {isEditing && onRemove && (
-              <Button variant="destructive" size="icon" onClick={() => onRemove(attachment.name)}>
+              <Button 
+                variant="destructive" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={() => onRemove(attachment.name)}
+              >
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
