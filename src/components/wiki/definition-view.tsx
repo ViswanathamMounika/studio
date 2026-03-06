@@ -46,6 +46,7 @@ type DefinitionViewProps = {
   onTabChange: (tab: string) => void;
   onSave: (definition: Definition) => void;
   isAdmin: boolean;
+  searchQuery?: string;
 };
 
 const supportingTablesData: Record<string, SupportingTable> = {
@@ -61,13 +62,60 @@ const currentUser = {
     avatar: "https://picsum.photos/seed/dhilip/40/40"
 };
 
-export default function DefinitionView({ definition, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, activeTab, onTabChange, onSave, isAdmin }: DefinitionViewProps) {
+/**
+ * Highlights a search query within a plain text string.
+ */
+const HighlightedText = ({ text, highlight }: { text: string; highlight: string }) => {
+    if (!highlight?.trim()) return <span>{text}</span>;
+    const regex = new RegExp(`(${highlight})`, 'gi');
+    const parts = text.split(regex);
+    return (
+        <span>
+            {parts.map((part, i) =>
+                regex.test(part) ? (
+                    <span key={i} className="bg-yellow-300/40 font-semibold rounded-sm px-0.5">
+                        {part}
+                    </span>
+                ) : (
+                    part
+                )
+            )}
+        </span>
+    );
+};
+
+/**
+ * Safely highlights a search query within an HTML string without breaking tags.
+ */
+const highlightHtml = (html: string, query: string) => {
+    if (!query?.trim()) return html;
+    
+    // This regex matches the query only if it's NOT inside an HTML tag.
+    // It looks for the query followed by anything that isn't a '>' before it sees a '<'.
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})(?![^<]*>)`, 'gi');
+    
+    return html.replace(regex, '<span class="bg-yellow-300/40 font-semibold rounded-sm px-0.5">$1</span>');
+};
+
+export default function DefinitionView({ 
+    definition, 
+    onEdit, 
+    onDuplicate, 
+    onArchive, 
+    onDelete, 
+    onToggleBookmark, 
+    activeTab, 
+    onTabChange, 
+    onSave, 
+    isAdmin,
+    searchQuery = "" 
+}: DefinitionViewProps) {
     const [selectedTable, setSelectedTable] = useState<SupportingTable | null>(null);
     const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
     const [showComparison, setShowComparison] = useState(false);
     const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
     
-    // Preview State
     const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
 
     const [noteText, setNoteText] = useState('');
@@ -190,7 +238,9 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                 <div>
                     <p className="text-sm text-muted-foreground">{definition.module}</p>
                     <div className="flex items-center gap-4">
-                        <h2 className="text-3xl font-bold mt-0">{definition.name}</h2>
+                        <h2 className="text-3xl font-bold mt-0">
+                            <HighlightedText text={definition.name} highlight={searchQuery} />
+                        </h2>
                         <Badge variant={definition.isArchived ? 'destructive' : 'outline'}>
                             {definition.isArchived ? 'Archived' : 'Active'}
                         </Badge>
@@ -218,7 +268,11 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
             </div>
 
             <div className="flex flex-wrap gap-2 my-4">
-                {definition.keywords.map(keyword => (<Badge key={keyword} variant="secondary">{keyword}</Badge>))}
+                {definition.keywords.map(keyword => (
+                    <Badge key={keyword} variant="secondary">
+                        <HighlightedText text={keyword} highlight={searchQuery} />
+                    </Badge>
+                ))}
             </div>
 
             <div id="definition-content-area">
@@ -279,7 +333,9 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="pb-4">
-                                    <p className="text-sm">{definition.shortDescription || 'No short description available.'}</p>
+                                    <p className="text-sm">
+                                        <HighlightedText text={definition.shortDescription || 'No short description available.'} highlight={searchQuery} />
+                                    </p>
                                 </AccordionContent>
                             </AccordionItem>
 
@@ -299,7 +355,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                                     {section.name}
                                                     {section.isMandatory && <span className="text-destructive">*</span>}
                                                 </h4>
-                                                <div className="text-sm prose prose-sm max-w-none border-l-2 pl-4 py-1" dangerouslySetInnerHTML={{ __html: section.content }} />
+                                                <div className="text-sm prose prose-sm max-w-none border-l-2 pl-4 py-1" dangerouslySetInnerHTML={{ __html: highlightHtml(section.content, searchQuery) }} />
                                             </div>
                                         ))}
                                     </AccordionContent>
@@ -316,7 +372,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                             </div>
                                         </AccordionTrigger>
                                         <AccordionContent className="pb-4">
-                                            <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.description }} />
+                                            <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: highlightHtml(definition.description, searchQuery) }} />
                                         </AccordionContent>
                                     </AccordionItem>
 
@@ -328,7 +384,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                             </div>
                                         </AccordionTrigger>
                                         <AccordionContent className="pb-4">
-                                            <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.technicalDetails || 'No technical details provided.' }} />
+                                            <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: highlightHtml(definition.technicalDetails || 'No technical details provided.', searchQuery) }} />
                                         </AccordionContent>
                                     </AccordionItem>
 
@@ -340,7 +396,7 @@ export default function DefinitionView({ definition, onEdit, onDuplicate, onArch
                                             </div>
                                         </AccordionTrigger>
                                         <AccordionContent className="pb-4">
-                                            <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: definition.usageExamples || 'No usage examples or SQL views available.' }} />
+                                            <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: highlightHtml(definition.usageExamples || 'No usage examples or SQL views available.', searchQuery) }} />
                                         </AccordionContent>
                                     </AccordionItem>
                                 </>

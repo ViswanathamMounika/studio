@@ -617,7 +617,19 @@ export default function Wiki() {
                   {isEditing && selectedDefinition ? (
                       <DefinitionEdit definition={selectedDefinition} onSave={handleSave} onCancel={handleCancelEdit} />
                   ) : selectedDefinition ? (
-                      <DefinitionView definition={selectedDefinition} onEdit={handleEditClick} onDuplicate={handleDuplicate} onArchive={handleArchive} onDelete={handleDelete} onToggleBookmark={toggleBookmark} activeTab={activeTab} onTabChange={handleTabChange} onSave={handleSave} isAdmin={isAdmin} />
+                      <DefinitionView 
+                        definition={selectedDefinition} 
+                        onEdit={handleEditClick} 
+                        onDuplicate={handleDuplicate} 
+                        onArchive={handleArchive} 
+                        onDelete={handleDelete} 
+                        onToggleBookmark={toggleBookmark} 
+                        activeTab={activeTab} 
+                        onTabChange={handleTabChange} 
+                        onSave={handleSave} 
+                        isAdmin={isAdmin}
+                        searchQuery={searchQuery}
+                      />
                   ) : (
                       <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Select a definition to view its details.</p></div>
                   )}
