@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
@@ -45,13 +46,16 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   // Logic to bring top commented lines for Procs and Functions
   useEffect(() => {
     if (sourceName && (sourceType === 'Stored Procedures' || sourceType === 'SQL Functions')) {
+      const latestModifiedDate = new Date().toLocaleString();
       const mockComments = `
+<h3>Latest Source Comments (As of ${latestModifiedDate})</h3>
+<pre><code>
 /**
  * Object: ${sourceName}
  * Description: Automated business logic for ${sourceName.toLowerCase().replace(/_/g, ' ')}.
  * Database: ${sourceDb}
  * Source Type: ${sourceType}
- * Created: ${new Date(Date.now() - 365*24*60*60*1000).toLocaleDateString()}
+ * Last Modified: ${latestModifiedDate}
  * 
  * Top Commented Lines:
  * -------------------
@@ -59,11 +63,17 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
  * -- 2. Validate claim adjudication rules
  * -- 3. Execute SLA calculation engine
  */
+</code></pre>
       `.trim();
       
       // Auto-populate Technical Details if it's currently empty or strictly default
-      if (!technicalDetails || technicalDetails === '<p></p>' || technicalDetails === '') {
-        setTechnicalDetails(`<pre><code>${mockComments}</code></pre>`);
+      const isContentEmpty = !technicalDetails || 
+                             technicalDetails.trim() === '' || 
+                             technicalDetails === '<p></p>' || 
+                             technicalDetails === '<br>';
+
+      if (isContentEmpty) {
+        setTechnicalDetails(mockComments);
       }
     }
   }, [sourceName, sourceType, sourceDb, technicalDetails]);

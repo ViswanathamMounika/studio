@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -98,13 +99,16 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   // Logic to bring top commented lines for Procs and Functions
   useEffect(() => {
     if (open && sourceName && (sourceType === 'Stored Procedures' || sourceType === 'SQL Functions')) {
+      const latestModifiedDate = new Date().toLocaleString();
       const mockComments = `
+<h3>Latest Source Comments (As of ${latestModifiedDate})</h3>
+<pre><code>
 /**
  * Object: ${sourceName}
  * Description: Automated business logic for ${sourceName.toLowerCase().replace(/_/g, ' ')}.
  * Database: ${sourceDb}
  * Source Type: ${sourceType}
- * Created: ${new Date(Date.now() - 365*24*60*60*1000).toLocaleDateString()}
+ * Last Modified: ${latestModifiedDate}
  * 
  * Top Commented Lines:
  * -------------------
@@ -112,11 +116,17 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
  * -- 2. Validate claim adjudication rules
  * -- 3. Execute SLA calculation engine
  */
+</code></pre>
       `.trim();
       
-      // Auto-populate Technical Details if it's currently empty
-      if (!technicalDetails || technicalDetails === '<p></p>' || technicalDetails === '') {
-        setTechnicalDetails(`<pre><code>${mockComments}</code></pre>`);
+      // Auto-populate Technical Details if it's currently empty or contains only whitespace/empty tags
+      const isContentEmpty = !technicalDetails || 
+                             technicalDetails.trim() === '' || 
+                             technicalDetails === '<p></p>' || 
+                             technicalDetails === '<br>';
+
+      if (isContentEmpty) {
+        setTechnicalDetails(mockComments);
       }
     }
   }, [sourceName, sourceType, sourceDb, open, technicalDetails]);
