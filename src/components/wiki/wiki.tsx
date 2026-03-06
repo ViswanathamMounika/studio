@@ -7,7 +7,7 @@ import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template } from '@/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Filter, Search, X, CheckSquare, Download, Archive, ChevronDown, Lock, AlertCircle } from 'lucide-react';
+import { Filter, Search, X, CheckSquare, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -22,11 +22,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Dynamic imports
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
   ssr: false,
-  loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
+  loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-4 w-full"/><Skeleton className="h-4 w-4 w-full"/><Skeleton className="h-4 w-4 w-full"/></div>
 });
 const DefinitionView = dynamic(() => import('@/components/wiki/definition-view'), { 
   ssr: false,
@@ -88,6 +90,8 @@ export default function Wiki() {
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
+  const [isDraftsExpanded, setIsDraftsExpanded] = useState(true);
+  const [isMpmExpanded, setIsMpmExpanded] = useState(true);
   
   // Edit Lock Management
   const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock', null);
@@ -364,21 +368,36 @@ export default function Wiki() {
     return filterItems(definitions, searchQuery);
   }, [definitions, searchQuery]);
 
-  const visibleDefinitions = useMemo(() => {
+  const categorizedDefinitions = useMemo(() => {
     let itemsToFilter = searchQuery ? filteredDefinitions : definitions;
+
+    const filterByDraft = (items: Definition[], isDraft: boolean): Definition[] => {
+        return items.reduce((acc: Definition[], item) => {
+            const children = item.children ? filterByDraft(item.children, isDraft) : [];
+            const isMatch = item.isDraft === isDraft;
+            
+            // For modules (items with children and no description), include if they have matching children
+            if (children.length > 0 || (isMatch && item.description)) {
+                acc.push({ ...item, children });
+            }
+            return acc;
+        }, []);
+    };
+
     const mapBookmarkStatus = (items: Definition[]): Definition[] => {
         return items.map(item => ({
             ...item, isBookmarked: isBookmarked(item.id),
             children: item.children ? mapBookmarkStatus(item.children) : [],
         }));
     };
+
     const filterArchived = (items: Definition[]): Definition[] => {
       return items.filter(item => !item.isArchived || showArchived).map(item => {
         const children = item.children ? filterArchived(item.children) : [];
         return {...item, children};
       }).filter(item => item.children?.length > 0 || !item.isArchived || showArchived)
     }
-    if (!showArchived) itemsToFilter = filterArchived(itemsToFilter);
+
     const filterBookmarked = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = item.children ? filterBookmarked(item.children) : [];
@@ -386,12 +405,21 @@ export default function Wiki() {
             return acc;
         }, []);
     };
-    const itemsWithBookmarks = mapBookmarkStatus(itemsToFilter);
-    if (showBookmarked) return filterBookmarked(itemsWithBookmarks);
-    return itemsWithBookmarks;
+
+    let processedItems = mapBookmarkStatus(itemsToFilter);
+    if (!showArchived) processedItems = filterArchived(processedItems);
+    if (showBookmarked) processedItems = filterBookmarked(processedItems);
+
+    return {
+        drafts: filterByDraft(processedItems, true),
+        published: filterByDraft(processedItems, false)
+    };
   }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
-  const visibleDefinitionIds = useMemo(() => getAllDefinitionIds(visibleDefinitions), [visibleDefinitions, getAllDefinitionIds]);
+  const visibleDefinitionIds = useMemo(() => [
+      ...getAllDefinitionIds(categorizedDefinitions.drafts),
+      ...getAllDefinitionIds(categorizedDefinitions.published)
+  ], [categorizedDefinitions, getAllDefinitionIds]);
 
   const toggleSelectionForExport = (id: string, checked: boolean) => {
     const getChildrenIds = (item: Definition): string[] => {
@@ -648,133 +676,151 @@ export default function Wiki() {
           <main className="flex-1 flex overflow-hidden">
              {activeView === 'definitions' && (
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card relative">
-                  <div className="p-4 border-b flex items-center justify-between bg-muted/30">
-                      <h2 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">MPM Definitions</h2>
-                      {!isSelectMode && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => setIsSelectMode(true)}
-                          className="h-7 px-2 text-xs font-semibold hover:bg-primary/10 hover:text-primary"
-                        >
-                          <CheckSquare className="h-3.5 w-3.5 mr-1" />
-                          Select
-                        </Button>
-                      )}
-                  </div>
-
-                  <div className="p-3 border-b bg-background sticky top-0 z-20 h-[60px] flex items-center shadow-sm">
-                    {isSelectMode ? (
-                      <div className="flex items-center justify-between w-full animate-in fade-in slide-in-from-top-1">
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive" onClick={handleCancelSelection}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold leading-none">{selectedForExport.length}</span>
-                            <span className="text-[10px] text-muted-foreground uppercase">Selected</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {selectedForExport.length > 0 && (
-                            <>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="default" size="sm" className="h-8 px-2 text-xs shadow-md">
-                                    <Download className="h-3.5 w-3.5 mr-1" />
-                                    Export
-                                    <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-32">
-                                  <DropdownMenuItem onClick={() => handleExport('pdf')}>PDF Document</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleExport('json')}>JSON Data</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleExport('excel')}>Excel Spreadsheet</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleExport('html')}>HTML Page</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-dashed" onClick={() => handleBulkArchive(true)}>
-                                <Archive className="h-3.5 w-3.5 mr-1" />
-                                Archive
-                              </Button>
-                            </>
-                          )}
-                          <div className="flex items-center gap-1.5 ml-1 border-l pl-2">
-                             <Checkbox 
-                                id="sidebar-select-all"
-                                checked={visibleDefinitionIds.length > 0 && selectedForExport.length === visibleDefinitionIds.length}
-                                onCheckedChange={(checked) => setSelectedForExport(checked ? visibleDefinitionIds : [])}
-                                className="h-4 w-4 border-primary/50"
-                             />
-                             <Label htmlFor="sidebar-select-all" className="text-[10px] font-bold uppercase cursor-pointer">All</Label>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 w-full animate-in fade-in">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="search"
-                                placeholder="Search definitions..."
-                                className="w-full h-9 rounded-lg bg-muted/50 pl-8 focus-visible:bg-background border-none"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 hover:bg-muted">
-                                    <Filter className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Filters</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                    <Checkbox
-                                        id="show-archived"
-                                        className="mr-2"
-                                        checked={showArchived}
-                                        onCheckedChange={() => setShowArchived(prev => !prev)}
-                                    />
-                                    <Label htmlFor="show-archived" className="font-normal cursor-pointer">Show Archived</Label>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                    <Checkbox
-                                        id="show-bookmarked"
-                                        className="mr-2"
-                                        checked={showBookmarked}
-                                        onCheckedChange={() => setShowBookmarked(prev => !prev)}
-                                    />
-                                    <Label htmlFor="show-bookmarked" className="font-normal cursor-pointer">Show Bookmarked</Label>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="overflow-y-auto flex-1 p-2">
-                      {visibleDefinitions.length > 0 ? (
-                        <DefinitionTree
-                            definitions={visibleDefinitions}
-                            selectedId={selectedDefinitionId}
-                            onSelect={handleSelectDefinition}
-                            onToggleSelection={toggleSelectionForExport}
-                            selectedForExport={selectedForExport}
-                            isSelectMode={isSelectMode}
-                            activeSection={activeTab}
-                            searchQuery={searchQuery}
+                  <div className="p-4 flex flex-col gap-4 border-b bg-background sticky top-0 z-30 shadow-sm">
+                    <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
+                    
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Search definitions..."
+                            className="w-full h-10 rounded-md bg-muted/50 pl-8 focus-visible:bg-background border-muted"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
-                      ) : (
-                        <div className="text-center text-muted-foreground py-12 px-4 flex flex-col items-center">
-                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
-                              <Search className="h-5 w-5 opacity-20" />
-                            </div>
-                            <p className="text-xs font-medium">No results found for "{searchQuery}"</p>
-                        </div>
+                    </div>
+
+                    <Button 
+                      variant="outline" 
+                      className={cn("w-full justify-center h-10 font-semibold gap-2 border-muted", isSelectMode && "bg-primary text-primary-foreground border-primary")}
+                      onClick={() => setIsSelectMode(!isSelectMode)}
+                    >
+                      <ListFilter className="h-4 w-4" />
+                      Bulk Actions
+                    </Button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto">
+                      {isSelectMode && selectedForExport.length > 0 && (
+                          <div className="p-3 bg-primary/5 border-b flex items-center justify-between sticky top-0 z-20">
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold">{selectedForExport.length} Selected</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="default" size="sm" className="h-8 px-2 text-xs">
+                                            <Download className="h-3.5 w-3.5 mr-1" />
+                                            Export
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleExport('pdf')}>PDF</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleExport('json')}>JSON</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleExport('excel')}>Excel</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleExport('html')}>HTML</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button variant="outline" size="sm" className="h-8 px-2 text-xs" onClick={() => handleBulkArchive(true)}>
+                                    <Archive className="h-3.5 w-3.5 mr-1" />
+                                    Archive
+                                </Button>
+                              </div>
+                          </div>
                       )}
+
+                      <TooltipProvider>
+                        {/* Section: My Saved Definitions */}
+                        <Collapsible open={isDraftsExpanded} onOpenChange={setIsDraftsExpanded} className="border-b">
+                            <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
+                                <CollapsibleTrigger asChild>
+                                    <div className="flex items-center gap-2 flex-1 cursor-pointer">
+                                        <ChevronDown className={cn("h-4 w-4 transition-transform", !isDraftsExpanded && "-rotate-90")} />
+                                        <span className="font-bold text-sm">My Saved Definitions</span>
+                                    </div>
+                                </CollapsibleTrigger>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Info className="h-4 w-4 text-muted-foreground opacity-50 cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>Definitions saved as drafts and only visible to you.</TooltipContent>
+                                </Tooltip>
+                            </div>
+                            <CollapsibleContent>
+                                <div className="py-2">
+                                    {categorizedDefinitions.drafts.length > 0 ? (
+                                        <DefinitionTree
+                                            definitions={categorizedDefinitions.drafts}
+                                            selectedId={selectedDefinitionId}
+                                            onSelect={handleSelectDefinition}
+                                            onToggleSelection={toggleSelectionForExport}
+                                            selectedForExport={selectedForExport}
+                                            isSelectMode={isSelectMode}
+                                            activeSection={activeTab}
+                                            searchQuery={searchQuery}
+                                        />
+                                    ) : (
+                                        <p className="px-8 py-4 text-xs text-muted-foreground italic">No draft definitions found.</p>
+                                    )}
+                                </div>
+                            </CollapsibleContent>
+                        </Collapsible>
+
+                        {/* Section: MPM Definitions */}
+                        <Collapsible open={isMpmExpanded} onOpenChange={setIsMpmExpanded}>
+                            <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
+                                <CollapsibleTrigger asChild>
+                                    <div className="flex items-center gap-2 flex-1 cursor-pointer">
+                                        <ChevronDown className={cn("h-4 w-4 transition-transform", !isMpmExpanded && "-rotate-90")} />
+                                        <span className="font-bold text-sm">MPM Definitions</span>
+                                    </div>
+                                </CollapsibleTrigger>
+                                <div className="flex items-center gap-3">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Info className="h-4 w-4 text-muted-foreground opacity-50 cursor-help" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>Published definitions accessible by all authorized users.</TooltipContent>
+                                    </Tooltip>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                                                <ListFilter className="h-4 w-4 text-muted-foreground" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
+                                                <Checkbox id="sidebar-show-archived" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} />
+                                                <Label htmlFor="sidebar-show-archived" className="cursor-pointer">Show Archived</Label>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
+                                                <Checkbox id="sidebar-show-bookmarked" checked={showBookmarked} onCheckedChange={() => setShowBookmarked(!showBookmarked)} />
+                                                <Label htmlFor="sidebar-show-bookmarked" className="cursor-pointer">Show Bookmarked</Label>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </div>
+                            <CollapsibleContent>
+                                <div className="py-2">
+                                    {categorizedDefinitions.published.length > 0 ? (
+                                        <DefinitionTree
+                                            definitions={categorizedDefinitions.published}
+                                            selectedId={selectedDefinitionId}
+                                            onSelect={handleSelectDefinition}
+                                            onToggleSelection={toggleSelectionForExport}
+                                            selectedForExport={selectedForExport}
+                                            isSelectMode={isSelectMode}
+                                            activeSection={activeTab}
+                                            searchQuery={searchQuery}
+                                        />
+                                    ) : (
+                                        <p className="px-8 py-4 text-xs text-muted-foreground italic">No published definitions found.</p>
+                                    )}
+                                </div>
+                            </CollapsibleContent>
+                        </Collapsible>
+                      </TooltipProvider>
                   </div>
               </div>
              )}

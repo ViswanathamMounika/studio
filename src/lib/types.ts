@@ -1,4 +1,3 @@
-
 export interface Revision {
   ticketId: string;
   date: string;
@@ -50,6 +49,7 @@ export interface Definition {
   sourceName?: string;
   sourceServer?: string;
   isArchived: boolean;
+  isDraft?: boolean;
   revisions: Revision[];
   isBookmarked?: boolean;
   supportingTables: SupportingTableRef[];

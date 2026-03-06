@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye } from 'lucide-react';
+import { X, Upload, Eye, Save, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AttachmentList from './attachments';
@@ -88,7 +88,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
     return mpmSourceObjects[key] || [];
   }, [sourceDb, sourceType]);
 
-  const handleSave = () => {
+  const handleSave = (isDraft: boolean) => {
     onSave({
       ...definition,
       name,
@@ -102,6 +102,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       sourceType,
       sourceDb,
       sourceName,
+      isDraft: isDraft,
     });
   };
 
@@ -153,7 +154,14 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
         <h2 className="text-3xl font-bold">Edit Definition</h2>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button onClick={handleSave}>Save</Button>
+          <Button variant="secondary" onClick={() => handleSave(true)} disabled={!name.trim()}>
+              <Save className="mr-2 h-4 w-4" />
+              Save Draft
+          </Button>
+          <Button onClick={() => handleSave(false)} disabled={!name.trim()}>
+              <Send className="mr-2 h-4 w-4" />
+              Submit
+          </Button>
         </div>
       </div>
       

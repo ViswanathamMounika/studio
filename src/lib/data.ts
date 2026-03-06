@@ -195,6 +195,7 @@ const definition111_rev1 = {
     technicalDetails: '',
     usageExamples: '',
     isArchived: false,
+    isDraft: false,
     supportingTables: [{ id: 'auth-status-codes', name: 'Authorization Status Codes' }],
     attachments: [],
     notes: [],
@@ -292,6 +293,7 @@ export const initialDefinitions: Definition[] = [
     usageExamples: '',
     revisions: [],
     isArchived: false,
+    isDraft: false,
     supportingTables: [],
     attachments: [],
     notes: [],
@@ -299,6 +301,7 @@ export const initialDefinitions: Definition[] = [
       {
         ...definition111_rev4,
         id: '1.1.1',
+        isDraft: false,
         revisions: [
           {
             ticketId: 'MPM-1234',
@@ -324,6 +327,7 @@ export const initialDefinitions: Definition[] = [
         description: '<p>Defines how provider-submitted procedure codes are mapped to internal service types.</p>',
         revisions: [],
         isArchived: false,
+        isDraft: false,
         supportingTables: [],
         attachments: [],
         notes: [
@@ -349,6 +353,7 @@ export const initialDefinitions: Definition[] = [
         description: '<p>Measures the time taken from the receipt of an authorization request to the final decision.</p>',
         revisions: [],
         isArchived: false,
+        isDraft: false,
         supportingTables: [],
         attachments: [],
         notes: [],
@@ -368,6 +373,7 @@ export const initialDefinitions: Definition[] = [
     usageExamples: '',
     revisions: [],
     isArchived: false,
+    isDraft: false,
     supportingTables: [],
     attachments: [],
     notes: [],
@@ -380,6 +386,7 @@ export const initialDefinitions: Definition[] = [
             description: '<p>The negotiated payment rates for services rendered by in-network providers.</p>',
             revisions: [],
             isArchived: false,
+            isDraft: false,
             supportingTables: [],
             attachments: [],
             notes: [],

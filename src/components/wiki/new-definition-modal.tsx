@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Info, Eye } from 'lucide-react';
+import { X, Upload, Info, Eye, Save, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AttachmentList from './attachments';
@@ -51,6 +51,7 @@ const initialDefinitionState = {
   sourceDb: '',
   sourceName: '',
   dynamicSections: [],
+  isDraft: false,
 };
 
 export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [] }: NewDefinitionModalProps) {
@@ -149,7 +150,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     return true;
   }, [name, templateId, dynamicSections]);
 
-  const handleSave = () => {
+  const handleSave = (isDraft: boolean) => {
     const newDefinitionData = {
       name: name,
       shortDescription: shortDescription,
@@ -165,6 +166,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       templateId,
       dynamicSections,
       supportingTables: [],
+      isDraft: isDraft,
     };
     onSave(newDefinitionData);
   };
@@ -449,7 +451,14 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button onClick={handleSave} disabled={!isMandatoryComplete}>Save Definition</Button>
+            <Button variant="secondary" onClick={() => handleSave(true)} disabled={!name.trim()}>
+                <Save className="mr-2 h-4 w-4" />
+                Save Draft
+            </Button>
+            <Button onClick={() => handleSave(false)} disabled={!isMandatoryComplete}>
+                <Send className="mr-2 h-4 w-4" />
+                Submit
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>
