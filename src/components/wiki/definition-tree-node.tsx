@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link, Archive } from 'lucide-react';
+import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link, Archive, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -78,11 +78,12 @@ const DefinitionSubItems = ({ definition, onSelect, activeSection, level }: { de
 };
 
 
-export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isSelectMode, selectedForExport, activeSection, searchQuery }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isSelectMode: boolean, selectedForExport: string[], activeSection: string, searchQuery: string }) {
+export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isSelectMode, selectedForExport, activeSection, searchQuery, editLockId }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isSelectMode: boolean, selectedForExport: string[], activeSection: string, searchQuery: string, editLockId: string | null }) {
   const isModule = !node.description; // Modules usually don't have descriptions
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId !== null && node.id === selectedId;
   const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
+  const isLocked = editLockId !== null && node.id === editLockId;
   
   const [isNodeExpanded, setIsNodeExpanded] = useState(false);
 
@@ -164,6 +165,9 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                     <HighlightedText text={node.name} highlight={searchQuery} />
                 </span>
                 <div className="ml-auto flex items-center gap-1.5 opacity-60 group-hover/item:opacity-100 transition-opacity pr-1">
+                    {isLocked && (
+                        <Pencil className="h-3 w-3 text-primary animate-pulse" />
+                    )}
                     {node.isArchived && (
                         <Archive className="h-3 w-3 text-destructive" />
                     )}
@@ -190,6 +194,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                         selectedForExport={selectedForExport}
                         activeSection={activeSection}
                         searchQuery={searchQuery}
+                        editLockId={editLockId}
                     />
                     ))}
                 </div>

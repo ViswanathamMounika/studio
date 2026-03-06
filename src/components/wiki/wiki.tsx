@@ -754,6 +754,7 @@ export default function Wiki() {
                                             isSelectMode={isSelectMode}
                                             activeSection={activeTab}
                                             searchQuery={searchQuery}
+                                            editLockId={editLockId}
                                         />
                                     ) : (
                                         <p className="px-8 py-4 text-xs text-muted-foreground italic">No draft definitions found.</p>
@@ -809,6 +810,7 @@ export default function Wiki() {
                                             isSelectMode={isSelectMode}
                                             activeSection={activeTab}
                                             searchQuery={searchQuery}
+                                            editLockId={editLockId}
                                         />
                                     ) : (
                                         <p className="px-8 py-4 text-xs text-muted-foreground italic">No published definitions found.</p>
