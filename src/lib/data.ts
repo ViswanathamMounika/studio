@@ -204,25 +204,10 @@ const definition111_rev1 = {
     sourceName: 'vw_AuthDecisionDate'
 };
 
-const definition111_rev2 = {
-    ...definition111_rev1,
-    description: `
-      <h4 class="font-bold mt-4 mb-2">Description</h4>
-      <p>The date on which a final decision is made for an authorization request. This is a critical field for tracking service level agreements (SLAs) and reporting purposes.</p>
-    `,
-};
-
-const definition111_rev3 = {
-    ...definition111_rev2,
-    keywords: ['authorization', 'decision date', 'approved', 'denied', 'SLA'],
-    attachments: [
-        { name: 'Workflow-Diagram-v1.pdf', url: '#', size: '845 KB', type: 'PDF' },
-        { name: 'State-Mandate-TX-112.docx', url: '#', size: '1.2 MB', type: 'DOCX' },
-    ],
-};
-
 const definition111_rev4 = {
-    ...definition111_rev2,
+    id: '1.1.1',
+    name: 'Auth Decision Date',
+    module: 'Authorizations',
     keywords: ['authorization', 'decision date', 'approved', 'denied', 'SLA'],
     description: `
       <h4 class="font-bold mt-4 mb-2">Description</h4>
@@ -258,29 +243,55 @@ const definition111_rev4 = {
         { name: 'State-Mandate-TX-112.docx', url: '#', size: '1.2 MB', type: 'DOCX' },
         { name: 'SQL-Query-Examples.txt', url: '#', size: '12 KB', type: 'TXT' },
     ],
-    notes: [
-      {
-        id: "note-1",
-        authorId: "user_123",
-        author: "Dhilip Sagadevan",
-        avatar: "https://picsum.photos/seed/dhilip/40/40",
-        date: "2026-02-10T12:01:42Z",
-        content: "newehwjr",
-        isShared: true,
-      },
-      {
-        id: "note-2",
-        authorId: "user_456",
-        author: "Alex Smith",
-        avatar: "https://picsum.photos/seed/alex/40/40",
-        date: "2023-10-26T10:00:00Z",
-        content: "We need to double check the MD NOTE logic for TX mandates specifically.",
-        isShared: true,
-      }
-    ],
+    notes: [],
     relatedDefinitions: ['1.1.2', '1.1.3']
 };
 
+const definition111_rev5 = {
+    ...definition111_rev4,
+    description: `
+      ${definition111_rev4.description}
+      <h4 class="font-bold mt-4 mb-2">SLA Calculation Deep Dive</h4>
+      <p>The SLA clock starts as soon as the intake department stamps the incoming fax or electronic request. For portal submissions, the timestamp is captured at the moment of the "Submit" action.</p>
+      <p>Business hours exclusion logic:</p>
+      <ul class="list-disc pl-6">
+        <li>Weekends (Saturday, Sunday) are excluded by default using the <code>fn_GetBusinessDays</code> function.</li>
+        <li>Corporate holidays are retrieved from the <code>HOLIDAY_CALENDAR</code> master table.</li>
+        <li>Requests received after 5:00 PM local time are considered received at 8:00 AM the next business day.</li>
+      </ul>
+      <p>Special cases for "Urgent" requests:</p>
+      <ul class="list-disc pl-6">
+        <li>Must be decided within 72 hours of actual receipt, regardless of weekends or holidays (per CMS guidelines).</li>
+        <li>If the decision window expires on a non-business day, the deadline remains the same.</li>
+      </ul>
+    `,
+    technicalDetails: `
+      <p>The underlying data is sourced from the <code>vw_AuthDecisionDate</code> view in the <code>DW_Reporting</code> database.</p>
+      <h4 class="font-bold mt-4 mb-2">Performance Tuning (SQL)</h4>
+      <p>The view performs a left join across 5 major tables. To ensure query performance remains under 2 seconds, we have implemented non-clustered indexes on:</p>
+      <ul class="list-disc pl-6">
+        <li>AUTHORIZATION_MASTER (AUTH_ID, STATUS_DATE)</li>
+        <li>MD_NOTES (AUTH_ID, CREATED_DATE)</li>
+        <li>CERTIFICATION_MASTER (AUTH_ID, ISSUE_DATE)</li>
+      </ul>
+      <p>Partitioning is applied on <code>CREATED_DATE</code> monthly to facilitate rapid historical reporting without scanning full table heaps.</p>
+    `,
+    usageExamples: `
+      <p><strong>Example 1: Calculating Turnaround Time</strong></p>
+      <pre><code>DATEDIFF(day, RequestDate, AuthDecisionDate) AS TurnaroundTime</code></pre>
+      <p><strong>Example 2: Weighted SLA Compliance</strong></p>
+      <pre><code>
+SELECT 
+    Module,
+    COUNT(*) AS TotalAuths,
+    SUM(CASE WHEN TurnaroundTime <= SLALimit THEN 1 ELSE 0 END) AS CompliantCount
+FROM 
+    vw_AuthDecisionHistory
+GROUP BY 
+    Module
+      </code></pre>
+    `
+};
 
 export const initialDefinitions: Definition[] = [
   {
@@ -299,7 +310,7 @@ export const initialDefinitions: Definition[] = [
     notes: [],
     children: [
       {
-        ...definition111_rev4,
+        ...definition111_rev5,
         id: '1.1.1',
         isDraft: false,
         revisions: [
@@ -314,8 +325,15 @@ export const initialDefinitions: Definition[] = [
             ticketId: 'MPM-1401',
             date: '2023-11-10',
             developer: 'A. Smith',
-            description: 'Updated technical details to reference vw_authactiontime view.',
+            description: 'Updated logic for CMS compliance matrix links.',
             snapshot: definition111_rev4,
+          },
+          {
+            ticketId: 'MPM-2005',
+            date: '2024-02-20',
+            developer: 'S. Lee',
+            description: 'Expanded SLA logic and added SQL performance tuning details.',
+            snapshot: definition111_rev5,
           },
         ],
       },
