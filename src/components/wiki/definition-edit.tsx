@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import type { Definition, Attachment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,32 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Logic to bring top commented lines for Procs and Functions
+  useEffect(() => {
+    if (sourceName && (sourceType === 'Stored Procedures' || sourceType === 'SQL Functions')) {
+      const mockComments = `
+/**
+ * Object: ${sourceName}
+ * Description: Automated business logic for ${sourceName.toLowerCase().replace(/_/g, ' ')}.
+ * Database: ${sourceDb}
+ * Source Type: ${sourceType}
+ * Created: ${new Date(Date.now() - 365*24*60*60*1000).toLocaleDateString()}
+ * 
+ * Top Commented Lines:
+ * -------------------
+ * -- 1. Check for member eligibility status
+ * -- 2. Validate claim adjudication rules
+ * -- 3. Execute SLA calculation engine
+ */
+      `.trim();
+      
+      // Auto-populate Technical Details if it's currently empty or strictly default
+      if (!technicalDetails || technicalDetails === '<p></p>' || technicalDetails === '') {
+        setTechnicalDetails(`<pre><code>${mockComments}</code></pre>`);
+      }
+    }
+  }, [sourceName, sourceType, sourceDb]);
 
   const availableSourceTypes = useMemo(() => {
     return sourceDb ? mpmSourceTypes[sourceDb] || [] : [];

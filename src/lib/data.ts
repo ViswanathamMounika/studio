@@ -105,25 +105,18 @@ export const mpmDatabases: DatabaseMetadata[] = [
     { id: 'Claims', name: 'Claims' },
 ];
 
+const standardSourceTypes: SourceTypeMetadata[] = [
+    { id: 'Tables', name: 'Tables' },
+    { id: 'Views', name: 'Views' },
+    { id: 'Stored Procedures', name: 'Stored Procedures' },
+    { id: 'SQL Functions', name: 'SQL Functions' },
+];
+
 export const mpmSourceTypes: Record<string, SourceTypeMetadata[]> = {
-    'DW_Reporting': [
-        { id: 'Views', name: 'Views' },
-        { id: 'Tables', name: 'Tables' },
-        { id: 'SQL Functions', name: 'SQL Functions' },
-    ],
-    'Finance': [
-        { id: 'Tables', name: 'Tables' },
-        { id: 'Stored Procedures', name: 'Stored Procedures' },
-    ],
-    'Provider_Data': [
-        { id: 'Views', name: 'Views' },
-        { id: 'Tables', name: 'Tables' },
-    ],
-    'Claims': [
-        { id: 'Views', name: 'Views' },
-        { id: 'Tables', name: 'Tables' },
-        { id: 'Stored Procedures', name: 'Stored Procedures' },
-    ],
+    'DW_Reporting': standardSourceTypes,
+    'Finance': standardSourceTypes,
+    'Provider_Data': standardSourceTypes,
+    'Claims': standardSourceTypes,
 };
 
 export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
@@ -135,6 +128,14 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
     'DW_Reporting_Tables': [
         { id: 'AUTHORIZATION_MASTER', name: 'AUTHORIZATION_MASTER', typeId: 'Tables' },
         { id: 'MEMBER_MASTER', name: 'MEMBER_MASTER', typeId: 'Tables' },
+    ],
+    'DW_Reporting_Stored Procedures': [
+        { id: 'sp_CalculateSLA', name: 'sp_CalculateSLA', typeId: 'Stored Procedures' },
+        { id: 'sp_ProcessBatchAuths', name: 'sp_ProcessBatchAuths', typeId: 'Stored Procedures' },
+    ],
+    'DW_Reporting_SQL Functions': [
+        { id: 'fn_GetBusinessDays', name: 'fn_GetBusinessDays', typeId: 'SQL Functions' },
+        { id: 'fn_FormatMemberName', name: 'fn_FormatMemberName', typeId: 'SQL Functions' },
     ],
     'Finance_Tables': [
         { id: 'FEE_SCHEDULES', name: 'FEE_SCHEDULES', typeId: 'Tables' },

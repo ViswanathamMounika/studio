@@ -96,6 +96,32 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     }
   }, [open, initialData]);
 
+  // Logic to bring top commented lines for Procs and Functions
+  useEffect(() => {
+    if (open && sourceName && (sourceType === 'Stored Procedures' || sourceType === 'SQL Functions')) {
+      const mockComments = `
+/**
+ * Object: ${sourceName}
+ * Description: Automated business logic for ${sourceName.toLowerCase().replace(/_/g, ' ')}.
+ * Database: ${sourceDb}
+ * Source Type: ${sourceType}
+ * Created: ${new Date(Date.now() - 365*24*60*60*1000).toLocaleDateString()}
+ * 
+ * Top Commented Lines:
+ * -------------------
+ * -- 1. Check for member eligibility status
+ * -- 2. Validate claim adjudication rules
+ * -- 3. Execute SLA calculation engine
+ */
+      `.trim();
+      
+      // Auto-populate Technical Details if it's currently empty
+      if (!technicalDetails || technicalDetails === '<p></p>' || technicalDetails === '') {
+        setTechnicalDetails(`<pre><code>${mockComments}</code></pre>`);
+      }
+    }
+  }, [sourceName, sourceType, sourceDb, open]);
+
   const availableSourceTypes = useMemo(() => {
     return sourceDb ? mpmSourceTypes[sourceDb] || [] : [];
   }, [sourceDb]);
@@ -156,7 +182,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      const newAttachment: Attachment = {
+      const new Attachment: Attachment = {
         name: file.name,
         url: URL.createObjectURL(file),
         size: `${(file.size / 1024).toFixed(2)} KB`,
