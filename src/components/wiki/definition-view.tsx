@@ -62,9 +62,6 @@ const currentUser = {
     avatar: "https://picsum.photos/seed/dhilip/40/40"
 };
 
-/**
- * Highlights matching text safely.
- */
 const HighlightedText = ({ text, highlight }: { text: string; highlight: string }) => {
     if (!highlight?.trim()) return <span>{text}</span>;
     const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
@@ -178,7 +175,7 @@ export default function DefinitionView({
 
   return (
     <TooltipProvider>
-        <article className="prose prose-sm max-w-none my-6">
+        <article className="prose prose-sm max-w-none">
             <div className="flex justify-between items-start">
                 <div>
                     <p className="text-sm text-muted-foreground">{definition.module}</p>

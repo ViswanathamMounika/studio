@@ -324,7 +324,7 @@ export default function Wiki() {
 
     const filterBookmarked = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
-            const children = item.children ? filterBookmarked(item.children) : [];
+            const children = filterBookmarked(item.children || []);
             if (isBookmarked(item.id) || children.length > 0) acc.push({ ...item, children });
             return acc;
         }, []);
@@ -414,13 +414,13 @@ export default function Wiki() {
 
   const renderContent = () => {
     switch (activeView) {
-        case 'activity-logs': return <ActivityLogs />;
-        case 'template-management': return <TemplateManagement templates={templates} onSaveTemplates={setTemplates} />;
+        case 'activity-logs': return <div className="p-6"><ActivityLogs /></div>;
+        case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
         default: return (
                 <div className="relative">
                   {/* Sticky Header for Status Messages (View Mode Only) */}
                   {editLockId === selectedDefinitionId && !isEditing && (
-                    <div className="sticky top-0 z-50 bg-background -mt-6 -mx-6 px-6 py-4 border-b mb-6 shadow-sm">
+                    <div className="sticky top-0 z-[60] bg-background px-6 py-4 border-b shadow-sm">
                         <Alert className="bg-primary/5 border-primary/20">
                           <Lock className="h-4 w-4 text-primary" />
                           <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>
@@ -438,21 +438,23 @@ export default function Wiki() {
                   {isEditing && selectedDefinition ? (
                       <DefinitionEdit definition={selectedDefinition} onSave={handleSave} onCancel={handleCancelEdit} />
                   ) : selectedDefinition ? (
-                      <DefinitionView 
-                        definition={selectedDefinition} 
-                        onEdit={handleEditClick} 
-                        onDuplicate={handleDuplicate} 
-                        onArchive={handleArchive} 
-                        onDelete={handleDelete} 
-                        onToggleBookmark={toggleBookmark} 
-                        activeTab={activeTab} 
-                        onTabChange={handleTabChange} 
-                        onSave={handleSave} 
-                        isAdmin={isAdmin}
-                        searchQuery={searchQuery}
-                      />
+                      <div className="p-6">
+                        <DefinitionView 
+                          definition={selectedDefinition} 
+                          onEdit={handleEditClick} 
+                          onDuplicate={handleDuplicate} 
+                          onArchive={handleArchive} 
+                          onDelete={handleDelete} 
+                          onToggleBookmark={toggleBookmark} 
+                          activeTab={activeTab} 
+                          onTabChange={handleTabChange} 
+                          onSave={handleSave} 
+                          isAdmin={isAdmin}
+                          searchQuery={searchQuery}
+                        />
+                      </div>
                   ) : (
-                      <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Select a definition to view its details.</p></div>
+                      <div className="flex items-center justify-center h-full min-h-[400px]"><p className="text-muted-foreground">Select a definition to view its details.</p></div>
                   )}
                 </div>
             );
@@ -633,7 +635,7 @@ export default function Wiki() {
                   </div>
               </div>
              )}
-              <div className="flex-1 w-full overflow-y-auto p-6" id="definition-content">
+              <div className="flex-1 w-full overflow-y-auto" id="definition-content">
                   {renderContent()}
               </div>
           </main>
