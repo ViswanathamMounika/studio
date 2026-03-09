@@ -1,6 +1,7 @@
+
 "use client"
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, Image, Table, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react"
 import { Button } from "../ui/button"
 import { Separator } from "../ui/separator"
@@ -63,6 +64,13 @@ const ColorPalette = ({ colors, onSelect }: { colors: string[], onSelect: (color
 export default function WysiwygEditor({ value, onChange, className, placeholder }: WysiwygEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
 
+    // Initial load and external changes
+    useEffect(() => {
+        if (editorRef.current && editorRef.current.innerHTML !== value) {
+            editorRef.current.innerHTML = value;
+        }
+    }, [value]);
+
     const handleInput = (event: React.FormEvent<HTMLDivElement>) => {
         onChange(event.currentTarget.innerHTML);
     };
@@ -70,7 +78,9 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     const execCommand = (command: string, value?: string) => {
         document.execCommand(command, false, value);
         editorRef.current?.focus();
-        handleInput({ currentTarget: editorRef.current! } as React.FormEvent<HTMLDivElement>);
+        if (editorRef.current) {
+            handleInput({ currentTarget: editorRef.current } as React.FormEvent<HTMLDivElement>);
+        }
     };
     
     const handleLink = () => {
@@ -109,8 +119,8 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     };
 
     return (
-        <div className="border rounded-md">
-            <div className="p-2 border-b flex flex-wrap items-center gap-1">
+        <div className="border rounded-md bg-background">
+            <div className="p-2 border-b flex flex-wrap items-center gap-1 sticky top-0 bg-muted/5 z-10">
                 <ToolbarButton onClick={() => execCommand('bold')}><Bold className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('italic')}><Italic className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('underline')}><Underline className="h-4 w-4" /></ToolbarButton>
@@ -180,9 +190,9 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 ref={editorRef}
                 contentEditable
                 onInput={handleInput}
-                dangerouslySetInnerHTML={{ __html: value }}
+                dir="ltr"
                 className={cn(
-                    "prose prose-sm max-w-none w-full min-h-[300px] p-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-b-md",
+                    "prose prose-sm max-w-none w-full min-h-[300px] p-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-b-md text-left",
                     className
                 )}
                 placeholder={placeholder || "Enter content..."}
