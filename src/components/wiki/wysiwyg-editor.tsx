@@ -63,19 +63,18 @@ const ColorPalette = ({ colors, onSelect }: { colors: string[], onSelect: (color
 
 export default function WysiwygEditor({ value, onChange, className, placeholder }: WysiwygEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
-    const lastValueRef = useRef(value);
 
     // Initial load and external changes
+    // Only update innerHTML if it's different from the state to preserve cursor position
     useEffect(() => {
-        if (editorRef.current && value !== lastValueRef.current) {
+        if (editorRef.current && value !== editorRef.current.innerHTML) {
             editorRef.current.innerHTML = value;
-            lastValueRef.current = value;
         }
     }, [value]);
 
     const handleInput = (event: React.FormEvent<HTMLDivElement>) => {
         const content = event.currentTarget.innerHTML;
-        lastValueRef.current = content;
+        // Notify parent of change
         onChange(content);
     };
 
@@ -192,8 +191,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                     className
                 )}
                 placeholder={placeholder || "Enter content..."}
-                style={{ textAlign: 'left' }}
-                dangerouslySetInnerHTML={{ __html: value }}
+                style={{ textAlign: 'left', direction: 'ltr', whiteSpace: 'pre-wrap' }}
             />
         </div>
     )
