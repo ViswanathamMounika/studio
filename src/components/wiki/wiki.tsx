@@ -111,6 +111,13 @@ export default function Wiki() {
     window.history.pushState({}, '', url.toString());
   }, []);
 
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
+    if (selectedDefinitionId) {
+        updateUrl(selectedDefinitionId, tab);
+    }
+  }, [selectedDefinitionId, updateUrl]);
+
   const handleSelectDefinition = useCallback((id: string, sectionId?: string, shouldUpdateUrl = true) => {
     const isSameDefinition = id === selectedDefinitionId;
     setActiveView('definitions');
