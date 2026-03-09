@@ -184,6 +184,21 @@ export default function ActivityLogs() {
                             placeholder="All Users"
                         />
 
+                        {/* Search Definition - Now in 2nd position */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium">Search Definition</label>
+                            <div className="relative">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Definition name..." 
+                                    className="pl-8"
+                                    value={definitionSearch}
+                                    onChange={(e) => setDefinitionSearch(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Activity Type - Now in 3rd position */}
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Activity Type</label>
                             <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
@@ -199,19 +214,7 @@ export default function ActivityLogs() {
                             </Select>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-medium">Search Definition</label>
-                            <div className="relative">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    placeholder="Definition name..." 
-                                    className="pl-8"
-                                    value={definitionSearch}
-                                    onChange={(e) => setDefinitionSearch(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
+                        {/* Time Frame - Stays in 4th position */}
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Time Frame</label>
                             <Select value={timeFrame} onValueChange={setTimeFrame}>
