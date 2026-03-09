@@ -220,12 +220,13 @@ export default function Wiki() {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can create definitions.' });
         return;
     }
+    const newId = Date.now().toString();
     const newDefinition: Definition = {
         ...newDefinitionData,
-        id: Date.now().toString(),
+        id: newId,
         revisions: [],
         isArchived: false,
-        children: newDefinitionData.children || [],
+        children: [],
         notes: [],
         relatedDefinitions: [],
     };
@@ -237,8 +238,6 @@ export default function Wiki() {
         });
     };
     setDefinitions(prev => {
-        const parentModule = findDefinition(prev, newDefinitionData.module);
-        if (parentModule) return addDefinitionToModule(prev, parentModule.name, newDefinition);
         const moduleExists = prev.some(m => m.name === newDefinition.module);
         if (moduleExists) return addDefinitionToModule(prev, newDefinition.module, newDefinition);
         const newModule: Definition = {
@@ -250,7 +249,7 @@ export default function Wiki() {
     });
     setIsNewDefinitionModalOpen(false);
     setIsTemplatesModalOpen(false);
-    setSelectedDefinitionId(newDefinition.id);
+    setSelectedDefinitionId(newId);
     setActiveView('definitions');
   };
 
@@ -462,8 +461,9 @@ export default function Wiki() {
   }
 
   const handleNewDefinitionClick = (type: 'template' | 'blank') => {
-    if (type === 'template') setIsTemplatesModalOpen(true);
-    else {
+    if (type === 'template') {
+      setIsTemplatesModalOpen(true);
+    } else {
       setDraftedDefinitionData({ name: 'New Blank Definition', module: 'Core', keywords: [], description: '' });
       setIsNewDefinitionModalOpen(true);
     }
@@ -472,15 +472,10 @@ export default function Wiki() {
   const handleUseTemplate = (templateData: Partial<Definition>, templateId?: string) => {
       const template = templates.find(t => t.id === templateId);
       if (template) {
-        const dynamicSections = template.sections.map(s => ({
-          sectionId: s.id,
-          name: s.name,
-          content: '',
-          contentType: s.contentType,
-          isMandatory: s.isMandatory,
-          order: s.order
-        }));
-        setDraftedDefinitionData({ ...templateData, templateId: template.id, dynamicSections });
+        setDraftedDefinitionData({ 
+          ...templateData, 
+          templateId: template.id,
+        });
       } else {
         setDraftedDefinitionData(templateData);
       }

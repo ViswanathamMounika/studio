@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -50,7 +51,7 @@ type TemplatesModalProps = {
 
 export default function TemplatesModal({ open, onOpenChange, onUseTemplate, managedTemplates = [] }: TemplatesModalProps) {
 
-  const handleUseTemplate = (templateId: string, templateData: Partial<Definition>) => {
+  const handleUseTemplateInternal = (templateId: string, templateData: Partial<Definition>) => {
     onUseTemplate(templateData, templateId);
   };
 
@@ -69,7 +70,11 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate, mana
           <ScrollArea className="max-h-[70vh] p-1">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
               {defaultTemplates.map((template) => (
-                <Card key={template.id} className="flex flex-col border-dashed bg-muted/50 hover:bg-background transition-colors cursor-pointer" onClick={() => handleUseTemplate(template.id, template.data)}>
+                <Card 
+                  key={template.id} 
+                  className="flex flex-col border-dashed bg-muted/50 hover:bg-background transition-colors cursor-pointer" 
+                  onClick={() => handleUseTemplateInternal(template.id, template.data)}
+                >
                   <CardHeader>
                     <div className="flex items-center gap-3 mb-2">
                         <template.icon className="h-6 w-6 text-primary" />
@@ -81,11 +86,14 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate, mana
               ))}
 
               {activeManagedTemplates.map((template) => (
-                <Card key={template.id} className="flex flex-col hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleUseTemplate(template.id, {
+                <Card 
+                  key={template.id} 
+                  className="flex flex-col hover:border-primary/50 transition-colors cursor-pointer" 
+                  onClick={() => handleUseTemplateInternal(template.id, {
                     name: `New ${template.name}`,
                     module: 'Core',
-                    templateId: template.id
-                })}>
+                  })}
+                >
                   <CardHeader>
                     <div className="flex items-center gap-3 mb-2">
                         <FileText className="h-6 w-6 text-primary" />

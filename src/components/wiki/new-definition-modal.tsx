@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -79,6 +80,12 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       setModule(data.module || initialDefinitionState.module);
       setKeywords(data.keywords || initialDefinitionState.keywords);
       setCurrentKeyword('');
+      
+      // Reset fields first
+      setShortDescription('');
+      setDescription('');
+      setTechnicalDetails('');
+      setUsageExamples('');
       
       // Handle template pre-population
       const template = templates.find(t => t.id === data.templateId);

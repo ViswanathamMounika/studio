@@ -63,16 +63,20 @@ const ColorPalette = ({ colors, onSelect }: { colors: string[], onSelect: (color
 
 export default function WysiwygEditor({ value, onChange, className, placeholder }: WysiwygEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
+    const lastValueRef = useRef(value);
 
     // Initial load and external changes
     useEffect(() => {
-        if (editorRef.current && editorRef.current.innerHTML !== value) {
+        if (editorRef.current && value !== lastValueRef.current) {
             editorRef.current.innerHTML = value;
+            lastValueRef.current = value;
         }
     }, [value]);
 
     const handleInput = (event: React.FormEvent<HTMLDivElement>) => {
-        onChange(event.currentTarget.innerHTML);
+        const content = event.currentTarget.innerHTML;
+        lastValueRef.current = content;
+        onChange(content);
     };
 
     const execCommand = (command: string, value?: string) => {
@@ -105,7 +109,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         const rows = prompt("Enter number of rows", "2");
         const cols = prompt("Enter number of columns", "2");
         if (rows && cols) {
-            let table = '<table style="border-collapse: collapse; width: 100%;">';
+            let table = '<table style="border-collapse: collapse; width: 100%; border: 1px solid #ccc;">';
             for (let i = 0; i < parseInt(rows); i++) {
                 table += '<tr>';
                 for (let j = 0; j < parseInt(cols); j++) {
@@ -119,8 +123,8 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     };
 
     return (
-        <div className="border rounded-md bg-background">
-            <div className="p-2 border-b flex flex-wrap items-center gap-1 sticky top-0 bg-muted/5 z-10">
+        <div className="border rounded-md bg-background overflow-hidden">
+            <div className="p-2 border-b flex flex-wrap items-center gap-1 sticky top-0 bg-muted/10 z-10 backdrop-blur-sm">
                 <ToolbarButton onClick={() => execCommand('bold')}><Bold className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('italic')}><Italic className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('underline')}><Underline className="h-4 w-4" /></ToolbarButton>
@@ -130,22 +134,19 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8">Font Size</Button>
+                        <Button variant="ghost" className="h-8 text-xs">Size</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('1'); }}>10px</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('2'); }}>13px</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('3'); }}>16px</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('4'); }}>18px</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('5'); }}>24px</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('6'); }}>32px</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('7'); }}>48px</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('1'); }}>Small</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('3'); }}>Normal</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('5'); }}>Large</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('7'); }}>Huge</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
 
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">A</Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-xs font-bold">A</Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-2">
                         <ColorPalette colors={FONT_COLORS} onSelect={(color) => execCommand('foreColor', color)} />
@@ -169,16 +170,11 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 <ToolbarButton onClick={() => execCommand('justifyLeft')}><AlignLeft className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('justifyCenter')}><AlignCenter className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('justifyRight')}><AlignRight className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('justifyFull')}><AlignJustify className="h-4 w-4" /></ToolbarButton>
 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
-                <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); execCommand('insertUnorderedList'); }}>
-                    <List className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); execCommand('insertOrderedList'); }}>
-                    <ListOrdered className="h-4 w-4" />
-                </Button>
+                <ToolbarButton onClick={() => execCommand('insertUnorderedList')}><List className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('insertOrderedList')}><ListOrdered className="h-4 w-4" /></ToolbarButton>
                 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
@@ -192,10 +188,12 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 onInput={handleInput}
                 dir="ltr"
                 className={cn(
-                    "prose prose-sm max-w-none w-full min-h-[300px] p-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-b-md text-left",
+                    "prose prose-sm max-w-none w-full min-h-[300px] p-4 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left bg-background",
                     className
                 )}
                 placeholder={placeholder || "Enter content..."}
+                style={{ textAlign: 'left' }}
+                dangerouslySetInnerHTML={{ __html: value }}
             />
         </div>
     )
