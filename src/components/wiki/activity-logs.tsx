@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Check, ChevronsUpDown } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Check, ChevronsUpDown, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType } from '@/lib/types';
 import { initialActivityLogs } from '@/lib/data';
@@ -98,14 +98,13 @@ function MultiSelectFilter({ title, options, selected, onToggle, placeholder }: 
 export default function ActivityLogs() {
     const [logs] = useState<ActivityLog[]>(initialActivityLogs);
     const [userFilters, setUserFilters] = useState<string[]>([]);
-    const [activityFilters, setActivityFilters] = useState<string[]>([]);
-    const [definitionFilters, setDefinitionFilters] = useState<string[]>([]);
+    const [activityTypeFilter, setActivityTypeFilter] = useState<string>('all');
+    const [definitionSearch, setDefinitionSearch] = useState<string>('');
     const [timeFrame, setTimeFrame] = useState('all');
     const [customRange, setCustomRange] = useState<{ from: Date; to: Date } | undefined>();
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
     const users = useMemo(() => Array.from(new Set(logs.map(log => log.userName))).sort(), [logs]);
-    const definitions = useMemo(() => Array.from(new Set(logs.map(log => log.definitionName))).sort(), [logs]);
 
     const handleToggleFilter = (setter: React.Dispatch<React.SetStateAction<string[]>>, current: string[], value: string) => {
         if (current.includes(value)) {
@@ -118,8 +117,8 @@ export default function ActivityLogs() {
     const filteredLogs = useMemo(() => {
         return logs.filter(log => {
             const userMatch = userFilters.length === 0 || userFilters.includes(log.userName);
-            const activityMatch = activityFilters.length === 0 || activityFilters.includes(log.activityType);
-            const definitionMatch = definitionFilters.length === 0 || definitionFilters.includes(log.definitionName);
+            const activityMatch = activityTypeFilter === 'all' || log.activityType === activityTypeFilter;
+            const definitionMatch = !definitionSearch || log.definitionName.toLowerCase().includes(definitionSearch.toLowerCase());
 
             let timeMatch = true;
             const logDate = new Date(log.occurredDate);
@@ -147,7 +146,7 @@ export default function ActivityLogs() {
             const dateB = new Date(b.occurredDate).getTime();
             return sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
         });
-    }, [logs, userFilters, activityFilters, definitionFilters, timeFrame, customRange, sortDirection]);
+    }, [logs, userFilters, activityTypeFilter, definitionSearch, timeFrame, customRange, sortDirection]);
 
     const toggleSort = () => {
         setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -155,8 +154,8 @@ export default function ActivityLogs() {
 
     const resetFilters = () => {
         setUserFilters([]);
-        setActivityFilters([]);
-        setDefinitionFilters([]);
+        setActivityTypeFilter('all');
+        setDefinitionSearch('');
         setTimeFrame('all');
         setCustomRange(undefined);
     };
@@ -185,21 +184,33 @@ export default function ActivityLogs() {
                             placeholder="All Users"
                         />
 
-                        <MultiSelectFilter 
-                            title="Activity Type" 
-                            options={activityTypes} 
-                            selected={activityFilters} 
-                            onToggle={(val) => handleToggleFilter(setActivityFilters, activityFilters, val)}
-                            placeholder="All Activities"
-                        />
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium">Activity Type</label>
+                            <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All Activities" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Activities</SelectItem>
+                                    {activityTypes.map(type => (
+                                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                        <MultiSelectFilter 
-                            title="Definition" 
-                            options={definitions} 
-                            selected={definitionFilters} 
-                            onToggle={(val) => handleToggleFilter(setDefinitionFilters, definitionFilters, val)}
-                            placeholder="All Definitions"
-                        />
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium">Search Definition</label>
+                            <div className="relative">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Definition name..." 
+                                    className="pl-8"
+                                    value={definitionSearch}
+                                    onChange={(e) => setDefinitionSearch(e.target.value)}
+                                />
+                            </div>
+                        </div>
 
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Time Frame</label>
