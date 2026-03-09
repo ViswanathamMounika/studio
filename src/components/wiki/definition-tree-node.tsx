@@ -8,6 +8,11 @@ import { Button } from "@/components/ui/button";
 import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link, Archive, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 function isParent(node: Definition, selectedId: string): boolean {
     if (!node.children) {
@@ -166,13 +171,34 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                 </span>
                 <div className="ml-auto flex items-center gap-1.5 opacity-60 group-hover/item:opacity-100 transition-opacity pr-1">
                     {isLocked && (
-                        <Pencil className="h-3 w-3 text-primary animate-pulse" />
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Pencil className="h-3 w-3 text-primary animate-pulse" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>You are currently editing this definition</p>
+                            </TooltipContent>
+                        </Tooltip>
                     )}
                     {node.isArchived && (
-                        <Archive className="h-3 w-3 text-destructive" />
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Archive className="h-3 w-3 text-destructive" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>This definition is archived</p>
+                            </TooltipContent>
+                        </Tooltip>
                     )}
                     {node.isBookmarked && (
-                      <Bookmark className="h-3 w-3 fill-primary text-primary" />
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Bookmark className="h-3 w-3 fill-primary text-primary" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Bookmarked</p>
+                            </TooltipContent>
+                        </Tooltip>
                     )}
                 </div>
             </div>
