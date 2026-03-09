@@ -6,10 +6,10 @@ import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check } from 'lucide-react';
+import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -263,10 +263,11 @@ export default function Wiki() {
     handleCreateDefinition(newDefinition);
   };
 
-  const handleArchive = (id: string, archive: boolean) => {
+  const handleArchive = (id: string | string[], archive: boolean) => {
+     const ids = Array.isArray(id) ? id : [id];
      const updateArchiveStatus = (items: Definition[]): Definition[] => {
       return items.map(def => {
-        if (def.id === id) return { ...def, isArchived: archive };
+        if (ids.includes(def.id)) return { ...def, isArchived: archive };
         if (def.children) return { ...def, children: updateArchiveStatus(def.children) };
         return def;
       });
@@ -358,7 +359,7 @@ export default function Wiki() {
     });
   };
 
-  const handleExport = async (formatType: 'pdf') => {
+  const handleExport = async (formatType: 'pdf' | 'json' | 'xlsx' | 'html') => {
     const flatten = (items: Definition[]): Definition[] => {
         let flat: Definition[] = [];
         items.forEach(item => {
@@ -370,22 +371,78 @@ export default function Wiki() {
     const definitionsToExport = flatten(definitions).filter(d => selectedForExport.includes(d.id));
     if (definitionsToExport.length === 0) return;
 
-    const { default: jsPDF } = await import('jspdf');
-    const doc = new jsPDF();
-    let y = 20;
-    definitionsToExport.forEach((def, index) => {
-      if (index > 0) { doc.addPage(); y = 20; }
-      doc.setFont('helvetica', 'bold');
-      doc.text(def.name, 20, y);
-      y += 10;
-      doc.setFont('helvetica', 'normal');
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = def.description;
-      const text = doc.splitTextToSize(tempDiv.innerText, 170);
-      doc.text(text, 20, y);
-      y += text.length * 5 + 10;
-    });
-    doc.save(`definitions-export.pdf`);
+    if (formatType === 'json') {
+        const exportData = {
+            exportDate: new Date().toISOString(),
+            definitions: definitionsToExport
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `bulk-export-${Date.now()}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+        toast({ title: 'Export Success', description: 'Definitions exported to JSON.' });
+    } else if (formatType === 'pdf') {
+        const { default: jsPDF } = await import('jspdf');
+        const doc = new jsPDF();
+        let y = 20;
+        definitionsToExport.forEach((def, index) => {
+          if (index > 0) { doc.addPage(); y = 20; }
+          doc.setFont('helvetica', 'bold');
+          doc.text(def.name, 20, y);
+          y += 10;
+          doc.setFont('helvetica', 'normal');
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = def.description;
+          const text = doc.splitTextToSize(tempDiv.innerText, 170);
+          doc.text(text, 20, y);
+          y += text.length * 5 + 10;
+        });
+        doc.save(`bulk-export-${Date.now()}.pdf`);
+        toast({ title: 'Export Success', description: 'Definitions exported to PDF.' });
+    } else if (formatType === 'xlsx') {
+        const XLSX = await import('xlsx');
+        const data = definitionsToExport.map(def => ({
+            ID: def.id,
+            Name: def.name,
+            Module: def.module,
+            Keywords: def.keywords.join(', '),
+            Description: def.description.replace(/<[^>]+>/g, ''),
+            Archived: def.isArchived,
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Definitions');
+        XLSX.writeFile(workbook, `bulk-export-${Date.now()}.xlsx`);
+        toast({ title: 'Export Success', description: 'Definitions exported to Excel.' });
+    } else if (formatType === 'html') {
+        let htmlContent = `<html><head><title>Bulk Export</title><style>body { font-family: sans-serif; line-height: 1.6; padding: 2rem; } h1 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; } .def-block { margin-bottom: 4rem; } .keywords { font-style: italic; color: #777; }</style></head><body>`;
+        definitionsToExport.forEach(def => {
+            htmlContent += `
+              <div class="def-block">
+                <h1>${def.name}</h1>
+                <p><strong>Module:</strong> ${def.module}</p>
+                <div class="keywords"><strong>Keywords:</strong> ${def.keywords.join(', ')}</div>
+                <hr/>
+                ${def.description}
+                ${def.technicalDetails ? `<h3>Technical Details</h3>${def.technicalDetails}` : ''}
+                ${def.usageExamples ? `<h3>Usage Examples</h3>${def.usageExamples}` : ''}
+              </div>
+            `;
+        });
+        htmlContent += `</body></html>`;
+        const dataStr = "data:text/html;charset=utf-8," + encodeURIComponent(htmlContent);
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `bulk-export-${Date.now()}.html`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+        toast({ title: 'Export Success', description: 'Definitions exported to HTML.' });
+    }
+
     setSelectedForExport([]);
     setIsSelectMode(false);
   };
@@ -539,11 +596,35 @@ export default function Wiki() {
                                 </Button>
                               </div>
                               <div className="grid grid-cols-2 gap-2">
-                                <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => handleExport('pdf')} disabled={selectedForExport.length === 0}>
-                                    Export Selected
-                                </Button>
-                                <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { handleArchive('', true); setIsSelectMode(false); }} disabled={selectedForExport.length === 0}>
-                                    Archive Selected
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="h-9 text-xs" disabled={selectedForExport.length === 0}>
+                                            <Download className="mr-2 h-4 w-4" />
+                                            Export
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        <DropdownMenuItem onClick={() => handleExport('json')}>
+                                            <FileJson className="mr-2 h-4 w-4" />
+                                            JSON
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                                            <FileText className="mr-2 h-4 w-4" />
+                                            PDF
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                                            <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                            Excel (XLSX)
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleExport('html')}>
+                                            <FileCode className="mr-2 h-4 w-4" />
+                                            HTML
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { handleArchive(selectedForExport, true); setIsSelectMode(false); setSelectedForExport([]); }} disabled={selectedForExport.length === 0}>
+                                    <Archive className="mr-2 h-4 w-4" />
+                                    Archive
                                 </Button>
                               </div>
                           </div>
