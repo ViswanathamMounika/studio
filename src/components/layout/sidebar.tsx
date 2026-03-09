@@ -12,7 +12,7 @@ import {
     HeartPulse,
     BadgePercent,
     ShoppingCart,
-    SquareGanttChart,
+    GanttChart,
     History,
     LayoutTemplate
 } from "lucide-react";
@@ -53,7 +53,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSideb
         { id: 'template-management', label: 'Templates', icon: LayoutTemplate, adminOnly: true },
         { id: 'activity-logs', label: 'Activity Logs', icon: History, adminOnly: true },
         { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
-        { id: 'acronyms', label: 'Healthcare Acronyms', icon: SquareGanttChart },
+        { id: 'acronyms', label: 'Healthcare Acronyms', icon: GanttChart },
         { id: 'clients', label: 'Clients', icon: Users },
         { id: 'health-plans', label: 'Health Plans', icon: HeartPulse },
         { id: 'lob-codes', label: 'LOB Codes', icon: BadgePercent },

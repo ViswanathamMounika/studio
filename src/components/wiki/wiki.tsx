@@ -6,11 +6,10 @@ import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template } from '@/lib/types';
-import { Toaster } from '@/components/ui/toaster';
-import { Filter, Search, X, CheckSquare, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check } from 'lucide-react';
+import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -25,10 +24,10 @@ import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-// Dynamic imports
+// Dynamic imports for heavy components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
   ssr: false,
-  loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-4 w-full"/><Skeleton className="h-4 w-4 w-full"/><Skeleton className="h-4 w-4 w-full"/></div>
+  loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
 });
 const DefinitionView = dynamic(() => import('@/components/wiki/definition-view'), { 
   ssr: false,
@@ -60,14 +59,6 @@ const initialNotifications: NotificationType[] = [
     date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     read: true,
   },
-  {
-    id: '3',
-    definitionId: '3.1.1',
-    definitionName: 'Provider Demographics',
-    message: 'The attachments for "Provider Demographics" were updated.',
-    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    read: false,
-  },
 ];
 
 export default function Wiki() {
@@ -79,12 +70,12 @@ export default function Wiki() {
   const [showBookmarked, setShowBookmarked] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
   const [searchQuery, setSearchQuery] = useState("");
-  const { isMounted, bookmarks, toggleBookmark, isBookmarked } = useBookmarks();
+  const { isMounted, toggleBookmark, isBookmarked } = useBookmarks();
   const [selectedForExport, setSelectedForExport] = useState<string[]>([]);
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(true);
+  const [isAdmin] = useState(true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
@@ -92,8 +83,6 @@ export default function Wiki() {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [isDraftsExpanded, setIsDraftsExpanded] = useState(true);
   const [isMpmExpanded, setIsMpmExpanded] = useState(true);
-  
-  // Edit Lock Management
   const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock', null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
@@ -104,46 +93,14 @@ export default function Wiki() {
     }
   }, [debouncedSearchQuery]);
 
-  const handlePopState = useCallback(() => {
-    if (isMounted) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const definitionIdFromUrl = urlParams.get('definitionId');
-        const sectionFromUrl = urlParams.get('section');
-        const viewFromUrl = urlParams.get('view') as View;
-
-        if (viewFromUrl) {
-            handleNavigate(viewFromUrl, false);
-        } else if (definitionIdFromUrl) {
-            handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, false);
-        } else {
-            setActiveView('definitions');
-            handleSelectDefinition('1.1.1', undefined, false);
-        }
-    }
-  }, [isMounted]);
-
-  useEffect(() => {
-    window.addEventListener('popstate', handlePopState);
-    handlePopState();
-    return () => {
-        window.removeEventListener('popstate', handlePopState);
-    };
-  }, [isMounted, handlePopState]);
-
-  // Check for lock on mount or definition change
-  useEffect(() => {
-    if (selectedDefinitionId && selectedDefinitionId === editLockId) {
-      setIsEditing(true);
-    }
-  }, [selectedDefinitionId, editLockId]);
-
-  const updateUrl = (definitionId: string, sectionId?: string, view?: View) => {
+  const updateUrl = useCallback((definitionId: string, sectionId?: string, view?: View) => {
+    if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     url.searchParams.delete('definitionId');
     url.searchParams.delete('section');
     url.searchParams.delete('view');
 
-    if (view) {
+    if (view && view !== 'definitions') {
         url.searchParams.set('view', view);
     } else if (definitionId) {
         url.searchParams.set('definitionId', definitionId);
@@ -152,45 +109,12 @@ export default function Wiki() {
         }
     }
     window.history.pushState({}, '', url.toString());
-  };
-
-  const handleNavigate = (view: View, shouldUpdateUrl = true) => {
-    if ((view === 'activity-logs' || view === 'template-management') && !isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
-        return;
-    }
-    setActiveView(view);
-    if (view === 'definitions') {
-        handleSelectDefinition('1.1.1', undefined, shouldUpdateUrl);
-    } else {
-        setSelectedDefinitionId(null);
-        if(shouldUpdateUrl) {
-            updateUrl('', '', view);
-        }
-    }
-  };
-  
-  const getAllDefinitionIds = useCallback((items: Definition[]): string[] => {
-    let ids: string[] = [];
-    for (const item of items) {
-        ids.push(item.id);
-        if (item.children) {
-            ids = [...ids, ...getAllDefinitionIds(item.children)];
-        }
-    }
-    return ids;
   }, []);
-
-  const handleTabChange = (tab: string) => {
-      setActiveTab(tab);
-      if (selectedDefinitionId) updateUrl(selectedDefinitionId, tab);
-  };
 
   const handleSelectDefinition = useCallback((id: string, sectionId?: string, shouldUpdateUrl = true) => {
     const isSameDefinition = id === selectedDefinitionId;
     setActiveView('definitions');
     
-    // Check if this definition has an active lock
     if (id === editLockId) {
       setIsEditing(true);
     } else {
@@ -205,23 +129,71 @@ export default function Wiki() {
     const targetSection = sectionId || 'description';
     setActiveTab(targetSection);
     if (shouldUpdateUrl) updateUrl(id, targetSection);
-  }, [definitions, selectedDefinitionId, editLockId]);
+  }, [definitions, selectedDefinitionId, editLockId, updateUrl]);
+
+  const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
+    if ((view === 'activity-logs' || view === 'template-management') && !isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
+        return;
+    }
+    setActiveView(view);
+    if (view === 'definitions') {
+        handleSelectDefinition('1.1.1', undefined, shouldUpdateUrl);
+    } else {
+        setSelectedDefinitionId(null);
+        if(shouldUpdateUrl) {
+            updateUrl('', '', view);
+        }
+    }
+  }, [isAdmin, toast, handleSelectDefinition, updateUrl]);
+
+  const handlePopState = useCallback(() => {
+    if (isMounted) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const definitionIdFromUrl = urlParams.get('definitionId');
+        const sectionFromUrl = urlParams.get('section');
+        const viewFromUrl = urlParams.get('view') as View;
+
+        if (viewFromUrl && viewFromUrl !== 'definitions') {
+            handleNavigate(viewFromUrl, false);
+        } else if (definitionIdFromUrl) {
+            handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, false);
+        } else {
+            setActiveView('definitions');
+            handleSelectDefinition('1.1.1', undefined, false);
+        }
+    }
+  }, [isMounted, handleNavigate, handleSelectDefinition]);
+
+  useEffect(() => {
+    window.addEventListener('popstate', handlePopState);
+    handlePopState();
+    return () => {
+        window.removeEventListener('popstate', handlePopState);
+    };
+  }, [handlePopState]);
+
+  useEffect(() => {
+    if (selectedDefinitionId && selectedDefinitionId === editLockId) {
+      setIsEditing(true);
+    }
+  }, [selectedDefinitionId, editLockId]);
 
   const handleSave = (updatedDefinition: Definition) => {
     if (!isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can edit definitions.' });
         return;
     }
-    const update = (items: Definition[]): Definition[] => {
+    const updateItems = (items: Definition[]): Definition[] => {
       return items.map(def => {
         if (def.id === updatedDefinition.id) return updatedDefinition;
-        if (def.children) return { ...def, children: update(def.children) };
+        if (def.children) return { ...def, children: updateItems(def.children) };
         return def;
       });
     };
-    setDefinitions(update(definitions));
+    setDefinitions(updateItems(definitions));
     setIsEditing(false);
-    setEditLockId(null); // Clear lock on save
+    setEditLockId(null);
 
     if (isBookmarked(updatedDefinition.id)) {
         const newNotification: NotificationType = {
@@ -276,37 +248,16 @@ export default function Wiki() {
   };
 
   const handleDuplicate = (id: string) => {
-    if (!isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can duplicate definitions.' });
-        return;
-    }
     const definitionToDuplicate = findDefinition(definitions, id);
     if (!definitionToDuplicate) return;
     const newId = Date.now().toString();
-    const findParentModule = (items: Definition[], childId: string): Definition | null => {
-        for (const item of items) {
-            if (item.children?.some(c => c.id === childId)) return item;
-            if (item.children) {
-                const found = findParentModule(item.children, childId);
-                if (found) return found;
-            }
-        }
-        return null;
-    };
-    const parentModule = findParentModule(definitions, id);
     const newDefinition: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
       ...definitionToDuplicate, id: newId, name: `${definitionToDuplicate.name} (Copy)`, children: [],
-      module: parentModule ? parentModule.name : definitionToDuplicate.module,
     };
     handleCreateDefinition(newDefinition);
-    setSelectedDefinitionId(newId);
   };
 
   const handleArchive = (id: string, archive: boolean) => {
-     if (!isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can archive definitions.' });
-        return;
-    }
      const updateArchiveStatus = (items: Definition[]): Definition[] => {
       return items.map(def => {
         if (def.id === id) return { ...def, isArchived: archive };
@@ -315,34 +266,9 @@ export default function Wiki() {
       });
     };
     setDefinitions(updateArchiveStatus(definitions));
-    if (selectedDefinitionId === id) setSelectedDefinitionId(null);
-  };
-
-  const handleBulkArchive = (archive: boolean) => {
-    if (!isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can bulk archive definitions.' });
-        return;
-    }
-    if (selectedForExport.length === 0) return;
-    const updateArchiveStatusRecursive = (items: Definition[]): Definition[] => {
-      return items.map(def => {
-        const newDef = { ...def };
-        if (selectedForExport.includes(def.id)) newDef.isArchived = archive;
-        if (newDef.children) newDef.children = updateArchiveStatusRecursive(newDef.children);
-        return newDef;
-      });
-    };
-    setDefinitions(updateArchiveStatusRecursive(definitions));
-    toast({ title: 'Bulk Action Complete', description: `${selectedForExport.length} definitions updated.` });
-    setSelectedForExport([]);
-    setIsSelectMode(false);
   };
 
   const handleDelete = (id: string) => {
-    if (!isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can delete definitions.' });
-        return;
-    }
     const remove = (items: Definition[], idToDelete: string): Definition[] => {
       return items.filter(def => def.id !== idToDelete).map(def => {
           if (def.children) def.children = remove(def.children, idToDelete);
@@ -375,20 +301,11 @@ export default function Wiki() {
         return items.reduce((acc: Definition[], item) => {
             const children = item.children ? filterByDraft(item.children, isDraft) : [];
             const isMatch = item.isDraft === isDraft;
-            
-            // For modules (items with children and no description), include if they have matching children
             if (children.length > 0 || (isMatch && item.description)) {
                 acc.push({ ...item, children });
             }
             return acc;
         }, []);
-    };
-
-    const mapBookmarkStatus = (items: Definition[]): Definition[] => {
-        return items.map(item => ({
-            ...item, isBookmarked: isBookmarked(item.id),
-            children: item.children ? mapBookmarkStatus(item.children) : [],
-        }));
     };
 
     const filterArchived = (items: Definition[]): Definition[] => {
@@ -401,12 +318,12 @@ export default function Wiki() {
     const filterBookmarked = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = item.children ? filterBookmarked(item.children) : [];
-            if (item.isBookmarked || children.length > 0) acc.push({ ...item, children });
+            if (isBookmarked(item.id) || children.length > 0) acc.push({ ...item, children });
             return acc;
         }, []);
     };
 
-    let processedItems = mapBookmarkStatus(itemsToFilter);
+    let processedItems = itemsToFilter;
     if (!showArchived) processedItems = filterArchived(processedItems);
     if (showBookmarked) processedItems = filterBookmarked(processedItems);
 
@@ -415,11 +332,6 @@ export default function Wiki() {
         published: filterByDraft(processedItems, false)
     };
   }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
-
-  const visibleDefinitionIds = useMemo(() => [
-      ...getAllDefinitionIds(categorizedDefinitions.drafts),
-      ...getAllDefinitionIds(categorizedDefinitions.published)
-  ], [categorizedDefinitions, getAllDefinitionIds]);
 
   const toggleSelectionForExport = (id: string, checked: boolean) => {
     const getChildrenIds = (item: Definition): string[] => {
@@ -433,23 +345,14 @@ export default function Wiki() {
     };
     const definition = findDefinition(definitions, id);
     if (!definition) return;
-    
     const idsToToggle = getChildrenIds(definition);
-    
     setSelectedForExport(prev => {
-        if (checked) {
-            return [...new Set([...prev, ...idsToToggle])];
-        } else {
-            return prev.filter(selectedId => !idsToToggle.includes(selectedId));
-        }
+        if (checked) return [...new Set([...prev, ...idsToToggle])];
+        return prev.filter(selectedId => !idsToToggle.includes(selectedId));
     });
   };
 
-  const handleExport = async (formatType: 'json' | 'pdf' | 'excel' | 'html') => {
-    if (!isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can export definitions.' });
-        return;
-    }
+  const handleExport = async (formatType: 'pdf') => {
     const flatten = (items: Definition[]): Definition[] => {
         let flat: Definition[] = [];
         items.forEach(item => {
@@ -458,54 +361,14 @@ export default function Wiki() {
         });
         return flat;
     };
-    
-    const allFlat = flatten(definitions);
-    const definitionsToExport = allFlat.filter(d => selectedForExport.includes(d.id));
-    
+    const definitionsToExport = flatten(definitions).filter(d => selectedForExport.includes(d.id));
     if (definitionsToExport.length === 0) return;
 
-    switch (formatType) {
-      case 'json':
-        handleJsonExport(definitionsToExport);
-        break;
-      case 'pdf':
-        await handlePdfExport(definitionsToExport);
-        break;
-      case 'excel':
-        await handleExcelExport(definitionsToExport);
-        break;
-      case 'html':
-        handleHtmlExport(definitionsToExport);
-        break;
-    }
-
-    setSelectedForExport([]);
-    setIsSelectMode(false);
-  };
-
-  const handleJsonExport = (data: Definition[]) => {
-    const exportData = {
-        disclaimer: `This is a copy of definitions as of ${new Date().toLocaleDateString()}. Please go to ${window.location.origin} to view the updated definitions.`,
-        data: data
-    };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "definitions-export.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-  }
-
-  const handlePdfExport = async (data: Definition[]) => {
     const { default: jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     let y = 20;
-    data.forEach((def, index) => {
-      if (index > 0) {
-        doc.addPage();
-        y = 20;
-      }
+    definitionsToExport.forEach((def, index) => {
+      if (index > 0) { doc.addPage(); y = 20; }
       doc.setFont('helvetica', 'bold');
       doc.text(def.name, 20, y);
       y += 10;
@@ -517,83 +380,25 @@ export default function Wiki() {
       y += text.length * 5 + 10;
     });
     doc.save(`definitions-export.pdf`);
-  };
-
-  const handleExcelExport = async (data: Definition[]) => {
-    const XLSX = await import('xlsx');
-    const sheetData = data.map(def => ({
-      ID: def.id,
-      Name: def.name,
-      Module: def.module,
-      Keywords: def.keywords.join(', '),
-      Description: def.description.replace(/<[^>]+>/g, ''),
-      Archived: def.isArchived,
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(sheetData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Definitions');
-    XLSX.writeFile(workbook, `definitions-export.xlsx`);
-  };
-
-  const handleHtmlExport = (data: Definition[]) => {
-     const htmlContent = `
-      <html>
-        <head>
-          <title>Definitions Export</title>
-          <style>
-            body { font-family: sans-serif; line-height: 1.6; padding: 2rem; }
-            h1, h2 { color: #333; }
-            .definition { border-bottom: 1px solid #ccc; padding-bottom: 1rem; margin-bottom: 1rem; }
-            .keywords { font-style: italic; color: #777; }
-          </style>
-        </head>
-        <body>
-          <h1>Definitions Export</h1>
-          <p>Exported on: ${new Date().toLocaleDateString()}</p>
-          <hr/>
-          ${data.map(def => `
-            <div class="definition">
-              <h2>${def.name}</h2>
-              <p><strong>Module:</strong> ${def.module}</p>
-              <div class="keywords"><strong>Keywords:</strong> ${def.keywords.join(', ')}</div>
-              <div>${def.description}</div>
-            </div>
-          `).join('')}
-        </body>
-      </html>
-    `;
-    const dataStr = "data:text/html;charset=utf-8," + encodeURIComponent(htmlContent);
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `definitions-export.html`);
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+    setSelectedForExport([]);
+    setIsSelectMode(false);
   };
 
   const selectedDefinition = useMemo(() => {
     if (!selectedDefinitionId) return null;
     const def = findDefinition(definitions, selectedDefinitionId);
     if (!def) return null;
-    return {
-      ...def,
-      isBookmarked: isBookmarked(def.id)
-    }
+    return { ...def, isBookmarked: isBookmarked(def.id) };
   }, [definitions, selectedDefinitionId, isBookmarked]);
 
-  const handleCancelSelection = () => {
-    setIsSelectMode(false);
-    setSelectedForExport([]);
-  }
-  
   const handleEditClick = () => {
     setIsEditing(true);
-    setEditLockId(selectedDefinitionId); // Set lock when editing starts
+    setEditLockId(selectedDefinitionId);
   };
   
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setEditLockId(null); // Clear lock on cancel
+    setEditLockId(null);
   };
 
   const renderContent = () => {
@@ -638,8 +443,6 @@ export default function Wiki() {
     }
   }
 
-  if (!isMounted) return null;
-
   const handleNewDefinitionClick = (type: 'template' | 'blank') => {
     if (type === 'template') setIsTemplatesModalOpen(true);
     else {
@@ -659,17 +462,15 @@ export default function Wiki() {
           isMandatory: s.isMandatory,
           order: s.order
         }));
-        setDraftedDefinitionData({ 
-          ...templateData, 
-          templateId: template.id,
-          dynamicSections 
-        });
+        setDraftedDefinitionData({ ...templateData, templateId: template.id, dynamicSections });
       } else {
         setDraftedDefinitionData(templateData);
       }
       setIsNewDefinitionModalOpen(true);
       setIsTemplatesModalOpen(false);
   };
+
+  if (!isMounted) return null;
 
   return (
     <SidebarProvider>
@@ -690,7 +491,6 @@ export default function Wiki() {
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card relative">
                   <div className="p-4 flex flex-col gap-4 border-b bg-background sticky top-0 z-30 shadow-sm">
                     <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
-                    
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -701,7 +501,6 @@ export default function Wiki() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-
                     <Button 
                       variant="outline" 
                       className={cn("w-full justify-center h-10 font-semibold gap-2 border-muted", isSelectMode && "bg-primary text-primary-foreground border-primary")}
@@ -722,7 +521,7 @@ export default function Wiki() {
                                   </div>
                                   <span className="text-sm font-bold">{selectedForExport.length} selected</span>
                                 </div>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCancelSelection}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setIsSelectMode(false); setSelectedForExport([]); }}>
                                     <X className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -730,7 +529,7 @@ export default function Wiki() {
                                 <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => handleExport('pdf')} disabled={selectedForExport.length === 0}>
                                     Export Selected
                                 </Button>
-                                <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => handleBulkArchive(true)} disabled={selectedForExport.length === 0}>
+                                <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { handleArchive('', true); setIsSelectMode(false); }} disabled={selectedForExport.length === 0}>
                                     Archive Selected
                                 </Button>
                               </div>
@@ -738,7 +537,6 @@ export default function Wiki() {
                       )}
 
                       <TooltipProvider>
-                        {/* Section: My Saved Definitions */}
                         <Collapsible open={isDraftsExpanded} onOpenChange={setIsDraftsExpanded} className="border-b">
                             <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
                                 <CollapsibleTrigger asChild>
@@ -748,10 +546,8 @@ export default function Wiki() {
                                     </div>
                                 </CollapsibleTrigger>
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Info className="h-4 w-4 text-muted-foreground opacity-50 cursor-help" />
-                                    </TooltipTrigger>
-                                    <TooltipContent>Definitions saved as drafts and only visible to you.</TooltipContent>
+                                    <TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground opacity-50 cursor-help" /></TooltipTrigger>
+                                    <TooltipContent>Definitions saved as drafts.</TooltipContent>
                                 </Tooltip>
                             </div>
                             <CollapsibleContent>
@@ -768,14 +564,11 @@ export default function Wiki() {
                                             searchQuery={searchQuery}
                                             editLockId={editLockId}
                                         />
-                                    ) : (
-                                        <p className="px-8 py-4 text-xs text-muted-foreground italic">No draft definitions found.</p>
-                                    )}
+                                    ) : <p className="px-8 py-4 text-xs text-muted-foreground italic">No drafts found.</p>}
                                 </div>
                             </CollapsibleContent>
                         </Collapsible>
 
-                        {/* Section: MPM Definitions */}
                         <Collapsible open={isMpmExpanded} onOpenChange={setIsMpmExpanded}>
                             <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
                                 <CollapsibleTrigger asChild>
@@ -785,26 +578,18 @@ export default function Wiki() {
                                     </div>
                                 </CollapsibleTrigger>
                                 <div className="flex items-center gap-3">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Info className="h-4 w-4 text-muted-foreground opacity-50 cursor-help" />
-                                        </TooltipTrigger>
-                                        <TooltipContent>Published definitions accessible by all authorized users.</TooltipContent>
-                                    </Tooltip>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                                                <ListFilter className="h-4 w-4 text-muted-foreground" />
-                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6"><ListFilter className="h-4 w-4 text-muted-foreground" /></Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
                                                 <Checkbox id="sidebar-show-archived" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} />
-                                                <Label htmlFor="sidebar-show-archived" className="cursor-pointer">Show Archived</Label>
+                                                <Label htmlFor="sidebar-show-archived">Show Archived</Label>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
                                                 <Checkbox id="sidebar-show-bookmarked" checked={showBookmarked} onCheckedChange={() => setShowBookmarked(!showBookmarked)} />
-                                                <Label htmlFor="sidebar-show-bookmarked" className="cursor-pointer">Show Bookmarked</Label>
+                                                <Label htmlFor="sidebar-show-bookmarked">Show Bookmarked</Label>
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -824,9 +609,7 @@ export default function Wiki() {
                                             searchQuery={searchQuery}
                                             editLockId={editLockId}
                                         />
-                                    ) : (
-                                        <p className="px-8 py-4 text-xs text-muted-foreground italic">No published definitions found.</p>
-                                    )}
+                                    ) : <p className="px-8 py-4 text-xs text-muted-foreground italic">No published definitions found.</p>}
                                 </div>
                             </CollapsibleContent>
                         </Collapsible>
@@ -840,21 +623,9 @@ export default function Wiki() {
           </main>
         </div>
       </SidebarInset>
-      <Toaster />
       <RecentViewsModal open={isRecentModalOpen} onOpenChange={setIsRecentModalOpen} onDefinitionClick={handleSelectDefinition} />
-      <NewDefinitionModal
-          open={isNewDefinitionModalOpen}
-          onOpenChange={setIsNewDefinitionModalOpen}
-          onSave={handleCreateDefinition}
-          initialData={draftedDefinitionData}
-          templates={templates}
-      />
-      <TemplatesModal
-          open={isTemplatesModalOpen}
-          onOpenChange={setIsTemplatesModalOpen}
-          onUseTemplate={handleUseTemplate}
-          managedTemplates={templates}
-      />
+      <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={templates} />
+      <TemplatesModal open={isTemplatesModalOpen} onOpenChange={setIsTemplatesModalOpen} onUseTemplate={handleUseTemplate} managedTemplates={templates} />
     </SidebarProvider>
   );
 }
