@@ -152,7 +152,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   return (
     <div className="space-y-6">
       {/* Frozen Sticky Header */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm -mx-6 px-6 py-4 border-b space-y-4 mb-6 shadow-sm">
+      <div className="sticky top-0 z-50 bg-background -mt-6 -mx-6 px-6 py-4 border-b space-y-4 mb-6 shadow-sm">
         <Alert className="bg-primary/5 border-primary/20">
           <Lock className="h-4 w-4 text-primary" />
           <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>
