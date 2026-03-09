@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Check, ChevronsUpDown, Search } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Check, ChevronsUpDown, Search, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType } from '@/lib/types';
 import { initialActivityLogs } from '@/lib/data';
@@ -17,6 +17,13 @@ import { Checkbox } from '../ui/checkbox';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 import { Input } from '../ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from '@/hooks/use-toast';
 
 const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search'];
 
@@ -102,7 +109,12 @@ export default function ActivityLogs() {
     const [definitionSearch, setDefinitionSearch] = useState<string>('');
     const [timeFrame, setTimeFrame] = useState('all');
     const [customRange, setCustomRange] = useState<{ from: Date; to: Date } | undefined>();
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+    const [sortConfig, setSortConfig] = useState<{ key: keyof ActivityLog; direction: 'asc' | 'desc' }>({
+        key: 'occurredDate',
+        direction: 'desc'
+    });
+    
+    const { toast } = useToast();
 
     const users = useMemo(() => Array.from(new Set(logs.map(log => log.userName))).sort(), [logs]);
 
@@ -142,14 +154,29 @@ export default function ActivityLogs() {
 
             return userMatch && activityMatch && definitionMatch && timeMatch;
         }).sort((a, b) => {
-            const dateA = new Date(a.occurredDate).getTime();
-            const dateB = new Date(b.occurredDate).getTime();
-            return sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
+            const valA = a[sortConfig.key] || '';
+            const valB = b[sortConfig.key] || '';
+            
+            if (sortConfig.key === 'occurredDate') {
+                const dateA = new Date(valA as string).getTime();
+                const dateB = new Date(valB as string).getTime();
+                return sortConfig.direction === 'desc' ? dateB - dateA : dateA - dateB;
+            }
+            
+            const stringA = String(valA).toLowerCase();
+            const stringB = String(valB).toLowerCase();
+            
+            if (stringA < stringB) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (stringA > stringB) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
         });
-    }, [logs, userFilters, activityTypeFilter, definitionSearch, timeFrame, customRange, sortDirection]);
+    }, [logs, userFilters, activityTypeFilter, definitionSearch, timeFrame, customRange, sortConfig]);
 
-    const toggleSort = () => {
-        setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    const handleSort = (key: keyof ActivityLog) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+        }));
     };
 
     const resetFilters = () => {
@@ -160,14 +187,115 @@ export default function ActivityLogs() {
         setCustomRange(undefined);
     };
 
+    const handleExportExcel = async () => {
+        const XLSX = await import('xlsx');
+        const exportData = filteredLogs.map(log => ({
+            'User Name': log.userName,
+            'Definition Name': log.definitionName,
+            'Activity Type': log.activityType,
+            'Occurred Date': format(new Date(log.occurredDate), 'yyyy-MM-dd HH:mm:ss')
+        }));
+        
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Activity Logs');
+        XLSX.writeFile(workbook, `Activity_Logs_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`);
+        
+        toast({
+            title: "Export Success",
+            description: "Activity logs have been exported to Excel.",
+        });
+    };
+
+    const handleExportPDF = async () => {
+        const { default: jsPDF } = await import('jspdf');
+        const doc = new jsPDF();
+        
+        doc.setFontSize(18);
+        doc.text('MedPoint Wiki - Activity Logs', 14, 20);
+        doc.setFontSize(10);
+        doc.text(`Generated on: ${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}`, 14, 30);
+        
+        let y = 40;
+        const headers = ['User', 'Definition', 'Activity', 'Date'];
+        const colWidths = [40, 70, 30, 50];
+        
+        // Header
+        doc.setFont('helvetica', 'bold');
+        headers.forEach((h, i) => {
+            const x = 14 + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+            doc.text(h, x, y);
+        });
+        
+        y += 5;
+        doc.line(14, y, 200, y);
+        y += 7;
+        
+        // Data
+        doc.setFont('helvetica', 'normal');
+        filteredLogs.slice(0, 50).forEach((log) => { // PDF limited for demo
+            if (y > 280) {
+                doc.addPage();
+                y = 20;
+            }
+            
+            const row = [
+                log.userName,
+                log.definitionName,
+                log.activityType,
+                format(new Date(log.occurredDate), 'yyyy-MM-dd')
+            ];
+            
+            row.forEach((text, i) => {
+                const x = 14 + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+                const truncated = String(text).substring(0, i === 1 ? 35 : 20);
+                doc.text(truncated, x, y);
+            });
+            
+            y += 8;
+        });
+
+        if (filteredLogs.length > 50) {
+            doc.setFontSize(8);
+            doc.text(`* Export limited to first 50 entries in PDF. Use Excel for full export.`, 14, y + 10);
+        }
+        
+        doc.save(`Activity_Logs_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`);
+        
+        toast({
+            title: "Export Success",
+            description: "Activity logs have been exported to PDF.",
+        });
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold tracking-tight">Activity Logs</h1>
-                <Button variant="outline" size="sm" onClick={resetFilters}>
-                    <FilterX className="h-4 w-4 mr-2" />
-                    Reset Filters
-                </Button>
+                <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <Download className="h-4 w-4 mr-2" />
+                                Export
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={handleExportExcel}>
+                                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                Export as Excel
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleExportPDF}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Export as PDF
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button variant="outline" size="sm" onClick={resetFilters}>
+                        <FilterX className="h-4 w-4 mr-2" />
+                        Reset Filters
+                    </Button>
+                </div>
             </div>
 
             <Card>
@@ -184,7 +312,6 @@ export default function ActivityLogs() {
                             placeholder="All Users"
                         />
 
-                        {/* Search Definition - Now in 2nd position */}
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Search Definition</label>
                             <div className="relative">
@@ -198,7 +325,6 @@ export default function ActivityLogs() {
                             </div>
                         </div>
 
-                        {/* Activity Type - Now in 3rd position */}
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Activity Type</label>
                             <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
@@ -214,7 +340,6 @@ export default function ActivityLogs() {
                             </Select>
                         </div>
 
-                        {/* Time Frame - Stays in 4th position */}
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Time Frame</label>
                             <Select value={timeFrame} onValueChange={setTimeFrame}>
@@ -269,13 +394,28 @@ export default function ActivityLogs() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>User Name</TableHead>
-                                <TableHead>Definition Name</TableHead>
-                                <TableHead>Activity Type</TableHead>
-                                <TableHead className="cursor-pointer" onClick={toggleSort}>
+                                <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('userName')}>
+                                    <div className="flex items-center">
+                                        User Name
+                                        <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'userName' ? "text-primary opacity-100" : "opacity-30")} />
+                                    </div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('definitionName')}>
+                                    <div className="flex items-center">
+                                        Definition Name
+                                        <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'definitionName' ? "text-primary opacity-100" : "opacity-30")} />
+                                    </div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('activityType')}>
+                                    <div className="flex items-center">
+                                        Activity Type
+                                        <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'activityType' ? "text-primary opacity-100" : "opacity-30")} />
+                                    </div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('occurredDate')}>
                                     <div className="flex items-center">
                                         Occurred Date
-                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                        <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'occurredDate' ? "text-primary opacity-100" : "opacity-30")} />
                                     </div>
                                 </TableHead>
                             </TableRow>
