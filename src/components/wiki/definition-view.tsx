@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Info } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info, X, Check } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
@@ -96,6 +96,11 @@ export default function DefinitionView({
     const [noteText, setNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
     const [notesViewTab, setNotesViewTab] = useState<'my' | 'others'>('my');
+    
+    // Note editing state
+    const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+    const [editingNoteText, setEditingNoteText] = useState('');
+
     const { toast } = useToast();
     const [definitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
 
@@ -143,14 +148,50 @@ export default function DefinitionView({
 
     const handleSaveNote = () => {
         if (!noteText.trim()) return;
-        const newNote: Note = { id: Date.now().toString(), authorId: currentUser.id, author: currentUser.name, avatar: currentUser.avatar, date: new Date().toISOString(), content: noteText, isShared: shareNote };
+        const newNote: Note = { 
+            id: Date.now().toString(), 
+            authorId: currentUser.id, 
+            author: currentUser.name, 
+            avatar: currentUser.avatar, 
+            date: new Date().toISOString(), 
+            content: noteText, 
+            isShared: shareNote 
+        };
         onSave({ ...definition, notes: [...(definition.notes || []), newNote] });
         setNoteText('');
         setShareNote(false);
+        toast({ title: 'Note Saved', description: 'Your note has been added.' });
+    };
+
+    const handleStartEditNote = (note: Note) => {
+        setEditingNoteId(note.id);
+        setEditingNoteText(note.content);
+    };
+
+    const handleCancelEditNote = () => {
+        setEditingNoteId(null);
+        setEditingNoteText('');
+    };
+
+    const handleUpdateNote = (noteId: string) => {
+        if (!editingNoteText.trim()) return;
+        
+        const updatedNotes = (definition.notes || []).map(note => {
+            if (note.id === noteId) {
+                return { ...note, content: editingNoteText };
+            }
+            return note;
+        });
+        
+        onSave({ ...definition, notes: updatedNotes });
+        setEditingNoteId(null);
+        setEditingNoteText('');
+        toast({ title: 'Note Updated', description: 'Your changes have been saved.' });
     };
 
     const handleDeleteNote = (noteId: string) => {
         onSave({ ...definition, notes: definition.notes?.filter(note => note.id !== noteId) });
+        toast({ title: 'Note Deleted', description: 'Your note has been removed.' });
     };
 
     const filteredNotes = definition.notes?.filter(note => {
@@ -170,7 +211,11 @@ export default function DefinitionView({
         const db = mpmDatabases.find(d => d.id === definition.sourceDb);
         const types = definition.sourceDb ? mpmSourceTypes[definition.sourceDb] : [];
         const type = types?.find(t => t.id === definition.sourceType);
-        return { database: db?.name || definition.sourceDb || 'N/A', type: type?.name || definition.sourceType || 'N/A', name: definition.sourceName || 'N/A' };
+        return { 
+            database: db?.name || definition.sourceDb || 'N/A', 
+            type: type?.name || definition.sourceType || 'N/A', 
+            name: definition.sourceName || 'N/A' 
+        };
     }, [definition]);
 
   return (
@@ -343,17 +388,61 @@ export default function DefinitionView({
                                 <div className="space-y-4">
                                     {filteredNotes?.map(note => (
                                         <div key={note.id} className="p-4 border rounded-lg bg-background group transition-colors hover:border-primary/20">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <div className="flex items-center gap-2"><span className="font-bold text-sm text-foreground">{note.author}</span><span className="text-xs text-muted-foreground">{new Date(note.date).toLocaleString()}</span></div>
-                                                    <p className="text-sm mt-3 text-muted-foreground leading-relaxed">{note.content}</p>
+                                            {editingNoteId === note.id ? (
+                                                <div className="space-y-4">
+                                                    <Textarea 
+                                                        className="min-h-[100px] resize-none" 
+                                                        value={editingNoteText} 
+                                                        onChange={(e) => setEditingNoteText(e.target.value)} 
+                                                    />
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button variant="outline" size="sm" onClick={handleCancelEditNote}>
+                                                            <X className="h-4 w-4 mr-2" />
+                                                            Cancel
+                                                        </Button>
+                                                        <Button size="sm" onClick={() => handleUpdateNote(note.id)}>
+                                                            <Check className="h-4 w-4 mr-2" />
+                                                            Update Note
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                                {note.authorId === currentUser.id && (
-                                                    <div className="flex items-center gap-1"><Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteNote(note.id)}><Trash2 className="h-4 w-4" /></Button></div>
-                                                )}
-                                            </div>
+                                            ) : (
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-sm text-foreground">{note.author}</span>
+                                                            <span className="text-xs text-muted-foreground">{new Date(note.date).toLocaleString()}</span>
+                                                            {note.isShared && <Badge variant="outline" className="text-[10px] uppercase h-4 px-1">Shared</Badge>}
+                                                        </div>
+                                                        <p className="text-sm mt-3 text-muted-foreground leading-relaxed whitespace-pre-wrap">{note.content}</p>
+                                                    </div>
+                                                    {note.authorId === currentUser.id && (
+                                                        <div className="flex items-center gap-1">
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 text-muted-foreground hover:text-primary" 
+                                                                onClick={() => handleStartEditNote(note)}
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 hover:bg-destructive/10 text-muted-foreground hover:text-destructive" 
+                                                                onClick={() => handleDeleteNote(note.id)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
+                                    {filteredNotes?.length === 0 && (
+                                        <p className="text-sm text-center text-muted-foreground py-8">No notes found.</p>
+                                    )}
                                 </div>
                             </Card>
                         </div>
