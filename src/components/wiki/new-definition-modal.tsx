@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -86,6 +85,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       setDescription('');
       setTechnicalDetails('');
       setUsageExamples('');
+      setAttachments([]);
       
       // Handle template pre-population
       const template = templates.find(t => t.id === data.templateId);
@@ -94,6 +94,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
         setDescription(template.defaultDescription || '');
         setTechnicalDetails(template.defaultTechnicalDetails || '');
         setUsageExamples(template.defaultUsageExamples || '');
+        setAttachments(template.defaultAttachments || []);
       } else {
         // @ts-ignore
         setDescription(data.longDescription || data.description || initialDefinitionState.description);
@@ -101,9 +102,9 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
         setShortDescription(data.shortDescription || initialDefinitionState.shortDescription);
         setTechnicalDetails(data.technicalDetails || initialDefinitionState.technicalDetails);
         setUsageExamples(data.usageExamples || initialDefinitionState.usageExamples);
+        setAttachments(data.attachments || initialDefinitionState.attachments);
       }
       
-      setAttachments(data.attachments || initialDefinitionState.attachments);
       setSourceType(data.sourceType || initialDefinitionState.sourceType);
       setSourceDb(data.sourceDb || initialDefinitionState.sourceDb);
       setSourceName(data.sourceName || initialDefinitionState.sourceName);

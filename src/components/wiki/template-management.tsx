@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,12 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Pencil, Trash2, Save } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, Save, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Template } from '@/lib/types';
+import type { Template, Attachment } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { ScrollArea } from '../ui/scroll-area';
 import dynamic from 'next/dynamic';
+import AttachmentList from './attachments';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -33,9 +34,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     defaultDescription: '',
     defaultTechnicalDetails: '',
     defaultUsageExamples: '',
+    defaultAttachments: [],
   });
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sortedTemplates = useMemo(() => {
     return [...templates].sort((a, b) => a.name.localeCompare(b.name));
@@ -52,6 +55,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       defaultDescription: '',
       defaultTechnicalDetails: '',
       defaultUsageExamples: '',
+      defaultAttachments: [],
     });
     setIsModalOpen(true);
   };
@@ -87,6 +91,37 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
     onSaveTemplates(updatedTemplates);
     setIsModalOpen(false);
+  };
+
+  const handleAddAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const newAttachment: Attachment = {
+        name: file.name,
+        url: URL.createObjectURL(file),
+        size: `${(file.size / 1024).toFixed(2)} KB`,
+        type: file.type.split('/')[1]?.toUpperCase() || 'FILE',
+      };
+      setCurrentTemplate(prev => ({
+        ...prev,
+        defaultAttachments: [...(prev.defaultAttachments || []), newAttachment]
+      }));
+    }
+    if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveAttachment = (name: string) => {
+    setCurrentTemplate(prev => ({
+      ...prev,
+      defaultAttachments: (prev.defaultAttachments || []).filter(att => att.name !== name)
+    }));
   };
 
   return (
@@ -263,6 +298,30 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                         value={currentTemplate.defaultUsageExamples || ''} 
                         onChange={(content) => setCurrentTemplate(prev => ({ ...prev, defaultUsageExamples: content }))} 
                         placeholder="Enter boilerplate for Usage Examples..."
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Attachments Default */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between py-3 bg-muted/30">
+                      <CardTitle className="text-base">Default Attachments</CardTitle>
+                      <Button variant="outline" size="sm" onClick={handleAddAttachmentClick}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Add Attachment
+                      </Button>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileSelect} 
+                        className="hidden" 
+                      />
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <AttachmentList 
+                        attachments={currentTemplate.defaultAttachments || []} 
+                        onRemove={handleRemoveAttachment} 
+                        isEditing 
                       />
                     </CardContent>
                   </Card>

@@ -107,4 +107,5 @@ export interface Template {
   defaultDescription?: string;
   defaultTechnicalDetails?: string;
   defaultUsageExamples?: string;
+  defaultAttachments?: Attachment[];
 }

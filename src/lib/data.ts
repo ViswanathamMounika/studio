@@ -169,7 +169,8 @@ export const initialTemplates: Template[] = [
     defaultShortDescription: 'This clinical definition describes...',
     defaultDescription: '<h3>Clinical Overview</h3><p>Provide details here.</p>',
     defaultTechnicalDetails: '<h3>Source Tables</h3><ul><li>MEMBER_MASTER</li></ul>',
-    defaultUsageExamples: '<h3>Example Query</h3><pre><code>SELECT * FROM ...</code></pre>'
+    defaultUsageExamples: '<h3>Example Query</h3><pre><code>SELECT * FROM ...</code></pre>',
+    defaultAttachments: []
   },
   {
     id: 't-2',
@@ -179,7 +180,8 @@ export const initialTemplates: Template[] = [
     defaultShortDescription: 'Technical spec for reporting view...',
     defaultDescription: '<h3>Functional Purpose</h3><p>What does this view do?</p>',
     defaultTechnicalDetails: '<h3>SQL Performance</h3><p>Indexing strategy and execution plans.</p>',
-    defaultUsageExamples: '<h3>Implementation</h3><pre><code>CREATE VIEW ...</code></pre>'
+    defaultUsageExamples: '<h3>Implementation</h3><pre><code>CREATE VIEW ...</code></pre>',
+    defaultAttachments: []
   }
 ];
 
