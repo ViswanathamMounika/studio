@@ -13,9 +13,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardContent,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, Plus } from 'lucide-react';
 import type { Definition, Template } from '@/lib/types';
@@ -65,7 +63,7 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate, mana
           <DialogHeader>
             <DialogTitle>Create from a template</DialogTitle>
             <DialogDescription>
-              Select a pre-defined structure to ensure consistency across the Wiki.
+              Select a pre-defined blueprint to ensure consistency across the Wiki.
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[70vh] p-1">
@@ -86,22 +84,14 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate, mana
                 <Card key={template.id} className="flex flex-col hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleUseTemplate(template.id, {
                     name: `New ${template.name}`,
                     module: 'Core',
-                    templateId: template.id,
-                    dynamicSections: template.sections.map(s => ({
-                      sectionId: s.id,
-                      name: s.name,
-                      content: s.defaultContent || '',
-                      contentType: s.contentType,
-                      isMandatory: s.isMandatory,
-                      order: s.order
-                    }))
+                    templateId: template.id
                 })}>
                   <CardHeader>
                     <div className="flex items-center gap-3 mb-2">
                         <FileText className="h-6 w-6 text-primary" />
                         <CardTitle className="text-lg">{template.name}</CardTitle>
                     </div>
-                    <CardDescription className="line-clamp-2">{template.description || "Structured template for specialized data."}</CardDescription>
+                    <CardDescription className="line-clamp-2">{template.description || "Pre-defined blueprint with boilerplate content."}</CardDescription>
                   </CardHeader>
                 </Card>
               ))}

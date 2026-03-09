@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Attachment, Template, DynamicSection } from '@/lib/types';
+import type { Definition, Attachment, Template } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Info, Eye, Save, Send } from 'lucide-react';
+import { X, Upload, Eye, Save, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AttachmentList from './attachments';
@@ -49,7 +49,6 @@ const initialDefinitionState = {
   sourceType: '',
   sourceDb: '',
   sourceName: '',
-  dynamicSections: [],
   isDraft: false,
 };
 
@@ -69,7 +68,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [sourceName, setSourceName] = useState(initialDefinitionState.sourceName);
 
   const [templateId, setTemplateId] = useState<string | undefined>();
-  const [dynamicSections, setDynamicSections] = useState<DynamicSection[]>([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -81,20 +79,30 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       setModule(data.module || initialDefinitionState.module);
       setKeywords(data.keywords || initialDefinitionState.keywords);
       setCurrentKeyword('');
-      // @ts-ignore
-      setDescription(data.longDescription || data.description || initialDefinitionState.description);
-      // @ts-ignore
-      setShortDescription(data.shortDescription || initialDefinitionState.shortDescription);
-      setTechnicalDetails(data.technicalDetails || initialDefinitionState.technicalDetails);
-      setUsageExamples(data.usageExamples || initialDefinitionState.usageExamples);
+      
+      // Handle template pre-population
+      const template = templates.find(t => t.id === data.templateId);
+      if (template) {
+        setShortDescription(template.defaultShortDescription || '');
+        setDescription(template.defaultDescription || '');
+        setTechnicalDetails(template.defaultTechnicalDetails || '');
+        setUsageExamples(template.defaultUsageExamples || '');
+      } else {
+        // @ts-ignore
+        setDescription(data.longDescription || data.description || initialDefinitionState.description);
+        // @ts-ignore
+        setShortDescription(data.shortDescription || initialDefinitionState.shortDescription);
+        setTechnicalDetails(data.technicalDetails || initialDefinitionState.technicalDetails);
+        setUsageExamples(data.usageExamples || initialDefinitionState.usageExamples);
+      }
+      
       setAttachments(data.attachments || initialDefinitionState.attachments);
       setSourceType(data.sourceType || initialDefinitionState.sourceType);
       setSourceDb(data.sourceDb || initialDefinitionState.sourceDb);
       setSourceName(data.sourceName || initialDefinitionState.sourceName);
       setTemplateId(data.templateId);
-      setDynamicSections(data.dynamicSections || []);
     }
-  }, [open, initialData]);
+  }, [open, initialData, templates]);
 
   useEffect(() => {
     if (open && sourceName && (sourceType === 'Stored Procedures' || sourceType === 'SQL Functions')) {
@@ -139,14 +147,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     return mpmSourceObjects[key] || [];
   }, [sourceDb, sourceType]);
 
-  const isMandatoryComplete = useMemo(() => {
-    if (!name.trim()) return false;
-    if (templateId) {
-      return dynamicSections.every(s => !s.isMandatory || (s.content && s.content.trim() !== '' && s.content !== '<p></p>'));
-    }
-    return true;
-  }, [name, templateId, dynamicSections]);
-
   const handleSave = (isDraft: boolean) => {
     const newDefinitionData = {
       name: name,
@@ -161,7 +161,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       usageExamples: usageExamples,
       attachments: attachments,
       templateId,
-      dynamicSections,
       supportingTables: [],
       isDraft: isDraft,
     };
@@ -205,10 +204,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
 
   const handleRemoveAttachment = (name: string) => {
     setAttachments(attachments.filter(att => att.name !== name));
-  };
-
-  const handleDynamicSectionChange = (sectionId: string, content: string) => {
-    setDynamicSections(prev => prev.map(s => s.sectionId === sectionId ? { ...s, content } : s));
   };
 
   const isPreviewAvailable = sourceName && (sourceType === 'Views' || sourceType === 'Tables');
@@ -353,71 +348,32 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                 </CardContent>
               </Card>
 
-              {/* Template Sections */}
-              {templateId && dynamicSections.length > 0 && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2 border-b pb-2">
-                    <h3 className="font-bold text-lg">Template Content</h3>
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  {dynamicSections.sort((a,b) => a.order - b.order).map(section => (
-                    <Card key={section.sectionId} className={cn(section.isMandatory && "border-primary/20")}>
-                      <CardHeader className="py-3 bg-muted/30">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          {section.name}
-                          {section.isMandatory && <Badge variant="destructive" className="text-[10px] py-0 px-1">Mandatory</Badge>}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-4">
-                        {section.contentType === 'Rich Text' ? (
-                          <WysiwygEditor 
-                            value={section.content} 
-                            onChange={(content) => handleDynamicSectionChange(section.sectionId, content)} 
-                          />
-                        ) : (
-                          <Textarea 
-                            value={section.content} 
-                            onChange={(e) => handleDynamicSectionChange(section.sectionId, e.target.value)}
-                            placeholder={`Enter content for ${section.name}...`}
-                          />
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Technical Details</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <WysiwygEditor value={technicalDetails} onChange={setTechnicalDetails} />
+                  </CardContent>
+              </Card>
 
-              {/* Default Sections (Fallback for Blank) */}
-              {!templateId && (
-                <>
-                  <Card>
-                      <CardHeader>
-                          <CardTitle>Technical Details</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <WysiwygEditor value={technicalDetails} onChange={setTechnicalDetails} />
-                      </CardContent>
-                  </Card>
-
-                  <Card>
-                      <CardHeader>
-                          <CardTitle>Definition Content (DEF_LONG_DESCR)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <WysiwygEditor value={description} onChange={setDescription} />
-                      </CardContent>
-                  </Card>
-                  
-                  <Card>
-                      <CardHeader>
-                          <CardTitle>Usage Examples / SQL View</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <WysiwygEditor value={usageExamples} onChange={setUsageExamples} />
-                      </CardContent>
-                  </Card>
-                </>
-              )}
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Definition Content (DEF_LONG_DESCR)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <WysiwygEditor value={description} onChange={setDescription} />
+                  </CardContent>
+              </Card>
+              
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Usage Examples / SQL View</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <WysiwygEditor value={usageExamples} onChange={setUsageExamples} />
+                  </CardContent>
+              </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -452,7 +408,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                 <Save className="mr-2 h-4 w-4" />
                 Save Draft
             </Button>
-            <Button onClick={() => handleSave(false)} disabled={!isMandatoryComplete}>
+            <Button onClick={() => handleSave(false)} disabled={!name.trim()}>
                 <Send className="mr-2 h-4 w-4" />
                 Submit
             </Button>

@@ -5,14 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Pencil, Trash2, Save, X, GripVertical } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Template, TemplateSection } from '@/lib/types';
+import type { Template } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { ScrollArea } from '../ui/scroll-area';
 import dynamic from 'next/dynamic';
@@ -30,7 +29,10 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     name: '',
     description: '',
     status: 'Active',
-    sections: [],
+    defaultShortDescription: '',
+    defaultDescription: '',
+    defaultTechnicalDetails: '',
+    defaultUsageExamples: '',
   });
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
@@ -46,7 +48,10 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       name: '',
       description: '',
       status: 'Active',
-      sections: [],
+      defaultShortDescription: '',
+      defaultDescription: '',
+      defaultTechnicalDetails: '',
+      defaultUsageExamples: '',
     });
     setIsModalOpen(true);
   };
@@ -68,10 +73,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       toast({ variant: 'destructive', title: 'Error', description: 'Template Name is required.' });
       return;
     }
-    if (!currentTemplate.sections || currentTemplate.sections.length === 0) {
-      toast({ variant: 'destructive', title: 'Error', description: 'At least one section is required.' });
-      return;
-    }
 
     const templateToSave = currentTemplate as Template;
     let updatedTemplates: Template[];
@@ -88,41 +89,12 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     setIsModalOpen(false);
   };
 
-  const handleAddSection = () => {
-    const newSection: TemplateSection = {
-      id: `s-${Date.now()}`,
-      name: '',
-      order: (currentTemplate.sections?.length || 0) + 1,
-      isMandatory: false,
-      contentType: 'Rich Text',
-      defaultContent: '',
-    };
-    setCurrentTemplate(prev => ({
-      ...prev,
-      sections: [...(prev.sections || []), newSection],
-    }));
-  };
-
-  const handleRemoveSection = (id: string) => {
-    setCurrentTemplate(prev => ({
-      ...prev,
-      sections: prev.sections?.filter(s => s.id !== id),
-    }));
-  };
-
-  const handleSectionChange = (id: string, field: keyof TemplateSection, value: any) => {
-    setCurrentTemplate(prev => ({
-      ...prev,
-      sections: prev.sections?.map(s => s.id === id ? { ...s, [field]: value } : s),
-    }));
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Template Management</h1>
-          <p className="text-muted-foreground">Define reusable definition structures with default content.</p>
+          <p className="text-muted-foreground">Define default boilerplate content for standard definition sections.</p>
         </div>
         <Button onClick={handleCreateNew}>
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -137,7 +109,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
               <TableRow>
                 <TableHead>Template Name</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Sections</TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -150,7 +122,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                       {template.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{template.sections.length} Fields</TableCell>
+                  <TableCell className="max-w-xs truncate text-muted-foreground">{template.description}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(template)}>
@@ -173,7 +145,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
           <div className="p-6 border-b bg-background sticky top-0 z-50 flex justify-between items-center shadow-sm">
             <DialogHeader className="p-0">
               <DialogTitle className="text-2xl font-bold">
-                {isEditing ? 'Edit Template Structure' : 'Create New Template Structure'}
+                {isEditing ? 'Edit Template Blueprint' : 'Create New Template Blueprint'}
               </DialogTitle>
             </DialogHeader>
             <div className="flex gap-2">
@@ -196,7 +168,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="t-name">Template Name (DEF_TEMPLATE_NAME)</Label>
+                      <Label htmlFor="t-name">Template Name <span className="text-destructive">*</span></Label>
                       <Input 
                         id="t-name" 
                         value={currentTemplate.name} 
@@ -232,87 +204,68 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 </CardContent>
               </Card>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b pb-2">
-                  <h3 className="text-xl font-bold flex items-center gap-2">
-                    Defined Sections
-                    <Badge variant="outline" className="text-[10px] uppercase">{currentTemplate.sections?.length || 0} Sections</Badge>
-                  </h3>
-                  <Button variant="outline" size="sm" onClick={handleAddSection}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Section
-                  </Button>
+              <div className="space-y-6">
+                <div className="border-b pb-2">
+                  <h3 className="text-xl font-bold">Standard Section Defaults</h3>
+                  <p className="text-sm text-muted-foreground">Pre-populate the standard definition fields with boilerplate text.</p>
                 </div>
 
                 <div className="space-y-6">
-                  {currentTemplate.sections?.map((section, idx) => (
-                    <Card key={section.id} className="border-primary/10 shadow-sm relative overflow-visible">
-                      <div className="absolute -left-3 top-1/2 -translate-y-1/2 cursor-grab text-muted-foreground hover:text-primary transition-colors">
-                        <GripVertical className="h-5 w-5" />
-                      </div>
-                      <CardHeader className="flex flex-row items-center justify-between py-3 bg-muted/30">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="secondary" className="h-6 w-6 rounded-full flex items-center justify-center p-0 font-bold">
-                            {section.order}
-                          </Badge>
-                          <Input 
-                            value={section.name} 
-                            onChange={e => handleSectionChange(section.id, 'name', e.target.value)}
-                            placeholder="Section Title (e.g., Clinical Overview)"
-                            className="h-8 font-bold border-none bg-transparent shadow-none focus-visible:ring-0 p-0 text-base min-w-[300px]"
-                          />
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <Checkbox 
-                              id={`s-mand-${section.id}`} 
-                              checked={section.isMandatory} 
-                              onCheckedChange={v => handleSectionChange(section.id, 'isMandatory', !!v)}
-                            />
-                            <Label htmlFor={`s-mand-${section.id}`} className="text-xs cursor-pointer">Mandatory</Label>
-                          </div>
-                          <Select 
-                            value={section.contentType} 
-                            onValueChange={v => handleSectionChange(section.id, 'contentType', v as any)}
-                          >
-                            <SelectTrigger className="h-8 w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Rich Text">Rich Text</SelectItem>
-                              <SelectItem value="Plain Text">Plain Text</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveSection(section.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-4 space-y-3">
-                        <Label className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">Default Content (Pre-populated for new definitions)</Label>
-                        {section.contentType === 'Rich Text' ? (
-                          <WysiwygEditor 
-                            value={section.defaultContent || ''} 
-                            onChange={(content) => handleSectionChange(section.id, 'defaultContent', content)} 
-                            placeholder="Add boilerplate content that will appear by default when using this template..."
-                          />
-                        ) : (
-                          <Textarea 
-                            value={section.defaultContent || ''} 
-                            onChange={(e) => handleSectionChange(section.id, 'defaultContent', e.target.value)}
-                            placeholder="Add boilerplate text..."
-                          />
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                  {(!currentTemplate.sections || currentTemplate.sections.length === 0) && (
-                    <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-lg bg-muted/20">
-                      <PlusCircle className="h-10 w-10 text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground font-medium">No sections defined yet.</p>
-                      <Button variant="link" onClick={handleAddSection}>Click here to add the first section</Button>
-                    </div>
-                  )}
+                  {/* Short Description Default */}
+                  <Card>
+                    <CardHeader className="py-3 bg-muted/30">
+                      <CardTitle className="text-base">Short Description Default</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <Textarea 
+                        value={currentTemplate.defaultShortDescription} 
+                        onChange={e => setCurrentTemplate(prev => ({ ...prev, defaultShortDescription: e.target.value }))}
+                        placeholder="Enter boilerplate for Short Description..."
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Long Description Default */}
+                  <Card>
+                    <CardHeader className="py-3 bg-muted/30">
+                      <CardTitle className="text-base">Long Description Default</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <WysiwygEditor 
+                        value={currentTemplate.defaultDescription || ''} 
+                        onChange={(content) => setCurrentTemplate(prev => ({ ...prev, defaultDescription: content }))} 
+                        placeholder="Enter boilerplate for the main Description..."
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Technical Details Default */}
+                  <Card>
+                    <CardHeader className="py-3 bg-muted/30">
+                      <CardTitle className="text-base">Technical Details Default</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <WysiwygEditor 
+                        value={currentTemplate.defaultTechnicalDetails || ''} 
+                        onChange={(content) => setCurrentTemplate(prev => ({ ...prev, defaultTechnicalDetails: content }))} 
+                        placeholder="Enter boilerplate for Technical Details..."
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Usage Examples Default */}
+                  <Card>
+                    <CardHeader className="py-3 bg-muted/30">
+                      <CardTitle className="text-base">Usage Examples / SQL View Default</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <WysiwygEditor 
+                        value={currentTemplate.defaultUsageExamples || ''} 
+                        onChange={(content) => setCurrentTemplate(prev => ({ ...prev, defaultUsageExamples: content }))} 
+                        placeholder="Enter boilerplate for Usage Examples..."
+                      />
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </div>

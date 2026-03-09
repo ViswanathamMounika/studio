@@ -1,4 +1,3 @@
-
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
@@ -164,25 +163,23 @@ export const initialActivityLogs: ActivityLog[] = Array.from({ length: 50 }, (_,
 export const initialTemplates: Template[] = [
   {
     id: 't-1',
-    name: 'Standard Data Definition',
-    description: 'Basic template for standard data entities.',
+    name: 'Clinical Data Definition',
+    description: 'Template for standard clinical data definitions.',
     status: 'Active',
-    sections: [
-      { id: 's-1', name: 'Overview', order: 1, isMandatory: true, contentType: 'Rich Text' },
-      { id: 's-2', name: 'Business Logic', order: 2, isMandatory: true, contentType: 'Rich Text' },
-      { id: 's-3', name: 'Usage Notes', order: 3, isMandatory: false, contentType: 'Plain Text' },
-    ]
+    defaultShortDescription: 'This clinical definition describes...',
+    defaultDescription: '<h3>Clinical Overview</h3><p>Provide details here.</p>',
+    defaultTechnicalDetails: '<h3>Source Tables</h3><ul><li>MEMBER_MASTER</li></ul>',
+    defaultUsageExamples: '<h3>Example Query</h3><pre><code>SELECT * FROM ...</code></pre>'
   },
   {
     id: 't-2',
     name: 'Technical Specification',
-    description: 'Detailed template for technical objects like views or stored procs.',
+    description: 'Template for technical SQL objects and reporting views.',
     status: 'Active',
-    sections: [
-      { id: 's-4', name: 'Technical Purpose', order: 1, isMandatory: true, contentType: 'Rich Text' },
-      { id: 's-5', name: 'Input/Output Parameters', order: 2, isMandatory: false, contentType: 'Rich Text' },
-      { id: 's-6', name: 'SQL Implementation', order: 3, isMandatory: true, contentType: 'Rich Text' },
-    ]
+    defaultShortDescription: 'Technical spec for reporting view...',
+    defaultDescription: '<h3>Functional Purpose</h3><p>What does this view do?</p>',
+    defaultTechnicalDetails: '<h3>SQL Performance</h3><p>Indexing strategy and execution plans.</p>',
+    defaultUsageExamples: '<h3>Implementation</h3><pre><code>CREATE VIEW ...</code></pre>'
   }
 ];
 
