@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Check, ChevronsUpDown, Search, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Check, ChevronsUpDown, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType } from '@/lib/types';
 import { initialActivityLogs } from '@/lib/data';
@@ -26,6 +26,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search'];
+const ITEMS_PER_PAGE = 10;
 
 type MultiSelectFilterProps = {
     title: string;
@@ -109,6 +110,7 @@ export default function ActivityLogs() {
     const [definitionSearch, setDefinitionSearch] = useState<string>('');
     const [timeFrame, setTimeFrame] = useState('all');
     const [customRange, setCustomRange] = useState<{ from: Date; to: Date } | undefined>();
+    const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState<{ key: keyof ActivityLog; direction: 'asc' | 'desc' }>({
         key: 'occurredDate',
         direction: 'desc'
@@ -124,9 +126,10 @@ export default function ActivityLogs() {
         } else {
             setter([...current, value]);
         }
+        setCurrentPage(1);
     };
 
-    const filteredLogs = useMemo(() => {
+    const filteredAndSortedLogs = useMemo(() => {
         return logs.filter(log => {
             const userMatch = userFilters.length === 0 || userFilters.includes(log.userName);
             const activityMatch = activityTypeFilter === 'all' || log.activityType === activityTypeFilter;
@@ -172,11 +175,19 @@ export default function ActivityLogs() {
         });
     }, [logs, userFilters, activityTypeFilter, definitionSearch, timeFrame, customRange, sortConfig]);
 
+    const paginatedLogs = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredAndSortedLogs.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredAndSortedLogs, currentPage]);
+
+    const totalPages = Math.ceil(filteredAndSortedLogs.length / ITEMS_PER_PAGE);
+
     const handleSort = (key: keyof ActivityLog) => {
         setSortConfig(prev => ({
             key,
             direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
         }));
+        setCurrentPage(1);
     };
 
     const resetFilters = () => {
@@ -185,11 +196,12 @@ export default function ActivityLogs() {
         setDefinitionSearch('');
         setTimeFrame('all');
         setCustomRange(undefined);
+        setCurrentPage(1);
     };
 
     const handleExportExcel = async () => {
         const XLSX = await import('xlsx');
-        const exportData = filteredLogs.map(log => ({
+        const exportData = filteredAndSortedLogs.map(log => ({
             'User Name': log.userName,
             'Definition Name': log.definitionName,
             'Activity Type': log.activityType,
@@ -233,7 +245,7 @@ export default function ActivityLogs() {
         
         // Data
         doc.setFont('helvetica', 'normal');
-        filteredLogs.slice(0, 50).forEach((log) => { // PDF limited for demo
+        filteredAndSortedLogs.slice(0, 50).forEach((log) => { // PDF limited for demo
             if (y > 280) {
                 doc.addPage();
                 y = 20;
@@ -255,7 +267,7 @@ export default function ActivityLogs() {
             y += 8;
         });
 
-        if (filteredLogs.length > 50) {
+        if (filteredAndSortedLogs.length > 50) {
             doc.setFontSize(8);
             doc.text(`* Export limited to first 50 entries in PDF. Use Excel for full export.`, 14, y + 10);
         }
@@ -320,14 +332,20 @@ export default function ActivityLogs() {
                                     placeholder="Definition name..." 
                                     className="pl-8"
                                     value={definitionSearch}
-                                    onChange={(e) => setDefinitionSearch(e.target.value)}
+                                    onChange={(e) => {
+                                        setDefinitionSearch(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Activity Type</label>
-                            <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
+                            <Select value={activityTypeFilter} onValueChange={(v) => {
+                                setActivityTypeFilter(v);
+                                setCurrentPage(1);
+                            }}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Activities" />
                                 </SelectTrigger>
@@ -342,7 +360,10 @@ export default function ActivityLogs() {
 
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Time Frame</label>
-                            <Select value={timeFrame} onValueChange={setTimeFrame}>
+                            <Select value={timeFrame} onValueChange={(v) => {
+                                setTimeFrame(v);
+                                setCurrentPage(1);
+                            }}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Time" />
                                 </SelectTrigger>
@@ -376,7 +397,10 @@ export default function ActivityLogs() {
                                                 mode="range"
                                                 defaultMonth={customRange?.from}
                                                 selected={customRange as any}
-                                                onSelect={(range: any) => setCustomRange(range)}
+                                                onSelect={(range: any) => {
+                                                    setCustomRange(range);
+                                                    setCurrentPage(1);
+                                                }}
                                                 numberOfMonths={2}
                                                 disabled={{ after: new Date() }}
                                             />
@@ -390,7 +414,7 @@ export default function ActivityLogs() {
             </Card>
 
             <Card>
-                <CardContent className="p-0">
+                <CardContent className="p-0 overflow-hidden">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -421,7 +445,7 @@ export default function ActivityLogs() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredLogs.map(log => (
+                            {paginatedLogs.map(log => (
                                 <TableRow key={log.id}>
                                     <TableCell className="font-medium">{log.userName}</TableCell>
                                     <TableCell>{log.definitionName}</TableCell>
@@ -433,7 +457,7 @@ export default function ActivityLogs() {
                                     </TableCell>
                                 </TableRow>
                             ))}
-                            {filteredLogs.length === 0 && (
+                            {paginatedLogs.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={4} className="h-24 text-center">
                                         No logs found matching the selected filters.
@@ -443,7 +467,36 @@ export default function ActivityLogs() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                <div className="flex items-center justify-between p-4 border-t bg-muted/30">
+                    <p className="text-sm text-muted-foreground">
+                        Showing {paginatedLogs.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedLogs.length)} of {filteredAndSortedLogs.length} entries
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                        >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Previous
+                        </Button>
+                        <div className="flex items-center justify-center min-w-[3rem] text-sm font-medium">
+                            {currentPage} / {totalPages || 1}
+                        </div>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage >= totalPages}
+                        >
+                            Next
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                    </div>
+                </div>
             </Card>
         </div>
     );
 }
+
