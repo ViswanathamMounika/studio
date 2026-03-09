@@ -408,24 +408,33 @@ export default function Wiki() {
     setEditLockId(null);
   };
 
+  const handleCancelResume = () => {
+    setEditLockId(null);
+  };
+
   const renderContent = () => {
     switch (activeView) {
         case 'activity-logs': return <ActivityLogs />;
         case 'template-management': return <TemplateManagement templates={templates} onSaveTemplates={setTemplates} />;
         default: return (
-                <>
-                  {editLockId === selectedDefinitionId && (
-                    <Alert className="mb-4 bg-primary/5 border-primary/20">
-                      <Lock className="h-4 w-4 text-primary" />
-                      <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>
-                      <AlertDescription className="text-muted-foreground flex items-center justify-between">
-                        <span>This definition is currently being modified. Your session is locked.</span>
-                        { !isEditing && (
-                           <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Resume Editing</Button>
-                        )}
-                      </AlertDescription>
-                    </Alert>
+                <div className="relative">
+                  {/* Sticky Header for Status Messages (View Mode Only) */}
+                  {editLockId === selectedDefinitionId && !isEditing && (
+                    <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm -mx-6 px-6 py-4 border-b mb-6 shadow-sm">
+                        <Alert className="bg-primary/5 border-primary/20">
+                          <Lock className="h-4 w-4 text-primary" />
+                          <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>
+                          <AlertDescription className="text-muted-foreground flex items-center justify-between">
+                            <span>This definition is currently being modified. Your session is locked.</span>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Resume Editing</Button>
+                                <Button variant="ghost" size="sm" onClick={handleCancelResume}>Dismiss Lock</Button>
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                    </div>
                   )}
+                  
                   {isEditing && selectedDefinition ? (
                       <DefinitionEdit definition={selectedDefinition} onSave={handleSave} onCancel={handleCancelEdit} />
                   ) : selectedDefinition ? (
@@ -445,7 +454,7 @@ export default function Wiki() {
                   ) : (
                       <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Select a definition to view its details.</p></div>
                   )}
-                </>
+                </div>
             );
     }
   }

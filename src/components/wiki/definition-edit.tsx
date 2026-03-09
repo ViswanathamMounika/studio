@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Save, Send } from 'lucide-react';
+import { X, Upload, Eye, Save, Send, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
 import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -150,18 +151,28 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">Edit Definition</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button variant="secondary" onClick={() => handleSave(true)} disabled={!name.trim()}>
-              <Save className="mr-2 h-4 w-4" />
-              Save Draft
-          </Button>
-          <Button onClick={() => handleSave(false)} disabled={!name.trim()}>
-              <Send className="mr-2 h-4 w-4" />
-              Submit
-          </Button>
+      {/* Frozen Sticky Header */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm -mx-6 px-6 py-4 border-b space-y-4 mb-6 shadow-sm">
+        <Alert className="bg-primary/5 border-primary/20">
+          <Lock className="h-4 w-4 text-primary" />
+          <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>
+          <AlertDescription className="text-muted-foreground">
+            This definition is currently being modified. Your session is locked.
+          </AlertDescription>
+        </Alert>
+        <div className="flex justify-between items-center">
+          <h2 className="text-3xl font-bold">Edit Definition</h2>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onCancel}>Cancel</Button>
+            <Button variant="secondary" onClick={() => handleSave(true)} disabled={!name.trim()}>
+                <Save className="mr-2 h-4 w-4" />
+                Save Draft
+            </Button>
+            <Button onClick={() => handleSave(false)} disabled={!name.trim()}>
+                <Send className="mr-2 h-4 w-4" />
+                Submit
+            </Button>
+          </div>
         </div>
       </div>
       
