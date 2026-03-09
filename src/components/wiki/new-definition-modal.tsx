@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -97,7 +96,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     }
   }, [open, initialData]);
 
-  // Logic to bring top commented lines for Procs and Functions
   useEffect(() => {
     if (open && sourceName && (sourceType === 'Stored Procedures' || sourceType === 'SQL Functions')) {
       const latestModifiedDate = new Date().toLocaleString();
@@ -120,7 +118,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
 </code></pre>
       `.trim();
       
-      // Auto-populate Technical Details if it's currently empty or contains only whitespace/empty tags
       const isContentEmpty = !technicalDetails || 
                              technicalDetails.trim() === '' || 
                              technicalDetails === '<p></p>' || 
@@ -145,7 +142,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const isMandatoryComplete = useMemo(() => {
     if (!name.trim()) return false;
     if (templateId) {
-      return dynamicSections.every(s => !s.isMandatory || s.content.trim() !== '');
+      return dynamicSections.every(s => !s.isMandatory || (s.content && s.content.trim() !== '' && s.content !== '<p></p>'));
     }
     return true;
   }, [name, templateId, dynamicSections]);
@@ -364,14 +361,14 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                     <Info className="h-4 w-4 text-muted-foreground" />
                   </div>
                   {dynamicSections.sort((a,b) => a.order - b.order).map(section => (
-                    <Card key={section.sectionId}>
-                      <CardHeader>
+                    <Card key={section.sectionId} className={cn(section.isMandatory && "border-primary/20")}>
+                      <CardHeader className="py-3 bg-muted/30">
                         <CardTitle className="text-base flex items-center gap-2">
                           {section.name}
-                          {section.isMandatory && <span className="text-destructive font-bold">*</span>}
+                          {section.isMandatory && <Badge variant="destructive" className="text-[10px] py-0 px-1">Mandatory</Badge>}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="pt-4">
                         {section.contentType === 'Rich Text' ? (
                           <WysiwygEditor 
                             value={section.content} 
@@ -381,7 +378,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                           <Textarea 
                             value={section.content} 
                             onChange={(e) => handleDynamicSectionChange(section.sectionId, e.target.value)}
-                            placeholder={`Enter ${section.name}...`}
+                            placeholder={`Enter content for ${section.name}...`}
                           />
                         )}
                       </CardContent>

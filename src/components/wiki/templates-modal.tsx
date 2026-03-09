@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -18,7 +17,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Code, Plus, DatabaseZap } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 import type { Definition, Template } from '@/lib/types';
 
 type TemplateOption = {
@@ -33,10 +32,10 @@ const defaultTemplates: TemplateOption[] = [
   {
     id: 'blank',
     title: 'Blank Definition',
-    description: 'Start from a completely empty slate.',
+    description: 'Start from a completely empty slate with manual formatting.',
     icon: Plus,
     data: {
-      name: 'New Definition',
+      name: 'New Blank Definition',
       module: 'Core',
       keywords: [],
       description: '',
@@ -66,52 +65,44 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate, mana
           <DialogHeader>
             <DialogTitle>Create from a template</DialogTitle>
             <DialogDescription>
-              Get started faster by using a pre-defined template for your new definition.
+              Select a pre-defined structure to ensure consistency across the Wiki.
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[70vh] p-1">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
               {defaultTemplates.map((template) => (
-                <Card key={template.id} className="flex flex-col border-dashed">
+                <Card key={template.id} className="flex flex-col border-dashed bg-muted/50 hover:bg-background transition-colors cursor-pointer" onClick={() => handleUseTemplate(template.id, template.data)}>
                   <CardHeader>
                     <div className="flex items-center gap-3 mb-2">
                         <template.icon className="h-6 w-6 text-primary" />
                         <CardTitle className="text-lg">{template.title}</CardTitle>
                     </div>
-                    <CardDescription>{template.description}</CardDescription>
+                    <CardDescription className="line-clamp-2">{template.description}</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex-grow flex items-end">
-                    <Button 
-                      variant="outline"
-                      className="w-full mt-auto"
-                      onClick={() => handleUseTemplate(template.id, template.data)}
-                    >
-                      Use Template
-                    </Button>
-                  </CardContent>
                 </Card>
               ))}
 
               {activeManagedTemplates.map((template) => (
-                <Card key={template.id} className="flex flex-col">
+                <Card key={template.id} className="flex flex-col hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleUseTemplate(template.id, {
+                    name: `New ${template.name}`,
+                    module: 'Core',
+                    templateId: template.id,
+                    dynamicSections: template.sections.map(s => ({
+                      sectionId: s.id,
+                      name: s.name,
+                      content: s.defaultContent || '',
+                      contentType: s.contentType,
+                      isMandatory: s.isMandatory,
+                      order: s.order
+                    }))
+                })}>
                   <CardHeader>
                     <div className="flex items-center gap-3 mb-2">
                         <FileText className="h-6 w-6 text-primary" />
                         <CardTitle className="text-lg">{template.name}</CardTitle>
                     </div>
-                    <CardDescription>{template.description}</CardDescription>
+                    <CardDescription className="line-clamp-2">{template.description || "Structured template for specialized data."}</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex-grow flex items-end">
-                    <Button 
-                      className="w-full mt-auto"
-                      onClick={() => handleUseTemplate(template.id, {
-                        name: `New ${template.name}`,
-                        module: 'Core',
-                      })}
-                    >
-                      Use Template
-                    </Button>
-                  </CardContent>
                 </Card>
               ))}
             </div>

@@ -113,6 +113,7 @@ export interface TemplateSection {
   order: number;
   isMandatory: boolean;
   contentType: 'Rich Text' | 'Plain Text';
+  defaultContent?: string;
 }
 
 export interface Template {
