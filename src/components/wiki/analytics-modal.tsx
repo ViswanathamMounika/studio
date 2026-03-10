@@ -16,6 +16,7 @@ import { DateRange } from 'react-day-picker';
 import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
+import { Badge } from '../ui/badge';
 
 type AnalyticsModalProps = {
   open: boolean;
@@ -34,6 +35,7 @@ type RecentViewData = {
     name: string;
     date: string;
     module: string;
+    status: string;
 }
 
 const sampleSearches: ChartData = [
@@ -99,6 +101,17 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Archived':
+        return <Badge variant="destructive" className="text-[10px] uppercase">Archived</Badge>;
+      case 'Draft':
+        return <Badge variant="secondary" className="text-[10px] uppercase">Draft</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px] uppercase text-green-600 border-green-200 bg-green-50">Active</Badge>;
+    }
+  };
+
   const CustomTick = (props: any) => {
     const { x, y, payload } = props;
     const matchingView = topViews.find(item => item.name === payload.value);
@@ -154,7 +167,7 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Name</TableHead>
-                                        <TableHead>Module</TableHead>
+                                        <TableHead>Status</TableHead>
                                         <TableHead className="text-right">Viewed</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -174,7 +187,7 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
                                                         {item.name}
                                                     </button>
                                                 </TableCell>
-                                                <TableCell>{item.module}</TableCell>
+                                                <TableCell>{getStatusBadge(item.status)}</TableCell>
                                                 <TableCell className="text-right text-muted-foreground">
                                                     {isValid(itemDate) ? formatDistanceToNow(itemDate, { addSuffix: true }) : ''}
                                                 </TableCell>

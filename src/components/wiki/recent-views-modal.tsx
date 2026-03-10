@@ -4,12 +4,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { getRecentViews } from '@/lib/analytics';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '../ui/scroll-area';
 import { Button } from '../ui/button';
 import { Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow, isValid } from 'date-fns';
+import { Badge } from '../ui/badge';
 
 type RecentViewsModalProps = {
   open: boolean;
@@ -22,6 +22,7 @@ type RecentViewData = {
     name: string;
     date: string;
     module: string;
+    status: string;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -50,6 +51,17 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
     onOpenChange(false);
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Archived':
+        return <Badge variant="destructive" className="text-[10px] uppercase font-bold">Archived</Badge>;
+      case 'Draft':
+        return <Badge variant="secondary" className="text-[10px] uppercase font-bold">Draft</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px] uppercase font-bold text-green-600 border-green-200 bg-green-50">Active</Badge>;
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
@@ -69,7 +81,7 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
                     <TableHeader className="bg-muted/50 sticky top-0 z-10">
                         <TableRow>
                             <TableHead>Definition Name</TableHead>
-                            <TableHead>Module</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead className="text-right">Last Viewed</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -86,7 +98,7 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
                                             {item.name}
                                         </button>
                                     </TableCell>
-                                    <TableCell className="text-muted-foreground">{item.module}</TableCell>
+                                    <TableCell>{getStatusBadge(item.status)}</TableCell>
                                     <TableCell className="text-right text-muted-foreground whitespace-nowrap">
                                         {isValid(itemDate) ? formatDistanceToNow(itemDate, { addSuffix: true }) : ''}
                                     </TableCell>

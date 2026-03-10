@@ -26,7 +26,7 @@ const saveToStorage = <T>(key: string, value: T) => {
 };
 
 type CountData = { [key: string]: { count: number, date: string } };
-type ViewCountData = { [key: string]: { count: number, module: string, date: string, id: string, name: string } };
+type ViewCountData = { [key: string]: { count: number, module: string, status?: string, date: string, id: string, name: string } };
 
 const isInDateRange = (dateStr: string, range?: DateRange) => {
     if (!range?.from) return true;
@@ -50,14 +50,17 @@ export const trackSearch = (query: string) => {
   saveToStorage('analytics_searches', searches);
 };
 
-export const trackView = (definitionId: string, definitionName: string, module: string) => {
+export const trackView = (definitionId: string, definitionName: string, module: string, status?: string) => {
   const views = getFromStorage<ViewCountData>('analytics_views', {});
   const key = definitionId;
   if (!views[key]) {
-      views[key] = { count: 0, module: module, date: new Date().toISOString(), id: definitionId, name: definitionName };
+      views[key] = { count: 0, module: module, status: status, date: new Date().toISOString(), id: definitionId, name: definitionName };
   }
   views[key].count += 1;
   views[key].date = new Date().toISOString();
+  if (status) {
+    views[key].status = status;
+  }
   saveToStorage('analytics_views', views);
 };
 
@@ -80,7 +83,7 @@ export const getTopViews = (count: number, dateRange?: DateRange): { name: strin
         .map(([, value]) => ({ name: value.name, count: value.count, id: value.id }));
 }
 
-export const getRecentViews = (count?: number): { name: string, id: string, date: string, module: string }[] => {
+export const getRecentViews = (count?: number): { name: string, id: string, date: string, module: string, status: string }[] => {
     const data = getFromStorage<ViewCountData>('analytics_views', {});
 
     const sorted = Object.values(data)
@@ -88,5 +91,11 @@ export const getRecentViews = (count?: number): { name: string, id: string, date
 
     const result = count ? sorted.slice(0, count) : sorted;
 
-    return result.map(value => ({ name: value.name, id: value.id, date: value.date, module: value.module }));
+    return result.map(value => ({ 
+        name: value.name, 
+        id: value.id, 
+        date: value.date, 
+        module: value.module,
+        status: value.status || 'Active'
+    }));
 }

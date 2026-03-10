@@ -118,6 +118,12 @@ export default function Wiki() {
     }
   }, [selectedDefinitionId, updateUrl]);
 
+  const getStatusText = (def: Definition) => {
+    if (def.isArchived) return 'Archived';
+    if (def.isDraft) return 'Draft';
+    return 'Active';
+  };
+
   const handleSelectDefinition = useCallback((id: string, sectionId?: string, shouldUpdateUrl = true) => {
     const isSameDefinition = id === selectedDefinitionId;
     setActiveView('definitions');
@@ -131,7 +137,10 @@ export default function Wiki() {
     setSelectedDefinitionId(id);
     if (!isSameDefinition) {
         const def = findDefinition(definitions, id);
-        if (def) trackView(id, def.name, def.module);
+        if (def) {
+            const status = getStatusText(def);
+            trackView(id, def.name, def.module, status);
+        }
     }
     const targetSection = sectionId || 'description';
     setActiveTab(targetSection);
