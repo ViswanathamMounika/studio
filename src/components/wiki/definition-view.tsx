@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -250,7 +251,7 @@ export default function DefinitionView({
                     {isAdmin && (
                         <>
                             <Button onClick={onEdit}><Pencil className="mr-2 h-4 w-4" />Edit</Button>
-                            <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onToggleBookmark={onToggleBookmark} onPublish={onPublish} />
+                            <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onToggleBookmark={onToggleBookmark} />
                         </>
                     )}
                 </div>
