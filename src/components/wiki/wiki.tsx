@@ -307,7 +307,7 @@ export default function Wiki() {
     const filterByDraft = (items: Definition[], isDraft: boolean): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = item.children ? filterByDraft(item.children, isDraft) : [];
-            const isMatch = item.isDraft === isDraft;
+            const isMatch = isDraft ? item.isDraft === true : (item.isDraft === false || item.isDraft === undefined);
             if (children.length > 0 || (isMatch && item.description)) {
                 acc.push({ ...item, children });
             }
@@ -497,6 +497,7 @@ export default function Wiki() {
                       <div className="p-6">
                         <DefinitionView 
                           definition={selectedDefinition} 
+                          allDefinitions={definitions}
                           onEdit={handleEditClick} 
                           onDuplicate={handleDuplicate} 
                           onArchive={handleArchive} 

@@ -18,7 +18,6 @@ import {
     cmsComplianceMatrix, 
     timestampChangedTable, 
     vwAuthActionTimeTable, 
-    initialDefinitions, 
     mpmDatabases, 
     mpmSourceTypes
 } from '@/lib/data';
@@ -30,13 +29,13 @@ import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import RelatedDefinitions from './related-definitions';
-import useLocalStorage from '@/hooks/use-local-storage';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
 
 const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
 
 type DefinitionViewProps = {
   definition: Definition;
+  allDefinitions: Definition[];
   onEdit: () => void;
   onDuplicate: (id: string) => void;
   onArchive: (id: string, archive: boolean) => void;
@@ -85,7 +84,7 @@ const highlightHtml = (html: string, query: string) => {
 };
 
 export default function DefinitionView({ 
-    definition, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
+    definition, allDefinitions, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
     activeTab, onTabChange, onSave, isAdmin, searchQuery = "" 
 }: DefinitionViewProps) {
     const [selectedTable, setSelectedTable] = useState<SupportingTable | null>(null);
@@ -102,7 +101,6 @@ export default function DefinitionView({
     const [editingNoteText, setEditingNoteText] = useState('');
 
     const { toast } = useToast();
-    const [definitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
 
     const tabs = [
         { value: 'description', label: 'Description' },
@@ -449,7 +447,7 @@ export default function DefinitionView({
                     </TabsContent>
 
                     <TabsContent value="related-definitions" className="mt-6">
-                        <RelatedDefinitions currentDefinition={definition} allDefinitions={definitions} onDefinitionClick={handleDefinitionClick} onSave={onSave} isAdmin={isAdmin} />
+                        <RelatedDefinitions currentDefinition={definition} allDefinitions={allDefinitions} onDefinitionClick={handleDefinitionClick} onSave={onSave} isAdmin={isAdmin} />
                     </TabsContent>
                 </Tabs>
             </div>
