@@ -412,6 +412,55 @@ export const initialDefinitions: Definition[] = [
             sourceName: 'FEE_SCHEDULES'
         }
     ]
+  },
+  {
+    id: 'drafts-root',
+    name: 'Draft Definitions',
+    module: 'Core',
+    keywords: [],
+    description: '',
+    revisions: [],
+    isArchived: false,
+    isDraft: true,
+    supportingTables: [],
+    attachments: [],
+    notes: [],
+    children: [
+      {
+        id: 'draft-1',
+        name: 'Member Eligibility Check',
+        module: 'Member',
+        keywords: ['eligibility', 'check', 'validation'],
+        description: '<p><strong>[Draft]</strong> Logic for validating member eligibility during intake.</p>',
+        shortDescription: 'Validates member status.',
+        revisions: [],
+        isArchived: false,
+        isDraft: true,
+        supportingTables: [],
+        attachments: [],
+        notes: [],
+        sourceDb: 'DW_Reporting',
+        sourceType: 'Tables',
+        sourceName: 'MEMBER_MASTER'
+      },
+      {
+        id: 'draft-2',
+        name: 'Provider Specialty Mapping',
+        module: 'Provider Network',
+        keywords: ['specialty', 'mapping', 'taxonomy'],
+        description: '<p><strong>[Draft]</strong> Mapping of provider taxonomy codes to internal specialty groups.</p>',
+        shortDescription: 'Mapping for provider specialties.',
+        revisions: [],
+        isArchived: false,
+        isDraft: true,
+        supportingTables: [],
+        attachments: [],
+        notes: [],
+        sourceDb: 'Provider_Data',
+        sourceType: 'Views',
+        sourceName: 'vw_ProviderDirectory'
+      }
+    ]
   }
 ];
 

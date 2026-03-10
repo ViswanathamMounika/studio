@@ -13,7 +13,7 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Archive, Bookmark, Copy, Download, MoreVertical, Pencil } from "lucide-react";
+import { Archive, Bookmark, Copy, Download, MoreVertical, Pencil, Send } from "lucide-react";
 import type { Definition } from "@/lib/types";
 
 type DefinitionActionsProps = {
@@ -22,9 +22,10 @@ type DefinitionActionsProps = {
   onDuplicate: (id: string) => void;
   onArchive: (id: string, archive: boolean) => void;
   onToggleBookmark: (id: string) => void;
+  onPublish?: (id: string) => void;
 };
 
-export default function DefinitionActions({ definition, onEdit, onDuplicate, onArchive, onToggleBookmark }: DefinitionActionsProps) {
+export default function DefinitionActions({ definition, onEdit, onDuplicate, onArchive, onToggleBookmark, onPublish }: DefinitionActionsProps) {
   
   const handleJsonExport = () => {
     const exportData = {
@@ -113,6 +114,15 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {definition.isDraft && onPublish && (
+          <>
+            <DropdownMenuItem onClick={() => onPublish(definition.id)}>
+              <Send className="mr-2 h-4 w-4 text-primary" />
+              <span className="font-semibold text-primary">Publish</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuItem onClick={onEdit}>
           <Pencil className="mr-2 h-4 w-4" />
           <span>Edit</span>

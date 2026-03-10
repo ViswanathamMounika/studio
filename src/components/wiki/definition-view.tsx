@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Info, X, Check } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
@@ -41,6 +41,7 @@ type DefinitionViewProps = {
   onArchive: (id: string, archive: boolean) => void;
   onDelete: (id: string) => void;
   onToggleBookmark: (id: string) => void;
+  onPublish?: (id: string) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
   onSave: (definition: Definition) => void;
@@ -84,7 +85,7 @@ const highlightHtml = (html: string, query: string) => {
 };
 
 export default function DefinitionView({ 
-    definition, allDefinitions, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
+    definition, allDefinitions, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, onPublish,
     activeTab, onTabChange, onSave, isAdmin, searchQuery = "" 
 }: DefinitionViewProps) {
     const [selectedTable, setSelectedTable] = useState<SupportingTable | null>(null);
@@ -226,12 +227,18 @@ export default function DefinitionView({
                         <h2 className="text-3xl font-bold mt-0">
                             <HighlightedText text={definition.name} highlight={searchQuery} />
                         </h2>
-                        <Badge variant={definition.isArchived ? 'destructive' : 'outline'}>
-                            {definition.isArchived ? 'Archived' : 'Active'}
+                        <Badge variant={definition.isArchived ? 'destructive' : (definition.isDraft ? 'secondary' : 'outline')}>
+                            {definition.isArchived ? 'Archived' : (definition.isDraft ? 'Draft' : 'Active')}
                         </Badge>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {definition.isDraft && onPublish && (
+                      <Button variant="outline" className="text-primary border-primary hover:bg-primary/10" onClick={() => onPublish(definition.id)}>
+                        <Send className="mr-2 h-4 w-4" />
+                        Publish
+                      </Button>
+                    )}
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="hover:bg-accent" onClick={handleShare}><Share2 className="h-6 w-6 text-muted-foreground"/></Button>
@@ -244,7 +251,7 @@ export default function DefinitionView({
                     {isAdmin && (
                         <>
                             <Button onClick={onEdit}><Pencil className="mr-2 h-4 w-4" />Edit</Button>
-                            <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onToggleBookmark={onToggleBookmark} />
+                            <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onToggleBookmark={onToggleBookmark} onPublish={onPublish} />
                         </>
                     )}
                 </div>

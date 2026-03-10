@@ -286,6 +286,22 @@ export default function Wiki() {
     if (selectedDefinitionId === id) setSelectedDefinitionId(null);
   };
 
+  const handlePublish = (id: string) => {
+    if (!isAdmin) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can publish definitions.' });
+        return;
+    }
+    const publishItem = (items: Definition[]): Definition[] => {
+      return items.map(def => {
+        if (def.id === id) return { ...def, isDraft: false };
+        if (def.children) return { ...def, children: publishItem(def.children) };
+        return def;
+      });
+    };
+    setDefinitions(publishItem(definitions));
+    toast({ title: 'Definition Published', description: 'The definition is now available in the MPM Wiki.' });
+  };
+
   const filteredDefinitions = useMemo(() => {
     const filterItems = (items: Definition[], query: string): Definition[] => {
         if (!query) return items;
@@ -503,6 +519,7 @@ export default function Wiki() {
                           onArchive={handleArchive} 
                           onDelete={handleDelete} 
                           onToggleBookmark={toggleBookmark} 
+                          onPublish={handlePublish}
                           activeTab={activeTab} 
                           onTabChange={handleTabChange} 
                           onSave={handleSave} 
