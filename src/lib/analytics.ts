@@ -96,6 +96,6 @@ export const getRecentViews = (count?: number): { name: string, id: string, date
         id: value.id, 
         date: value.date, 
         module: value.module,
-        status: value.status || 'Active'
+        status: value.status || 'Published'
     }));
 }

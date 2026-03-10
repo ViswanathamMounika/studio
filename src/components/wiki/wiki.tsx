@@ -559,6 +559,7 @@ export default function Wiki() {
         setDraftedDefinitionData({ 
           ...templateData, 
           templateId: template.id,
+          attachments: template.defaultAttachments || []
         });
       } else {
         setDraftedDefinitionData(templateData);
