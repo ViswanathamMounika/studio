@@ -6,7 +6,7 @@ import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode } from 'lucide-react';
+import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -93,6 +93,12 @@ export default function Wiki() {
     }
   }, [debouncedSearchQuery]);
 
+  const getStatusText = useCallback((def: Definition) => {
+    if (def.isArchived) return 'Archived';
+    if (def.isDraft) return 'Draft';
+    return 'Active';
+  }, []);
+
   const updateUrl = useCallback((definitionId: string, sectionId?: string, view?: View) => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
@@ -118,12 +124,6 @@ export default function Wiki() {
     }
   }, [selectedDefinitionId, updateUrl]);
 
-  const getStatusText = (def: Definition) => {
-    if (def.isArchived) return 'Archived';
-    if (def.isDraft) return 'Draft';
-    return 'Active';
-  };
-
   const handleSelectDefinition = useCallback((id: string, sectionId?: string, shouldUpdateUrl = true) => {
     const isSameDefinition = id === selectedDefinitionId;
     setActiveView('definitions');
@@ -145,7 +145,7 @@ export default function Wiki() {
     const targetSection = sectionId || 'description';
     setActiveTab(targetSection);
     if (shouldUpdateUrl) updateUrl(id, targetSection);
-  }, [definitions, selectedDefinitionId, editLockId, updateUrl]);
+  }, [definitions, selectedDefinitionId, editLockId, updateUrl, getStatusText]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
     if ((view === 'activity-logs' || view === 'template-management') && !isAdmin) {

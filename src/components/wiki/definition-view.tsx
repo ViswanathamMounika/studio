@@ -234,7 +234,11 @@ export default function DefinitionView({
                 </div>
                 <div className="flex items-center gap-2">
                     {definition.isDraft && onPublish && (
-                      <Button variant="outline" className="text-primary border-primary hover:bg-primary/10" onClick={() => onPublish(definition.id)}>
+                      <Button 
+                        variant="outline" 
+                        className="text-primary border-primary hover:bg-primary hover:text-white transition-colors" 
+                        onClick={() => onPublish(definition.id)}
+                      >
                         <Send className="mr-2 h-4 w-4" />
                         Publish
                       </Button>
@@ -422,11 +426,11 @@ export default function DefinitionView({
                                                         <p className="text-sm mt-3 text-muted-foreground leading-relaxed whitespace-pre-wrap">{note.content}</p>
                                                     </div>
                                                     {note.authorId === currentUser.id && (
-                                                        <div className="flex items-center gap-1">
+                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <Button 
                                                                 variant="ghost" 
                                                                 size="icon" 
-                                                                className="h-8 w-8 text-muted-foreground hover:bg-primary hover:text-white" 
+                                                                className="h-8 w-8 text-muted-foreground hover:bg-primary hover:text-white transition-colors" 
                                                                 onClick={() => handleStartEditNote(note)}
                                                             >
                                                                 <Pencil className="h-4 w-4" />
@@ -434,7 +438,7 @@ export default function DefinitionView({
                                                             <Button 
                                                                 variant="ghost" 
                                                                 size="icon" 
-                                                                className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground" 
+                                                                className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors" 
                                                                 onClick={() => handleDeleteNote(note.id)}
                                                             >
                                                                 <Trash2 className="h-4 w-4" />
