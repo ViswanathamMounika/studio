@@ -116,40 +116,43 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
       <DropdownMenuContent align="end">
         {definition.isDraft && onPublish && (
           <>
-            <DropdownMenuItem onClick={() => onPublish(definition.id)}>
-              <Send className="mr-2 h-4 w-4 text-primary" />
-              <span className="font-semibold text-primary">Publish</span>
+            <DropdownMenuItem 
+              onClick={() => onPublish(definition.id)}
+              className="focus:bg-primary focus:text-primary-foreground group cursor-pointer"
+            >
+              <Send className="mr-2 h-4 w-4 text-primary group-focus:text-primary-foreground" />
+              <span className="font-semibold text-primary group-focus:text-primary-foreground">Publish</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
         )}
-        <DropdownMenuItem onClick={onEdit}>
+        <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
           <Pencil className="mr-2 h-4 w-4" />
           <span>Edit</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onDuplicate(definition.id)}>
+        <DropdownMenuItem onClick={() => onDuplicate(definition.id)} className="cursor-pointer">
           <Copy className="mr-2 h-4 w-4" />
           <span>Duplicate</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onToggleBookmark(definition.id)}>
+        <DropdownMenuItem onClick={() => onToggleBookmark(definition.id)} className="cursor-pointer">
             <Bookmark className="mr-2 h-4 w-4" />
             <span>{definition.isBookmarked ? 'Remove Bookmark' : 'Bookmark'}</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onArchive(definition.id, !definition.isArchived)}>
+        <DropdownMenuItem onClick={() => onArchive(definition.id, !definition.isArchived)} className="cursor-pointer">
           <Archive className="mr-2 h-4 w-4" />
           <span>{definition.isArchived ? 'Unarchive' : 'Archive'}</span>
         </DropdownMenuItem>
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
+          <DropdownMenuSubTrigger className="cursor-pointer">
             <Download className="mr-2 h-4 w-4" />
             <span>Export As</span>
           </DropdownMenuSubTrigger>
           <DropdownMenuPortal>
             <DropdownMenuSubContent>
-              <DropdownMenuItem onClick={handleJsonExport}>JSON</DropdownMenuItem>
-              <DropdownMenuItem onClick={handlePdfExport}>PDF</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExcelExport}>Excel (XLSX)</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleHtmlExport}>HTML</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleJsonExport} className="cursor-pointer">JSON</DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePdfExport} className="cursor-pointer">PDF</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExcelExport} className="cursor-pointer">Excel (XLSX)</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleHtmlExport} className="cursor-pointer">HTML</DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub>
