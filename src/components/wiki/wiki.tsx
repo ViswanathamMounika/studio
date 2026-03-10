@@ -96,7 +96,7 @@ export default function Wiki() {
   const getStatusText = useCallback((def: Definition) => {
     if (def.isArchived) return 'Archived';
     if (def.isDraft) return 'Draft';
-    return 'Active';
+    return 'Published';
   }, []);
 
   const updateUrl = useCallback((definitionId: string, sectionId?: string, view?: View) => {

@@ -228,7 +228,7 @@ export default function DefinitionView({
                             <HighlightedText text={definition.name} highlight={searchQuery} />
                         </h2>
                         <Badge variant={definition.isArchived ? 'destructive' : (definition.isDraft ? 'secondary' : 'outline')}>
-                            {definition.isArchived ? 'Archived' : (definition.isDraft ? 'Draft' : 'Active')}
+                            {definition.isArchived ? 'Archived' : (definition.isDraft ? 'Draft' : 'Published')}
                         </Badge>
                     </div>
                 </div>
@@ -236,10 +236,10 @@ export default function DefinitionView({
                     {definition.isDraft && onPublish && (
                       <Button 
                         variant="outline" 
-                        className="text-primary border-primary hover:bg-primary hover:text-white transition-colors" 
+                        className="text-primary border-primary hover:bg-primary hover:text-white transition-colors group" 
                         onClick={() => onPublish(definition.id)}
                       >
-                        <Send className="mr-2 h-4 w-4" />
+                        <Send className="mr-2 h-4 w-4 transition-colors group-hover:text-white" />
                         Publish
                       </Button>
                     )}
@@ -430,18 +430,18 @@ export default function DefinitionView({
                                                             <Button 
                                                                 variant="ghost" 
                                                                 size="icon" 
-                                                                className="h-8 w-8 text-muted-foreground hover:bg-primary hover:text-white transition-colors" 
+                                                                className="h-8 w-8 text-muted-foreground hover:bg-primary hover:text-white transition-colors group/note-btn" 
                                                                 onClick={() => handleStartEditNote(note)}
                                                             >
-                                                                <Pencil className="h-4 w-4" />
+                                                                <Pencil className="h-4 w-4 transition-colors group-hover/note-btn:text-white" />
                                                             </Button>
                                                             <Button 
                                                                 variant="ghost" 
                                                                 size="icon" 
-                                                                className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors" 
+                                                                className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors group/note-btn" 
                                                                 onClick={() => handleDeleteNote(note.id)}
                                                             >
-                                                                <Trash2 className="h-4 w-4" />
+                                                                <Trash2 className="h-4 w-4 transition-colors group-hover/note-btn:text-white" />
                                                             </Button>
                                                         </div>
                                                     )}

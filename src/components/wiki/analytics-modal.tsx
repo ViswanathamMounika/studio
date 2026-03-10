@@ -104,11 +104,11 @@ export default function AnalyticsModal({ open, onOpenChange, onDefinitionClick }
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Archived':
-        return <Badge variant="destructive" className="text-[10px] uppercase">Archived</Badge>;
+        return <Badge variant="destructive" className="text-[10px] uppercase font-bold">Archived</Badge>;
       case 'Draft':
-        return <Badge variant="secondary" className="text-[10px] uppercase">Draft</Badge>;
+        return <Badge variant="secondary" className="text-[10px] uppercase font-bold">Draft</Badge>;
       default:
-        return <Badge variant="outline" className="text-[10px] uppercase text-green-600 border-green-200 bg-green-50">Active</Badge>;
+        return <Badge variant="outline" className="text-[10px] uppercase font-bold text-green-600 border-green-200 bg-green-50">Published</Badge>;
     }
   };
 

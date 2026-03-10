@@ -58,7 +58,7 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
       case 'Draft':
         return <Badge variant="secondary" className="text-[10px] uppercase font-bold">Draft</Badge>;
       default:
-        return <Badge variant="outline" className="text-[10px] uppercase font-bold text-green-600 border-green-200 bg-green-50">Active</Badge>;
+        return <Badge variant="outline" className="text-[10px] uppercase font-bold text-green-600 border-green-200 bg-green-50">Published</Badge>;
     }
   };
 
