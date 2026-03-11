@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '../ui/badge';
+import { Switch } from '../ui/switch';
 
 // Dynamic imports for heavy components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
@@ -226,9 +227,15 @@ export default function Wiki() {
   
   const handleCreateDefinition = (newDefinitionData: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => {
     const newId = Date.now().toString();
+    
+    // If user clicked "Submit" (isDraft is false) and they aren't admin, it's pending
+    const isPending = !newDefinitionData.isDraft && !isAdmin;
+    
     const newDefinition: Definition = {
         ...newDefinitionData,
         id: newId,
+        isPendingApproval: isPending,
+        isDraft: newDefinitionData.isDraft || isPending, // Treat pending as a draft variant for now
         revisions: [],
         isArchived: false,
         children: [],
@@ -256,6 +263,10 @@ export default function Wiki() {
     setIsTemplatesModalOpen(false);
     setSelectedDefinitionId(newId);
     setActiveView('definitions');
+    
+    if (isPending) {
+      toast({ title: 'Submitted', description: 'Your new definition has been sent for approval.' });
+    }
   };
 
   const handleDuplicate = (id: string) => {
@@ -625,24 +636,18 @@ export default function Wiki() {
                   <div className="p-4 flex flex-col gap-4 border-b bg-background sticky top-0 z-30 shadow-sm">
                     <div className="flex items-center justify-between">
                         <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-8 w-8 text-primary"
-                                        onClick={() => setIsAdmin(!isAdmin)}
-                                    >
-                                        <ShieldCheck className={cn("h-5 w-5 transition-opacity", !isAdmin && "opacity-30")} />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Current Role: {isAdmin ? 'Definition Approver' : 'Standard User'}</p>
-                                    <p className="text-[10px] text-muted-foreground">(Click to toggle role)</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+                        <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
+                            <span className="text-[9px] font-bold uppercase text-primary/70">Role Switcher</span>
+                            <div className="flex items-center gap-1.5">
+                                <ShieldCheck className={cn("h-3 w-3 transition-opacity", !isAdmin && "opacity-30 text-muted-foreground", isAdmin && "text-primary")} />
+                                <Switch 
+                                    id="role-simulation-toggle"
+                                    checked={isAdmin} 
+                                    onCheckedChange={setIsAdmin} 
+                                    className="scale-[0.6] data-[state=checked]:bg-primary"
+                                />
+                            </div>
+                        </div>
                     </div>
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -714,14 +719,14 @@ export default function Wiki() {
                       )}
 
                       <TooltipProvider>
-                        {isAdmin && (
+                        {isAdmin ? (
                             <Collapsible open={isPendingExpanded} onOpenChange={setIsPendingExpanded} className="border-b bg-amber-50/20">
                                 <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
                                     <CollapsibleTrigger asChild>
                                         <div className="flex items-center gap-2 flex-1 cursor-pointer">
                                             <ChevronDown className={cn("h-4 w-4 transition-transform", !isPendingExpanded && "-rotate-90")} />
                                             <span className="font-bold text-sm flex items-center gap-2">
-                                                Pending Approval
+                                                Approval Queue
                                                 {categorizedDefinitions.pending.length > 0 && <Badge variant="destructive" className="h-4 px-1 text-[9px]">{categorizedDefinitions.pending.length}</Badge>}
                                             </span>
                                         </div>
@@ -746,6 +751,34 @@ export default function Wiki() {
                                                 editLockId={editLockId}
                                             />
                                         ) : <p className="px-8 py-4 text-xs text-muted-foreground italic">No definitions pending review.</p>}
+                                    </div>
+                                </CollapsibleContent>
+                            </Collapsible>
+                        ) : (
+                            <Collapsible open={isPendingExpanded} onOpenChange={setIsPendingExpanded} className="border-b bg-primary/5">
+                                <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
+                                    <CollapsibleTrigger asChild>
+                                        <div className="flex items-center gap-2 flex-1 cursor-pointer">
+                                            <ChevronDown className={cn("h-4 w-4 transition-transform", !isPendingExpanded && "-rotate-90")} />
+                                            <span className="font-bold text-sm">My Pending Reviews</span>
+                                        </div>
+                                    </CollapsibleTrigger>
+                                </div>
+                                <CollapsibleContent>
+                                    <div className="py-2">
+                                        {categorizedDefinitions.pending.length > 0 ? (
+                                            <DefinitionTree
+                                                definitions={categorizedDefinitions.pending}
+                                                selectedId={selectedDefinitionId}
+                                                onSelect={handleSelectDefinition}
+                                                onToggleSelection={toggleSelectionForExport}
+                                                selectedForExport={selectedForExport}
+                                                isSelectMode={isSelectMode}
+                                                activeSection={activeTab}
+                                                searchQuery={searchQuery}
+                                                editLockId={editLockId}
+                                            />
+                                        ) : <p className="px-8 py-4 text-xs text-muted-foreground italic">No submitted definitions.</p>}
                                     </div>
                                 </CollapsibleContent>
                             </Collapsible>
