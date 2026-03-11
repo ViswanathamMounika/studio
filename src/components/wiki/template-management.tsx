@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,13 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Pencil, Trash2, Save, Upload } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, Save, Upload, Plus, X, ListTodo } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Template, Attachment } from '@/lib/types';
+import type { Template, Attachment, TemplateSection } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { ScrollArea } from '../ui/scroll-area';
 import dynamic from 'next/dynamic';
 import AttachmentList from './attachments';
+import { Checkbox } from '../ui/checkbox';
+import { Separator } from '../ui/separator';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -35,6 +37,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     defaultTechnicalDetails: '',
     defaultUsageExamples: '',
     defaultAttachments: [],
+    customSections: [],
   });
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
@@ -56,6 +59,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       defaultTechnicalDetails: '',
       defaultUsageExamples: '',
       defaultAttachments: [],
+      customSections: [],
     });
     setIsModalOpen(true);
   };
@@ -124,12 +128,39 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     }));
   };
 
+  const handleAddCustomSection = () => {
+    const newSection: TemplateSection = {
+      id: `sec-${Date.now()}`,
+      name: '',
+      isMandatory: false,
+      defaultValue: '',
+    };
+    setCurrentTemplate(prev => ({
+      ...prev,
+      customSections: [...(prev.customSections || []), newSection]
+    }));
+  };
+
+  const handleUpdateCustomSection = (id: string, updates: Partial<TemplateSection>) => {
+    setCurrentTemplate(prev => ({
+      ...prev,
+      customSections: (prev.customSections || []).map(s => s.id === id ? { ...s, ...updates } : s)
+    }));
+  };
+
+  const handleRemoveCustomSection = (id: string) => {
+    setCurrentTemplate(prev => ({
+      ...prev,
+      customSections: (prev.customSections || []).filter(s => s.id !== id)
+    }));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Template Management</h1>
-          <p className="text-muted-foreground">Define default boilerplate content for standard definition sections.</p>
+          <p className="text-muted-foreground">Define default boilerplate and custom structured sections for standard definitions.</p>
         </div>
         <Button onClick={handleCreateNew}>
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -240,13 +271,14 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
               </Card>
 
               <div className="space-y-6">
-                <div className="border-b pb-2">
-                  <h3 className="text-xl font-bold">Standard Section Defaults</h3>
-                  <p className="text-sm text-muted-foreground">Pre-populate the standard definition fields with boilerplate text.</p>
+                <div className="border-b pb-2 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold">Standard Section Defaults</h3>
+                    <p className="text-sm text-muted-foreground">Pre-populate the standard definition fields with boilerplate text.</p>
+                  </div>
                 </div>
 
                 <div className="space-y-6">
-                  {/* Short Description Default */}
                   <Card>
                     <CardHeader className="py-3 bg-muted/30">
                       <CardTitle className="text-base">Short Description Default</CardTitle>
@@ -260,7 +292,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                     </CardContent>
                   </Card>
 
-                  {/* Long Description Default */}
                   <Card>
                     <CardHeader className="py-3 bg-muted/30">
                       <CardTitle className="text-base">Long Description Default</CardTitle>
@@ -274,7 +305,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                     </CardContent>
                   </Card>
 
-                  {/* Technical Details Default */}
                   <Card>
                     <CardHeader className="py-3 bg-muted/30">
                       <CardTitle className="text-base">Technical Details Default</CardTitle>
@@ -288,7 +318,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                     </CardContent>
                   </Card>
 
-                  {/* Usage Examples Default */}
                   <Card>
                     <CardHeader className="py-3 bg-muted/30">
                       <CardTitle className="text-base">Usage Examples / SQL View Default</CardTitle>
@@ -302,7 +331,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                     </CardContent>
                   </Card>
 
-                  {/* Attachments Default */}
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between py-3 bg-muted/30">
                       <CardTitle className="text-base">Default Attachments</CardTitle>
@@ -325,6 +353,67 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                       />
                     </CardContent>
                   </Card>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold">Custom Dynamic Sections</h3>
+                    <p className="text-sm text-muted-foreground">Add specific building blocks that will be part of every definition using this template.</p>
+                  </div>
+                  <Button variant="outline" onClick={handleAddCustomSection}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Custom Section
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  {(currentTemplate.customSections || []).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg text-muted-foreground">
+                      <ListTodo className="h-12 w-12 mb-4 opacity-20" />
+                      <p>No custom sections defined. Create a "Custom Template" by adding sections here.</p>
+                    </div>
+                  ) : (
+                    currentTemplate.customSections?.map((section, idx) => (
+                      <Card key={section.id} className="border-l-4 border-l-primary">
+                        <CardHeader className="py-3 bg-primary/5 flex flex-row items-center justify-between">
+                          <div className="flex items-center gap-4 flex-1">
+                            <span className="bg-primary text-primary-foreground h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold">
+                              {idx + 1}
+                            </span>
+                            <Input 
+                              value={section.name} 
+                              onChange={e => handleUpdateCustomSection(section.id, { name: e.target.value })}
+                              placeholder="Section Name (e.g., Clinical Business Rules)"
+                              className="max-w-md h-8"
+                            />
+                            <div className="flex items-center space-x-2 ml-4">
+                              <Checkbox 
+                                id={`mand-${section.id}`} 
+                                checked={section.isMandatory} 
+                                onCheckedChange={v => handleUpdateCustomSection(section.id, { isMandatory: !!v })}
+                              />
+                              <Label htmlFor={`mand-${section.id}`} className="text-xs font-medium cursor-pointer">Required Section</Label>
+                            </div>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveCustomSection(section.id)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                          <Label className="text-xs text-muted-foreground mb-2 block">Default Section Boilerplate</Label>
+                          <WysiwygEditor 
+                            value={section.defaultValue || ''} 
+                            onChange={val => handleUpdateCustomSection(section.id, { defaultValue: val })}
+                            placeholder="Boilerplate text for this section..."
+                          />
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

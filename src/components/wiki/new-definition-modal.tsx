@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Attachment, Template } from '@/lib/types';
+import type { Definition, Attachment, Template, DynamicSection } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -50,6 +50,7 @@ const initialDefinitionState = {
   sourceDb: '',
   sourceName: '',
   isDraft: false,
+  dynamicSections: [],
 };
 
 export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [] }: NewDefinitionModalProps) {
@@ -62,6 +63,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [technicalDetails, setTechnicalDetails] = useState(initialDefinitionState.technicalDetails);
   const [usageExamples, setUsageExamples] = useState(initialDefinitionState.usageExamples);
   const [attachments, setAttachments] = useState<Attachment[]>(initialDefinitionState.attachments);
+  const [dynamicSections, setDynamicSections] = useState<DynamicSection[]>(initialDefinitionState.dynamicSections);
   
   const [sourceDb, setSourceDb] = useState(initialDefinitionState.sourceDb);
   const [sourceType, setSourceType] = useState(initialDefinitionState.sourceType);
@@ -86,6 +88,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       setTechnicalDetails('');
       setUsageExamples('');
       setAttachments([]);
+      setDynamicSections([]);
       
       // Handle template pre-population
       const template = templates.find(t => t.id === data.templateId);
@@ -95,6 +98,15 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
         setTechnicalDetails(template.defaultTechnicalDetails || '');
         setUsageExamples(template.defaultUsageExamples || '');
         setAttachments(template.defaultAttachments || []);
+        
+        // Initialize dynamic sections from template custom sections
+        const dynamicSecs: DynamicSection[] = (template.customSections || []).map(cs => ({
+          sectionId: cs.id,
+          name: cs.name,
+          isMandatory: cs.isMandatory,
+          content: cs.defaultValue || '',
+        }));
+        setDynamicSections(dynamicSecs);
       } else {
         // @ts-ignore
         setDescription(data.longDescription || data.description || initialDefinitionState.description);
@@ -103,6 +115,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
         setTechnicalDetails(data.technicalDetails || initialDefinitionState.technicalDetails);
         setUsageExamples(data.usageExamples || initialDefinitionState.usageExamples);
         setAttachments(data.attachments || initialDefinitionState.attachments);
+        setDynamicSections(data.dynamicSections || initialDefinitionState.dynamicSections);
       }
       
       setSourceType(data.sourceType || initialDefinitionState.sourceType);
@@ -111,39 +124,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       setTemplateId(data.templateId);
     }
   }, [open, initialData, templates]);
-
-  useEffect(() => {
-    if (open && sourceName && (sourceType === 'Stored Procedures' || sourceType === 'SQL Functions')) {
-      const latestModifiedDate = new Date().toLocaleString();
-      const mockComments = `
-<h3>Latest Source Comments (As of ${latestModifiedDate})</h3>
-<pre><code>
-/**
- * Object: ${sourceName}
- * Description: Automated business logic for ${sourceName.toLowerCase().replace(/_/g, ' ')}.
- * Database: ${sourceDb}
- * Source Type: ${sourceType}
- * Last Modified: ${latestModifiedDate}
- * 
- * Top Commented Lines:
- * -------------------
- * -- 1. Check for member eligibility status
- * -- 2. Validate claim adjudication rules
- * -- 3. Execute SLA calculation engine
- */
-</code></pre>
-      `.trim();
-      
-      const isContentEmpty = !technicalDetails || 
-                             technicalDetails.trim() === '' || 
-                             technicalDetails === '<p></p>' || 
-                             technicalDetails === '<br>';
-
-      if (isContentEmpty) {
-        setTechnicalDetails(mockComments);
-      }
-    }
-  }, [sourceName, sourceType, sourceDb, open, technicalDetails]);
 
   const availableSourceTypes = useMemo(() => {
     return sourceDb ? mpmSourceTypes[sourceDb] || [] : [];
@@ -171,8 +151,13 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       templateId,
       supportingTables: [],
       isDraft: isDraft,
+      dynamicSections: dynamicSections,
     };
     onSave(newDefinitionData);
+  };
+
+  const handleUpdateDynamicSection = (sectionId: string, content: string) => {
+    setDynamicSections(prev => prev.map(s => s.sectionId === sectionId ? { ...s, content } : s));
   };
 
   const handleKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -355,6 +340,31 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                    </div>
                 </CardContent>
               </Card>
+
+              {dynamicSections.length > 0 && (
+                <div className="space-y-6">
+                  <h3 className="font-bold text-lg flex items-center gap-2">
+                    Custom Template Sections
+                    <Badge variant="outline" className="text-[10px] uppercase">Required Layout</Badge>
+                  </h3>
+                  {dynamicSections.map(section => (
+                    <Card key={section.sectionId} className="border-l-4 border-l-primary">
+                      <CardHeader className="py-3 bg-primary/5">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                          {section.name}
+                          {section.isMandatory && <span className="text-destructive font-bold">*</span>}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <WysiwygEditor 
+                          value={section.content} 
+                          onChange={content => handleUpdateDynamicSection(section.sectionId, content)} 
+                        />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
 
               <Card>
                   <CardHeader>

@@ -28,6 +28,13 @@ export interface Note {
     isShared: boolean;
 }
 
+export interface DynamicSection {
+  sectionId: string;
+  name: string;
+  content: string;
+  isMandatory: boolean;
+}
+
 export interface Definition {
   id: string;
   name: string;
@@ -51,6 +58,7 @@ export interface Definition {
   technicalDetails?: string;
   usageExamples?: string;
   templateId?: string;
+  dynamicSections?: DynamicSection[];
 }
 
 export interface SupportingTable {
@@ -97,6 +105,13 @@ export interface SourceObjectMetadata {
     typeId: string;
 }
 
+export interface TemplateSection {
+  id: string;
+  name: string;
+  isMandatory: boolean;
+  defaultValue?: string;
+}
+
 export interface Template {
   id: string;
   name: string;
@@ -108,4 +123,6 @@ export interface Template {
   defaultTechnicalDetails?: string;
   defaultUsageExamples?: string;
   defaultAttachments?: Attachment[];
+  // Dynamic custom sections
+  customSections?: TemplateSection[];
 }

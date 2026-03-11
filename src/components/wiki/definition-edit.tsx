@@ -1,8 +1,7 @@
-
 "use client";
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Attachment } from '@/lib/types';
+import type { Definition, Attachment, DynamicSection } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,6 +35,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const [technicalDetails, setTechnicalDetails] = useState(definition.technicalDetails || '');
   const [usageExamples, setUsageExamples] = useState(definition.usageExamples || '');
   const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments);
+  const [dynamicSections, setDynamicSections] = useState<DynamicSection[]>(definition.dynamicSections || []);
   
   const [sourceDb, setSourceDb] = useState(definition.sourceDb || '');
   const [sourceType, setSourceType] = useState(definition.sourceType || '');
@@ -43,39 +43,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (sourceName && (sourceType === 'Stored Procedures' || sourceType === 'SQL Functions')) {
-      const latestModifiedDate = new Date().toLocaleString();
-      const mockComments = `
-<h3>Latest Source Comments (As of ${latestModifiedDate})</h3>
-<pre><code>
-/**
- * Object: ${sourceName}
- * Description: Automated business logic for ${sourceName.toLowerCase().replace(/_/g, ' ')}.
- * Database: ${sourceDb}
- * Source Type: ${sourceType}
- * Last Modified: ${latestModifiedDate}
- * 
- * Top Commented Lines:
- * -------------------
- * -- 1. Check for member eligibility status
- * -- 2. Validate claim adjudication rules
- * -- 3. Execute SLA calculation engine
- */
-</code></pre>
-      `.trim();
-      
-      const isContentEmpty = !technicalDetails || 
-                             technicalDetails.trim() === '' || 
-                             technicalDetails === '<p></p>' || 
-                             technicalDetails === '<br>';
-
-      if (isContentEmpty) {
-        setTechnicalDetails(mockComments);
-      }
-    }
-  }, [sourceName, sourceType, sourceDb, technicalDetails]);
 
   const availableSourceTypes = useMemo(() => {
     return sourceDb ? mpmSourceTypes[sourceDb] || [] : [];
@@ -102,7 +69,12 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
       sourceDb,
       sourceName,
       isDraft: isDraft,
+      dynamicSections: dynamicSections,
     });
+  };
+
+  const handleUpdateDynamicSection = (sectionId: string, content: string) => {
+    setDynamicSections(prev => prev.map(s => s.sectionId === sectionId ? { ...s, content } : s));
   };
 
   const handleKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -148,7 +120,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
 
   return (
     <div className="flex flex-col">
-      {/* Frozen Sticky Header - Now at absolute top of viewport */}
       <div className="sticky top-0 z-[100] bg-background px-6 py-4 border-b space-y-4 shadow-sm">
         <Alert className="bg-primary/5 border-primary/20">
           <Lock className="h-4 w-4 text-primary" />
@@ -173,7 +144,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
         </div>
       </div>
       
-      {/* Scrollable Form Content with padding */}
       <div className="p-6 space-y-6">
         <Card>
           <CardHeader>
@@ -303,6 +273,28 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
               </div>
           </CardContent>
         </Card>
+
+        {dynamicSections.length > 0 && (
+          <div className="space-y-6">
+            <h3 className="font-bold text-lg">Template Specific Sections</h3>
+            {dynamicSections.map(section => (
+              <Card key={section.sectionId} className="border-l-4 border-l-primary">
+                <CardHeader className="py-3 bg-primary/5">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    {section.name}
+                    {section.isMandatory && <span className="text-destructive font-bold">*</span>}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <WysiwygEditor 
+                    value={section.content} 
+                    onChange={content => handleUpdateDynamicSection(section.sectionId, content)} 
+                  />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         <Card>
             <CardHeader>
