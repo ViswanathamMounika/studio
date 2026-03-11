@@ -24,6 +24,7 @@ type DefinitionEditProps = {
   definition: Definition;
   onSave: (definition: Definition) => void;
   onCancel: () => void;
+  isAdmin: boolean;
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
@@ -37,7 +38,7 @@ const defaultSqlDetails: SqlFunctionDetails = {
   outputExample: '',
 };
 
-export default function DefinitionEdit({ definition, onSave, onCancel }: DefinitionEditProps) {
+export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
   const [module, setModule] = useState(definition.module);
   const [keywords, setKeywords] = useState<string[]>(definition.keywords);
@@ -181,9 +182,13 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
                 <Save className="mr-2 h-4 w-4" />
                 Save Draft
             </Button>
-            <Button onClick={() => handleSave(false)} disabled={!name.trim()}>
+            <Button 
+              onClick={() => handleSave(false)} 
+              disabled={!name.trim()}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
+            >
                 <Send className="mr-2 h-4 w-4" />
-                Submit
+                {isAdmin ? 'Publish' : 'Submit for Approval'}
             </Button>
           </div>
         </div>

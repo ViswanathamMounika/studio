@@ -36,6 +36,7 @@ type NewDefinitionModalProps = {
   onSave: (definition: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => void;
   initialData?: Partial<Definition> | DraftedDefinition | null;
   templates?: Template[];
+  isAdmin: boolean;
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
@@ -66,7 +67,7 @@ const initialSqlFunctionDetails: SqlFunctionDetails = {
   outputExample: '',
 };
 
-export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [] }: NewDefinitionModalProps) {
+export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [], isAdmin }: NewDefinitionModalProps) {
   const [name, setName] = useState(initialDefinitionState.name);
   const [module, setModule] = useState(initialDefinitionState.module);
   const [keywords, setKeywords] = useState<string[]>(initialDefinitionState.keywords);
@@ -591,9 +592,13 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                 <Save className="mr-2 h-4 w-4" />
                 Save Draft
             </Button>
-            <Button onClick={() => handleSave(false)} disabled={!name.trim()}>
+            <Button 
+              onClick={() => handleSave(false)} 
+              disabled={!name.trim()}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
+            >
                 <Send className="mr-2 h-4 w-4" />
-                Submit
+                {isAdmin ? 'Publish' : 'Submit for Approval'}
             </Button>
           </div>
         </DialogFooter>

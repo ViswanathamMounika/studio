@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
@@ -561,7 +560,12 @@ export default function Wiki() {
                   )}
                   
                   {isEditing && selectedDefinition ? (
-                      <DefinitionEdit definition={selectedDefinition} onSave={handleSave} onCancel={handleCancelEdit} />
+                      <DefinitionEdit 
+                        definition={selectedDefinition} 
+                        onSave={handleSave} 
+                        onCancel={handleCancelEdit} 
+                        isAdmin={isAdmin}
+                      />
                   ) : selectedDefinition ? (
                       <div className="p-6">
                         <DefinitionView 
@@ -871,7 +875,7 @@ export default function Wiki() {
         </div>
       </SidebarInset>
       <RecentViewsModal open={isRecentModalOpen} onOpenChange={setIsRecentModalOpen} onDefinitionClick={handleSelectDefinition} />
-      <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={templates} />
+      <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={templates} isAdmin={isAdmin} />
       <TemplatesModal open={isTemplatesModalOpen} onOpenChange={setIsTemplatesModalOpen} onUseTemplate={handleUseTemplate} managedTemplates={templates} />
     </SidebarProvider>
   );
