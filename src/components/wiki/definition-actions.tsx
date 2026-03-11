@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -117,15 +116,27 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
           <Pencil className="mr-2 h-4 w-4" />
           <span>Edit</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onDuplicate(definition.id)} className="cursor-pointer">
+        <DropdownMenuItem 
+          onClick={() => onDuplicate(definition.id)} 
+          className="cursor-pointer"
+          disabled={definition.isDraft}
+        >
           <Copy className="mr-2 h-4 w-4" />
           <span>Duplicate</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onToggleBookmark(definition.id)} className="cursor-pointer">
+        <DropdownMenuItem 
+          onClick={() => onToggleBookmark(definition.id)} 
+          className="cursor-pointer"
+          disabled={definition.isDraft}
+        >
             <Bookmark className="mr-2 h-4 w-4" />
             <span>{definition.isBookmarked ? 'Remove Bookmark' : 'Bookmark'}</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onArchive(definition.id, !definition.isArchived)} className="cursor-pointer">
+        <DropdownMenuItem 
+          onClick={() => onArchive(definition.id, !definition.isArchived)} 
+          className="cursor-pointer"
+          disabled={definition.isDraft}
+        >
           <Archive className="mr-2 h-4 w-4" />
           <span>{definition.isArchived ? 'Unarchive' : 'Archive'}</span>
         </DropdownMenuItem>

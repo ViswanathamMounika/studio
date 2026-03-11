@@ -26,7 +26,7 @@ import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import RelatedDefinitions from './related-definitions';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
 
@@ -244,13 +244,36 @@ export default function DefinitionView({
                     )}
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="hover:bg-accent" onClick={handleShare}><Share2 className="h-6 w-6 text-muted-foreground"/></Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="hover:bg-accent" 
+                                onClick={handleShare}
+                                disabled={definition.isDraft}
+                            >
+                                <Share2 className="h-6 w-6 text-muted-foreground"/>
+                            </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>Share</p></TooltipContent>
+                        <TooltipContent>
+                            <p>{definition.isDraft ? 'Sharing disabled for drafts' : 'Share'}</p>
+                        </TooltipContent>
                     </Tooltip>
-                    <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={() => onToggleBookmark(definition.id)}>
-                        <Bookmark className={cn("h-6 w-6 text-muted-foreground", definition.isBookmarked && "fill-primary text-primary")}/>
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="hover:bg-primary/10" 
+                                onClick={() => onToggleBookmark(definition.id)}
+                                disabled={definition.isDraft}
+                            >
+                                <Bookmark className={cn("h-6 w-6 text-muted-foreground", definition.isBookmarked && "fill-primary text-primary")}/>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{definition.isDraft ? 'Bookmarking disabled for drafts' : 'Bookmark'}</p>
+                        </TooltipContent>
+                    </Tooltip>
                     {isAdmin && (
                         <>
                             <Button onClick={onEdit}><Pencil className="mr-2 h-4 w-4" />Edit</Button>
