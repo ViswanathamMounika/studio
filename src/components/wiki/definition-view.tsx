@@ -374,7 +374,10 @@ export default function DefinitionView({
                                                 <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider flex items-center gap-1.5 mb-1.5"><Braces className="h-3 w-3" /> Input Parameters</p>
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {definition.sqlFunctionDetails.inputParameters.map((p, i) => (
-                                                        <code key={i} className="bg-muted px-2 py-0.5 rounded text-xs border">{p}</code>
+                                                        <div key={i} className="bg-muted px-2 py-0.5 rounded text-xs border flex items-center gap-1.5">
+                                                          <span className="font-bold text-foreground">{p.name}</span>
+                                                          <span className="text-[10px] opacity-60 uppercase">{p.type}</span>
+                                                        </div>
                                                     ))}
                                                 </div>
                                             </div>

@@ -36,8 +36,13 @@ export interface DynamicSection {
   contentType: 'plain' | 'rich';
 }
 
+export interface InputParameter {
+  name: string;
+  type: string;
+}
+
 export interface SqlFunctionDetails {
-  inputParameters: string[];
+  inputParameters: InputParameter[];
   locations: string[];
   outputType: 'varchar' | 'int' | 'date' | 'datetime';
   outputExample: string;

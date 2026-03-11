@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Attachment, DynamicSection, SqlFunctionDetails } from '@/lib/types';
+import type { Definition, Attachment, DynamicSection, SqlFunctionDetails, InputParameter } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2 } from 'lucide-react';
+import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2, ChevronDown, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,6 +15,8 @@ import { Textarea } from '../ui/textarea';
 import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { cn } from '@/lib/utils';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -26,10 +28,10 @@ type DefinitionEditProps = {
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
 const functionLocations = ["All EZ-CAP Databases", "SupportTbls", "AuditTables", "NETAPPS", "OTHER"];
-const outputTypes = ["varchar", "int", "date", "datetime"];
+const sqlDataTypes = ["varchar", "int", "date", "datetime", "bit", "decimal"];
 
 const defaultSqlDetails: SqlFunctionDetails = {
-  inputParameters: [''],
+  inputParameters: [{ name: '', type: 'varchar' }],
   locations: [],
   outputType: 'varchar',
   outputExample: '',
@@ -131,17 +133,23 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
   };
 
   const handleAddSqlParam = () => {
-    setSqlDetails(prev => ({ ...prev, inputParameters: [...prev.inputParameters, ''] }));
+    setSqlDetails(prev => ({ 
+      ...prev, 
+      inputParameters: [...prev.inputParameters, { name: '', type: 'varchar' }] 
+    }));
   };
 
-  const handleUpdateSqlParam = (index: number, val: string) => {
+  const handleUpdateSqlParam = (index: number, updates: Partial<InputParameter>) => {
     const params = [...sqlDetails.inputParameters];
-    params[index] = val;
+    params[index] = { ...params[index], ...updates };
     setSqlDetails(prev => ({ ...prev, inputParameters: params }));
   };
 
   const handleRemoveSqlParam = (index: number) => {
-    setSqlDetails(prev => ({ ...prev, inputParameters: prev.inputParameters.filter((_, i) => i !== index) }));
+    setSqlDetails(prev => ({ 
+      ...prev, 
+      inputParameters: prev.inputParameters.filter((_, i) => i !== index) 
+    }));
   };
 
   const handleToggleLocation = (loc: string) => {
@@ -319,17 +327,35 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
                   <div className="space-y-3">
                     <Label className="text-xs font-bold">Input Parameter(s)</Label>
                     {sqlDetails.inputParameters.map((param, idx) => (
-                      <div key={idx} className="flex gap-2">
-                        <Input 
-                          placeholder="@ParamName TYPE" 
-                          value={param} 
-                          onChange={(e) => handleUpdateSqlParam(idx, e.target.value)} 
-                        />
+                      <div key={idx} className="flex gap-2 items-end">
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-[10px] uppercase text-muted-foreground">Parameter Name</Label>
+                          <Input 
+                            placeholder="@Name" 
+                            value={param.name} 
+                            onChange={(e) => handleUpdateSqlParam(idx, { name: e.target.value })} 
+                          />
+                        </div>
+                        <div className="w-32 space-y-1">
+                          <Label className="text-[10px] uppercase text-muted-foreground">Type</Label>
+                          <Select 
+                            value={param.type} 
+                            onValueChange={(v) => handleUpdateSqlParam(idx, { type: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {sqlDataTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <Button 
                           variant="ghost" 
                           size="icon" 
                           onClick={() => handleRemoveSqlParam(idx)}
                           disabled={sqlDetails.inputParameters.length <= 1}
+                          className="mb-0.5"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -342,18 +368,33 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
 
                   <div className="space-y-3">
                     <Label className="text-xs font-bold">Location of the function</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {functionLocations.map(loc => (
-                        <div key={loc} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`loc-edit-${loc}`} 
-                            checked={sqlDetails.locations.includes(loc)}
-                            onCheckedChange={() => handleToggleLocation(loc)}
-                          />
-                          <Label htmlFor={`loc-edit-${loc}`} className="text-sm cursor-pointer">{loc}</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between">
+                          <span className="truncate">
+                            {sqlDetails.locations.length > 0 
+                              ? sqlDetails.locations.join(", ") 
+                              : "Select locations..."}
+                          </span>
+                          <ChevronDown className="h-4 w-4 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start">
+                        <div className="p-2 space-y-1">
+                          {functionLocations.map(loc => (
+                            <div 
+                              key={loc} 
+                              className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
+                              onClick={() => handleToggleLocation(loc)}
+                            >
+                              <Checkbox checked={sqlDetails.locations.includes(loc)} onCheckedChange={() => handleToggleLocation(loc)} />
+                              <span className="text-sm font-medium leading-none">{loc}</span>
+                              {sqlDetails.locations.includes(loc) && <Check className="ml-auto h-4 w-4 text-primary" />}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -367,7 +408,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {outputTypes.map(t => (
+                          {sqlDataTypes.slice(0, 4).map(t => (
                             <SelectItem key={t} value={t}>{t}</SelectItem>
                           ))}
                         </SelectContent>

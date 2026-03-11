@@ -447,7 +447,7 @@ export const initialDefinitions: Definition[] = [
         sourceType: 'SQL Functions',
         sourceName: 'fn_CalculateMemberAge',
         sqlFunctionDetails: {
-          inputParameters: ['@DOB DATE', '@AsOfDate DATE'],
+          inputParameters: [{ name: '@DOB', type: 'date' }, { name: '@AsOfDate', type: 'date' }],
           locations: ['All EZ-CAP Databases'],
           outputType: 'int',
           outputExample: '42'
