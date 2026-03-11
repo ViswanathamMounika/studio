@@ -452,6 +452,33 @@ export const initialDefinitions: Definition[] = [
           outputType: 'int',
           outputExample: '42'
         }
+      },
+      {
+        id: 'pending-sql-func-2',
+        name: 'fn_GetAuthTurnaroundTime',
+        module: 'Authorizations',
+        keywords: ['TAT', 'SLA', 'turnaround'],
+        description: '<p>Calculates the total time in business days between authorization request and decision.</p>',
+        shortDescription: 'Calculates Auth TAT in business days.',
+        revisions: [],
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: true,
+        supportingTables: [],
+        attachments: [],
+        notes: [],
+        sourceDb: 'DW_Reporting',
+        sourceType: 'SQL Functions',
+        sourceName: 'fn_GetAuthTurnaroundTime',
+        sqlFunctionDetails: {
+          inputParameters: [
+            { name: '@RequestDate', type: 'datetime' },
+            { name: '@DecisionDate', type: 'datetime' }
+          ],
+          locations: ['All EZ-CAP Databases', 'SupportTbls'],
+          outputType: 'int',
+          outputExample: '3'
+        }
       }
     ]
   },
