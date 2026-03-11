@@ -224,6 +224,12 @@ export default function DefinitionView({
         return 'Published';
     }, [definition]);
 
+    const isEditable = useMemo(() => {
+        // Admins can edit anything. Standard users can edit their drafts if not pending.
+        if (isAdmin) return true;
+        return definition.isDraft && !definition.isPendingApproval;
+    }, [isAdmin, definition.isDraft, definition.isPendingApproval]);
+
   return (
     <TooltipProvider>
         <article className="prose prose-sm max-w-none">
@@ -321,7 +327,7 @@ export default function DefinitionView({
                         </TooltipContent>
                     </Tooltip>
                     
-                    {isAdmin && (
+                    {isEditable && (
                         <Button onClick={onEdit}><Pencil className="mr-2 h-4 w-4" />Edit</Button>
                     )}
                     

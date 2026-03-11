@@ -105,6 +105,8 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
     downloadAnchorNode.remove();
   };
 
+  const isEditable = isAdmin || (definition.isDraft && !definition.isPendingApproval);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -113,21 +115,22 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {isEditable && (
+          <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
+            <Pencil className="mr-2 h-4 w-4" />
+            <span>Edit</span>
+          </DropdownMenuItem>
+        )}
+        
         {isAdmin && (
-          <>
-            <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
-              <Pencil className="mr-2 h-4 w-4" />
-              <span>Edit</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onDuplicate(definition.id)} 
-              className="cursor-pointer"
-              disabled={definition.isDraft}
-            >
-              <Copy className="mr-2 h-4 w-4" />
-              <span>Duplicate</span>
-            </DropdownMenuItem>
-          </>
+          <DropdownMenuItem 
+            onClick={() => onDuplicate(definition.id)} 
+            className="cursor-pointer"
+            disabled={definition.isDraft}
+          >
+            <Copy className="mr-2 h-4 w-4" />
+            <span>Duplicate</span>
+          </DropdownMenuItem>
         )}
         
         <DropdownMenuItem 
