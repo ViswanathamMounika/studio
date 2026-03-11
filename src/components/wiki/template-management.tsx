@@ -9,9 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Pencil, Trash2, Save, Upload, Plus, X, ListTodo } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, Save, Upload, Plus, X, ListTodo, Layout, LayoutTemplate } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Template, Attachment, TemplateSection } from '@/lib/types';
+import type { Template, Attachment, TemplateSection, TemplateType } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { ScrollArea } from '../ui/scroll-area';
 import dynamic from 'next/dynamic';
@@ -32,6 +32,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     name: '',
     description: '',
     status: 'Active',
+    type: 'Standard',
     defaultShortDescription: '',
     defaultDescription: '',
     defaultTechnicalDetails: '',
@@ -47,11 +48,12 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     return [...templates].sort((a, b) => a.name.localeCompare(b.name));
   }, [templates]);
 
-  const handleCreateNew = () => {
+  const handleCreateNew = (type: TemplateType) => {
     setIsEditing(false);
     setCurrentTemplate({
       id: `t-${Date.now()}`,
       name: '',
+      type: type,
       description: '',
       status: 'Active',
       defaultShortDescription: '',
@@ -59,7 +61,12 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       defaultTechnicalDetails: '',
       defaultUsageExamples: '',
       defaultAttachments: [],
-      customSections: [],
+      customSections: type === 'Custom' ? [{
+        id: `sec-${Date.now()}`,
+        name: '',
+        isMandatory: false,
+        defaultValue: '',
+      }] : [],
     });
     setIsModalOpen(true);
   };
@@ -157,15 +164,21 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Template Management</h1>
-          <p className="text-muted-foreground">Define default boilerplate and custom structured sections for standard definitions.</p>
+          <p className="text-muted-foreground">Define standard boilerplates or complex structured building blocks for your definitions.</p>
         </div>
-        <Button onClick={handleCreateNew}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Create Template
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" className="border-primary text-primary hover:bg-primary/5" onClick={() => handleCreateNew('Standard')}>
+            <Layout className="mr-2 h-4 w-4" />
+            Standard Template
+          </Button>
+          <Button onClick={() => handleCreateNew('Custom')}>
+            <LayoutTemplate className="mr-2 h-4 w-4" />
+            Custom Template
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -174,6 +187,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
             <TableHeader>
               <TableRow>
                 <TableHead>Template Name</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -183,6 +197,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
               {sortedTemplates.map(template => (
                 <TableRow key={template.id}>
                   <TableCell className="font-medium">{template.name}</TableCell>
+                  <TableCell>
+                    <Badge variant={template.type === 'Custom' ? 'default' : 'outline'}>
+                      {template.type || 'Standard'}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={template.status === 'Active' ? 'success' : 'secondary'}>
                       {template.status}
@@ -210,9 +229,17 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden">
           <div className="p-6 border-b bg-background sticky top-0 z-50 flex justify-between items-center shadow-sm">
             <DialogHeader className="p-0">
-              <DialogTitle className="text-2xl font-bold">
-                {isEditing ? 'Edit Template Blueprint' : 'Create New Template Blueprint'}
-              </DialogTitle>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  {currentTemplate.type === 'Custom' ? <LayoutTemplate className="h-5 w-5 text-primary" /> : <Layout className="h-5 w-5 text-primary" />}
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-bold">
+                    {isEditing ? 'Edit' : 'Create'} {currentTemplate.type} Template
+                  </DialogTitle>
+                  <p className="text-sm text-muted-foreground">Blueprint for consistent documentation.</p>
+                </div>
+              </div>
             </DialogHeader>
             <div className="flex gap-2">
               <DialogClose asChild>
@@ -270,152 +297,154 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 </CardContent>
               </Card>
 
-              <div className="space-y-6">
-                <div className="border-b pb-2 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold">Standard Section Defaults</h3>
-                    <p className="text-sm text-muted-foreground">Pre-populate the standard definition fields with boilerplate text.</p>
-                  </div>
-                </div>
-
+              {currentTemplate.type === 'Standard' && (
                 <div className="space-y-6">
-                  <Card>
-                    <CardHeader className="py-3 bg-muted/30">
-                      <CardTitle className="text-base">Short Description Default</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <Textarea 
-                        value={currentTemplate.defaultShortDescription} 
-                        onChange={e => setCurrentTemplate(prev => ({ ...prev, defaultShortDescription: e.target.value }))}
-                        placeholder="Enter boilerplate for Short Description..."
-                      />
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="py-3 bg-muted/30">
-                      <CardTitle className="text-base">Long Description Default</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <WysiwygEditor 
-                        value={currentTemplate.defaultDescription || ''} 
-                        onChange={(content) => setCurrentTemplate(prev => ({ ...prev, defaultDescription: content }))} 
-                        placeholder="Enter boilerplate for the main Description..."
-                      />
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="py-3 bg-muted/30">
-                      <CardTitle className="text-base">Technical Details Default</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <WysiwygEditor 
-                        value={currentTemplate.defaultTechnicalDetails || ''} 
-                        onChange={(content) => setCurrentTemplate(prev => ({ ...prev, defaultTechnicalDetails: content }))} 
-                        placeholder="Enter boilerplate for Technical Details..."
-                      />
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="py-3 bg-muted/30">
-                      <CardTitle className="text-base">Usage Examples / SQL View Default</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <WysiwygEditor 
-                        value={currentTemplate.defaultUsageExamples || ''} 
-                        onChange={(content) => setCurrentTemplate(prev => ({ ...prev, defaultUsageExamples: content }))} 
-                        placeholder="Enter boilerplate for Usage Examples..."
-                      />
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between py-3 bg-muted/30">
-                      <CardTitle className="text-base">Default Attachments</CardTitle>
-                      <Button variant="outline" size="sm" onClick={handleAddAttachmentClick}>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Add Attachment
-                      </Button>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileSelect} 
-                        className="hidden" 
-                      />
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <AttachmentList 
-                        attachments={currentTemplate.defaultAttachments || []} 
-                        onRemove={handleRemoveAttachment} 
-                        isEditing 
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold">Custom Dynamic Sections</h3>
-                    <p className="text-sm text-muted-foreground">Add specific building blocks that will be part of every definition using this template.</p>
-                  </div>
-                  <Button variant="outline" onClick={handleAddCustomSection}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Custom Section
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  {(currentTemplate.customSections || []).length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg text-muted-foreground">
-                      <ListTodo className="h-12 w-12 mb-4 opacity-20" />
-                      <p>No custom sections defined. Create a "Custom Template" by adding sections here.</p>
+                  <div className="border-b pb-2 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold">Standard Section Defaults</h3>
+                      <p className="text-sm text-muted-foreground">Pre-populate standard definition fields with boilerplate text.</p>
                     </div>
-                  ) : (
-                    currentTemplate.customSections?.map((section, idx) => (
-                      <Card key={section.id} className="border-l-4 border-l-primary">
-                        <CardHeader className="py-3 bg-primary/5 flex flex-row items-center justify-between">
-                          <div className="flex items-center gap-4 flex-1">
-                            <span className="bg-primary text-primary-foreground h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold">
-                              {idx + 1}
-                            </span>
-                            <Input 
-                              value={section.name} 
-                              onChange={e => handleUpdateCustomSection(section.id, { name: e.target.value })}
-                              placeholder="Section Name (e.g., Clinical Business Rules)"
-                              className="max-w-md h-8"
-                            />
-                            <div className="flex items-center space-x-2 ml-4">
-                              <Checkbox 
-                                id={`mand-${section.id}`} 
-                                checked={section.isMandatory} 
-                                onCheckedChange={v => handleUpdateCustomSection(section.id, { isMandatory: !!v })}
-                              />
-                              <Label htmlFor={`mand-${section.id}`} className="text-xs font-medium cursor-pointer">Required Section</Label>
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveCustomSection(section.id)}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </CardHeader>
-                        <CardContent className="pt-4">
-                          <Label className="text-xs text-muted-foreground mb-2 block">Default Section Boilerplate</Label>
-                          <WysiwygEditor 
-                            value={section.defaultValue || ''} 
-                            onChange={val => handleUpdateCustomSection(section.id, { defaultValue: val })}
-                            placeholder="Boilerplate text for this section..."
-                          />
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
+                  </div>
+
+                  <div className="space-y-6">
+                    <Card>
+                      <CardHeader className="py-3 bg-muted/30">
+                        <CardTitle className="text-base">Short Description Default</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <Textarea 
+                          value={currentTemplate.defaultShortDescription} 
+                          onChange={e => setCurrentTemplate(prev => ({ ...prev, defaultShortDescription: e.target.value }))}
+                          placeholder="Enter boilerplate for Short Description..."
+                        />
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="py-3 bg-muted/30">
+                        <CardTitle className="text-base">Long Description Default</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <WysiwygEditor 
+                          value={currentTemplate.defaultDescription || ''} 
+                          onChange={(content) => setCurrentTemplate(prev => ({ ...prev, defaultDescription: content }))} 
+                          placeholder="Enter boilerplate for the main Description..."
+                        />
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="py-3 bg-muted/30">
+                        <CardTitle className="text-base">Technical Details Default</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <WysiwygEditor 
+                          value={currentTemplate.defaultTechnicalDetails || ''} 
+                          onChange={(content) => setCurrentTemplate(prev => ({ ...prev, defaultTechnicalDetails: content }))} 
+                          placeholder="Enter boilerplate for Technical Details..."
+                        />
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="py-3 bg-muted/30">
+                        <CardTitle className="text-base">Usage Examples / SQL View Default</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <WysiwygEditor 
+                          value={currentTemplate.defaultUsageExamples || ''} 
+                          onChange={(content) => setCurrentTemplate(prev => ({ ...prev, defaultUsageExamples: content }))} 
+                          placeholder="Enter boilerplate for Usage Examples..."
+                        />
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between py-3 bg-muted/30">
+                        <CardTitle className="text-base">Default Attachments</CardTitle>
+                        <Button variant="outline" size="sm" onClick={handleAddAttachmentClick}>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Add Attachment
+                        </Button>
+                        <input 
+                          type="file" 
+                          ref={fileInputRef} 
+                          onChange={handleFileSelect} 
+                          className="hidden" 
+                        />
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <AttachmentList 
+                          attachments={currentTemplate.defaultAttachments || []} 
+                          onRemove={handleRemoveAttachment} 
+                          isEditing 
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {currentTemplate.type === 'Custom' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold">Custom Dynamic Sections</h3>
+                      <p className="text-sm text-muted-foreground">Add specific building blocks that will be part of every definition using this template.</p>
+                    </div>
+                    <Button variant="outline" onClick={handleAddCustomSection}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Custom Section
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {(currentTemplate.customSections || []).length === 0 ? (
+                      <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg text-muted-foreground">
+                        <ListTodo className="h-12 w-12 mb-4 opacity-20" />
+                        <p>No custom sections defined. Create a "Custom Template" by adding sections here.</p>
+                      </div>
+                    ) : (
+                      currentTemplate.customSections?.map((section, idx) => (
+                        <Card key={section.id} className="border-l-4 border-l-primary">
+                          <CardHeader className="py-3 bg-primary/5 flex flex-row items-center justify-between">
+                            <div className="flex items-center gap-4 flex-1">
+                              <span className="bg-primary text-primary-foreground h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold">
+                                {idx + 1}
+                              </span>
+                              <Input 
+                                value={section.name} 
+                                onChange={e => handleUpdateCustomSection(section.id, { name: e.target.value })}
+                                placeholder="Section Name (e.g., Clinical Business Rules)"
+                                className="max-w-md h-8"
+                              />
+                              <div className="flex items-center space-x-2 ml-4">
+                                <Checkbox 
+                                  id={`mand-${section.id}`} 
+                                  checked={section.isMandatory} 
+                                  onCheckedChange={v => handleUpdateCustomSection(section.id, { isMandatory: !!v })}
+                                />
+                                <Label htmlFor={`mand-${section.id}`} className="text-xs font-medium cursor-pointer">Required Section</Label>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveCustomSection(section.id)}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </CardHeader>
+                          <CardContent className="pt-4">
+                            <Label className="text-xs text-muted-foreground mb-2 block">Default Section Boilerplate</Label>
+                            <WysiwygEditor 
+                              value={section.defaultValue || ''} 
+                              onChange={val => handleUpdateCustomSection(section.id, { defaultValue: val })}
+                              placeholder="Boilerplate text for this section..."
+                            />
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </ScrollArea>
         </DialogContent>

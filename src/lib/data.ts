@@ -164,6 +164,7 @@ export const initialTemplates: Template[] = [
   {
     id: 't-1',
     name: 'Clinical Data Definition',
+    type: 'Standard',
     description: 'Template for standard clinical data definitions.',
     status: 'Active',
     defaultShortDescription: 'This clinical definition describes...',
@@ -175,6 +176,7 @@ export const initialTemplates: Template[] = [
   {
     id: 't-2',
     name: 'Technical Specification',
+    type: 'Standard',
     description: 'Template for technical SQL objects and reporting views.',
     status: 'Active',
     defaultShortDescription: 'Technical spec for reporting view...',

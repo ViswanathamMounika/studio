@@ -112,9 +112,12 @@ export interface TemplateSection {
   defaultValue?: string;
 }
 
+export type TemplateType = 'Standard' | 'Custom';
+
 export interface Template {
   id: string;
   name: string;
+  type: TemplateType;
   description?: string;
   status: 'Active' | 'Inactive';
   // Default values for standard fields
