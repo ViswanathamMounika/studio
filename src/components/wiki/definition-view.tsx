@@ -378,7 +378,17 @@ export default function DefinitionView({
                             {definition.sourceType === 'SQL Functions' && definition.sqlFunctionDetails && (
                               <AccordionItem value="sql-function-details" className="bg-primary/5 border rounded-lg shadow-sm px-4 border-primary/20">
                                 <AccordionTrigger className="hover:no-underline py-4">
-                                    <div className="flex items-center gap-2"><span className="font-bold text-base text-primary">SQL Function Details</span><Terminal className="h-4 w-4 text-primary" /></div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-base text-primary">SQL Function Details</span>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Info className="h-4 w-4 text-primary cursor-help" />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Technical details and specifications for this SQL function.</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="pb-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
