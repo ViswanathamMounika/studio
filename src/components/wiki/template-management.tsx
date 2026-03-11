@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Pencil, Trash2, Save, Upload, Plus, X, ListTodo, Layout, LayoutTemplate } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, Save, Upload, Plus, X, ListTodo, Layout, LayoutTemplate, Type, FileType } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Template, Attachment, TemplateSection, TemplateType } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
@@ -66,6 +66,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         name: '',
         isMandatory: false,
         defaultValue: '',
+        contentType: 'rich',
       }] : [],
     });
     setIsModalOpen(true);
@@ -141,6 +142,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       name: '',
       isMandatory: false,
       defaultValue: '',
+      contentType: 'rich',
     };
     setCurrentTemplate(prev => ({
       ...prev,
@@ -426,6 +428,31 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                 />
                                 <Label htmlFor={`mand-${section.id}`} className="text-xs font-medium cursor-pointer">Required Section</Label>
                               </div>
+                              <div className="flex items-center gap-2 ml-4">
+                                <Label className="text-xs font-medium">Editor Type:</Label>
+                                <Select 
+                                  value={section.contentType} 
+                                  onValueChange={v => handleUpdateCustomSection(section.id, { contentType: v as 'plain' | 'rich' })}
+                                >
+                                  <SelectTrigger className="h-8 w-32 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="rich" className="text-xs">
+                                      <div className="flex items-center gap-2">
+                                        <FileType className="h-3 w-3" />
+                                        Rich Text
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="plain" className="text-xs">
+                                      <div className="flex items-center gap-2">
+                                        <Type className="h-3 w-3" />
+                                        Plain Text
+                                      </div>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveCustomSection(section.id)}>
                               <X className="h-4 w-4" />
@@ -433,11 +460,20 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                           </CardHeader>
                           <CardContent className="pt-4">
                             <Label className="text-xs text-muted-foreground mb-2 block">Default Section Boilerplate</Label>
-                            <WysiwygEditor 
-                              value={section.defaultValue || ''} 
-                              onChange={val => handleUpdateCustomSection(section.id, { defaultValue: val })}
-                              placeholder="Boilerplate text for this section..."
-                            />
+                            {section.contentType === 'rich' ? (
+                              <WysiwygEditor 
+                                value={section.defaultValue || ''} 
+                                onChange={val => handleUpdateCustomSection(section.id, { defaultValue: val })}
+                                placeholder="Boilerplate text for this section..."
+                              />
+                            ) : (
+                              <Textarea 
+                                value={section.defaultValue || ''} 
+                                onChange={e => handleUpdateCustomSection(section.id, { defaultValue: e.target.value })}
+                                placeholder="Enter plain text boilerplate..."
+                                className="min-h-[100px]"
+                              />
+                            )}
                           </CardContent>
                         </Card>
                       ))

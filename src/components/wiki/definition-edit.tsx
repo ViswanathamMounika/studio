@@ -279,17 +279,29 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
             <h3 className="font-bold text-lg">Template Specific Sections</h3>
             {dynamicSections.map(section => (
               <Card key={section.sectionId} className="border-l-4 border-l-primary">
-                <CardHeader className="py-3 bg-primary/5">
+                <CardHeader className="py-3 bg-primary/5 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm font-bold flex items-center gap-2">
                     {section.name}
                     {section.isMandatory && <span className="text-destructive font-bold">*</span>}
                   </CardTitle>
+                  <Badge variant="ghost" className="text-[10px] uppercase font-normal opacity-60">
+                    {section.contentType === 'rich' ? 'Rich Text' : 'Plain Text'}
+                  </Badge>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  <WysiwygEditor 
-                    value={section.content} 
-                    onChange={content => handleUpdateDynamicSection(section.sectionId, content)} 
-                  />
+                  {section.contentType === 'rich' ? (
+                    <WysiwygEditor 
+                      value={section.content} 
+                      onChange={content => handleUpdateDynamicSection(section.sectionId, content)} 
+                    />
+                  ) : (
+                    <Textarea 
+                      value={section.content} 
+                      onChange={e => handleUpdateDynamicSection(section.sectionId, e.target.value)}
+                      className="min-h-[150px]"
+                      placeholder={`Enter content for ${section.name}...`}
+                    />
+                  )}
                 </CardContent>
               </Card>
             ))}

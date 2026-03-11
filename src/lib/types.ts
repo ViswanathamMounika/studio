@@ -33,6 +33,7 @@ export interface DynamicSection {
   name: string;
   content: string;
   isMandatory: boolean;
+  contentType: 'plain' | 'rich';
 }
 
 export interface Definition {
@@ -110,6 +111,7 @@ export interface TemplateSection {
   name: string;
   isMandatory: boolean;
   defaultValue?: string;
+  contentType: 'plain' | 'rich';
 }
 
 export type TemplateType = 'Standard' | 'Custom';

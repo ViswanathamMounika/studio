@@ -105,6 +105,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
           name: cs.name,
           isMandatory: cs.isMandatory,
           content: cs.defaultValue || '',
+          contentType: cs.contentType || 'rich',
         }));
         setDynamicSections(dynamicSecs);
       } else {
@@ -126,7 +127,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   }, [open, initialData, templates]);
 
   const availableSourceTypes = useMemo(() => {
-    return sourceDb ? mpmSourceTypes[sourceDb] || [] : [];
+    return sourceDb ? mpmDatabases.find(d => d.id === sourceDb) ? mpmSourceTypes[sourceDb] || [] : [] : [];
   }, [sourceDb]);
 
   const availableSourceNames = useMemo(() => {
@@ -353,13 +354,25 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                         <CardTitle className="text-sm font-bold flex items-center gap-2">
                           {section.name}
                           {section.isMandatory && <span className="text-destructive font-bold">*</span>}
+                          <Badge variant="ghost" className="ml-auto text-[10px] uppercase font-normal opacity-60">
+                            {section.contentType === 'rich' ? 'Rich Text' : 'Plain Text'}
+                          </Badge>
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-4">
-                        <WysiwygEditor 
-                          value={section.content} 
-                          onChange={content => handleUpdateDynamicSection(section.sectionId, content)} 
-                        />
+                        {section.contentType === 'rich' ? (
+                          <WysiwygEditor 
+                            value={section.content} 
+                            onChange={content => handleUpdateDynamicSection(section.sectionId, content)} 
+                          />
+                        ) : (
+                          <Textarea 
+                            value={section.content} 
+                            onChange={e => handleUpdateDynamicSection(section.sectionId, e.target.value)}
+                            className="min-h-[150px]"
+                            placeholder={`Enter content for ${section.name}...`}
+                          />
+                        )}
                       </CardContent>
                     </Card>
                   ))}
