@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,15 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Pencil, Trash2, Save, Upload, Plus, X, ListTodo, Layout, LayoutTemplate, Type, FileType } from 'lucide-react';
+import { Pencil, Trash2, Save, Upload, Plus, X, ListTodo, Layout, LayoutTemplate, Type, FileType } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Template, Attachment, TemplateSection, TemplateType } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { ScrollArea } from '../ui/scroll-area';
 import dynamic from 'next/dynamic';
 import AttachmentList from './attachments';
-import { Checkbox } from '../ui/checkbox';
-import { Separator } from '../ui/separator';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -420,14 +418,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                 placeholder="Section Name (e.g., Clinical Business Rules)"
                                 className="max-w-md h-8"
                               />
-                              <div className="flex items-center space-x-2 ml-4">
-                                <Checkbox 
-                                  id={`mand-${section.id}`} 
-                                  checked={section.isMandatory} 
-                                  onCheckedChange={v => handleUpdateCustomSection(section.id, { isMandatory: !!v })}
-                                />
-                                <Label htmlFor={`mand-${section.id}`} className="text-xs font-medium cursor-pointer">Required Section</Label>
-                              </div>
                               <div className="flex items-center gap-2 ml-4">
                                 <Label className="text-xs font-medium">Editor Type:</Label>
                                 <Select 

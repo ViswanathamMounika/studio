@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -311,7 +310,7 @@ export default function DefinitionView({
                                     <AccordionContent className="pb-4 space-y-6">
                                         {definition.dynamicSections.map(section => (
                                             <div key={section.sectionId} className="space-y-2">
-                                                <h4 className="font-bold text-sm text-primary flex items-center gap-2">{section.name}{section.isMandatory && <span className="text-destructive">*</span>}</h4>
+                                                <h4 className="font-bold text-sm text-primary flex items-center gap-2">{section.name}</h4>
                                                 <div className="text-sm prose prose-sm max-w-none border-l-2 pl-4 py-1" dangerouslySetInnerHTML={{ __html: highlightHtml(section.content, searchQuery) }} />
                                             </div>
                                         ))}

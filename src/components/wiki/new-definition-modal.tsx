@@ -353,7 +353,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                       <CardHeader className="py-3 bg-primary/5">
                         <CardTitle className="text-sm font-bold flex items-center gap-2">
                           {section.name}
-                          {section.isMandatory && <span className="text-destructive font-bold">*</span>}
                           <Badge variant="ghost" className="ml-auto text-[10px] uppercase font-normal opacity-60">
                             {section.contentType === 'rich' ? 'Rich Text' : 'Plain Text'}
                           </Badge>

@@ -282,7 +282,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel }: Definit
                 <CardHeader className="py-3 bg-primary/5 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm font-bold flex items-center gap-2">
                     {section.name}
-                    {section.isMandatory && <span className="text-destructive font-bold">*</span>}
                   </CardTitle>
                   <Badge variant="ghost" className="text-[10px] uppercase font-normal opacity-60">
                     {section.contentType === 'rich' ? 'Rich Text' : 'Plain Text'}
