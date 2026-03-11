@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -10,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2 } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
@@ -99,7 +98,6 @@ export default function DefinitionView({
     const [shareNote, setShareNote] = useState(false);
     const [notesViewTab, setNotesViewTab] = useState<'my' | 'others'>('my');
     
-    // Note editing state
     const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
     const [editingNoteText, setEditingNoteText] = useState('');
 
@@ -245,7 +243,6 @@ export default function DefinitionView({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {/* Approver Actions */}
                     {isAdmin && definition.isPendingApproval && (
                         <div className="flex gap-2">
                             <Button 
@@ -267,7 +264,6 @@ export default function DefinitionView({
                         </div>
                     )}
 
-                    {/* Standard User Workflow Actions */}
                     {!definition.isPendingApproval && definition.isDraft && (
                         <div className="flex gap-2">
                             {isAdmin ? (
@@ -352,7 +348,7 @@ export default function DefinitionView({
                     </TabsList>
 
                     <TabsContent value="description" className="mt-6 space-y-4">
-                        <Accordion type="multiple" defaultValue={['description', 'short-description', 'template-content']} className="space-y-4">
+                        <Accordion type="multiple" defaultValue={['description', 'short-description', 'template-content', 'sql-function-details']} className="space-y-4">
                             <AccordionItem value="data-source" className="bg-card border rounded-lg shadow-sm px-4">
                                 <AccordionTrigger className="hover:no-underline py-4">
                                     <div className="flex items-center gap-2"><span className="font-bold text-base">Data Source</span><Info className="h-4 w-4 text-muted-foreground" /></div>
@@ -365,6 +361,48 @@ export default function DefinitionView({
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
+
+                            {definition.sourceType === 'SQL Functions' && definition.sqlFunctionDetails && (
+                              <AccordionItem value="sql-function-details" className="bg-primary/5 border rounded-lg shadow-sm px-4 border-primary/20">
+                                <AccordionTrigger className="hover:no-underline py-4">
+                                    <div className="flex items-center gap-2"><span className="font-bold text-base text-primary">SQL Function Details</span><Terminal className="h-4 w-4 text-primary" /></div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider flex items-center gap-1.5 mb-1.5"><Braces className="h-3 w-3" /> Input Parameters</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {definition.sqlFunctionDetails.inputParameters.map((p, i) => (
+                                                        <code key={i} className="bg-muted px-2 py-0.5 rounded text-xs border">{p}</code>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider flex items-center gap-1.5 mb-1.5"><MapPin className="h-3 w-3" /> Locations</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {definition.sqlFunctionDetails.locations.map((l, i) => (
+                                                        <Badge key={i} variant="outline" className="text-[10px] bg-background">{l}</Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider mb-1.5">Output Type</p>
+                                                <code className="bg-primary/10 text-primary px-3 py-1 rounded font-bold">{definition.sqlFunctionDetails.outputType}</code>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider mb-1.5">Output Example</p>
+                                                <div className="bg-background border rounded-md p-3 font-mono text-xs">
+                                                    {definition.sqlFunctionDetails.outputExample}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            )}
 
                             <AccordionItem value="short-description" className="bg-card border rounded-lg shadow-sm px-4">
                                 <AccordionTrigger className="hover:no-underline py-4">
@@ -511,7 +549,7 @@ export default function DefinitionView({
                                                                 variant="ghost" 
                                                                 size="icon" 
                                                                 className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors group/note-btn" 
-                                                                onClick={() => handleDeleteNote(noteId)}
+                                                                onClick={() => handleDeleteNote(note.id)}
                                                             >
                                                                 <Trash2 className="h-4 w-4 transition-colors group-hover/note-btn:text-white" />
                                                             </Button>

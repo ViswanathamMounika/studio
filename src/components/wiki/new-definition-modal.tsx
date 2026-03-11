@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Attachment, Template, DynamicSection } from '@/lib/types';
+import type { Definition, Attachment, Template, DynamicSection, SqlFunctionDetails } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -15,9 +15,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Save, Send } from 'lucide-react';
+import { X, Upload, Eye, Save, Send, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import AttachmentList from './attachments';
 import { ScrollArea } from '../ui/scroll-area';
 import { DraftedDefinition } from './draft-from-sql-modal';
@@ -37,6 +38,9 @@ type NewDefinitionModalProps = {
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
 
+const functionLocations = ["All EZ-CAP Databases", "SupportTbls", "AuditTables", "NETAPPS", "OTHER"];
+const outputTypes = ["varchar", "int", "date", "datetime"];
+
 const initialDefinitionState = {
   name: '',
   module: 'Core',
@@ -51,6 +55,13 @@ const initialDefinitionState = {
   sourceName: '',
   isDraft: false,
   dynamicSections: [],
+};
+
+const initialSqlFunctionDetails: SqlFunctionDetails = {
+  inputParameters: [''],
+  locations: [],
+  outputType: 'varchar',
+  outputExample: '',
 };
 
 export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [] }: NewDefinitionModalProps) {
@@ -69,6 +80,8 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [sourceType, setSourceType] = useState(initialDefinitionState.sourceType);
   const [sourceName, setSourceName] = useState(initialDefinitionState.sourceName);
 
+  const [sqlDetails, setSqlDetails] = useState<SqlFunctionDetails>(initialSqlFunctionDetails);
+
   const [templateId, setTemplateId] = useState<string | undefined>();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
@@ -82,15 +95,14 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       setKeywords(data.keywords || initialDefinitionState.keywords);
       setCurrentKeyword('');
       
-      // Reset fields first
       setShortDescription('');
       setDescription('');
       setTechnicalDetails('');
       setUsageExamples('');
       setAttachments([]);
       setDynamicSections([]);
+      setSqlDetails(initialSqlFunctionDetails);
       
-      // Handle template pre-population
       const template = templates.find(t => t.id === data.templateId);
       if (template) {
         setShortDescription(template.defaultShortDescription || '');
@@ -99,7 +111,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
         setUsageExamples(template.defaultUsageExamples || '');
         setAttachments(template.defaultAttachments || []);
         
-        // Initialize dynamic sections from template custom sections
         const dynamicSecs: DynamicSection[] = (template.customSections || []).map(cs => ({
           sectionId: cs.id,
           name: cs.name,
@@ -117,6 +128,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
         setUsageExamples(data.usageExamples || initialDefinitionState.usageExamples);
         setAttachments(data.attachments || initialDefinitionState.attachments);
         setDynamicSections(data.dynamicSections || initialDefinitionState.dynamicSections);
+        if (data.sqlFunctionDetails) setSqlDetails(data.sqlFunctionDetails);
       }
       
       setSourceType(data.sourceType || initialDefinitionState.sourceType);
@@ -153,6 +165,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       supportingTables: [],
       isDraft: isDraft,
       dynamicSections: dynamicSections,
+      sqlFunctionDetails: sourceType === 'SQL Functions' ? sqlDetails : undefined,
     };
     onSave(newDefinitionData);
   };
@@ -198,6 +211,29 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
 
   const handleRemoveAttachment = (name: string) => {
     setAttachments(attachments.filter(att => att.name !== name));
+  };
+
+  const handleAddSqlParam = () => {
+    setSqlDetails(prev => ({ ...prev, inputParameters: [...prev.inputParameters, ''] }));
+  };
+
+  const handleUpdateSqlParam = (index: number, val: string) => {
+    const params = [...sqlDetails.inputParameters];
+    params[index] = val;
+    setSqlDetails(prev => ({ ...prev, inputParameters: params }));
+  };
+
+  const handleRemoveSqlParam = (index: number) => {
+    setSqlDetails(prev => ({ ...prev, inputParameters: prev.inputParameters.filter((_, i) => i !== index) }));
+  };
+
+  const handleToggleLocation = (loc: string) => {
+    setSqlDetails(prev => ({
+      ...prev,
+      locations: prev.locations.includes(loc) 
+        ? prev.locations.filter(l => l !== loc) 
+        : [...prev.locations, loc]
+    }));
   };
 
   const isPreviewAvailable = sourceName && (sourceType === 'Views' || sourceType === 'Tables');
@@ -339,6 +375,82 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                             </div>
                         </div>
                    </div>
+
+                   {sourceType === 'SQL Functions' && (
+                     <div className="mt-6 p-4 border rounded-lg bg-primary/5 space-y-6 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="h-2 w-2 rounded-full bg-primary" />
+                          <h4 className="font-bold text-sm text-primary uppercase tracking-wider">SQL Function Specifications</h4>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label className="text-xs font-bold">Input Parameter(s)</Label>
+                          {sqlDetails.inputParameters.map((param, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <Input 
+                                placeholder="@ParamName TYPE" 
+                                value={param} 
+                                onChange={(e) => handleUpdateSqlParam(idx, e.target.value)} 
+                              />
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleRemoveSqlParam(idx)}
+                                disabled={sqlDetails.inputParameters.length <= 1}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button variant="outline" size="sm" onClick={handleAddSqlParam} className="mt-2">
+                            <Plus className="mr-2 h-4 w-4" /> Add Parameter
+                          </Button>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label className="text-xs font-bold">Location of the function</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {functionLocations.map(loc => (
+                              <div key={loc} className="flex items-center space-x-2">
+                                <Checkbox 
+                                  id={`loc-${loc}`} 
+                                  checked={sqlDetails.locations.includes(loc)}
+                                  onCheckedChange={() => handleToggleLocation(loc)}
+                                />
+                                <Label htmlFor={`loc-${loc}`} className="text-sm cursor-pointer">{loc}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs font-bold">Output Type</Label>
+                            <Select 
+                              value={sqlDetails.outputType} 
+                              onValueChange={(v: any) => setSqlDetails(prev => ({ ...prev, outputType: v }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {outputTypes.map(t => (
+                                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs font-bold">Output Example</Label>
+                            <Input 
+                              placeholder="e.g., '2024-01-01' or 42" 
+                              value={sqlDetails.outputExample}
+                              onChange={(e) => setSqlDetails(prev => ({ ...prev, outputExample: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+                     </div>
+                   )}
                 </CardContent>
               </Card>
 

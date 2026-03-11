@@ -416,6 +416,46 @@ export const initialDefinitions: Definition[] = [
     ]
   },
   {
+    id: 'pending-root',
+    name: 'Pending Approval',
+    module: 'Core',
+    keywords: [],
+    description: '',
+    revisions: [],
+    isArchived: false,
+    isDraft: true,
+    isPendingApproval: true,
+    supportingTables: [],
+    attachments: [],
+    notes: [],
+    children: [
+      {
+        id: 'pending-sql-func-1',
+        name: 'fn_CalculateMemberAge',
+        module: 'Member',
+        keywords: ['sql function', 'age', 'calculation'],
+        description: '<p>Standard SQL function to calculate member age based on date of birth.</p>',
+        shortDescription: 'Calculates member age.',
+        revisions: [],
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: true,
+        supportingTables: [],
+        attachments: [],
+        notes: [],
+        sourceDb: 'DW_Reporting',
+        sourceType: 'SQL Functions',
+        sourceName: 'fn_CalculateMemberAge',
+        sqlFunctionDetails: {
+          inputParameters: ['@DOB DATE', '@AsOfDate DATE'],
+          locations: ['All EZ-CAP Databases'],
+          outputType: 'int',
+          outputExample: '42'
+        }
+      }
+    ]
+  },
+  {
     id: 'drafts-root',
     name: 'Draft Definitions',
     module: 'Core',
@@ -461,24 +501,6 @@ export const initialDefinitions: Definition[] = [
         sourceDb: 'Provider_Data',
         sourceType: 'Views',
         sourceName: 'vw_ProviderDirectory'
-      },
-      {
-        id: 'draft-pending-1',
-        name: 'New Regulatory Fee Mapping',
-        module: 'Finance',
-        keywords: ['regulation', 'fees', 'mapping'],
-        description: '<p><strong>[Pending Approval]</strong> New fee schedule mapping for state mandates.</p>',
-        shortDescription: 'Updated fee mappings.',
-        revisions: [],
-        isArchived: false,
-        isDraft: true,
-        isPendingApproval: true,
-        supportingTables: [],
-        attachments: [],
-        notes: [],
-        sourceDb: 'Finance',
-        sourceType: 'Tables',
-        sourceName: 'CLAIM_PAYMENTS'
       }
     ]
   }

@@ -36,6 +36,13 @@ export interface DynamicSection {
   contentType: 'plain' | 'rich';
 }
 
+export interface SqlFunctionDetails {
+  inputParameters: string[];
+  locations: string[];
+  outputType: 'varchar' | 'int' | 'date' | 'datetime';
+  outputExample: string;
+}
+
 export interface Definition {
   id: string;
   name: string;
@@ -61,6 +68,7 @@ export interface Definition {
   usageExamples?: string;
   templateId?: string;
   dynamicSections?: DynamicSection[];
+  sqlFunctionDetails?: SqlFunctionDetails;
 }
 
 export interface SupportingTable {
