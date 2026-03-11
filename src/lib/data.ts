@@ -1,3 +1,4 @@
+
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
@@ -135,6 +136,8 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
     'DW_Reporting_SQL Functions': [
         { id: 'fn_GetBusinessDays', name: 'fn_GetBusinessDays', typeId: 'SQL Functions' },
         { id: 'fn_FormatMemberName', name: 'fn_FormatMemberName', typeId: 'SQL Functions' },
+        { id: 'fn_CalculateMemberAge', name: 'fn_CalculateMemberAge', typeId: 'SQL Functions' },
+        { id: 'fn_GetAuthTurnaroundTime', name: 'fn_GetAuthTurnaroundTime', typeId: 'SQL Functions' },
     ],
     'Finance_Tables': [
         { id: 'FEE_SCHEDULES', name: 'FEE_SCHEDULES', typeId: 'Tables' },
@@ -259,11 +262,7 @@ const definition111_rev5 = {
         <li>Weekends (Saturday, Sunday) are excluded by default using the <code>fn_GetBusinessDays</code> function.</li>
         <li>Corporate holidays are retrieved from the <code>HOLIDAY_CALENDAR</code> master table.</li>
         <li>Requests received after 5:00 PM local time are considered received at 8:00 AM the next business day.</li>
-      </ul>
-      <p>Special cases for "Urgent" requests:</p>
-      <ul class="list-disc pl-6">
-        <li>Must be decided within 72 hours of actual receipt, regardless of weekends or holidays (per CMS guidelines).</li>
-        <li>If the decision window expires on a non-business day, the deadline remains the same.</li>
+        <li>Urgent requests must be decided within 72 hours of actual receipt.</li>
       </ul>
     `,
     technicalDetails: `
@@ -275,22 +274,10 @@ const definition111_rev5 = {
         <li>MD_NOTES (AUTH_ID, CREATED_DATE)</li>
         <li>CERTIFICATION_MASTER (AUTH_ID, ISSUE_DATE)</li>
       </ul>
-      <p>Partitioning is applied on <code>CREATED_DATE</code> monthly to facilitate rapid historical reporting without scanning full table heaps.</p>
     `,
     usageExamples: `
       <p><strong>Example 1: Calculating Turnaround Time</strong></p>
       <pre><code>DATEDIFF(day, RequestDate, AuthDecisionDate) AS TurnaroundTime</code></pre>
-      <p><strong>Example 2: Weighted SLA Compliance</strong></p>
-      <pre><code>
-SELECT 
-    Module,
-    COUNT(*) AS TotalAuths,
-    SUM(CASE WHEN TurnaroundTime <= SLALimit THEN 1 ELSE 0 END) AS CompliantCount
-FROM 
-    vw_AuthDecisionHistory
-GROUP BY 
-    Module
-      </code></pre>
     `
 };
 
@@ -301,8 +288,6 @@ export const initialDefinitions: Definition[] = [
     module: 'Authorizations',
     keywords: [],
     description: '',
-    technicalDetails: '',
-    usageExamples: '',
     revisions: [],
     isArchived: false,
     isDraft: false,
@@ -349,36 +334,10 @@ export const initialDefinitions: Definition[] = [
         isDraft: false,
         supportingTables: [],
         attachments: [],
-        notes: [
-            {
-                id: "note-3",
-                authorId: "user_456",
-                author: "Alex Smith",
-                avatar: "https://picsum.photos/seed/alex2/40/40",
-                date: "2024-01-05T09:00:00Z",
-                content: "Updated the CPT mapping for 2024 compliance.",
-                isShared: true,
-            }
-        ],
+        notes: [],
         sourceDb: 'DW_Reporting',
         sourceType: 'Tables',
         sourceName: 'PROCEDURE_CODES'
-      },
-       {
-        id: '1.1.3',
-        name: 'Authorization Timeliness',
-        module: 'Authorizations',
-        keywords: ['SLA', 'Timeliness'],
-        description: '<p>Measures the time taken from the receipt of an authorization request to the final decision.</p>',
-        revisions: [],
-        isArchived: false,
-        isDraft: false,
-        supportingTables: [],
-        attachments: [],
-        notes: [],
-        sourceDb: 'DW_Reporting',
-        sourceType: 'Views',
-        sourceName: 'vw_AuthActionTime'
       }
     ],
   },
@@ -388,8 +347,6 @@ export const initialDefinitions: Definition[] = [
     module: 'Provider',
     keywords: [],
     description: '',
-    technicalDetails: '',
-    usageExamples: '',
     revisions: [],
     isArchived: false,
     isDraft: false,
@@ -417,7 +374,7 @@ export const initialDefinitions: Definition[] = [
   },
   {
     id: 'pending-root',
-    name: 'Pending Approval',
+    name: 'Pending Approval (Queue)',
     module: 'Core',
     keywords: [],
     description: '',
@@ -447,7 +404,10 @@ export const initialDefinitions: Definition[] = [
         sourceType: 'SQL Functions',
         sourceName: 'fn_CalculateMemberAge',
         sqlFunctionDetails: {
-          inputParameters: [{ name: '@DOB', type: 'date' }, { name: '@AsOfDate', type: 'date' }],
+          inputParameters: [
+            { name: '@DOB', type: 'date' },
+            { name: '@AsOfDate', type: 'date' }
+          ],
           locations: ['All EZ-CAP Databases'],
           outputType: 'int',
           outputExample: '42'
@@ -479,55 +439,6 @@ export const initialDefinitions: Definition[] = [
           outputType: 'int',
           outputExample: '3'
         }
-      }
-    ]
-  },
-  {
-    id: 'drafts-root',
-    name: 'Draft Definitions',
-    module: 'Core',
-    keywords: [],
-    description: '',
-    revisions: [],
-    isArchived: false,
-    isDraft: true,
-    supportingTables: [],
-    attachments: [],
-    notes: [],
-    children: [
-      {
-        id: 'draft-1',
-        name: 'Member Eligibility Check',
-        module: 'Member',
-        keywords: ['eligibility', 'check', 'validation'],
-        description: '<p><strong>[Draft]</strong> Logic for validating member eligibility during intake.</p>',
-        shortDescription: 'Validates member status.',
-        revisions: [],
-        isArchived: false,
-        isDraft: true,
-        supportingTables: [],
-        attachments: [],
-        notes: [],
-        sourceDb: 'DW_Reporting',
-        sourceType: 'Tables',
-        sourceName: 'MEMBER_MASTER'
-      },
-      {
-        id: 'draft-2',
-        name: 'Provider Specialty Mapping',
-        module: 'Provider Network',
-        keywords: ['specialty', 'mapping', 'taxonomy'],
-        description: '<p><strong>[Draft]</strong> Mapping of provider taxonomy codes to internal specialty groups.</p>',
-        shortDescription: 'Mapping for provider specialties.',
-        revisions: [],
-        isArchived: false,
-        isDraft: true,
-        supportingTables: [],
-        attachments: [],
-        notes: [],
-        sourceDb: 'Provider_Data',
-        sourceType: 'Views',
-        sourceName: 'vw_ProviderDirectory'
       }
     ]
   }

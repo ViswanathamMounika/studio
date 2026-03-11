@@ -63,8 +63,9 @@ const initialNotifications: NotificationType[] = [
 ];
 
 export default function Wiki() {
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions', initialDefinitions);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates', initialTemplates);
+  // Use v3 keys to ensure users see the latest dummy data update
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v3', initialDefinitions);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v3', initialTemplates);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -76,16 +77,16 @@ export default function Wiki() {
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin', true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v3', true);
   const [activeView, setActiveView] = useState<View>('definitions');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v3', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [isDraftsExpanded, setIsDraftsExpanded] = useState(true);
   const [isPendingExpanded, setIsPendingExpanded] = useState(true);
   const [isMpmExpanded, setIsMpmExpanded] = useState(true);
-  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock', null);
+  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v3', null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -363,7 +364,8 @@ export default function Wiki() {
     const filterPending = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = item.children ? filterPending(item.children) : [];
-            if (children.length > 0 || (item.isPendingApproval && item.description)) {
+            const isSelfPending = item.isPendingApproval === true;
+            if (children.length > 0 || isSelfPending) {
                 acc.push({ ...item, children });
             }
             return acc;
