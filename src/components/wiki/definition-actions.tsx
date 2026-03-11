@@ -21,9 +21,10 @@ type DefinitionActionsProps = {
   onDuplicate: (id: string) => void;
   onArchive: (id: string, archive: boolean) => void;
   onToggleBookmark: (id: string) => void;
+  isAdmin: boolean;
 };
 
-export default function DefinitionActions({ definition, onEdit, onDuplicate, onArchive, onToggleBookmark }: DefinitionActionsProps) {
+export default function DefinitionActions({ definition, onEdit, onDuplicate, onArchive, onToggleBookmark, isAdmin }: DefinitionActionsProps) {
   
   const handleJsonExport = () => {
     const exportData = {
@@ -112,18 +113,23 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
-          <Pencil className="mr-2 h-4 w-4" />
-          <span>Edit</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => onDuplicate(definition.id)} 
-          className="cursor-pointer"
-          disabled={definition.isDraft}
-        >
-          <Copy className="mr-2 h-4 w-4" />
-          <span>Duplicate</span>
-        </DropdownMenuItem>
+        {isAdmin && (
+          <>
+            <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
+              <Pencil className="mr-2 h-4 w-4" />
+              <span>Edit</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => onDuplicate(definition.id)} 
+              className="cursor-pointer"
+              disabled={definition.isDraft}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              <span>Duplicate</span>
+            </DropdownMenuItem>
+          </>
+        )}
+        
         <DropdownMenuItem 
           onClick={() => onToggleBookmark(definition.id)} 
           className="cursor-pointer"
@@ -132,14 +138,20 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
             <Bookmark className="mr-2 h-4 w-4" />
             <span>{definition.isBookmarked ? 'Remove Bookmark' : 'Bookmark'}</span>
         </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => onArchive(definition.id, !definition.isArchived)} 
-          className="cursor-pointer"
-          disabled={definition.isDraft}
-        >
-          <Archive className="mr-2 h-4 w-4" />
-          <span>{definition.isArchived ? 'Unarchive' : 'Archive'}</span>
-        </DropdownMenuItem>
+        
+        {isAdmin && (
+          <DropdownMenuItem 
+            onClick={() => onArchive(definition.id, !definition.isArchived)} 
+            className="cursor-pointer"
+            disabled={definition.isDraft}
+          >
+            <Archive className="mr-2 h-4 w-4" />
+            <span>{definition.isArchived ? 'Unarchive' : 'Archive'}</span>
+          </DropdownMenuItem>
+        )}
+
+        <DropdownMenuSeparator />
+
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="cursor-pointer">
             <Download className="mr-2 h-4 w-4" />

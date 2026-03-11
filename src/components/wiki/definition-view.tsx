@@ -320,12 +320,19 @@ export default function DefinitionView({
                             <p>{definition.isDraft ? 'Bookmarking disabled for drafts' : 'Bookmark'}</p>
                         </TooltipContent>
                     </Tooltip>
+                    
                     {isAdmin && (
-                        <>
-                            <Button onClick={onEdit}><Pencil className="mr-2 h-4 w-4" />Edit</Button>
-                            <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onToggleBookmark={onToggleBookmark} />
-                        </>
+                        <Button onClick={onEdit}><Pencil className="mr-2 h-4 w-4" />Edit</Button>
                     )}
+                    
+                    <DefinitionActions 
+                        definition={definition} 
+                        onEdit={onEdit} 
+                        onDuplicate={onDuplicate} 
+                        onArchive={onArchive} 
+                        onToggleBookmark={onToggleBookmark} 
+                        isAdmin={isAdmin}
+                    />
                 </div>
             </div>
 
