@@ -6,7 +6,7 @@ import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send } from 'lucide-react';
+import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send, ShieldCheck, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -23,6 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '../ui/badge';
 
 // Dynamic imports for heavy components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
@@ -75,13 +76,14 @@ export default function Wiki() {
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin] = useState(true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin', true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [isDraftsExpanded, setIsDraftsExpanded] = useState(true);
+  const [isPendingExpanded, setIsPendingExpanded] = useState(true);
   const [isMpmExpanded, setIsMpmExpanded] = useState(true);
   const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock', null);
 
@@ -95,6 +97,7 @@ export default function Wiki() {
 
   const getStatusText = useCallback((def: Definition) => {
     if (def.isArchived) return 'Archived';
+    if (def.isPendingApproval) return 'Pending Approval';
     if (def.isDraft) return 'Draft';
     return 'Published';
   }, []);
@@ -196,10 +199,6 @@ export default function Wiki() {
   }, [selectedDefinitionId, editLockId]);
 
   const handleSave = (updatedDefinition: Definition) => {
-    if (!isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can edit definitions.' });
-        return;
-    }
     const updateItems = (items: Definition[]): Definition[] => {
       return items.map(def => {
         if (def.id === updatedDefinition.id) return updatedDefinition;
@@ -225,10 +224,6 @@ export default function Wiki() {
   };
   
   const handleCreateDefinition = (newDefinitionData: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => {
-    if (!isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can create definitions.' });
-        return;
-    }
     const newId = Date.now().toString();
     const newDefinition: Definition = {
         ...newDefinitionData,
@@ -302,13 +297,38 @@ export default function Wiki() {
     }
     const publishItem = (items: Definition[]): Definition[] => {
       return items.map(def => {
-        if (def.id === id) return { ...def, isDraft: false };
+        if (def.id === id) return { ...def, isDraft: false, isPendingApproval: false };
         if (def.children) return { ...def, children: publishItem(def.children) };
         return def;
       });
     };
     setDefinitions(publishItem(definitions));
     toast({ title: 'Definition Published', description: 'The definition is now available in the MPM Wiki.' });
+  };
+
+  const handleRequestApproval = (id: string) => {
+    const updateItem = (items: Definition[]): Definition[] => {
+      return items.map(def => {
+        if (def.id === id) return { ...def, isPendingApproval: true };
+        if (def.children) return { ...def, children: updateItem(def.children) };
+        return def;
+      });
+    };
+    setDefinitions(updateItem(definitions));
+    toast({ title: 'Submitted', description: 'Your definition has been submitted for approval.' });
+  };
+
+  const handleReject = (id: string) => {
+    if (!isAdmin) return;
+    const updateItem = (items: Definition[]): Definition[] => {
+      return items.map(def => {
+        if (def.id === id) return { ...def, isPendingApproval: false };
+        if (def.children) return { ...def, children: updateItem(def.children) };
+        return def;
+      });
+    };
+    setDefinitions(updateItem(definitions));
+    toast({ title: 'Changes Requested', description: 'The definition has been returned to draft status.' });
   };
 
   const filteredDefinitions = useMemo(() => {
@@ -332,13 +352,23 @@ export default function Wiki() {
     const filterByDraft = (items: Definition[], isDraft: boolean): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = item.children ? filterByDraft(item.children, isDraft) : [];
-            const isMatch = isDraft ? item.isDraft === true : (item.isDraft === false || item.isDraft === undefined);
+            const isMatch = isDraft ? (item.isDraft === true && !item.isPendingApproval) : (item.isDraft === false || item.isDraft === undefined);
             if (children.length > 0 || (isMatch && item.description)) {
                 acc.push({ ...item, children });
             }
             return acc;
         }, []);
     };
+
+    const filterPending = (items: Definition[]): Definition[] => {
+        return items.reduce((acc: Definition[], item) => {
+            const children = item.children ? filterPending(item.children) : [];
+            if (children.length > 0 || (item.isPendingApproval && item.description)) {
+                acc.push({ ...item, children });
+            }
+            return acc;
+        }, []);
+    }
 
     const filterArchived = (items: Definition[]): Definition[] => {
       return items.filter(item => !item.isArchived || showArchived).map(item => {
@@ -361,7 +391,8 @@ export default function Wiki() {
 
     return {
         drafts: filterByDraft(processedItems, true),
-        published: filterByDraft(processedItems, false)
+        published: filterByDraft(processedItems, false),
+        pending: filterPending(processedItems)
     };
   }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
@@ -529,6 +560,8 @@ export default function Wiki() {
                           onDelete={handleDelete} 
                           onToggleBookmark={toggleBookmark} 
                           onPublish={handlePublish}
+                          onReject={handleReject}
+                          onSendApproval={handleRequestApproval}
                           activeTab={activeTab} 
                           onTabChange={handleTabChange} 
                           onSave={handleSave} 
@@ -588,7 +621,27 @@ export default function Wiki() {
              {activeView === 'definitions' && (
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card relative">
                   <div className="p-4 flex flex-col gap-4 border-b bg-background sticky top-0 z-30 shadow-sm">
-                    <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8 text-primary"
+                                        onClick={() => setIsAdmin(!isAdmin)}
+                                    >
+                                        <ShieldCheck className={cn("h-5 w-5 transition-opacity", !isAdmin && "opacity-30")} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Current Role: {isAdmin ? 'Definition Approver' : 'Standard User'}</p>
+                                    <p className="text-[10px] text-muted-foreground">(Click to toggle role)</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -659,6 +712,43 @@ export default function Wiki() {
                       )}
 
                       <TooltipProvider>
+                        {isAdmin && (
+                            <Collapsible open={isPendingExpanded} onOpenChange={setIsPendingExpanded} className="border-b bg-amber-50/20">
+                                <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
+                                    <CollapsibleTrigger asChild>
+                                        <div className="flex items-center gap-2 flex-1 cursor-pointer">
+                                            <ChevronDown className={cn("h-4 w-4 transition-transform", !isPendingExpanded && "-rotate-90")} />
+                                            <span className="font-bold text-sm flex items-center gap-2">
+                                                Pending Approval
+                                                {categorizedDefinitions.pending.length > 0 && <Badge variant="destructive" className="h-4 px-1 text-[9px]">{categorizedDefinitions.pending.length}</Badge>}
+                                            </span>
+                                        </div>
+                                    </CollapsibleTrigger>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild><Clock className="h-4 w-4 text-amber-600 opacity-50 cursor-help" /></TooltipTrigger>
+                                        <TooltipContent>Definitions submitted for review.</TooltipContent>
+                                    </Tooltip>
+                                </div>
+                                <CollapsibleContent>
+                                    <div className="py-2">
+                                        {categorizedDefinitions.pending.length > 0 ? (
+                                            <DefinitionTree
+                                                definitions={categorizedDefinitions.pending}
+                                                selectedId={selectedDefinitionId}
+                                                onSelect={handleSelectDefinition}
+                                                onToggleSelection={toggleSelectionForExport}
+                                                selectedForExport={selectedForExport}
+                                                isSelectMode={isSelectMode}
+                                                activeSection={activeTab}
+                                                searchQuery={searchQuery}
+                                                editLockId={editLockId}
+                                            />
+                                        ) : <p className="px-8 py-4 text-xs text-muted-foreground italic">No definitions pending review.</p>}
+                                    </div>
+                                </CollapsibleContent>
+                            </Collapsible>
+                        )}
+
                         <Collapsible open={isDraftsExpanded} onOpenChange={setIsDraftsExpanded} className="border-b">
                             <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
                                 <CollapsibleTrigger asChild>

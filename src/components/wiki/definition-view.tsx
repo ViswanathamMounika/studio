@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -9,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2 } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
@@ -41,6 +42,8 @@ type DefinitionViewProps = {
   onDelete: (id: string) => void;
   onToggleBookmark: (id: string) => void;
   onPublish?: (id: string) => void;
+  onReject?: (id: string) => void;
+  onSendApproval?: (id: string) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
   onSave: (definition: Definition) => void;
@@ -84,7 +87,7 @@ const highlightHtml = (html: string, query: string) => {
 };
 
 export default function DefinitionView({ 
-    definition, allDefinitions, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, onPublish,
+    definition, allDefinitions, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, onPublish, onReject, onSendApproval,
     activeTab, onTabChange, onSave, isAdmin, searchQuery = "" 
 }: DefinitionViewProps) {
     const [selectedTable, setSelectedTable] = useState<SupportingTable | null>(null);
@@ -216,6 +219,13 @@ export default function DefinitionView({
         };
     }, [definition]);
 
+    const statusLabel = useMemo(() => {
+        if (definition.isArchived) return 'Archived';
+        if (definition.isPendingApproval) return 'Pending Approval';
+        if (definition.isDraft) return 'Draft';
+        return 'Published';
+    }, [definition]);
+
   return (
     <TooltipProvider>
         <article className="prose prose-sm max-w-none">
@@ -226,22 +236,62 @@ export default function DefinitionView({
                         <h2 className="text-3xl font-bold mt-0">
                             <HighlightedText text={definition.name} highlight={searchQuery} />
                         </h2>
-                        <Badge variant={definition.isArchived ? 'destructive' : (definition.isDraft ? 'secondary' : 'outline')}>
-                            {definition.isArchived ? 'Archived' : (definition.isDraft ? 'Draft' : 'Published')}
+                        <Badge 
+                            variant={definition.isArchived ? 'destructive' : (definition.isPendingApproval ? 'secondary' : (definition.isDraft ? 'outline' : 'default'))}
+                            className={cn(definition.isPendingApproval && "bg-amber-100 text-amber-800 border-amber-200")}
+                        >
+                            {statusLabel}
                         </Badge>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {definition.isDraft && onPublish && (
-                      <Button 
-                        variant="outline" 
-                        className="text-primary border-primary hover:bg-primary hover:text-white transition-colors group" 
-                        onClick={() => onPublish(definition.id)}
-                      >
-                        <Send className="mr-2 h-4 w-4 transition-colors group-hover:text-white" />
-                        Publish
-                      </Button>
+                    {/* Approver Actions */}
+                    {isAdmin && definition.isPendingApproval && (
+                        <div className="flex gap-2">
+                            <Button 
+                                variant="outline" 
+                                className="text-destructive border-destructive hover:bg-destructive hover:text-white" 
+                                onClick={() => onReject?.(definition.id)}
+                            >
+                                <Undo2 className="mr-2 h-4 w-4" />
+                                Request Changes
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                className="text-primary border-primary hover:bg-primary hover:text-white" 
+                                onClick={() => onPublish?.(definition.id)}
+                            >
+                                <ShieldCheck className="mr-2 h-4 w-4" />
+                                Approve & Publish
+                            </Button>
+                        </div>
                     )}
+
+                    {/* Standard User Workflow Actions */}
+                    {!definition.isPendingApproval && definition.isDraft && (
+                        <div className="flex gap-2">
+                            {isAdmin ? (
+                                <Button 
+                                    variant="outline" 
+                                    className="text-primary border-primary hover:bg-primary hover:text-white transition-colors group" 
+                                    onClick={() => onPublish?.(definition.id)}
+                                >
+                                    <Send className="mr-2 h-4 w-4 transition-colors group-hover:text-white" />
+                                    Publish Directly
+                                </Button>
+                            ) : (
+                                <Button 
+                                    variant="outline" 
+                                    className="text-primary border-primary hover:bg-primary hover:text-white transition-colors group" 
+                                    onClick={() => onSendApproval?.(definition.id)}
+                                >
+                                    <Send className="mr-2 h-4 w-4 transition-colors group-hover:text-white" />
+                                    Submit for Approval
+                                </Button>
+                            )}
+                        </div>
+                    )}
+
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button 
@@ -461,7 +511,7 @@ export default function DefinitionView({
                                                                 variant="ghost" 
                                                                 size="icon" 
                                                                 className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors group/note-btn" 
-                                                                onClick={() => handleDeleteNote(note.id)}
+                                                                onClick={() => handleDeleteNote(noteId)}
                                                             >
                                                                 <Trash2 className="h-4 w-4 transition-colors group-hover/note-btn:text-white" />
                                                             </Button>

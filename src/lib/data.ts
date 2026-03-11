@@ -150,7 +150,7 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
     ]
 };
 
-const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search'];
+const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search', 'Submit', 'Approve', 'Reject'];
 
 export const initialActivityLogs: ActivityLog[] = Array.from({ length: 50 }, (_, i) => ({
     id: `log-${i}`,
@@ -461,6 +461,24 @@ export const initialDefinitions: Definition[] = [
         sourceDb: 'Provider_Data',
         sourceType: 'Views',
         sourceName: 'vw_ProviderDirectory'
+      },
+      {
+        id: 'draft-pending-1',
+        name: 'New Regulatory Fee Mapping',
+        module: 'Finance',
+        keywords: ['regulation', 'fees', 'mapping'],
+        description: '<p><strong>[Pending Approval]</strong> New fee schedule mapping for state mandates.</p>',
+        shortDescription: 'Updated fee mappings.',
+        revisions: [],
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: true,
+        supportingTables: [],
+        attachments: [],
+        notes: [],
+        sourceDb: 'Finance',
+        sourceType: 'Tables',
+        sourceName: 'CLAIM_PAYMENTS'
       }
     ]
   }

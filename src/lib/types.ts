@@ -49,6 +49,7 @@ export interface Definition {
   sourceServer?: string;
   isArchived: boolean;
   isDraft?: boolean;
+  isPendingApproval?: boolean;
   revisions: Revision[];
   isBookmarked?: boolean;
   supportingTables: SupportingTableRef[];
@@ -79,7 +80,7 @@ export interface Notification {
     read: boolean;
 }
 
-export type ActivityType = 'View' | 'Edit' | 'Create' | 'Download' | 'Bookmark' | 'Archive' | 'Duplicate' | 'Search';
+export type ActivityType = 'View' | 'Edit' | 'Create' | 'Download' | 'Bookmark' | 'Archive' | 'Duplicate' | 'Search' | 'Submit' | 'Approve' | 'Reject';
 
 export interface ActivityLog {
     id: string;

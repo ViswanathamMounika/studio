@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link, Archive, Pencil } from 'lucide-react';
+import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link, Archive, Pencil, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -177,6 +177,16 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                             </TooltipTrigger>
                             <TooltipContent>
                                 <p>You are currently editing this definition</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                    {node.isPendingApproval && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Clock className="h-3 w-3 text-amber-600 animate-pulse" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Pending Approval</p>
                             </TooltipContent>
                         </Tooltip>
                     )}
