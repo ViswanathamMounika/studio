@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal, MessageSquareText } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal, MessageSquare } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
@@ -323,18 +323,18 @@ export default function DefinitionView({
                             <TooltipTrigger asChild>
                                 <Button 
                                     variant="outline" 
-                                    className="gap-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
+                                    size="icon"
+                                    className="relative h-10 w-10 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all rounded-xl shadow-sm bg-white"
                                     onClick={() => setIsDiscussionsOpen(true)}
                                 >
-                                    <MessageSquareText className="h-4 w-4" />
-                                    View Discussions
-                                    <Badge variant="secondary" className="h-5 px-1.5 ml-1 bg-slate-100 text-slate-600 border-none">
+                                    <MessageSquare className="h-5 w-5" />
+                                    <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white shadow-sm">
                                         {discussionCount}
-                                    </Badge>
+                                    </span>
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Open change requests and comments</p>
+                                <p>View {discussionCount} discussions</p>
                             </TooltipContent>
                         </Tooltip>
                     )}
@@ -620,7 +620,7 @@ export default function DefinitionView({
                                                                 variant="ghost" 
                                                                 size="icon" 
                                                                 className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors group/note-btn" 
-                                                                onClick={() => handleDeleteNote(note.id)}
+                                                                onClick={() => handleDeleteNote(noteId)}
                                                             >
                                                                 <Trash2 className="h-4 w-4 transition-colors group-hover/note-btn:text-white" />
                                                             </Button>
