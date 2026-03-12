@@ -12,14 +12,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Send, AlertCircle } from 'lucide-react';
+import { Send, Pencil } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type ChangeRequestModalProps = {
   open: boolean;
@@ -40,49 +34,79 @@ export default function ChangeRequestModal({ open, onOpenChange, onSend, definit
     onOpenChange(false);
   };
 
+  const priorities = [
+    { label: 'Low', value: 'Low' as const, color: 'bg-emerald-400' },
+    { label: 'Medium', value: 'Medium' as const, color: 'bg-amber-400' },
+    { label: 'High', value: 'High' as const, color: 'bg-red-500' },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <div className="flex items-center gap-2 text-primary">
-            <AlertCircle className="h-5 w-5" />
-            <DialogTitle>Request Changes</DialogTitle>
-          </div>
-          <DialogDescription>
-            Submit feedback for <strong>{definitionName}</strong>. This will return it to draft status.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="priority">Priority Level</Label>
-            <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
-              <SelectTrigger id="priority">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <DialogContent className="max-w-[500px] p-0 overflow-hidden border-none rounded-[24px]">
+        <div className="p-8 space-y-6">
+          <DialogHeader className="space-y-4">
+            <div className="h-12 w-12 rounded-xl bg-amber-50 flex items-center justify-center">
+              <Pencil className="h-6 w-6 text-orange-400" fill="currentColor" fillOpacity={0.2} />
+            </div>
+            <div>
+              <DialogTitle className="text-2xl font-bold font-serif tracking-tight text-slate-900">Request Changes</DialogTitle>
+              <DialogDescription className="text-slate-500 text-sm mt-1">
+                Describe what needs to be updated. The definition owner will be notified.
+              </DialogDescription>
+            </div>
+          </DialogHeader>
           
-          <div className="space-y-2">
-            <Label htmlFor="feedback">Feedback / Required Changes</Label>
-            <Textarea
-              id="feedback"
-              placeholder="Explain what needs to be updated..."
-              className="min-h-[120px]"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-            />
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="feedback" className="text-[13px] font-bold text-slate-600">
+                What needs to change? <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="feedback"
+                placeholder="e.g. The technical details section is missing the mapping table. Also the short description should include the regulatory reference code..."
+                className="min-h-[140px] bg-slate-50/50 border-slate-200 rounded-xl resize-none placeholder:text-slate-400 text-sm focus-visible:ring-primary/20"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-[13px] font-bold text-slate-600">Priority</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {priorities.map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => setPriority(p.value)}
+                    className={cn(
+                      "flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-sm font-medium transition-all",
+                      priority === p.value 
+                        ? "bg-white border-primary ring-1 ring-primary text-slate-900 shadow-sm" 
+                        : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                    )}
+                  >
+                    <span className={cn("h-2 w-2 rounded-full", p.color)} />
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSend} disabled={!content.trim()} className="gap-2">
+        <DialogFooter className="p-6 bg-slate-50/30 border-t flex items-center justify-end gap-3 sm:justify-end">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            className="rounded-xl px-6 border-slate-200 text-slate-600 hover:bg-white"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSend} 
+            disabled={!content.trim()} 
+            className="rounded-xl px-6 bg-indigo-600 hover:bg-indigo-700 gap-2"
+          >
             <Send className="h-4 w-4" />
             Send Request
           </Button>
