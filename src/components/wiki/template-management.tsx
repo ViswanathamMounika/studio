@@ -41,6 +41,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     customSections: [],
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [showErrors, setShowErrors] = useState(false); // Track if validation should be shown
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,6 +51,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
   const handleCreateNew = (type: TemplateType) => {
     setIsEditing(false);
+    setShowErrors(false); // Reset errors on new
     setCurrentTemplate({
       id: `t-${Date.now()}`,
       name: '',
@@ -74,6 +76,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
   const handleEdit = (template: Template) => {
     setIsEditing(true);
+    setShowErrors(false); // Reset errors on edit
     setCurrentTemplate({ ...template });
     setIsModalOpen(true);
   };
@@ -85,7 +88,9 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   };
 
   const handleSaveTemplate = () => {
+    // Validate Template Name
     if (!currentTemplate.name?.trim()) {
+      setShowErrors(true);
       toast({ variant: 'destructive', title: 'Error', description: 'Template Name is required.' });
       return;
     }
@@ -93,6 +98,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     // Mandatory Section Name Validation
     const hasEmptySectionName = currentTemplate.customSections?.some(s => !s.name?.trim());
     if (hasEmptySectionName) {
+      setShowErrors(true); // Trigger visibility of red borders
       toast({ 
         variant: 'destructive', 
         title: 'Validation Error', 
@@ -114,6 +120,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
     onSaveTemplates(updatedTemplates);
     setIsModalOpen(false);
+    setShowErrors(false);
   };
 
   const handleAddAttachmentClick = () => {
@@ -270,7 +277,10 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                         value={currentTemplate.name} 
                         onChange={e => setCurrentTemplate(prev => ({ ...prev, name: e.target.value }))}
                         placeholder="e.g., Clinical Guideline Template"
-                        className="rounded-xl border-slate-200 focus-visible:ring-primary/20"
+                        className={cn(
+                          "rounded-xl border-slate-200 focus-visible:ring-primary/20",
+                          showErrors && !currentTemplate.name?.trim() && "border-red-300 bg-red-50/30"
+                        )}
                       />
                     </div>
                     <div className="space-y-2">
@@ -337,7 +347,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                 placeholder="e.g., Clinical Business Rules"
                                 className={cn(
                                   "h-9 rounded-lg border-slate-200 focus-visible:ring-primary/20 font-medium",
-                                  !section.name?.trim() && "border-red-300 bg-red-50/30"
+                                  showErrors && !section.name?.trim() && "border-red-300 bg-red-50/30"
                                 )}
                               />
                             </div>
