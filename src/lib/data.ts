@@ -153,7 +153,7 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
     ]
 };
 
-const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search', 'Submit', 'Approve', 'Reject'];
+const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search', 'Submit', 'Approve', 'Reject', 'Request Changes'];
 
 export const initialActivityLogs: ActivityLog[] = Array.from({ length: 50 }, (_, i) => ({
     id: `log-${i}`,
@@ -416,6 +416,24 @@ export const initialDefinitions: Definition[] = [
         sourceDb: 'Claims',
         sourceType: 'Tables',
         sourceName: 'CLAIM_ADJUDICATION_LOG'
+      },
+      {
+        id: 'draft-claims-1',
+        name: 'Draft: Claim Payment Logic',
+        module: 'Claims',
+        keywords: ['draft', 'payment'],
+        description: '<p>Preliminary documentation for revised payment calculation rules.</p>',
+        shortDescription: 'Revised payment logic draft.',
+        revisions: [],
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: false,
+        supportingTables: [],
+        attachments: [],
+        notes: [],
+        sourceDb: 'Finance',
+        sourceType: 'Tables',
+        sourceName: 'CLAIM_PAYMENTS'
       }
     ]
   },

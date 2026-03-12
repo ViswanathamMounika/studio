@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
@@ -71,9 +72,9 @@ const initialNotifications: NotificationType[] = [
 ];
 
 export default function Wiki() {
-  // Use v5 keys to ensure users see the latest module restructure and sample data
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v5', initialDefinitions);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v5', initialTemplates);
+  // Use v6 keys to ensure users see the latest module restructure and sample data
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v6', initialDefinitions);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v6', initialTemplates);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -85,14 +86,14 @@ export default function Wiki() {
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v5', true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v6', true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('queue');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v5', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v6', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v5', null);
+  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v6', null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -657,6 +658,15 @@ export default function Wiki() {
   };
   const totalPendingCount = countLeafPending(categorizedDefinitions.pending);
 
+  // Count total leaf definitions in drafts
+  const countLeafDrafts = (items: Definition[]): number => {
+    return items.reduce((acc, item) => {
+      const isDraftLeaf = item.isDraft && !item.isPendingApproval && (item.description || item.shortDescription);
+      return acc + (isDraftLeaf ? 1 : 0) + (item.children ? countLeafDrafts(item.children) : 0);
+    }, 0);
+  };
+  const totalDraftCount = countLeafDrafts(categorizedDefinitions.drafts);
+
   return (
     <SidebarProvider>
       <AppSidebar activeView={activeView} onNavigate={handleNavigate} isAdmin={isAdmin} />
@@ -722,11 +732,16 @@ export default function Wiki() {
                             <button 
                                 onClick={() => setSidebarTab('drafts')}
                                 className={cn(
-                                    "flex-1 py-1.5 px-3 rounded-full text-[11px] font-bold transition-all",
+                                    "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-full text-[11px] font-bold transition-all relative",
                                     sidebarTab === 'drafts' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 Drafts
+                                {totalDraftCount > 0 && (
+                                    <span className="bg-primary/10 text-primary h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold">
+                                        {totalDraftCount}
+                                    </span>
+                                )}
                             </button>
                         </div>
 
