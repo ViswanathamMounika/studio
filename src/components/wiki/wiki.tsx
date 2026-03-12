@@ -758,7 +758,7 @@ export default function Wiki() {
                               <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
-                                          <Settings2 className="h-3 w-3 text-muted-foreground" />
+                                          <ListFilter className="h-4 w-4 text-muted-foreground" />
                                       </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-48">
