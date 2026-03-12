@@ -441,9 +441,10 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                 <CardHeader className="py-3 bg-primary/5 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm font-bold flex items-center gap-2">
                     {section.name}
+                    {section.isMandatory && <span className="text-destructive font-bold">*</span>}
                   </CardTitle>
                   <Badge variant="ghost" className="text-[10px] uppercase font-normal opacity-60">
-                    {section.contentType === 'rich' ? 'Rich Text' : 'Plain Text'}
+                    {section.contentType}
                   </Badge>
                 </CardHeader>
                 <CardContent className="pt-4">
@@ -452,6 +453,20 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                       value={section.content} 
                       onChange={content => handleUpdateDynamicSection(section.sectionId, content)} 
                     />
+                  ) : section.contentType === 'dropdown' ? (
+                    <Select 
+                      value={section.content} 
+                      onValueChange={val => handleUpdateDynamicSection(section.sectionId, val)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={`Select ${section.name}...`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {section.dropdownOptions?.split(',').map(opt => (
+                          <SelectItem key={opt.trim()} value={opt.trim()}>{opt.trim()}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   ) : (
                     <Textarea 
                       value={section.content} 

@@ -120,6 +120,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
           isMandatory: cs.isMandatory,
           content: cs.defaultValue || '',
           contentType: cs.contentType || 'rich',
+          dropdownOptions: cs.dropdownOptions,
         }));
         setDynamicSections(dynamicSecs);
       } else {
@@ -504,11 +505,12 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                   </h3>
                   {dynamicSections.map(section => (
                     <Card key={section.sectionId} className="border-l-4 border-l-primary">
-                      <CardHeader className="py-3 bg-primary/5">
+                      <CardHeader className="py-3 bg-primary/5 flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-bold flex items-center gap-2">
                           {section.name}
+                          {section.isMandatory && <span className="text-destructive font-bold">*</span>}
                           <Badge variant="ghost" className="ml-auto text-[10px] uppercase font-normal opacity-60">
-                            {section.contentType === 'rich' ? 'Rich Text' : 'Plain Text'}
+                            {section.contentType}
                           </Badge>
                         </CardTitle>
                       </CardHeader>
@@ -518,6 +520,20 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                             value={section.content} 
                             onChange={content => handleUpdateDynamicSection(section.sectionId, content)} 
                           />
+                        ) : section.contentType === 'dropdown' ? (
+                          <Select 
+                            value={section.content} 
+                            onValueChange={val => handleUpdateDynamicSection(section.sectionId, val)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={`Select ${section.name}...`} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {section.dropdownOptions?.split(',').map(opt => (
+                                <SelectItem key={opt.trim()} value={opt.trim()}>{opt.trim()}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         ) : (
                           <Textarea 
                             value={section.content} 
