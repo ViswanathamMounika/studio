@@ -170,10 +170,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
           <p className="text-muted-foreground">Define standard boilerplates or complex structured building blocks for your definitions.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="border-primary text-primary hover:bg-primary/5" onClick={() => handleCreateNew('Standard')}>
-            <Layout className="mr-2 h-4 w-4" />
-            Standard Template
-          </Button>
           <Button onClick={() => handleCreateNew('Custom')}>
             <LayoutTemplate className="mr-2 h-4 w-4" />
             Custom Template
