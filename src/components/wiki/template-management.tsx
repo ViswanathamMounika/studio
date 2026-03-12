@@ -184,7 +184,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
             <TableHeader>
               <TableRow>
                 <TableHead>Template Name</TableHead>
-                <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -194,11 +193,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
               {sortedTemplates.map(template => (
                 <TableRow key={template.id}>
                   <TableCell className="font-medium">{template.name}</TableCell>
-                  <TableCell>
-                    <Badge variant={template.type === 'Custom' ? 'default' : 'outline'}>
-                      {template.type || 'Standard'}
-                    </Badge>
-                  </TableCell>
                   <TableCell>
                     <Badge variant={template.status === 'Active' ? 'success' : 'secondary'}>
                       {template.status}
