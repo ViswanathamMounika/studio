@@ -340,6 +340,24 @@ export const initialDefinitions: Definition[] = [
         sourceName: 'PROCEDURE_CODES'
       },
       {
+        id: 'pending-auth-1',
+        name: 'Auth Denial Reasons',
+        module: 'Authorizations',
+        keywords: ['denial', 'reasons', 'standardization'],
+        description: '<p>A standardized list of denial reasons mapped to specific clinical criteria and state-mandated language.</p>',
+        shortDescription: 'Standardized denial reason mapping.',
+        revisions: [],
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: true,
+        supportingTables: [],
+        attachments: [],
+        notes: [],
+        sourceDb: 'DW_Reporting',
+        sourceType: 'Tables',
+        sourceName: 'DENIAL_REASONS_MASTER'
+      },
+      {
         id: 'pending-sql-func-2',
         name: 'fn_GetAuthTurnaroundTime',
         module: 'Authorizations',
@@ -367,6 +385,39 @@ export const initialDefinitions: Definition[] = [
         }
       }
     ],
+  },
+  {
+    id: 'claims-root',
+    name: 'Claims',
+    module: 'Claims',
+    keywords: [],
+    description: '',
+    revisions: [],
+    isArchived: false,
+    isDraft: false,
+    supportingTables: [],
+    attachments: [],
+    notes: [],
+    children: [
+      {
+        id: 'pending-claims-1',
+        name: 'Standard Claim Codes',
+        module: 'Claims',
+        keywords: ['HCPCS', 'CPT', 'billing'],
+        description: '<p>The primary reference for claim adjudication codes used in the EZ-CAP finance module.</p>',
+        shortDescription: 'Primary billing code reference.',
+        revisions: [],
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: true,
+        supportingTables: [],
+        attachments: [],
+        notes: [],
+        sourceDb: 'Claims',
+        sourceType: 'Tables',
+        sourceName: 'CLAIM_ADJUDICATION_LOG'
+      }
+    ]
   },
   {
     id: 'member-root',
@@ -438,6 +489,24 @@ export const initialDefinitions: Definition[] = [
             sourceDb: 'Finance',
             sourceType: 'Tables',
             sourceName: 'FEE_SCHEDULES'
+        },
+        {
+            id: 'pending-provider-1',
+            name: 'Credentialing Status',
+            module: 'Provider',
+            keywords: ['credentialing', 'status', 'verification'],
+            description: '<p>Defines the lifecycle stages of a provider\'s credentialing process within the MPM network.</p>',
+            shortDescription: 'Provider verification lifecycle.',
+            revisions: [],
+            isArchived: false,
+            isDraft: true,
+            isPendingApproval: true,
+            supportingTables: [],
+            attachments: [],
+            notes: [],
+            sourceDb: 'Provider_Data',
+            sourceType: 'Views',
+            sourceName: 'vw_ProviderDirectory'
         }
     ]
   }
