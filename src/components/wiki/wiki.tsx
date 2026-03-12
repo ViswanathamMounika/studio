@@ -681,23 +681,6 @@ export default function Wiki() {
                       <div className="p-4 space-y-3 bg-muted/10 border-b">
                         <div className="flex items-center justify-between mb-1">
                             <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Workflow Queue</h2>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
-                                        <Settings2 className="h-3 w-3 text-muted-foreground" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
-                                        <Checkbox id="sidebar-show-archived" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} />
-                                        <Label htmlFor="sidebar-show-archived" className="text-xs cursor-pointer">Show Archived</Label>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
-                                        <Checkbox id="sidebar-show-bookmarked" checked={showBookmarked} onCheckedChange={() => setShowBookmarked(!showBookmarked)} />
-                                        <Label htmlFor="sidebar-show-bookmarked" className="text-xs cursor-pointer">Show Bookmarked</Label>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
                         </div>
                         <div className="flex items-center bg-black/5 dark:bg-white/5 rounded-full p-1 border shadow-inner">
                             <button 
@@ -760,9 +743,28 @@ export default function Wiki() {
 
                       {/* MPM Definitions Panel (Always Visible) */}
                       <div className="flex flex-col flex-1 min-h-0">
-                          <div className="px-4 py-3 bg-muted/5 border-b flex items-center gap-2">
-                              <FolderTree className="h-4 w-4 text-primary/70" />
-                              <h2 className="text-xs font-bold tracking-tight uppercase">MPM Definitions</h2>
+                          <div className="px-4 py-3 bg-muted/5 border-b flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <FolderTree className="h-4 w-4 text-primary/70" />
+                                <h2 className="text-xs font-bold tracking-tight uppercase">MPM Definitions</h2>
+                              </div>
+                              <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
+                                          <Settings2 className="h-3 w-3 text-muted-foreground" />
+                                      </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48">
+                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
+                                          <Checkbox id="sidebar-show-archived" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} />
+                                          <Label htmlFor="sidebar-show-archived" className="text-xs cursor-pointer">Show Archived</Label>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
+                                          <Checkbox id="sidebar-show-bookmarked" checked={showBookmarked} onCheckedChange={() => setShowBookmarked(!showBookmarked)} />
+                                          <Label htmlFor="sidebar-show-bookmarked" className="text-xs cursor-pointer">Show Bookmarked</Label>
+                                      </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                              </DropdownMenu>
                           </div>
                           
                           {isSelectMode && selectedForExport.length > 0 && (
