@@ -44,7 +44,7 @@ const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal')
 const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
 
 type View = 'definitions' | 'activity-logs' | 'template-management';
-type SidebarTab = 'queue' | 'saved';
+type SidebarTab = 'queue' | 'drafts';
 
 const initialNotifications: NotificationType[] = [
   {
@@ -684,7 +684,7 @@ export default function Wiki() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto">
-                      {/* Workflow Switcher (Queue/Saved) */}
+                      {/* Workflow Switcher (Approval Queue/Drafts) */}
                       <div className="p-4 space-y-3 bg-muted/10 border-b">
                         <div className="flex items-center justify-between mb-1">
                             <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Workflow Queue</h2>
@@ -705,13 +705,13 @@ export default function Wiki() {
                                 )}
                             </button>
                             <button 
-                                onClick={() => setSidebarTab('saved')}
+                                onClick={() => setSidebarTab('drafts')}
                                 className={cn(
                                     "flex-1 py-1.5 px-3 rounded-full text-[11px] font-bold transition-all",
-                                    sidebarTab === 'saved' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                                    sidebarTab === 'drafts' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
-                                Saved
+                                Drafts
                             </button>
                         </div>
 
@@ -734,7 +734,7 @@ export default function Wiki() {
                             ) : (
                                 categorizedDefinitions.drafts.length > 0 ? (
                                     <DefinitionTree
-                                        treeId="saved"
+                                        treeId="drafts"
                                         definitions={categorizedDefinitions.drafts}
                                         selectedId={selectedDefinitionId}
                                         onSelect={handleSelectDefinition}
