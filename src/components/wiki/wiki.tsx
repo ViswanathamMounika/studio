@@ -677,18 +677,6 @@ export default function Wiki() {
                   <div className="p-4 flex flex-col gap-4 border-b bg-background sticky top-0 z-30 shadow-sm">
                     <div className="flex items-center justify-between">
                         <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
-                        <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
-                            <span className="text-[9px] font-bold uppercase text-primary/70">Role Switcher</span>
-                            <div className="flex items-center gap-1.5">
-                                <ShieldCheck className={cn("h-3 w-3 transition-opacity", !isAdmin && "opacity-30 text-muted-foreground", isAdmin && "text-primary")} />
-                                <Switch 
-                                    id="role-simulation-toggle"
-                                    checked={isAdmin} 
-                                    onCheckedChange={setIsAdmin} 
-                                    className="scale-[0.6] data-[state=checked]:bg-primary"
-                                />
-                            </div>
-                        </div>
                     </div>
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
