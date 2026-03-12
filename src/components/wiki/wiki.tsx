@@ -718,7 +718,7 @@ export default function Wiki() {
                             <button 
                                 onClick={() => setSidebarTab('queue')}
                                 className={cn(
-                                    "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-full text-[11px] font-bold transition-all relative",
+                                    "flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-full text-[11px] font-bold transition-all relative whitespace-nowrap",
                                     sidebarTab === 'queue' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
@@ -732,7 +732,7 @@ export default function Wiki() {
                             <button 
                                 onClick={() => setSidebarTab('drafts')}
                                 className={cn(
-                                    "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-full text-[11px] font-bold transition-all relative",
+                                    "flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-full text-[11px] font-bold transition-all relative whitespace-nowrap",
                                     sidebarTab === 'drafts' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
