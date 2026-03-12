@@ -66,9 +66,9 @@ const initialNotifications: NotificationType[] = [
 ];
 
 export default function Wiki() {
-  // Use v3 keys to ensure users see the latest dummy data update
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v3', initialDefinitions);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v3', initialTemplates);
+  // Use v4 keys to ensure users see the latest module restructure
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v4', initialDefinitions);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v4', initialTemplates);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -80,14 +80,14 @@ export default function Wiki() {
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v3', true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v4', true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('queue');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v3', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v4', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v3', null);
+  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v4', null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -621,7 +621,14 @@ export default function Wiki() {
 
   if (!isMounted) return null;
 
-  const pendingCount = categorizedDefinitions.pending.length;
+  // Count total leaf definitions pending approval
+  const countLeafPending = (items: Definition[]): number => {
+    return items.reduce((acc, item) => {
+      const isPendingLeaf = item.isPendingApproval && item.description;
+      return acc + (isPendingLeaf ? 1 : 0) + (item.children ? countLeafPending(item.children) : 0);
+    }, 0);
+  };
+  const totalPendingCount = countLeafPending(categorizedDefinitions.pending);
 
   return (
     <SidebarProvider>
@@ -691,9 +698,9 @@ export default function Wiki() {
                                 )}
                             >
                                 Queue
-                                {pendingCount > 0 && (
+                                {totalPendingCount > 0 && (
                                     <span className="bg-destructive text-white h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold animate-pulse">
-                                        {pendingCount}
+                                        {totalPendingCount}
                                     </span>
                                 )}
                             </button>

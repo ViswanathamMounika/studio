@@ -338,50 +338,45 @@ export const initialDefinitions: Definition[] = [
         sourceDb: 'DW_Reporting',
         sourceType: 'Tables',
         sourceName: 'PROCEDURE_CODES'
+      },
+      {
+        id: 'pending-sql-func-2',
+        name: 'fn_GetAuthTurnaroundTime',
+        module: 'Authorizations',
+        keywords: ['TAT', 'SLA', 'turnaround'],
+        description: '<p>Calculates the total time in business days between authorization request and decision.</p>',
+        shortDescription: 'Calculates Auth TAT in business days.',
+        revisions: [],
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: true,
+        supportingTables: [],
+        attachments: [],
+        notes: [],
+        sourceDb: 'DW_Reporting',
+        sourceType: 'SQL Functions',
+        sourceName: 'fn_GetAuthTurnaroundTime',
+        sqlFunctionDetails: {
+          inputParameters: [
+            { name: '@RequestDate', type: 'datetime' },
+            { name: '@DecisionDate', type: 'datetime' }
+          ],
+          locations: ['All EZ-CAP Databases', 'SupportTbls'],
+          outputType: 'int',
+          outputExample: '3'
+        }
       }
     ],
   },
   {
-    id: '3',
-    name: 'Provider',
-    module: 'Provider',
+    id: 'member-root',
+    name: 'Member',
+    module: 'Member',
     keywords: [],
     description: '',
     revisions: [],
     isArchived: false,
     isDraft: false,
-    supportingTables: [],
-    attachments: [],
-    notes: [],
-    children: [
-        {
-            id: '2.1.1',
-            name: 'Contracted Rates',
-            module: 'Provider',
-            keywords: ['provider', 'contract', 'rates'],
-            description: '<p>The negotiated payment rates for services rendered by in-network providers.</p>',
-            revisions: [],
-            isArchived: false,
-            isDraft: false,
-            supportingTables: [],
-            attachments: [],
-            notes: [],
-            sourceDb: 'Finance',
-            sourceType: 'Tables',
-            sourceName: 'FEE_SCHEDULES'
-        }
-    ]
-  },
-  {
-    id: 'pending-root',
-    name: 'Pending Approval (Queue)',
-    module: 'Core',
-    keywords: [],
-    description: '',
-    revisions: [],
-    isArchived: false,
-    isDraft: true,
-    isPendingApproval: true,
     supportingTables: [],
     attachments: [],
     notes: [],
@@ -412,34 +407,38 @@ export const initialDefinitions: Definition[] = [
           outputType: 'int',
           outputExample: '42'
         }
-      },
-      {
-        id: 'pending-sql-func-2',
-        name: 'fn_GetAuthTurnaroundTime',
-        module: 'Authorizations',
-        keywords: ['TAT', 'SLA', 'turnaround'],
-        description: '<p>Calculates the total time in business days between authorization request and decision.</p>',
-        shortDescription: 'Calculates Auth TAT in business days.',
-        revisions: [],
-        isArchived: false,
-        isDraft: true,
-        isPendingApproval: true,
-        supportingTables: [],
-        attachments: [],
-        notes: [],
-        sourceDb: 'DW_Reporting',
-        sourceType: 'SQL Functions',
-        sourceName: 'fn_GetAuthTurnaroundTime',
-        sqlFunctionDetails: {
-          inputParameters: [
-            { name: '@RequestDate', type: 'datetime' },
-            { name: '@DecisionDate', type: 'datetime' }
-          ],
-          locations: ['All EZ-CAP Databases', 'SupportTbls'],
-          outputType: 'int',
-          outputExample: '3'
-        }
       }
+    ]
+  },
+  {
+    id: '3',
+    name: 'Provider',
+    module: 'Provider',
+    keywords: [],
+    description: '',
+    revisions: [],
+    isArchived: false,
+    isDraft: false,
+    supportingTables: [],
+    attachments: [],
+    notes: [],
+    children: [
+        {
+            id: '2.1.1',
+            name: 'Contracted Rates',
+            module: 'Provider',
+            keywords: ['provider', 'contract', 'rates'],
+            description: '<p>The negotiated payment rates for services rendered by in-network providers.</p>',
+            revisions: [],
+            isArchived: false,
+            isDraft: false,
+            supportingTables: [],
+            attachments: [],
+            notes: [],
+            sourceDb: 'Finance',
+            sourceType: 'Tables',
+            sourceName: 'FEE_SCHEDULES'
+        }
     ]
   }
 ];
