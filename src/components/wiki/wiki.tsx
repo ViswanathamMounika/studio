@@ -697,7 +697,7 @@ export default function Wiki() {
                                     sidebarTab === 'queue' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
-                                Queue
+                                Approval Queue
                                 {totalPendingCount > 0 && (
                                     <span className="bg-destructive text-white h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold animate-pulse">
                                         {totalPendingCount}
