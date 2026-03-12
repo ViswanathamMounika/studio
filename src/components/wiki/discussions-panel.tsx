@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, RefreshCw } from 'lucide-react';
+import { Send, RefreshCw, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { DiscussionMessage } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -37,7 +37,7 @@ export default function DiscussionsPanel({ open, onOpenChange, discussions, defi
     setReply('');
   };
 
-  const openThreadCount = discussions.filter(d => d.type === 'change-request').length;
+  const openThreadCount = discussions.filter(d => d.type === 'change-request' || d.type === 'rejection').length;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -46,9 +46,9 @@ export default function DiscussionsPanel({ open, onOpenChange, discussions, defi
         <SheetOverlay className="bg-transparent backdrop-blur-none" />
         <SheetContent className="w-full sm:max-w-md p-0 flex flex-col bg-slate-50 shadow-2xl border-l border-slate-200">
           <SheetHeader className="p-6 bg-white border-b shadow-sm">
-            <SheetTitle className="text-xl font-bold">Change Requests</SheetTitle>
+            <SheetTitle className="text-xl font-bold">Activity & Feedback</SheetTitle>
             <SheetDescription className="text-sm">
-              {openThreadCount} open thread{openThreadCount !== 1 ? 's' : ''} · {definitionName}
+              {openThreadCount} feedback thread{openThreadCount !== 1 ? 's' : ''} · {definitionName}
             </SheetDescription>
           </SheetHeader>
 
@@ -58,7 +58,7 @@ export default function DiscussionsPanel({ open, onOpenChange, discussions, defi
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t border-slate-200" />
                 </div>
-                <span className="relative bg-slate-50 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Today</span>
+                <span className="relative bg-slate-50 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">History</span>
               </div>
 
               {discussions.map((msg) => (
@@ -74,11 +74,17 @@ export default function DiscussionsPanel({ open, onOpenChange, discussions, defi
                       <span className="text-[11px] text-slate-400">{formatDistanceToNow(new Date(msg.date), { addSuffix: true })}</span>
                     </div>
 
-                    {msg.type === 'change-request' ? (
-                      <div className="p-4 bg-amber-50/50 border border-amber-100 rounded-xl space-y-3 shadow-sm">
-                        <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-amber-200 rounded-lg text-[10px] font-bold text-amber-600 uppercase">
-                          <RefreshCw className="h-3 w-3" />
-                          Change Request
+                    {(msg.type === 'change-request' || msg.type === 'rejection') ? (
+                      <div className={cn(
+                        "p-4 border rounded-xl space-y-3 shadow-sm",
+                        msg.type === 'rejection' ? "bg-red-50/50 border-red-100" : "bg-amber-50/50 border-amber-100"
+                      )}>
+                        <div className={cn(
+                          "inline-flex items-center gap-1.5 px-2 py-1 bg-white border rounded-lg text-[10px] font-bold uppercase",
+                          msg.type === 'rejection' ? "text-red-600 border-red-200" : "text-amber-600 border-amber-200"
+                        )}>
+                          {msg.type === 'rejection' ? <XCircle className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
+                          {msg.type === 'rejection' ? 'Rejected' : 'Change Request'}
                         </div>
                         
                         {msg.priority && (

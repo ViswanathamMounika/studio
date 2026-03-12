@@ -35,7 +35,7 @@ export interface DiscussionMessage {
   avatar: string;
   date: string;
   content: string;
-  type: 'comment' | 'change-request';
+  type: 'comment' | 'change-request' | 'rejection';
   priority?: 'Low' | 'Medium' | 'High';
   round?: number;
 }

@@ -43,7 +43,7 @@ type DefinitionViewProps = {
   onDelete: (id: string) => void;
   onToggleBookmark: (id: string) => void;
   onPublish?: (id: string) => void;
-  onReject?: (id: string, requestData?: { content: string; priority: 'Low' | 'Medium' | 'High' }) => void;
+  onReject?: (id: string, requestData?: { content: string; priority?: 'Low' | 'Medium' | 'High'; isRejection?: boolean }) => void;
   onSendApproval?: (id: string) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -96,7 +96,8 @@ export default function DefinitionView({
     const [showComparison, setShowComparison] = useState(false);
     const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
     const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
-    const [isChangeRequestModalOpen, setIsChangeRequestModalOpen] = useState(false);
+    const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+    const [feedbackMode, setFeedbackMode] = useState<'request' | 'reject'>('request');
     const [isDiscussionsOpen, setIsDiscussionsOpen] = useState(false);
     
     const [noteText, setNoteText] = useState('');
@@ -278,7 +279,21 @@ export default function DefinitionView({
                             <Button 
                                 variant="outline" 
                                 className="text-destructive border-destructive hover:bg-destructive hover:text-white" 
-                                onClick={() => setIsChangeRequestModalOpen(true)}
+                                onClick={() => {
+                                    setFeedbackMode('reject');
+                                    setIsFeedbackModalOpen(true);
+                                }}
+                            >
+                                <X className="mr-2 h-4 w-4" />
+                                Reject
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                className="text-amber-600 border-amber-600 hover:bg-amber-600 hover:text-white" 
+                                onClick={() => {
+                                    setFeedbackMode('request');
+                                    setIsFeedbackModalOpen(true);
+                                }}
                             >
                                 <Undo2 className="mr-2 h-4 w-4" />
                                 Request Changes
@@ -659,10 +674,17 @@ export default function DefinitionView({
         <DataSourcePreviewDialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen} sourceName={definition.sourceName || null} databaseName={resolvedSourceInfo.database} />
 
         <ChangeRequestModal 
-            open={isChangeRequestModalOpen} 
-            onOpenChange={setIsChangeRequestModalOpen} 
+            open={isFeedbackModalOpen} 
+            onOpenChange={setIsFeedbackModalOpen} 
             definitionName={definition.name}
-            onSend={(data) => onReject?.(definition.id, data)}
+            title={feedbackMode === 'reject' ? "Reject Definition" : "Request Changes"}
+            description={feedbackMode === 'reject' 
+                ? "Provide a reason for rejecting this definition. It will be returned to the author as a draft." 
+                : "Describe what needs to be updated. The definition owner will be notified."}
+            buttonText={feedbackMode === 'reject' ? "Reject" : "Send Request"}
+            showPriority={feedbackMode === 'request'}
+            isRejection={feedbackMode === 'reject'}
+            onSend={(data) => onReject?.(definition.id, { ...data, isRejection: feedbackMode === 'reject' })}
         />
 
         {definition.discussions && (

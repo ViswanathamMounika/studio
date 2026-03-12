@@ -336,7 +336,7 @@ export default function Wiki() {
     toast({ title: 'Submitted', description: 'Your definition has been submitted for approval.' });
   };
 
-  const handleReject = (id: string, requestData?: { content: string; priority: 'Low' | 'Medium' | 'High' }) => {
+  const handleReject = (id: string, requestData?: { content: string; priority?: 'Low' | 'Medium' | 'High'; isRejection?: boolean }) => {
     if (!isAdmin) return;
     
     const updateItem = (items: Definition[]): Definition[] => {
@@ -351,7 +351,7 @@ export default function Wiki() {
               avatar: currentUser.avatar,
               date: new Date().toISOString(),
               content: requestData.content,
-              type: 'change-request',
+              type: requestData.isRejection ? 'rejection' : 'change-request',
               priority: requestData.priority,
               round: 1
             };
@@ -364,7 +364,10 @@ export default function Wiki() {
       });
     };
     setDefinitions(updateItem(definitions));
-    toast({ title: 'Changes Requested', description: 'The definition has been returned to draft status with feedback.' });
+    toast({ 
+        title: requestData?.isRejection ? 'Definition Rejected' : 'Changes Requested', 
+        description: `The definition has been returned to draft status with feedback.` 
+    });
   };
 
   const filteredDefinitions = useMemo(() => {
