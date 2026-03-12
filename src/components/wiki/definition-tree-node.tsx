@@ -92,13 +92,16 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
   
   const [isNodeExpanded, setIsNodeExpanded] = useState(false);
 
+  // Auto-expand based on search or if this node is a parent of the global selection
   useEffect(() => {
     if (searchQuery) {
         setIsNodeExpanded(true);
-    } else {
-        setIsNodeExpanded(isSelected || isParentOfSelected);
+    } else if (isParentOfSelected) {
+        setIsNodeExpanded(true);
     }
-  }, [isSelected, isParentOfSelected, searchQuery]);
+    // We intentionally exclude 'isSelected' from auto-expanding to prevent cross-tree expansion 
+    // when a shared folder ID is selected.
+  }, [isParentOfSelected, searchQuery]);
   
   const handleNodeSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -111,12 +114,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
 
   const handleTriggerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if(isSelected && !hasChildren){
-       setIsNodeExpanded(prev => !prev);
-    } else {
-       if (!isSelectMode) onSelect(node.id);
-       setIsNodeExpanded(prev => !prev);
-    }
+    setIsNodeExpanded(prev => !prev);
   };
   
   const Icon = hasChildren || isModule ? Folder : FileText;

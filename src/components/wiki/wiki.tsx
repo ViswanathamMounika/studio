@@ -719,6 +719,7 @@ export default function Wiki() {
                             {sidebarTab === 'queue' ? (
                                 categorizedDefinitions.pending.length > 0 ? (
                                     <DefinitionTree
+                                        treeId="queue"
                                         definitions={categorizedDefinitions.pending}
                                         selectedId={selectedDefinitionId}
                                         onSelect={handleSelectDefinition}
@@ -733,6 +734,7 @@ export default function Wiki() {
                             ) : (
                                 categorizedDefinitions.drafts.length > 0 ? (
                                     <DefinitionTree
+                                        treeId="saved"
                                         definitions={categorizedDefinitions.drafts}
                                         selectedId={selectedDefinitionId}
                                         onSelect={handleSelectDefinition}
@@ -825,6 +827,7 @@ export default function Wiki() {
                           <div className="p-2">
                             {categorizedDefinitions.published.length > 0 ? (
                                 <DefinitionTree
+                                    treeId="mpm"
                                     definitions={categorizedDefinitions.published}
                                     selectedId={selectedDefinitionId}
                                     onSelect={handleSelectDefinition}

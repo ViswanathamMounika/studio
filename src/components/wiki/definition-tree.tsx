@@ -15,14 +15,15 @@ type DefinitionTreeProps = {
   activeSection: string;
   searchQuery: string;
   editLockId: string | null;
+  treeId: string;
 };
 
-export default function DefinitionTree({ definitions, selectedId, onSelect, onToggleSelection, selectedForExport, isSelectMode, activeSection, searchQuery, editLockId }: DefinitionTreeProps) {
+export default function DefinitionTree({ definitions, selectedId, onSelect, onToggleSelection, selectedForExport, isSelectMode, activeSection, searchQuery, editLockId, treeId }: DefinitionTreeProps) {
   return (
     <div className="space-y-1">
       {definitions.map(node => (
         <DefinitionTreeNode
-          key={node.id}
+          key={`${treeId}-${node.id}`}
           node={node}
           selectedId={selectedId}
           onSelect={onSelect}
