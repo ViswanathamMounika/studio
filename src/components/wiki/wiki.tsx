@@ -6,7 +6,7 @@ import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send, ShieldCheck, Clock, Settings2 } from 'lucide-react';
+import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send, ShieldCheck, Clock, Settings2, FolderTree } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -25,6 +25,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '../ui/badge';
 import { Switch } from '../ui/switch';
+import { Separator } from '../ui/separator';
 
 // Dynamic imports for heavy components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
@@ -43,7 +44,7 @@ const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal')
 const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
 
 type View = 'definitions' | 'activity-logs' | 'template-management';
-type SidebarTab = 'queue' | 'saved' | 'mpm';
+type SidebarTab = 'queue' | 'saved';
 
 const initialNotifications: NotificationType[] = [
   {
@@ -81,7 +82,7 @@ export default function Wiki() {
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v3', true);
   const [activeView, setActiveView] = useState<View>('definitions');
-  const [sidebarTab, setSidebarTab] = useState<SidebarTab>('mpm');
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>('queue');
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v3', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
@@ -675,114 +676,58 @@ export default function Wiki() {
                     </Button>
                   </div>
 
-                  {/* New Pill-Styled Switcher Container */}
-                  <div className="px-4 py-3 bg-muted/30 border-b flex items-center justify-between gap-2">
-                    <div className="flex flex-1 items-center bg-black/10 dark:bg-white/5 rounded-full p-1 border shadow-inner">
-                        <button 
-                            onClick={() => setSidebarTab('queue')}
-                            className={cn(
-                                "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-full text-xs font-bold transition-all relative",
-                                sidebarTab === 'queue' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
-                            )}
-                        >
-                            Queue
-                            {pendingCount > 0 && (
-                                <span className="bg-destructive text-white h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold animate-pulse">
-                                    {pendingCount}
-                                </span>
-                            )}
-                        </button>
-                        <button 
-                            onClick={() => setSidebarTab('saved')}
-                            className={cn(
-                                "flex-1 py-1.5 px-3 rounded-full text-xs font-bold transition-all",
-                                sidebarTab === 'saved' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
-                            )}
-                        >
-                            Saved
-                        </button>
-                        <button 
-                            onClick={() => setSidebarTab('mpm')}
-                            className={cn(
-                                "flex-1 py-1.5 px-3 rounded-full text-xs font-bold transition-all",
-                                sidebarTab === 'mpm' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
-                            )}
-                        >
-                            MPM
-                        </button>
-                    </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                                <Settings2 className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
-                                <Checkbox id="sidebar-show-archived" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} />
-                                <Label htmlFor="sidebar-show-archived" className="text-xs cursor-pointer">Show Archived</Label>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
-                                <Checkbox id="sidebar-show-bookmarked" checked={showBookmarked} onCheckedChange={() => setShowBookmarked(!showBookmarked)} />
-                                <Label htmlFor="sidebar-show-bookmarked" className="text-xs cursor-pointer">Show Bookmarked</Label>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
                   <div className="flex-1 overflow-y-auto">
-                      {isSelectMode && (
-                          <div className="mx-4 my-2 p-3 bg-primary/5 border rounded-lg flex flex-col gap-3 sticky top-2 z-20 shadow-sm">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                                    <Check className="h-3 w-3 text-primary-foreground" />
-                                  </div>
-                                  <span className="text-sm font-bold">{selectedForExport.length} selected</span>
-                                </div>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setIsSelectMode(false); setSelectedForExport([]); }}>
-                                    <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="h-9 text-xs" disabled={selectedForExport.length === 0}>
-                                            <Download className="mr-2 h-4 w-4" />
-                                            Export
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start">
-                                        <DropdownMenuItem onClick={() => handleExport('json')}>
-                                            <FileJson className="mr-2 h-4 w-4" />
-                                            JSON
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleExport('pdf')}>
-                                            <FileText className="mr-2 h-4 w-4" />
-                                            PDF
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleExport('xlsx')}>
-                                            <FileSpreadsheet className="mr-2 h-4 w-4" />
-                                            Excel (XLSX)
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleExport('html')}>
-                                            <FileCode className="mr-2 h-4 w-4" />
-                                            HTML
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { handleArchive(selectedForExport, true); setIsSelectMode(false); setSelectedForExport([]); }} disabled={selectedForExport.length === 0}>
-                                    <Archive className="mr-2 h-4 w-4" />
-                                    Archive
-                                </Button>
-                              </div>
-                          </div>
-                      )}
+                      {/* Workflow Switcher (Queue/Saved) */}
+                      <div className="p-4 space-y-3 bg-muted/10 border-b">
+                        <div className="flex items-center justify-between mb-1">
+                            <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Workflow Queue</h2>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
+                                        <Settings2 className="h-3 w-3 text-muted-foreground" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
+                                        <Checkbox id="sidebar-show-archived" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} />
+                                        <Label htmlFor="sidebar-show-archived" className="text-xs cursor-pointer">Show Archived</Label>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
+                                        <Checkbox id="sidebar-show-bookmarked" checked={showBookmarked} onCheckedChange={() => setShowBookmarked(!showBookmarked)} />
+                                        <Label htmlFor="sidebar-show-bookmarked" className="text-xs cursor-pointer">Show Bookmarked</Label>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        <div className="flex items-center bg-black/5 dark:bg-white/5 rounded-full p-1 border shadow-inner">
+                            <button 
+                                onClick={() => setSidebarTab('queue')}
+                                className={cn(
+                                    "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-full text-[11px] font-bold transition-all relative",
+                                    sidebarTab === 'queue' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                Queue
+                                {pendingCount > 0 && (
+                                    <span className="bg-destructive text-white h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold animate-pulse">
+                                        {pendingCount}
+                                    </span>
+                                )}
+                            </button>
+                            <button 
+                                onClick={() => setSidebarTab('saved')}
+                                className={cn(
+                                    "flex-1 py-1.5 px-3 rounded-full text-[11px] font-bold transition-all",
+                                    sidebarTab === 'saved' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                Saved
+                            </button>
+                        </div>
 
-                      <div className="py-2">
-                        {sidebarTab === 'queue' && (
-                            <>
-                                {categorizedDefinitions.pending.length > 0 ? (
+                        <div className="pt-2">
+                            {sidebarTab === 'queue' ? (
+                                categorizedDefinitions.pending.length > 0 ? (
                                     <DefinitionTree
                                         definitions={categorizedDefinitions.pending}
                                         selectedId={selectedDefinitionId}
@@ -794,13 +739,9 @@ export default function Wiki() {
                                         searchQuery={searchQuery}
                                         editLockId={editLockId}
                                     />
-                                ) : <p className="px-8 py-8 text-sm text-muted-foreground text-center italic">No items pending review.</p>}
-                            </>
-                        )}
-
-                        {sidebarTab === 'saved' && (
-                            <>
-                                {categorizedDefinitions.drafts.length > 0 ? (
+                                ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No items pending review.</p>
+                            ) : (
+                                categorizedDefinitions.drafts.length > 0 ? (
                                     <DefinitionTree
                                         definitions={categorizedDefinitions.drafts}
                                         selectedId={selectedDefinitionId}
@@ -812,27 +753,86 @@ export default function Wiki() {
                                         searchQuery={searchQuery}
                                         editLockId={editLockId}
                                     />
-                                ) : <p className="px-8 py-8 text-sm text-muted-foreground text-center italic">No saved drafts found.</p>}
-                            </>
-                        )}
+                                ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No saved drafts found.</p>
+                            )}
+                        </div>
+                      </div>
 
-                        {sidebarTab === 'mpm' && (
-                            <>
-                                {categorizedDefinitions.published.length > 0 ? (
-                                    <DefinitionTree
-                                        definitions={categorizedDefinitions.published}
-                                        selectedId={selectedDefinitionId}
-                                        onSelect={handleSelectDefinition}
-                                        onToggleSelection={toggleSelectionForExport}
-                                        selectedForExport={selectedForExport}
-                                        isSelectMode={isSelectMode}
-                                        activeSection={activeTab}
-                                        searchQuery={searchQuery}
-                                        editLockId={editLockId}
-                                    />
-                                ) : <p className="px-8 py-8 text-sm text-muted-foreground text-center italic">No published definitions found.</p>}
-                            </>
-                        )}
+                      {/* MPM Definitions Panel (Always Visible) */}
+                      <div className="flex flex-col flex-1 min-h-0">
+                          <div className="px-4 py-3 bg-muted/5 border-b flex items-center gap-2">
+                              <FolderTree className="h-4 w-4 text-primary/70" />
+                              <h2 className="text-xs font-bold tracking-tight uppercase">MPM Definitions</h2>
+                          </div>
+                          
+                          {isSelectMode && selectedForExport.length > 0 && (
+                              <div className="mx-4 my-2 p-3 bg-primary/5 border rounded-lg flex flex-col gap-3 sticky top-2 z-20 shadow-sm">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                                        <Check className="h-3 w-3 text-primary-foreground" />
+                                      </div>
+                                      <span className="text-sm font-bold">{selectedForExport.length} selected</span>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setIsSelectMode(false); setSelectedForExport([]); }}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm" className="h-9 text-xs" disabled={selectedForExport.length === 0}>
+                                                <Download className="mr-2 h-4 w-4" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start">
+                                            <DropdownMenuItem onClick={() => handleExport('json')}>
+                                                <FileJson className="mr-2 h-4 w-4" />
+                                                JSON
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                                                <FileText className="mr-2 h-4 w-4" />
+                                                PDF
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                                                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                                Excel (XLSX)
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleExport('html')}>
+                                                <FileCode className="mr-2 h-4 w-4" />
+                                                HTML
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { handleArchive(selectedForExport, true); setIsSelectMode(false); setSelectedForExport([]); }} disabled={selectedForExport.length === 0}>
+                                        <Archive className="mr-2 h-4 w-4" />
+                                        Archive
+                                    </Button>
+                                  </div>
+                              </div>
+                          )}
+
+                          <div className="p-2">
+                            {categorizedDefinitions.published.length > 0 ? (
+                                <DefinitionTree
+                                    definitions={categorizedDefinitions.published}
+                                    selectedId={selectedDefinitionId}
+                                    onSelect={handleSelectDefinition}
+                                    onToggleSelection={toggleSelectionForExport}
+                                    selectedForExport={selectedForExport}
+                                    isSelectMode={isSelectMode}
+                                    activeSection={activeTab}
+                                    searchQuery={searchQuery}
+                                    editLockId={editLockId}
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                                    <Info className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                                    <p className="text-xs text-muted-foreground italic">No published definitions found.</p>
+                                </div>
+                            )}
+                          </div>
                       </div>
                   </div>
               </div>
