@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
@@ -5,7 +6,7 @@ import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send, ShieldCheck, Clock } from 'lucide-react';
+import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send, ShieldCheck, Clock, Settings2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -42,6 +43,7 @@ const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal')
 const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
 
 type View = 'definitions' | 'activity-logs' | 'template-management';
+type SidebarTab = 'queue' | 'saved' | 'mpm';
 
 const initialNotifications: NotificationType[] = [
   {
@@ -79,13 +81,11 @@ export default function Wiki() {
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v3', true);
   const [activeView, setActiveView] = useState<View>('definitions');
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>('mpm');
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v3', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const [isDraftsExpanded, setIsDraftsExpanded] = useState(true);
-  const [isPendingExpanded, setIsPendingExpanded] = useState(true);
-  const [isMpmExpanded, setIsMpmExpanded] = useState(true);
   const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v3', null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
@@ -620,6 +620,8 @@ export default function Wiki() {
 
   if (!isMounted) return null;
 
+  const pendingCount = categorizedDefinitions.pending.length;
+
   return (
     <SidebarProvider>
       <AppSidebar activeView={activeView} onNavigate={handleNavigate} isAdmin={isAdmin} />
@@ -673,6 +675,61 @@ export default function Wiki() {
                     </Button>
                   </div>
 
+                  {/* New Pill-Styled Switcher Container */}
+                  <div className="px-4 py-3 bg-muted/30 border-b flex items-center justify-between gap-2">
+                    <div className="flex flex-1 items-center bg-black/10 dark:bg-white/5 rounded-full p-1 border shadow-inner">
+                        <button 
+                            onClick={() => setSidebarTab('queue')}
+                            className={cn(
+                                "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-full text-xs font-bold transition-all relative",
+                                sidebarTab === 'queue' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            Queue
+                            {pendingCount > 0 && (
+                                <span className="bg-destructive text-white h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold animate-pulse">
+                                    {pendingCount}
+                                </span>
+                            )}
+                        </button>
+                        <button 
+                            onClick={() => setSidebarTab('saved')}
+                            className={cn(
+                                "flex-1 py-1.5 px-3 rounded-full text-xs font-bold transition-all",
+                                sidebarTab === 'saved' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            Saved
+                        </button>
+                        <button 
+                            onClick={() => setSidebarTab('mpm')}
+                            className={cn(
+                                "flex-1 py-1.5 px-3 rounded-full text-xs font-bold transition-all",
+                                sidebarTab === 'mpm' ? "bg-white dark:bg-muted shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            MPM
+                        </button>
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                                <Settings2 className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
+                                <Checkbox id="sidebar-show-archived" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} />
+                                <Label htmlFor="sidebar-show-archived" className="text-xs cursor-pointer">Show Archived</Label>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
+                                <Checkbox id="sidebar-show-bookmarked" checked={showBookmarked} onCheckedChange={() => setShowBookmarked(!showBookmarked)} />
+                                <Label htmlFor="sidebar-show-bookmarked" className="text-xs cursor-pointer">Show Bookmarked</Label>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
                   <div className="flex-1 overflow-y-auto">
                       {isSelectMode && (
                           <div className="mx-4 my-2 p-3 bg-primary/5 border rounded-lg flex flex-col gap-3 sticky top-2 z-20 shadow-sm">
@@ -722,149 +779,61 @@ export default function Wiki() {
                           </div>
                       )}
 
-                      <TooltipProvider>
-                        {isAdmin ? (
-                            <Collapsible open={isPendingExpanded} onOpenChange={setIsPendingExpanded} className="border-b bg-amber-50/20">
-                                <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
-                                    <CollapsibleTrigger asChild>
-                                        <div className="flex items-center gap-2 flex-1 cursor-pointer">
-                                            <ChevronDown className={cn("h-4 w-4 transition-transform", !isPendingExpanded && "-rotate-90")} />
-                                            <span className="font-bold text-sm flex items-center gap-2">
-                                                Approval Queue
-                                                {categorizedDefinitions.pending.length > 0 && <Badge variant="destructive" className="h-4 px-1 text-[9px]">{categorizedDefinitions.pending.length}</Badge>}
-                                            </span>
-                                        </div>
-                                    </CollapsibleTrigger>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild><Clock className="h-4 w-4 text-amber-600 opacity-50 cursor-help" /></TooltipTrigger>
-                                        <TooltipContent>Definitions submitted for review.</TooltipContent>
-                                    </Tooltip>
-                                </div>
-                                <CollapsibleContent>
-                                    <div className="py-2">
-                                        {categorizedDefinitions.pending.length > 0 ? (
-                                            <DefinitionTree
-                                                definitions={categorizedDefinitions.pending}
-                                                selectedId={selectedDefinitionId}
-                                                onSelect={handleSelectDefinition}
-                                                onToggleSelection={toggleSelectionForExport}
-                                                selectedForExport={selectedForExport}
-                                                isSelectMode={isSelectMode}
-                                                activeSection={activeTab}
-                                                searchQuery={searchQuery}
-                                                editLockId={editLockId}
-                                            />
-                                        ) : <p className="px-8 py-4 text-xs text-muted-foreground italic">No definitions pending review.</p>}
-                                    </div>
-                                </CollapsibleContent>
-                            </Collapsible>
-                        ) : (
-                            <Collapsible open={isPendingExpanded} onOpenChange={setIsPendingExpanded} className="border-b bg-primary/5">
-                                <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
-                                    <CollapsibleTrigger asChild>
-                                        <div className="flex items-center gap-2 flex-1 cursor-pointer">
-                                            <ChevronDown className={cn("h-4 w-4 transition-transform", !isPendingExpanded && "-rotate-90")} />
-                                            <span className="font-bold text-sm">My Pending Reviews</span>
-                                        </div>
-                                    </CollapsibleTrigger>
-                                </div>
-                                <CollapsibleContent>
-                                    <div className="py-2">
-                                        {categorizedDefinitions.pending.length > 0 ? (
-                                            <DefinitionTree
-                                                definitions={categorizedDefinitions.pending}
-                                                selectedId={selectedDefinitionId}
-                                                onSelect={handleSelectDefinition}
-                                                onToggleSelection={toggleSelectionForExport}
-                                                selectedForExport={selectedForExport}
-                                                isSelectMode={isSelectMode}
-                                                activeSection={activeTab}
-                                                searchQuery={searchQuery}
-                                                editLockId={editLockId}
-                                            />
-                                        ) : <p className="px-8 py-4 text-xs text-muted-foreground italic">No submitted definitions.</p>}
-                                    </div>
-                                </CollapsibleContent>
-                            </Collapsible>
+                      <div className="py-2">
+                        {sidebarTab === 'queue' && (
+                            <>
+                                {categorizedDefinitions.pending.length > 0 ? (
+                                    <DefinitionTree
+                                        definitions={categorizedDefinitions.pending}
+                                        selectedId={selectedDefinitionId}
+                                        onSelect={handleSelectDefinition}
+                                        onToggleSelection={toggleSelectionForExport}
+                                        selectedForExport={selectedForExport}
+                                        isSelectMode={isSelectMode}
+                                        activeSection={activeTab}
+                                        searchQuery={searchQuery}
+                                        editLockId={editLockId}
+                                    />
+                                ) : <p className="px-8 py-8 text-sm text-muted-foreground text-center italic">No items pending review.</p>}
+                            </>
                         )}
 
-                        <Collapsible open={isDraftsExpanded} onOpenChange={setIsDraftsExpanded} className="border-b">
-                            <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
-                                <CollapsibleTrigger asChild>
-                                    <div className="flex items-center gap-2 flex-1 cursor-pointer">
-                                        <ChevronDown className={cn("h-4 w-4 transition-transform", !isDraftsExpanded && "-rotate-90")} />
-                                        <span className="font-bold text-sm">My Saved Definitions</span>
-                                    </div>
-                                </CollapsibleTrigger>
-                                <Tooltip>
-                                    <TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground opacity-50 cursor-help" /></TooltipTrigger>
-                                    <TooltipContent>Definitions saved as drafts.</TooltipContent>
-                                </Tooltip>
-                            </div>
-                            <CollapsibleContent>
-                                <div className="py-2">
-                                    {categorizedDefinitions.drafts.length > 0 ? (
-                                        <DefinitionTree
-                                            definitions={categorizedDefinitions.drafts}
-                                            selectedId={selectedDefinitionId}
-                                            onSelect={handleSelectDefinition}
-                                            onToggleSelection={toggleSelectionForExport}
-                                            selectedForExport={selectedForExport}
-                                            isSelectMode={isSelectMode}
-                                            activeSection={activeTab}
-                                            searchQuery={searchQuery}
-                                            editLockId={editLockId}
-                                        />
-                                    ) : <p className="px-8 py-4 text-xs text-muted-foreground italic">No drafts found.</p>}
-                                </div>
-                            </CollapsibleContent>
-                        </Collapsible>
+                        {sidebarTab === 'saved' && (
+                            <>
+                                {categorizedDefinitions.drafts.length > 0 ? (
+                                    <DefinitionTree
+                                        definitions={categorizedDefinitions.drafts}
+                                        selectedId={selectedDefinitionId}
+                                        onSelect={handleSelectDefinition}
+                                        onToggleSelection={toggleSelectionForExport}
+                                        selectedForExport={selectedForExport}
+                                        isSelectMode={isSelectMode}
+                                        activeSection={activeTab}
+                                        searchQuery={searchQuery}
+                                        editLockId={editLockId}
+                                    />
+                                ) : <p className="px-8 py-8 text-sm text-muted-foreground text-center italic">No saved drafts found.</p>}
+                            </>
+                        )}
 
-                        <Collapsible open={isMpmExpanded} onOpenChange={setIsMpmExpanded}>
-                            <div className="flex items-center w-full px-4 py-3 hover:bg-muted/30 group">
-                                <CollapsibleTrigger asChild>
-                                    <div className="flex items-center gap-2 flex-1 cursor-pointer">
-                                        <ChevronDown className={cn("h-4 w-4 transition-transform", !isMpmExpanded && "-rotate-90")} />
-                                        <span className="font-bold text-sm">MPM Definitions</span>
-                                    </div>
-                                </CollapsibleTrigger>
-                                <div className="flex items-center gap-3">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6"><ListFilter className="h-4 w-4 text-muted-foreground" /></Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
-                                                <Checkbox id="sidebar-show-archived" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} />
-                                                <Label htmlFor="sidebar-show-archived">Show Archived</Label>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
-                                                <Checkbox id="sidebar-show-bookmarked" checked={showBookmarked} onCheckedChange={() => setShowBookmarked(!showBookmarked)} />
-                                                <Label htmlFor="sidebar-show-bookmarked">Show Bookmarked</Label>
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </div>
-                            <CollapsibleContent>
-                                <div className="py-2">
-                                    {categorizedDefinitions.published.length > 0 ? (
-                                        <DefinitionTree
-                                            definitions={categorizedDefinitions.published}
-                                            selectedId={selectedDefinitionId}
-                                            onSelect={handleSelectDefinition}
-                                            onToggleSelection={toggleSelectionForExport}
-                                            selectedForExport={selectedForExport}
-                                            isSelectMode={isSelectMode}
-                                            activeSection={activeTab}
-                                            searchQuery={searchQuery}
-                                            editLockId={editLockId}
-                                        />
-                                    ) : <p className="px-8 py-4 text-xs text-muted-foreground italic">No published definitions found.</p>}
-                                </div>
-                            </CollapsibleContent>
-                        </Collapsible>
-                      </TooltipProvider>
+                        {sidebarTab === 'mpm' && (
+                            <>
+                                {categorizedDefinitions.published.length > 0 ? (
+                                    <DefinitionTree
+                                        definitions={categorizedDefinitions.published}
+                                        selectedId={selectedDefinitionId}
+                                        onSelect={handleSelectDefinition}
+                                        onToggleSelection={toggleSelectionForExport}
+                                        selectedForExport={selectedForExport}
+                                        isSelectMode={isSelectMode}
+                                        activeSection={activeTab}
+                                        searchQuery={searchQuery}
+                                        editLockId={editLockId}
+                                    />
+                                ) : <p className="px-8 py-8 text-sm text-muted-foreground text-center italic">No published definitions found.</p>}
+                            </>
+                        )}
+                      </div>
                   </div>
               </div>
              )}
