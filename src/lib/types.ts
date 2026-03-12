@@ -3,7 +3,7 @@ export interface Revision {
   date: string;
   developer: string;
   description: string;
-  snapshot: Omit<Definition, 'revisions' | 'children' | 'notes'>;
+  snapshot: Omit<Definition, 'revisions' | 'children' | 'notes' | 'discussions'>;
 }
 
 export interface SupportingTableRef {
@@ -26,6 +26,18 @@ export interface Note {
     date: string;
     content: string;
     isShared: boolean;
+}
+
+export interface DiscussionMessage {
+  id: string;
+  authorId: string;
+  author: string;
+  avatar: string;
+  date: string;
+  content: string;
+  type: 'comment' | 'change-request';
+  priority?: 'Low' | 'Medium' | 'High';
+  round?: number;
 }
 
 export interface DynamicSection {
@@ -69,6 +81,7 @@ export interface Definition {
   attachments: Attachment[];
   children?: Definition[];
   notes?: Note[];
+  discussions?: DiscussionMessage[];
   relatedDefinitions?: string[];
   technicalDetails?: string;
   usageExamples?: string;
@@ -94,7 +107,7 @@ export interface Notification {
     read: boolean;
 }
 
-export type ActivityType = 'View' | 'Edit' | 'Create' | 'Download' | 'Bookmark' | 'Archive' | 'Duplicate' | 'Search' | 'Submit' | 'Approve' | 'Reject';
+export type ActivityType = 'View' | 'Edit' | 'Create' | 'Download' | 'Bookmark' | 'Archive' | 'Duplicate' | 'Search' | 'Submit' | 'Approve' | 'Reject' | 'Request Changes';
 
 export interface ActivityLog {
     id: string;

@@ -1,11 +1,10 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
-import type { Definition, Notification as NotificationType, Template } from '@/lib/types';
+import type { Definition, Notification as NotificationType, Template, DiscussionMessage } from '@/lib/types';
 import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send, ShieldCheck, Clock, Settings2, FolderTree } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,6 +44,12 @@ const TemplateManagement = dynamic(() => import('@/components/wiki/template-mana
 
 type View = 'definitions' | 'activity-logs' | 'template-management';
 type SidebarTab = 'queue' | 'drafts';
+
+const currentUser = {
+    id: "user_123",
+    name: "Dhilip Sagadevan",
+    avatar: "https://picsum.photos/seed/dhilip/40/40"
+};
 
 const initialNotifications: NotificationType[] = [
   {
@@ -240,6 +245,7 @@ export default function Wiki() {
         isArchived: false,
         children: [],
         notes: [],
+        discussions: [],
         relatedDefinitions: [],
     };
     const addDefinitionToModule = (items: Definition[], moduleName: string, def: Definition): Definition[] => {
@@ -254,7 +260,7 @@ export default function Wiki() {
         if (moduleExists) return addDefinitionToModule(prev, newDefinition.module, newDefinition);
         const newModule: Definition = {
             id: `mod-${Date.now()}`, name: newDefinition.module, module: newDefinition.module,
-            keywords: [], description: '', revisions: [], isArchived: false, supportingTables: [], attachments: [], notes: [],
+            keywords: [], description: '', revisions: [], isArchived: false, supportingTables: [], attachments: [], notes: [], discussions: [],
             children: [newDefinition]
         };
         return [...prev, newModule];
@@ -330,17 +336,35 @@ export default function Wiki() {
     toast({ title: 'Submitted', description: 'Your definition has been submitted for approval.' });
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = (id: string, requestData?: { content: string; priority: 'Low' | 'Medium' | 'High' }) => {
     if (!isAdmin) return;
+    
     const updateItem = (items: Definition[]): Definition[] => {
       return items.map(def => {
-        if (def.id === id) return { ...def, isPendingApproval: false };
+        if (def.id === id) {
+          const updatedDiscussions = [...(def.discussions || [])];
+          if (requestData) {
+            const newMessage: DiscussionMessage = {
+              id: Date.now().toString(),
+              authorId: currentUser.id,
+              author: currentUser.name,
+              avatar: currentUser.avatar,
+              date: new Date().toISOString(),
+              content: requestData.content,
+              type: 'change-request',
+              priority: requestData.priority,
+              round: 1
+            };
+            updatedDiscussions.push(newMessage);
+          }
+          return { ...def, isPendingApproval: false, discussions: updatedDiscussions };
+        }
         if (def.children) return { ...def, children: updateItem(def.children) };
         return def;
       });
     };
     setDefinitions(updateItem(definitions));
-    toast({ title: 'Changes Requested', description: 'The definition has been returned to draft status.' });
+    toast({ title: 'Changes Requested', description: 'The definition has been returned to draft status with feedback.' });
   };
 
   const filteredDefinitions = useMemo(() => {

@@ -2,14 +2,14 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Revision, SupportingTable, Note } from '@/lib/types';
+import type { Definition, Revision, SupportingTable, Note, DiscussionMessage } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal, MessageSquareText } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
@@ -29,6 +29,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import RelatedDefinitions from './related-definitions';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
+import ChangeRequestModal from './change-request-modal';
+import DiscussionsPanel from './discussions-panel';
 
 const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
 
@@ -41,7 +43,7 @@ type DefinitionViewProps = {
   onDelete: (id: string) => void;
   onToggleBookmark: (id: string) => void;
   onPublish?: (id: string) => void;
-  onReject?: (id: string) => void;
+  onReject?: (id: string, requestData?: { content: string; priority: 'Low' | 'Medium' | 'High' }) => void;
   onSendApproval?: (id: string) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -94,6 +96,9 @@ export default function DefinitionView({
     const [showComparison, setShowComparison] = useState(false);
     const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
     const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+    const [isChangeRequestModalOpen, setIsChangeRequestModalOpen] = useState(false);
+    const [isDiscussionsOpen, setIsDiscussionsOpen] = useState(false);
+    
     const [noteText, setNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
     const [notesViewTab, setNotesViewTab] = useState<'my' | 'others'>('my');
@@ -193,6 +198,23 @@ export default function DefinitionView({
         toast({ title: 'Note Deleted', description: 'Your note has been removed.' });
     };
 
+    const handleAddReply = (content: string) => {
+        const newMessage: DiscussionMessage = {
+            id: Date.now().toString(),
+            authorId: currentUser.id,
+            author: currentUser.name,
+            avatar: currentUser.avatar,
+            date: new Date().toISOString(),
+            content,
+            type: 'comment',
+            round: 1
+        };
+        onSave({
+            ...definition,
+            discussions: [...(definition.discussions || []), newMessage]
+        });
+    };
+
     const filteredNotes = definition.notes?.filter(note => {
         if (notesViewTab === 'my') return note.authorId === currentUser.id;
         return note.isShared && note.authorId !== currentUser.id;
@@ -230,6 +252,8 @@ export default function DefinitionView({
         return definition.isDraft && !definition.isPendingApproval;
     }, [isAdmin, definition.isDraft, definition.isPendingApproval]);
 
+    const discussionCount = definition.discussions?.length || 0;
+
   return (
     <TooltipProvider>
         <article className="prose prose-sm max-w-none">
@@ -254,7 +278,7 @@ export default function DefinitionView({
                             <Button 
                                 variant="outline" 
                                 className="text-destructive border-destructive hover:bg-destructive hover:text-white" 
-                                onClick={() => onReject?.(definition.id)}
+                                onClick={() => setIsChangeRequestModalOpen(true)}
                             >
                                 <Undo2 className="mr-2 h-4 w-4" />
                                 Request Changes
@@ -292,6 +316,27 @@ export default function DefinitionView({
                                 </Button>
                             )}
                         </div>
+                    )}
+
+                    {discussionCount > 0 && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button 
+                                    variant="outline" 
+                                    className="gap-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
+                                    onClick={() => setIsDiscussionsOpen(true)}
+                                >
+                                    <MessageSquareText className="h-4 w-4" />
+                                    View Discussions
+                                    <Badge variant="secondary" className="h-5 px-1.5 ml-1 bg-slate-100 text-slate-600 border-none">
+                                        {discussionCount}
+                                    </Badge>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Open change requests and comments</p>
+                            </TooltipContent>
+                        </Tooltip>
                     )}
 
                     <Tooltip>
@@ -612,6 +657,23 @@ export default function DefinitionView({
         </Dialog>
 
         <DataSourcePreviewDialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen} sourceName={definition.sourceName || null} databaseName={resolvedSourceInfo.database} />
+
+        <ChangeRequestModal 
+            open={isChangeRequestModalOpen} 
+            onOpenChange={setIsChangeRequestModalOpen} 
+            definitionName={definition.name}
+            onSend={(data) => onReject?.(definition.id, data)}
+        />
+
+        {definition.discussions && (
+            <DiscussionsPanel
+                open={isDiscussionsOpen}
+                onOpenChange={setIsDiscussionsOpen}
+                discussions={definition.discussions}
+                definitionName={definition.name}
+                onAddReply={handleAddReply}
+            />
+        )}
 
         {showComparison && selectedRevisions.length === 2 && (
              <RevisionComparisonDialog open={showComparison} onOpenChange={setShowComparison} revision1={selectedRevisions[0]} revision2={selectedRevisions[1]} currentDefinitionName={definition.name} />
