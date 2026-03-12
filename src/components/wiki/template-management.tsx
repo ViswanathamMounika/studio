@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Template, Attachment, TemplateSection, TemplateType } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { ScrollArea } from '../ui/scroll-area';
+import { cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 import AttachmentList from './attachments';
 
@@ -86,6 +87,17 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   const handleSaveTemplate = () => {
     if (!currentTemplate.name?.trim()) {
       toast({ variant: 'destructive', title: 'Error', description: 'Template Name is required.' });
+      return;
+    }
+
+    // Mandatory Section Name Validation
+    const hasEmptySectionName = currentTemplate.customSections?.some(s => !s.name?.trim());
+    if (hasEmptySectionName) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Validation Error', 
+        description: 'All sections must have a name before saving the template.' 
+      });
       return;
     }
 
@@ -234,9 +246,9 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
             </DialogHeader>
             <div className="flex gap-2">
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline" className="rounded-xl">Cancel</Button>
               </DialogClose>
-              <Button onClick={handleSaveTemplate}>
+              <Button onClick={handleSaveTemplate} className="rounded-xl bg-indigo-600 hover:bg-indigo-700">
                 <Save className="mr-2 h-4 w-4" />
                 Save Template
               </Button>
@@ -245,28 +257,29 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
           <ScrollArea className="flex-1">
             <div className="p-6 space-y-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Template Overview</CardTitle>
+              <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
+                <CardHeader className="bg-slate-50/50 border-b">
+                  <CardTitle className="text-lg font-bold">Template Overview</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <CardContent className="p-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="t-name">Template Name <span className="text-destructive">*</span></Label>
+                      <Label htmlFor="t-name" className="text-sm font-bold text-slate-700">Template Name <span className="text-destructive">*</span></Label>
                       <Input 
                         id="t-name" 
                         value={currentTemplate.name} 
                         onChange={e => setCurrentTemplate(prev => ({ ...prev, name: e.target.value }))}
                         placeholder="e.g., Clinical Guideline Template"
+                        className="rounded-xl border-slate-200 focus-visible:ring-primary/20"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="t-status">Status</Label>
+                      <Label htmlFor="t-status" className="text-sm font-bold text-slate-700">Status</Label>
                       <Select 
                         value={currentTemplate.status} 
                         onValueChange={v => setCurrentTemplate(prev => ({ ...prev, status: v as any }))}
                       >
-                        <SelectTrigger id="t-status">
+                        <SelectTrigger id="t-status" className="rounded-xl border-slate-200">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -277,12 +290,13 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="t-desc">Template Description</Label>
+                    <Label htmlFor="t-desc" className="text-sm font-bold text-slate-700">Template Description</Label>
                     <Textarea 
                       id="t-desc" 
                       value={currentTemplate.description} 
                       onChange={e => setCurrentTemplate(prev => ({ ...prev, description: e.target.value }))}
                       placeholder="Briefly describe what this structure is intended for..."
+                      className="rounded-xl border-slate-200 focus-visible:ring-primary/20 min-h-[100px]"
                     />
                   </div>
                 </CardContent>
@@ -291,10 +305,10 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl font-bold">Custom Dynamic Sections</h3>
-                    <p className="text-sm text-muted-foreground">Add specific building blocks that will be part of every definition using this template.</p>
+                    <h3 className="text-xl font-bold text-slate-900">Custom Dynamic Sections</h3>
+                    <p className="text-sm text-slate-500">Add specific building blocks that will be part of every definition using this template.</p>
                   </div>
-                  <Button variant="outline" onClick={handleAddCustomSection}>
+                  <Button variant="outline" onClick={handleAddCustomSection} className="rounded-xl border-slate-200 hover:bg-slate-50">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Custom Section
                   </Button>
@@ -302,51 +316,58 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
                 <div className="space-y-4">
                   {(currentTemplate.customSections || []).length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-2xl text-slate-400 bg-slate-50/50">
                       <ListTodo className="h-12 w-12 mb-4 opacity-20" />
-                      <p>No custom sections defined. Create a "Custom Template" by adding sections here.</p>
+                      <p className="font-medium">No custom sections defined.</p>
+                      <p className="text-sm opacity-70">Add sections to create a structured blueprint.</p>
                     </div>
                   ) : (
                     currentTemplate.customSections?.map((section, idx) => (
-                      <Card key={section.id} className="border-l-4 border-l-primary">
-                        <CardHeader className="py-3 bg-primary/5 flex flex-row items-center justify-between">
+                      <Card key={section.id} className="rounded-2xl border-slate-200 shadow-sm border-l-4 border-l-primary overflow-hidden">
+                        <CardHeader className="py-3 bg-slate-50 border-b flex flex-row items-center justify-between">
                           <div className="flex items-center gap-4 flex-1">
-                            <span className="bg-primary text-primary-foreground h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold">
+                            <span className="bg-primary text-primary-foreground h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black">
                               {idx + 1}
                             </span>
-                            <Input 
-                              value={section.name} 
-                              onChange={e => handleUpdateCustomSection(section.id, { name: e.target.value })}
-                              placeholder="Section Name (e.g., Clinical Business Rules)"
-                              className="max-w-md h-8"
-                            />
+                            <div className="flex flex-col flex-1 max-w-md gap-1.5">
+                              <Label className="text-[10px] uppercase font-black text-slate-500 tracking-wider">Section Name <span className="text-destructive">*</span></Label>
+                              <Input 
+                                value={section.name} 
+                                onChange={e => handleUpdateCustomSection(section.id, { name: e.target.value })}
+                                placeholder="e.g., Clinical Business Rules"
+                                className={cn(
+                                  "h-9 rounded-lg border-slate-200 focus-visible:ring-primary/20 font-medium",
+                                  !section.name?.trim() && "border-red-300 bg-red-50/30"
+                                )}
+                              />
+                            </div>
                             
-                            <div className="flex items-center gap-4 ml-4">
-                              <div className="flex items-center gap-2">
-                                <Label className="text-xs font-medium whitespace-nowrap">Editor Type:</Label>
+                            <div className="flex items-center gap-6 ml-6">
+                              <div className="flex flex-col gap-1.5">
+                                <Label className="text-[10px] uppercase font-black text-slate-500 tracking-wider">Editor Type</Label>
                                 <Select 
                                   value={section.contentType} 
                                   onValueChange={v => handleUpdateCustomSection(section.id, { contentType: v as any })}
                                 >
-                                  <SelectTrigger className="h-8 w-32 text-xs">
+                                  <SelectTrigger className="h-9 w-36 rounded-lg border-slate-200 text-xs font-semibold">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="rich" className="text-xs">
                                       <div className="flex items-center gap-2">
-                                        <FileType className="h-3 w-3" />
+                                        <FileType className="h-3.5 w-3.5 text-indigo-500" />
                                         Rich Text
                                       </div>
                                     </SelectItem>
                                     <SelectItem value="plain" className="text-xs">
                                       <div className="flex items-center gap-2">
-                                        <Type className="h-3 w-3" />
+                                        <Type className="h-3.5 w-3.5 text-slate-500" />
                                         Plain Text
                                       </div>
                                     </SelectItem>
                                     <SelectItem value="dropdown" className="text-xs">
                                       <div className="flex items-center gap-2">
-                                        <List className="h-3 w-3" />
+                                        <List className="h-3.5 w-3.5 text-emerald-500" />
                                         Dropdown
                                       </div>
                                     </SelectItem>
@@ -354,29 +375,32 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                 </Select>
                               </div>
 
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 mt-4">
                                 <Checkbox 
                                   id={`mand-${section.id}`}
                                   checked={section.isMandatory}
                                   onCheckedChange={checked => handleUpdateCustomSection(section.id, { isMandatory: !!checked })}
+                                  className="rounded border-slate-300"
                                 />
-                                <Label htmlFor={`mand-${section.id}`} className="text-xs font-medium cursor-pointer">Mandatory</Label>
+                                <Label htmlFor={`mand-${section.id}`} className="text-xs font-bold text-slate-600 cursor-pointer">Mandatory</Label>
                               </div>
                             </div>
                           </div>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveCustomSection(section.id)}>
-                            <X className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-red-50 rounded-lg transition-colors" onClick={() => handleRemoveCustomSection(section.id)}>
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </CardHeader>
                         {section.contentType === 'dropdown' && (
-                          <CardContent className="pt-4">
-                            <Label className="text-xs text-muted-foreground mb-2 block">Dropdown Options (Comma separated)</Label>
-                            <Input 
-                              value={section.dropdownOptions || ''} 
-                              onChange={e => handleUpdateCustomSection(section.id, { dropdownOptions: e.target.value })}
-                              placeholder="Option 1, Option 2, Option 3..."
-                              className="h-8"
-                            />
+                          <CardContent className="p-4 bg-white">
+                            <div className="space-y-2">
+                              <Label className="text-[10px] uppercase font-black text-slate-500 tracking-wider">Dropdown Options (Comma separated)</Label>
+                              <Input 
+                                value={section.dropdownOptions || ''} 
+                                onChange={e => handleUpdateCustomSection(section.id, { dropdownOptions: e.target.value })}
+                                placeholder="Option 1, Option 2, Option 3..."
+                                className="h-9 rounded-lg border-slate-200"
+                              />
+                            </div>
                           </CardContent>
                         )}
                       </Card>
