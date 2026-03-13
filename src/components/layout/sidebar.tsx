@@ -60,7 +60,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSideb
     ];
 
     const adminNavItems = [
-        { id: 'template-management', label: 'Template Management', icon: UserCog },
+        { id: 'template-management', label: 'Template Management', icon: Settings2 },
         { id: 'activity-logs', label: 'Activity Logs', icon: History },
     ];
 
@@ -127,10 +127,10 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSideb
                                         <SidebarMenuItem>
                                             <CollapsibleTrigger asChild>
                                                 <SidebarMenuButton className={cn(
-                                                    "h-8 text-muted-foreground hover:text-foreground",
-                                                    (activeView === 'activity-logs' || activeView === 'template-management') && "text-primary font-medium"
+                                                    "h-8 font-semibold text-foreground hover:text-primary transition-colors",
+                                                    (activeView === 'activity-logs' || activeView === 'template-management') && "text-primary"
                                                 )}>
-                                                    <Settings2 className="h-4 w-4" />
+                                                    <UserCog className="h-4 w-4" />
                                                     <span>Admin</span>
                                                     <ChevronDown className={cn("ml-auto h-3 w-3 transition-transform", isAdminOpen && "rotate-180")} />
                                                 </SidebarMenuButton>

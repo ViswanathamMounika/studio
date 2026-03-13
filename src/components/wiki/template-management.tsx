@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
@@ -70,7 +71,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         isMandatory: false,
         defaultValue: '',
         contentType: 'rich',
-        maxLength: 1000,
+        maxLength: 5000,
       }],
     });
     setIsModalOpen(true);
@@ -147,7 +148,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       isMandatory: false,
       defaultValue: '',
       contentType: 'rich',
-      maxLength: 1000,
+      maxLength: 5000,
     };
     setCurrentTemplate(prev => ({
       ...prev,
