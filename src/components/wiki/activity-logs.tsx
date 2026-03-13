@@ -410,29 +410,29 @@ export default function ActivityLogs() {
                     ) : (
                         <Table>
                             <TableHeader>
-                                <TableRow className="bg-muted/30">
-                                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors py-4" onClick={() => handleSort('userName')}>
-                                        <div className="flex items-center text-xs font-bold uppercase tracking-wider">
+                                <TableRow className="bg-slate-100 dark:bg-slate-900">
+                                    <TableHead className="cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors py-4" onClick={() => handleSort('userName')}>
+                                        <div className="flex items-center text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-100">
                                             User Name
-                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'userName' ? "text-primary opacity-100" : "opacity-30")} />
+                                            <ArrowUpDown className={cn("ml-2 h-3.5 w-3.5", sortConfig.key === 'userName' ? "text-primary opacity-100" : "opacity-40")} />
                                         </div>
                                     </TableHead>
-                                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('definitionName')}>
-                                        <div className="flex items-center text-xs font-bold uppercase tracking-wider">
+                                    <TableHead className="cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" onClick={() => handleSort('definitionName')}>
+                                        <div className="flex items-center text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-100">
                                             Definition Name
-                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'definitionName' ? "text-primary opacity-100" : "opacity-30")} />
+                                            <ArrowUpDown className={cn("ml-2 h-3.5 w-3.5", sortConfig.key === 'definitionName' ? "text-primary opacity-100" : "opacity-40")} />
                                         </div>
                                     </TableHead>
-                                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('activityType')}>
-                                        <div className="flex items-center text-xs font-bold uppercase tracking-wider">
+                                    <TableHead className="cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" onClick={() => handleSort('activityType')}>
+                                        <div className="flex items-center text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-100">
                                             Activity Type
-                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'activityType' ? "text-primary opacity-100" : "opacity-30")} />
+                                            <ArrowUpDown className={cn("ml-2 h-3.5 w-3.5", sortConfig.key === 'activityType' ? "text-primary opacity-100" : "opacity-40")} />
                                         </div>
                                     </TableHead>
-                                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('occurredDate')}>
-                                        <div className="flex items-center text-xs font-bold uppercase tracking-wider">
+                                    <TableHead className="cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" onClick={() => handleSort('occurredDate')}>
+                                        <div className="flex items-center text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-100">
                                             Occurred Date
-                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'occurredDate' ? "text-primary opacity-100" : "opacity-30")} />
+                                            <ArrowUpDown className={cn("ml-2 h-3.5 w-3.5", sortConfig.key === 'occurredDate' ? "text-primary opacity-100" : "opacity-40")} />
                                         </div>
                                     </TableHead>
                                 </TableRow>
@@ -440,9 +440,9 @@ export default function ActivityLogs() {
                             <TableBody>
                                 {paginatedLogs.map(log => (
                                     <TableRow key={log.id}>
-                                        <TableCell className="font-medium py-4">{log.userName}</TableCell>
-                                        <TableCell>{log.definitionName}</TableCell>
-                                        <TableCell>
+                                        <TableCell className="font-medium py-4 text-slate-700 dark:text-slate-300">{log.userName}</TableCell>
+                                        <TableCell className="text-slate-700 dark:text-slate-300">{log.definitionName}</TableCell>
+                                        <TableCell className="text-slate-700 dark:text-slate-300">
                                             {log.activityType}
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
