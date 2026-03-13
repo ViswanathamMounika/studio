@@ -149,17 +149,8 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
             className="cursor-pointer"
             disabled={definition.isDraft}
           >
-            {definition.isArchived ? (
-              <>
-                <Undo2 className="mr-2 h-4 w-4" />
-                <span>Restore</span>
-              </>
-            ) : (
-              <>
-                <Archive className="mr-2 h-4 w-4" />
-                <span>Archive</span>
-              </>
-            )}
+            <Archive className="mr-2 h-4 w-4" />
+            <span>{definition.isArchived ? 'Unarchive' : 'Archive'}</span>
           </DropdownMenuItem>
         )}
 
