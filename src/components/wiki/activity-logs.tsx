@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, ChevronsUpDown, X } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType } from '@/lib/types';
 import { initialActivityLogs } from '@/lib/data';
@@ -21,14 +21,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { useToast } from '@/hooks/use-toast';
 
 const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search', 'Submit', 'Approve', 'Reject', 'Request Changes'];
@@ -47,13 +39,32 @@ export default function ActivityLogs() {
     });
     
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const searchRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
+
+    // Close suggestions when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setIsSearchOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     // Extract unique definition names for auto-population
     const uniqueDefinitions = useMemo(() => {
         const names = Array.from(new Set(logs.map(log => log.definitionName)));
         return names.sort((a, b) => a.localeCompare(b));
     }, [logs]);
+
+    const suggestions = useMemo(() => {
+        if (!definitionSearch) return uniqueDefinitions;
+        return uniqueDefinitions.filter(name => 
+            name.toLowerCase().includes(definitionSearch.toLowerCase())
+        );
+    }, [uniqueDefinitions, definitionSearch]);
 
     const filteredAndSortedLogs = useMemo(() => {
         return logs.filter(log => {
@@ -169,7 +180,7 @@ export default function ActivityLogs() {
         
         // Data
         doc.setFont('helvetica', 'normal');
-        filteredAndSortedLogs.slice(0, 50).forEach((log) => { // PDF limited for demo
+        filteredAndSortedLogs.slice(0, 50).forEach((log) => {
             if (y > 280) {
                 doc.addPage();
                 y = 20;
@@ -242,73 +253,60 @@ export default function ActivityLogs() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Search Definition</label>
-                            <div className="relative">
-                                <Popover open={isSearchOpen} onOpenChange={setIsSearchOpen}>
-                                    <PopoverTrigger asChild>
-                                        <div className="relative group">
-                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                            <Input 
-                                                placeholder="Search or select definition..." 
-                                                className="pl-8 pr-10 cursor-pointer text-left bg-background"
-                                                value={definitionSearch}
-                                                onChange={(e) => {
-                                                    setDefinitionSearch(e.target.value);
-                                                    setCurrentPage(1);
-                                                }}
-                                                onFocus={() => setIsSearchOpen(true)}
-                                            />
-                                            {definitionSearch && (
-                                                <button 
-                                                    className="absolute right-8 top-2.5 text-muted-foreground hover:text-foreground"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setDefinitionSearch('');
+                            <div className="relative" ref={searchRef}>
+                                <div className="relative">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input 
+                                        placeholder="Type to search definition..." 
+                                        className="pl-8 pr-10 bg-background"
+                                        value={definitionSearch}
+                                        onChange={(e) => {
+                                            setDefinitionSearch(e.target.value);
+                                            setCurrentPage(1);
+                                            setIsSearchOpen(true);
+                                        }}
+                                        onFocus={() => setIsSearchOpen(true)}
+                                    />
+                                    {definitionSearch && (
+                                        <button 
+                                            className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                                            onClick={() => {
+                                                setDefinitionSearch('');
+                                                setCurrentPage(1);
+                                                setIsSearchOpen(false);
+                                            }}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                                
+                                {isSearchOpen && suggestions.length > 0 && (
+                                    <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto animate-in fade-in zoom-in-95">
+                                        <div className="p-1">
+                                            <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                                Suggestions
+                                            </div>
+                                            {suggestions.map((name) => (
+                                                <div
+                                                    key={name}
+                                                    className={cn(
+                                                        "px-2 py-1.5 text-sm rounded-sm cursor-pointer flex items-center gap-2 transition-colors",
+                                                        definitionSearch === name ? "bg-primary/10 text-primary font-medium" : "hover:bg-accent hover:text-accent-foreground"
+                                                    )}
+                                                    onClick={() => {
+                                                        setDefinitionSearch(name);
+                                                        setIsSearchOpen(false);
                                                         setCurrentPage(1);
                                                     }}
                                                 >
-                                                    <X className="h-4 w-4" />
-                                                </button>
-                                            )}
-                                            <ChevronsUpDown className="absolute right-2.5 top-2.5 h-4 w-4 opacity-50 shrink-0" />
+                                                    <Check className={cn("h-3.5 w-3.5", definitionSearch === name ? "opacity-100" : "opacity-0")} />
+                                                    {name}
+                                                </div>
+                                            ))}
                                         </div>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[300px] p-0" align="start">
-                                        <Command>
-                                            <CommandInput 
-                                                placeholder="Search definitions..." 
-                                                value={definitionSearch}
-                                                onValueChange={(v) => {
-                                                    setDefinitionSearch(v);
-                                                    setCurrentPage(1);
-                                                }}
-                                            />
-                                            <CommandList>
-                                                <CommandEmpty>No definition found.</CommandEmpty>
-                                                <CommandGroup heading="Existing Definitions">
-                                                    {uniqueDefinitions.map((name) => (
-                                                        <CommandItem
-                                                            key={name}
-                                                            value={name}
-                                                            onSelect={(currentValue) => {
-                                                                setDefinitionSearch(currentValue === definitionSearch ? "" : currentValue);
-                                                                setIsSearchOpen(false);
-                                                                setCurrentPage(1);
-                                                            }}
-                                                        >
-                                                            <Check
-                                                                className={cn(
-                                                                    "mr-2 h-4 w-4",
-                                                                    definitionSearch === name ? "opacity-100" : "opacity-0"
-                                                                )}
-                                                            />
-                                                            {name}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
