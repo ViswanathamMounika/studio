@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType } from '@/lib/types';
 import { initialActivityLogs } from '@/lib/data';
@@ -30,7 +30,7 @@ export default function ActivityLogs() {
     const [logs] = useState<ActivityLog[]>(initialActivityLogs);
     const [activityTypeFilter, setActivityTypeFilter] = useState<string>('all');
     const [definitionSearch, setDefinitionSearch] = useState<string>('');
-    const [timeFrame, setTimeFrame] = useState('all');
+    const [timeFrame, setTimeFrame] = useState('last-month'); // Default to Last Month
     const [customRange, setCustomRange] = useState<{ from: Date; to: Date } | undefined>();
     const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState<{ key: keyof ActivityLog; direction: 'asc' | 'desc' }>({
@@ -38,6 +38,7 @@ export default function ActivityLogs() {
         direction: 'desc'
     });
     
+    const [hasSearched, setHasSearched] = useState(false); // Track if user has clicked Search
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
@@ -67,6 +68,9 @@ export default function ActivityLogs() {
     }, [uniqueDefinitions, definitionSearch]);
 
     const filteredAndSortedLogs = useMemo(() => {
+        // Only return logs if the user has clicked "Search"
+        if (!hasSearched) return [];
+
         return logs.filter(log => {
             const activityMatch = activityTypeFilter === 'all' || log.activityType === activityTypeFilter;
             const definitionMatch = !definitionSearch || log.definitionName.toLowerCase().includes(definitionSearch.toLowerCase());
@@ -109,7 +113,7 @@ export default function ActivityLogs() {
             if (stringA > stringB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [logs, activityTypeFilter, definitionSearch, timeFrame, customRange, sortConfig]);
+    }, [logs, activityTypeFilter, definitionSearch, timeFrame, customRange, sortConfig, hasSearched]);
 
     const paginatedLogs = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -126,11 +130,17 @@ export default function ActivityLogs() {
         setCurrentPage(1);
     };
 
+    const handleSearch = () => {
+        setHasSearched(true);
+        setCurrentPage(1);
+    };
+
     const resetFilters = () => {
         setActivityTypeFilter('all');
         setDefinitionSearch('');
-        setTimeFrame('all');
+        setTimeFrame('last-month');
         setCustomRange(undefined);
+        setHasSearched(false);
         setCurrentPage(1);
     };
 
@@ -220,24 +230,34 @@ export default function ActivityLogs() {
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold tracking-tight">Activity Logs</h1>
                 <div className="flex items-center gap-2">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                <Download className="h-4 w-4 mr-2" />
-                                Export
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={handleExportExcel}>
-                                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                                Export as Excel
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleExportPDF}>
-                                <FileText className="h-4 w-4 mr-2" />
-                                Export as PDF
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {hasSearched && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export Results
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={handleExportExcel}>
+                                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                    Export as Excel
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleExportPDF}>
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    Export as PDF
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+                    <Button 
+                        onClick={handleSearch} 
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+                        size="sm"
+                    >
+                        <Search className="h-4 w-4 mr-2" />
+                        Search
+                    </Button>
                     <Button variant="outline" size="sm" onClick={resetFilters}>
                         <FilterX className="h-4 w-4 mr-2" />
                         Reset Filters
@@ -247,12 +267,12 @@ export default function ActivityLogs() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-sm font-medium">Filters</CardTitle>
+                    <CardTitle className="text-sm font-medium">Search Filters</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-medium">Search Definition</label>
+                            <label className="text-xs font-medium">Definition Name</label>
                             <div className="relative" ref={searchRef}>
                                 <div className="relative">
                                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -262,7 +282,6 @@ export default function ActivityLogs() {
                                         value={definitionSearch}
                                         onChange={(e) => {
                                             setDefinitionSearch(e.target.value);
-                                            setCurrentPage(1);
                                             setIsSearchOpen(true);
                                         }}
                                         onFocus={() => setIsSearchOpen(true)}
@@ -272,7 +291,6 @@ export default function ActivityLogs() {
                                             className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
                                             onClick={() => {
                                                 setDefinitionSearch('');
-                                                setCurrentPage(1);
                                                 setIsSearchOpen(false);
                                             }}
                                         >
@@ -297,7 +315,6 @@ export default function ActivityLogs() {
                                                     onClick={() => {
                                                         setDefinitionSearch(name);
                                                         setIsSearchOpen(false);
-                                                        setCurrentPage(1);
                                                     }}
                                                 >
                                                     <Check className={cn("h-3.5 w-3.5", definitionSearch === name ? "opacity-100" : "opacity-0")} />
@@ -312,10 +329,7 @@ export default function ActivityLogs() {
 
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Activity Type</label>
-                            <Select value={activityTypeFilter} onValueChange={(v) => {
-                                setActivityTypeFilter(v);
-                                setCurrentPage(1);
-                            }}>
+                            <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Activities" />
                                 </SelectTrigger>
@@ -330,12 +344,9 @@ export default function ActivityLogs() {
 
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Time Frame</label>
-                            <Select value={timeFrame} onValueChange={(v) => {
-                                setTimeFrame(v);
-                                setCurrentPage(1);
-                            }}>
+                            <Select value={timeFrame} onValueChange={setTimeFrame}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="All Time" />
+                                    <SelectValue placeholder="Select Time Frame" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Time</SelectItem>
@@ -367,10 +378,7 @@ export default function ActivityLogs() {
                                                 mode="range"
                                                 defaultMonth={customRange?.from}
                                                 selected={customRange as any}
-                                                onSelect={(range: any) => {
-                                                    setCustomRange(range);
-                                                    setCurrentPage(1);
-                                                }}
+                                                onSelect={setCustomRange}
                                                 numberOfMonths={2}
                                                 disabled={{ after: new Date() }}
                                             />
@@ -383,88 +391,107 @@ export default function ActivityLogs() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardContent className="p-0 overflow-hidden">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('userName')}>
-                                    <div className="flex items-center">
-                                        User Name
-                                        <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'userName' ? "text-primary opacity-100" : "opacity-30")} />
-                                    </div>
-                                </TableHead>
-                                <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('definitionName')}>
-                                    <div className="flex items-center">
-                                        Definition Name
-                                        <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'definitionName' ? "text-primary opacity-100" : "opacity-30")} />
-                                    </div>
-                                </TableHead>
-                                <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('activityType')}>
-                                    <div className="flex items-center">
-                                        Activity Type
-                                        <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'activityType' ? "text-primary opacity-100" : "opacity-30")} />
-                                    </div>
-                                </TableHead>
-                                <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('occurredDate')}>
-                                    <div className="flex items-center">
-                                        Occurred Date
-                                        <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'occurredDate' ? "text-primary opacity-100" : "opacity-30")} />
-                                    </div>
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {paginatedLogs.map(log => (
-                                <TableRow key={log.id}>
-                                    <TableCell className="font-medium">{log.userName}</TableCell>
-                                    <TableCell>{log.definitionName}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">{log.activityType}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">
-                                        {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {paginatedLogs.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
-                                        No logs found matching the selected filters.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-                <div className="flex items-center justify-between p-4 border-t bg-muted/30">
-                    <p className="text-sm text-muted-foreground">
-                        Showing {paginatedLogs.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedLogs.length)} of {filteredAndSortedLogs.length} entries
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                        >
-                            <ChevronLeft className="h-4 w-4 mr-1" />
-                            Previous
-                        </Button>
-                        <div className="flex items-center justify-center min-w-[3rem] text-sm font-medium">
-                            {currentPage} / {totalPages || 1}
+            <Card className="min-h-[400px] flex flex-col">
+                <CardContent className="p-0 overflow-hidden flex-1">
+                    {!hasSearched ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center py-20 px-4">
+                            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                                <History className="h-8 w-8 text-muted-foreground/50" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900">Activity Logs Ready</h3>
+                            <p className="text-sm text-slate-500 max-w-sm mt-2">
+                                Data is hidden by default. Apply your desired filters above and click <strong>Search</strong> to populate the activity history.
+                            </p>
+                            <Button onClick={handleSearch} variant="secondary" className="mt-6">
+                                <Search className="h-4 w-4 mr-2" />
+                                Load Activity History
+                            </Button>
                         </div>
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage >= totalPages}
-                        >
-                            Next
-                            <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('userName')}>
+                                        <div className="flex items-center">
+                                            User Name
+                                            <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'userName' ? "text-primary opacity-100" : "opacity-30")} />
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('definitionName')}>
+                                        <div className="flex items-center">
+                                            Definition Name
+                                            <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'definitionName' ? "text-primary opacity-100" : "opacity-30")} />
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('activityType')}>
+                                        <div className="flex items-center">
+                                            Activity Type
+                                            <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'activityType' ? "text-primary opacity-100" : "opacity-30")} />
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('occurredDate')}>
+                                        <div className="flex items-center">
+                                            Occurred Date
+                                            <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'occurredDate' ? "text-primary opacity-100" : "opacity-30")} />
+                                        </div>
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paginatedLogs.map(log => (
+                                    <TableRow key={log.id}>
+                                        <TableCell className="font-medium">{log.userName}</TableCell>
+                                        <TableCell>{log.definitionName}</TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline">{log.activityType}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {paginatedLogs.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="h-24 text-center">
+                                            No logs found matching the selected filters.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+                
+                {hasSearched && filteredAndSortedLogs.length > 0 && (
+                    <div className="flex items-center justify-between p-4 border-t bg-muted/30">
+                        <p className="text-sm text-muted-foreground">
+                            Showing {paginatedLogs.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedLogs.length)} of {filteredAndSortedLogs.length} entries
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                            >
+                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                Previous
+                            </Button>
+                            <div className="flex items-center justify-center min-w-[3rem] text-sm font-medium">
+                                {currentPage} / {totalPages || 1}
+                            </div>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage >= totalPages}
+                            >
+                                Next
+                                <ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
+                        </div>
                     </div>
-                </div>
+                )}
             </Card>
         </div>
     );
