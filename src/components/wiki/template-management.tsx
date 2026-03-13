@@ -286,8 +286,8 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">Custom Dynamic Sections</h3>
-                    <p className="text-sm text-slate-500">Add specific building blocks that will be part of every definition using this template.</p>
+                    <h3 className="text-xl font-bold text-slate-900">Template Sections</h3>
+                    <p className="text-sm text-slate-500">Configure standardized sections that will be automatically included in every definition created from this template.</p>
                   </div>
                   <Button variant="outline" onClick={handleAddCustomSection} className="rounded-xl border-slate-200 hover:bg-slate-50">
                     <Plus className="mr-2 h-4 w-4" />
