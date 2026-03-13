@@ -627,7 +627,7 @@ export default function Wiki() {
     if (type === 'template') {
       setIsTemplatesModalOpen(true);
     } else {
-      setDraftedDefinitionData({ name: 'New Blank Definition', module: 'Core', keywords: [], description: '' });
+      setDraftedDefinitionData({ name: 'New Standard Definition', module: 'Core', keywords: [], description: '' });
       setIsNewDefinitionModalOpen(true);
     }
   };

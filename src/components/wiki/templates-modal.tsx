@@ -30,11 +30,11 @@ type TemplateOption = {
 const defaultTemplates: TemplateOption[] = [
   {
     id: 'blank',
-    title: 'Blank Definition',
+    title: 'Standard Template',
     description: 'Start from a completely empty slate with manual formatting.',
     icon: Plus,
     data: {
-      name: 'New Blank Definition',
+      name: 'New Standard Definition',
       module: 'Core',
       keywords: [],
       description: '',

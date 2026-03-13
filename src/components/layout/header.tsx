@@ -81,7 +81,7 @@ export default function AppHeader({
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onNewDefinitionClick('blank')}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Blank Definition
+                    Standard Definition
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
