@@ -145,6 +145,8 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
 
   const selectedDbs = useMemo(() => sourceDb ? sourceDb.split(',').map(s => s.trim()) : [], [sourceDb]);
 
+  const isSupportTblsOnly = useMemo(() => selectedDbs.length === 1 && selectedDbs[0] === 'SupportTbls', [selectedDbs]);
+
   const availableSourceTypes = useMemo(() => {
     // If multiple DBs are selected, we use the first one to determine available types
     const firstDb = selectedDbs[0];
@@ -391,20 +393,31 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                         <div className="col-span-2">
                             <Label htmlFor="new-def-source-name">Source Name</Label>
                             <div className="flex items-center gap-2 mt-1">
-                              <Select 
-                                  value={sourceName} 
-                                  onValueChange={setSourceName}
+                              {isSupportTblsOnly ? (
+                                <Select 
+                                    value={sourceName} 
+                                    onValueChange={setSourceName}
+                                    disabled={!sourceType}
+                                >
+                                    <SelectTrigger id="new-def-source-name" className="flex-1">
+                                        <SelectValue placeholder={sourceType ? "Select Source Name" : "Select Source Type first"} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableSourceNames.map(obj => (
+                                            <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                              ) : (
+                                <Input 
+                                  id="new-def-source-name"
+                                  value={sourceName}
+                                  onChange={(e) => setSourceName(e.target.value)}
+                                  placeholder={sourceType ? "Enter Source Name" : "Select Source Type first"}
                                   disabled={!sourceType}
-                              >
-                                  <SelectTrigger id="new-def-source-name" className="flex-1">
-                                      <SelectValue placeholder={sourceType ? "Select Source Name" : "Select Source Type first"} />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                      {availableSourceNames.map(obj => (
-                                          <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
-                                      ))}
-                                  </SelectContent>
-                              </Select>
+                                  className="flex-1"
+                                />
+                              )}
                               <Button 
                                 variant="outline" 
                                 size="sm" 
