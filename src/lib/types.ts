@@ -57,7 +57,6 @@ export interface InputParameter {
 
 export interface SqlFunctionDetails {
   inputParameters: InputParameter[];
-  locations: string[];
   outputType: 'varchar' | 'int' | 'date' | 'datetime';
   outputExample: string;
 }

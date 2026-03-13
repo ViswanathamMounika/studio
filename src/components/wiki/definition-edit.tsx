@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
@@ -29,12 +28,10 @@ type DefinitionEditProps = {
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
-const functionLocations = ["All EZ-CAP Databases", "SupportTbls", "AuditTables", "NETAPPS", "OTHER"];
 const sqlDataTypes = ["varchar", "int", "date", "datetime", "bit", "decimal"];
 
 const defaultSqlDetails: SqlFunctionDetails = {
   inputParameters: [{ name: '', type: 'varchar' }],
-  locations: [],
   outputType: 'varchar',
   outputExample: '',
 };
@@ -87,7 +84,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
           inputParameters: meta.inputParameters.map(p => ({ ...p })),
           outputType: meta.outputType,
           outputExample: meta.outputExample,
-          locations: ['SupportTbls']
         });
       }
     }
@@ -121,8 +117,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
         : [...current, dbId];
       return updated.join(', ');
     });
-    // Requirement: Whenever there is change in the database select clear the source fields
-    // and reset SQL details to ensure manual entry mode
     setSourceType('');
     setSourceName('');
     setSqlDetails(defaultSqlDetails);
@@ -191,16 +185,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
     }));
   };
 
-  const handleToggleLocation = (loc: string) => {
-    setSqlDetails(prev => ({
-      ...prev,
-      locations: prev.locations.includes(loc) 
-        ? prev.locations.filter(l => l !== loc) 
-        : [...prev.locations, loc]
-    }));
-  };
-
-  // Requirement: if the source name is text box field disable the preview button
   const isPreviewAvailable = isSupportTblsOnly && sourceName && (sourceType === 'Views' || sourceType === 'Tables');
 
   return (
@@ -432,39 +416,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                       <Plus className="mr-2 h-4 w-4" /> Add Parameter
                     </Button>
                   </div>
-
-                  {(!isSupportTblsOnly || sourceType !== 'SQL Functions') && (
-                    <div className="space-y-3">
-                      <Label className="text-xs font-bold">Location of the function</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-between">
-                            <span className="truncate">
-                              {sqlDetails.locations.length > 0 
-                                ? sqlDetails.locations.join(", ") 
-                                : "Select locations..."}
-                            </span>
-                            <ChevronDown className="h-4 w-4 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[400px] p-0" align="start">
-                          <div className="p-2 space-y-1">
-                            {functionLocations.map(loc => (
-                              <div 
-                                key={loc} 
-                                className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
-                                onClick={() => handleToggleLocation(loc)}
-                              >
-                                <Checkbox checked={sqlDetails.locations.includes(loc)} onCheckedChange={() => handleToggleLocation(loc)} />
-                                <span className="text-sm font-medium leading-none">{loc}</span>
-                                {sqlDetails.locations.includes(loc) && <Check className="ml-auto h-4 w-4 text-primary" />}
-                              </div>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">

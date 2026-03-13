@@ -252,7 +252,6 @@ export default function DefinitionView({
     }, [definition]);
 
     const isEditable = useMemo(() => {
-        // Admins can edit anything. Standard users can edit their drafts if not pending.
         if (isAdmin) return true;
         return definition.isDraft && !definition.isPendingApproval;
     }, [isAdmin, definition.isDraft, definition.isPendingApproval]);
@@ -468,14 +467,6 @@ export default function DefinitionView({
                                                     ))}
                                                 </div>
                                             </div>
-                                            <div>
-                                                <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider flex items-center gap-1.5 mb-1.5"><MapPin className="h-3 w-3" /> Locations</p>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {definition.sqlFunctionDetails.locations.map((l, i) => (
-                                                        <Badge key={i} variant="outline" className="text-[10px] bg-background">{l}</Badge>
-                                                    ))}
-                                                </div>
-                                            </div>
                                         </div>
                                         <div className="space-y-4">
                                             <div>
@@ -639,7 +630,7 @@ export default function DefinitionView({
                                                                 variant="ghost" 
                                                                 size="icon" 
                                                                 className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors group/note-btn" 
-                                                                onClick={() => handleDeleteNote(note.id)}
+                                                                onClick={() => handleDeleteNote(noteId)}
                                                             >
                                                                 <Trash2 className="h-4 w-4 transition-colors group-hover/note-btn:text-white" />
                                                             </Button>

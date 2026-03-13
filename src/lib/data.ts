@@ -68,13 +68,11 @@ const getRandomName = () => {
 
 const generateRandomDate = () => {
     const now = new Date();
-    // 70% chance of being in the last 30 days to support the user's default filter request
     if (Math.random() > 0.3) {
         const start = new Date();
         start.setDate(now.getDate() - 30);
         return new Date(start.getTime() + Math.random() * (now.getTime() - start.getTime())).toISOString();
     }
-    // Otherwise, somewhere in the last 2 years
     const start = new Date(now.getFullYear() - 2, 0, 1);
     const date = new Date(start.getTime() + Math.random() * (now.getTime() - start.getTime()));
     return date.toISOString();
@@ -450,7 +448,6 @@ export const initialDefinitions: Definition[] = [
             { name: '@RequestDate', type: 'datetime' },
             { name: '@DecisionDate', type: 'datetime' }
           ],
-          locations: ['All EZ-CAP Databases', 'SupportTbls'],
           outputType: 'int',
           outputExample: '3'
         }
@@ -543,7 +540,6 @@ export const initialDefinitions: Definition[] = [
             { name: '@DOB', type: 'date' },
             { name: '@AsOfDate', type: 'date' }
           ],
-          locations: ['All EZ-CAP Databases'],
           outputType: 'int',
           outputExample: '42'
         }
