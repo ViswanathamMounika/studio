@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
@@ -121,8 +122,10 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
       return updated.join(', ');
     });
     // Requirement: Whenever there is change in the database select clear the source fields
+    // and reset SQL details to ensure manual entry mode
     setSourceType('');
     setSourceName('');
+    setSqlDetails(defaultSqlDetails);
   };
 
   const handleUpdateDynamicSection = (sectionId: string, content: string) => {
@@ -326,6 +329,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                           onValueChange={(val) => {
                               setSourceType(val);
                               setSourceName('');
+                              setSqlDetails(defaultSqlDetails);
                           }}
                           disabled={selectedDbs.length === 0}
                       >

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -44,6 +45,13 @@ const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Memb
 const functionLocations = ["All EZ-CAP Databases", "SupportTbls", "AuditTables", "NETAPPS", "OTHER"];
 const sqlDataTypes = ["varchar", "int", "date", "datetime", "bit", "decimal"];
 
+const initialSqlFunctionDetails: SqlFunctionDetails = {
+  inputParameters: [{ name: '', type: 'varchar' }],
+  locations: [],
+  outputType: 'varchar',
+  outputExample: '',
+};
+
 const initialDefinitionState = {
   name: '',
   module: 'Core',
@@ -58,13 +66,7 @@ const initialDefinitionState = {
   sourceName: '',
   isDraft: false,
   dynamicSections: [],
-};
-
-const initialSqlFunctionDetails: SqlFunctionDetails = {
-  inputParameters: [{ name: '', type: 'varchar' }],
-  locations: [],
-  outputType: 'varchar',
-  outputExample: '',
+  sqlFunctionDetails: initialSqlFunctionDetails,
 };
 
 export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [], isAdmin }: NewDefinitionModalProps) {
@@ -206,8 +208,10 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       return updated.join(', ');
     });
     // Requirement: Whenever there is change in the database select clear the source fields
+    // and reset SQL details to ensure manual entry mode
     setSourceType('');
     setSourceName('');
+    setSqlDetails(initialSqlFunctionDetails);
   };
 
   const handleUpdateDynamicSection = (sectionId: string, content: string) => {
@@ -391,6 +395,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                 onValueChange={(val) => {
                                     setSourceType(val);
                                     setSourceName('');
+                                    setSqlDetails(initialSqlFunctionDetails);
                                 }}
                                 disabled={selectedDbs.length === 0}
                             >
