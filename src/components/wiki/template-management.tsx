@@ -216,9 +216,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 </div>
                 <div>
                   <DialogTitle className="text-2xl font-bold">
-                    {isEditing ? 'Edit' : 'Create'} Custom Template
+                    {isEditing ? 'Edit' : 'Create'} Template
                   </DialogTitle>
-                  <p className="text-sm text-muted-foreground">Blueprint for consistent documentation.</p>
+                  <p className="text-sm text-muted-foreground">
+                    A standardized framework designed to ensure consistent and structured documentation.
+                  </p>
                 </div>
               </div>
             </DialogHeader>
