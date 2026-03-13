@@ -230,11 +230,15 @@ export default function DefinitionView({
     };
 
     const resolvedSourceInfo = useMemo(() => {
-        const db = mpmDatabases.find(d => d.id === definition.sourceDb);
-        const types = definition.sourceDb ? mpmSourceTypes[definition.sourceDb] : [];
+        const dbIds = definition.sourceDb ? definition.sourceDb.split(',').map(s => s.trim()) : [];
+        const dbNames = dbIds.map(id => mpmDatabases.find(d => d.id === id)?.name || id).join(', ');
+        
+        const firstDb = dbIds[0];
+        const types = firstDb ? mpmSourceTypes[firstDb] : [];
         const type = types?.find(t => t.id === definition.sourceType);
+        
         return { 
-            database: db?.name || definition.sourceDb || 'N/A', 
+            database: dbNames || 'N/A', 
             type: type?.name || definition.sourceType || 'N/A', 
             name: definition.sourceName || 'N/A' 
         };
@@ -428,7 +432,7 @@ export default function DefinitionView({
                                 </AccordionTrigger>
                                 <AccordionContent className="pb-4">
                                     <div className="flex flex-col gap-4 text-sm">
-                                        <div><p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Database</p><p className="mt-1 font-medium">{resolvedSourceInfo.database}</p></div>
+                                        <div><p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Database(s)</p><p className="mt-1 font-medium">{resolvedSourceInfo.database}</p></div>
                                         <div><p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Source Type</p><p className="mt-1 font-medium">{resolvedSourceInfo.type}</p></div>
                                         <div><p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Source Name</p><p className="mt-1 font-medium">{resolvedSourceInfo.name !== 'N/A' ? (<button onClick={() => setIsPreviewDialogOpen(true)} className="text-primary font-bold hover:underline">{resolvedSourceInfo.name}</button>) : 'N/A'}</p></div>
                                     </div>
@@ -635,7 +639,7 @@ export default function DefinitionView({
                                                                 variant="ghost" 
                                                                 size="icon" 
                                                                 className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors group/note-btn" 
-                                                                onClick={() => handleDeleteNote(noteId)}
+                                                                onClick={() => handleDeleteNote(note.id)}
                                                             >
                                                                 <Trash2 className="h-4 w-4 transition-colors group-hover/note-btn:text-white" />
                                                             </Button>

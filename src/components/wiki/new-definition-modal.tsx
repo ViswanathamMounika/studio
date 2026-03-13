@@ -79,7 +79,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [attachments, setAttachments] = useState<Attachment[]>(initialDefinitionState.attachments);
   const [dynamicSections, setDynamicSections] = useState<DynamicSection[]>(initialDefinitionState.dynamicSections);
   
-  const [sourceDb, setSourceDb] = useState(initialDefinitionState.sourceDb);
+  const [sourceDb, setSourceDb] = useState(initialDefinitionState.sourceDb); // stored as comma separated string
   const [sourceType, setSourceType] = useState(initialDefinitionState.sourceType);
   const [sourceName, setSourceName] = useState(initialDefinitionState.sourceName);
 
@@ -143,15 +143,20 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     }
   }, [open, initialData, templates]);
 
+  const selectedDbs = useMemo(() => sourceDb ? sourceDb.split(',').map(s => s.trim()) : [], [sourceDb]);
+
   const availableSourceTypes = useMemo(() => {
-    return sourceDb ? mpmDatabases.find(d => d.id === sourceDb) ? mpmSourceTypes[sourceDb] || [] : [] : [];
-  }, [sourceDb]);
+    // If multiple DBs are selected, we use the first one to determine available types
+    const firstDb = selectedDbs[0];
+    return firstDb ? mpmSourceTypes[firstDb] || [] : [];
+  }, [selectedDbs]);
 
   const availableSourceNames = useMemo(() => {
-    if (!sourceDb || !sourceType) return [];
-    const key = `${sourceDb}_${sourceType}`;
+    const firstDb = selectedDbs[0];
+    if (!firstDb || !sourceType) return [];
+    const key = `${firstDb}_${sourceType}`;
     return mpmSourceObjects[key] || [];
-  }, [sourceDb, sourceType]);
+  }, [selectedDbs, sourceType]);
 
   const handleSave = (isDraft: boolean) => {
     const newDefinitionData = {
@@ -173,6 +178,21 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       sqlFunctionDetails: sourceType === 'SQL Functions' ? sqlDetails : undefined,
     };
     onSave(newDefinitionData);
+  };
+
+  const toggleDatabase = (dbId: string) => {
+    setSourceDb(prev => {
+      const current = prev ? prev.split(',').map(s => s.trim()) : [];
+      const updated = current.includes(dbId) 
+        ? current.filter(id => id !== dbId)
+        : [...current, dbId];
+      return updated.join(', ');
+    });
+    // Reset dependant fields if nothing is selected
+    if (selectedDbs.length === 1 && selectedDbs.includes(dbId)) {
+      setSourceType('');
+      setSourceName('');
+    }
   };
 
   const handleUpdateDynamicSection = (sectionId: string, content: string) => {
@@ -321,21 +341,32 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                 <CardContent className="p-6 space-y-4">
                    <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="new-def-source-db">Database</Label>
-                            <Select value={sourceDb} onValueChange={(val) => {
-                                setSourceDb(val);
-                                setSourceType('');
-                                setSourceName('');
-                            }}>
-                                <SelectTrigger id="new-def-source-db">
-                                    <SelectValue placeholder="Select Database" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {mpmDatabases.map(db => (
-                                        <SelectItem key={db.id} value={db.id}>{db.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Label htmlFor="new-def-source-db">Databases</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full justify-between font-normal">
+                                  <span className="truncate">
+                                    {selectedDbs.length > 0 ? selectedDbs.join(', ') : "Select Databases"}
+                                  </span>
+                                  <ChevronDown className="h-4 w-4 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[300px] p-0" align="start">
+                                <div className="p-2 space-y-1">
+                                  {mpmDatabases.map(db => (
+                                    <div 
+                                      key={db.id} 
+                                      className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
+                                      onClick={() => toggleDatabase(db.id)}
+                                    >
+                                      <Checkbox checked={selectedDbs.includes(db.id)} />
+                                      <span className="text-sm font-medium">{db.name}</span>
+                                      {selectedDbs.includes(db.id) && <Check className="ml-auto h-4 w-4 text-primary" />}
+                                    </div>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                         </div>
                         <div>
                             <Label htmlFor="new-def-source-type">Source Type</Label>
@@ -345,10 +376,10 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                     setSourceType(val);
                                     setSourceName('');
                                 }}
-                                disabled={!sourceDb}
+                                disabled={selectedDbs.length === 0}
                             >
                                 <SelectTrigger id="new-def-source-type">
-                                    <SelectValue placeholder={sourceDb ? "Select Source Type" : "Select Database first"} />
+                                    <SelectValue placeholder={selectedDbs.length > 0 ? "Select Source Type" : "Select Database first"} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {availableSourceTypes.map(type => (
@@ -632,7 +663,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
         open={isPreviewOpen} 
         onOpenChange={setIsPreviewOpen} 
         sourceName={sourceName} 
-        databaseName={mpmDatabases.find(d => d.id === sourceDb)?.name} 
+        databaseName={selectedDbs[0] ? mpmDatabases.find(d => d.id === selectedDbs[0])?.name : undefined} 
       />
     </Dialog>
   );

@@ -109,6 +109,7 @@ export const mpmDatabases: DatabaseMetadata[] = [
     { id: 'Finance', name: 'Finance' },
     { id: 'Provider_Data', name: 'Provider_Data' },
     { id: 'Claims', name: 'Claims' },
+    { id: 'SupportTbls', name: 'SupportTbls' },
 ];
 
 const standardSourceTypes: SourceTypeMetadata[] = [
@@ -123,6 +124,7 @@ export const mpmSourceTypes: Record<string, SourceTypeMetadata[]> = {
     'Finance': standardSourceTypes,
     'Provider_Data': standardSourceTypes,
     'Claims': standardSourceTypes,
+    'SupportTbls': standardSourceTypes,
 };
 
 export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
@@ -156,6 +158,11 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
     'Claims_Tables': [
         { id: 'CLAIMS_MASTER', name: 'CLAIMS_MASTER', typeId: 'Tables' },
         { id: 'CLAIM_ADJUDICATION_LOG', name: 'CLAIM_ADJUDICATION_LOG', typeId: 'Tables' },
+    ],
+    'SupportTbls_Tables': [
+        { id: 'REF_DATA', name: 'REF_DATA', typeId: 'Tables' },
+        { id: 'CONFIG_PARAMS', name: 'CONFIG_PARAMS', typeId: 'Tables' },
+        { id: 'SLA_MAPPING', name: 'SLA_MAPPING', typeId: 'Tables' },
     ]
 };
 
