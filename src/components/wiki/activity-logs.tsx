@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, ChevronsUpDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType } from '@/lib/types';
 import { initialActivityLogs } from '@/lib/data';
@@ -21,9 +21,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { useToast } from '@/hooks/use-toast';
 
-const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search'];
+const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search', 'Submit', 'Approve', 'Reject', 'Request Changes'];
 const ITEMS_PER_PAGE = 10;
 
 export default function ActivityLogs() {
@@ -38,7 +46,14 @@ export default function ActivityLogs() {
         direction: 'desc'
     });
     
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const { toast } = useToast();
+
+    // Extract unique definition names for auto-population
+    const uniqueDefinitions = useMemo(() => {
+        const names = Array.from(new Set(logs.map(log => log.definitionName)));
+        return names.sort((a, b) => a.localeCompare(b));
+    }, [logs]);
 
     const filteredAndSortedLogs = useMemo(() => {
         return logs.filter(log => {
@@ -228,16 +243,72 @@ export default function ActivityLogs() {
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Search Definition</label>
                             <div className="relative">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    placeholder="Definition name..." 
-                                    className="pl-8"
-                                    value={definitionSearch}
-                                    onChange={(e) => {
-                                        setDefinitionSearch(e.target.value);
-                                        setCurrentPage(1);
-                                    }}
-                                />
+                                <Popover open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+                                    <PopoverTrigger asChild>
+                                        <div className="relative group">
+                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input 
+                                                placeholder="Search or select definition..." 
+                                                className="pl-8 pr-10 cursor-pointer text-left bg-background"
+                                                value={definitionSearch}
+                                                onChange={(e) => {
+                                                    setDefinitionSearch(e.target.value);
+                                                    setCurrentPage(1);
+                                                }}
+                                                onFocus={() => setIsSearchOpen(true)}
+                                            />
+                                            {definitionSearch && (
+                                                <button 
+                                                    className="absolute right-8 top-2.5 text-muted-foreground hover:text-foreground"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDefinitionSearch('');
+                                                        setCurrentPage(1);
+                                                    }}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                            <ChevronsUpDown className="absolute right-2.5 top-2.5 h-4 w-4 opacity-50 shrink-0" />
+                                        </div>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[300px] p-0" align="start">
+                                        <Command>
+                                            <CommandInput 
+                                                placeholder="Search definitions..." 
+                                                value={definitionSearch}
+                                                onValueChange={(v) => {
+                                                    setDefinitionSearch(v);
+                                                    setCurrentPage(1);
+                                                }}
+                                            />
+                                            <CommandList>
+                                                <CommandEmpty>No definition found.</CommandEmpty>
+                                                <CommandGroup heading="Existing Definitions">
+                                                    {uniqueDefinitions.map((name) => (
+                                                        <CommandItem
+                                                            key={name}
+                                                            value={name}
+                                                            onSelect={(currentValue) => {
+                                                                setDefinitionSearch(currentValue === definitionSearch ? "" : currentValue);
+                                                                setIsSearchOpen(false);
+                                                                setCurrentPage(1);
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    definitionSearch === name ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                            {name}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                             </div>
                         </div>
 
