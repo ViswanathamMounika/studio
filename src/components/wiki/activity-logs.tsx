@@ -139,6 +139,15 @@ export default function ActivityLogs() {
     };
 
     const handleExportExcel = async () => {
+        if (filteredAndSortedLogs.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Export Failed",
+                description: "No results found to export.",
+            });
+            return;
+        }
+
         const XLSX = await import('xlsx');
         const exportData = filteredAndSortedLogs.map(log => ({
             'User Name': log.userName,
@@ -159,6 +168,15 @@ export default function ActivityLogs() {
     };
 
     const handleExportPDF = async () => {
+        if (filteredAndSortedLogs.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Export Failed",
+                description: "No results found to export.",
+            });
+            return;
+        }
+
         const { default: jsPDF } = await import('jspdf');
         const doc = new jsPDF();
         
@@ -224,26 +242,24 @@ export default function ActivityLogs() {
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold tracking-tight">Activity Logs</h1>
                 <div className="flex items-center gap-2">
-                    {showResults && filteredAndSortedLogs.length > 0 && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Export Results
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={handleExportExcel}>
-                                    <FileSpreadsheet className="h-4 w-4 mr-2" />
-                                    Export as Excel
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleExportPDF}>
-                                    <FileText className="h-4 w-4 mr-2" />
-                                    Export as PDF
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <Download className="h-4 w-4 mr-2" />
+                                Export Results
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={handleExportExcel}>
+                                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                Export as Excel
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleExportPDF}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Export as PDF
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button variant="outline" size="sm" onClick={resetFilters}>
                         <FilterX className="h-4 w-4 mr-2" />
                         Reset Filters
