@@ -172,23 +172,41 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Template Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+              <TableRow className="bg-slate-100 dark:bg-slate-900">
+                <TableHead className="py-4">
+                  <div className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-100">
+                    Template Name
+                  </div>
+                </TableHead>
+                <TableHead>
+                  <div className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-100">
+                    Status
+                  </div>
+                </TableHead>
+                <TableHead>
+                  <div className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-100">
+                    Description
+                  </div>
+                </TableHead>
+                <TableHead className="text-right">
+                  <div className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-100">
+                    Actions
+                  </div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedTemplates.map(template => (
                 <TableRow key={template.id}>
-                  <TableCell className="font-medium">{template.name}</TableCell>
+                  <TableCell className="font-medium py-4 text-slate-700 dark:text-slate-300">{template.name}</TableCell>
                   <TableCell>
                     <Badge variant={template.status === 'Active' ? 'success' : 'secondary'}>
                       {template.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-xs truncate text-muted-foreground">{template.description}</TableCell>
+                  <TableCell className="max-w-xs truncate text-slate-600 dark:text-slate-400 font-medium">
+                    {template.description || <span className="italic opacity-50">No description provided</span>}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(template)}>
@@ -201,6 +219,13 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                   </TableCell>
                 </TableRow>
               ))}
+              {sortedTemplates.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                    No templates found. Click "Create Template" to get started.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
