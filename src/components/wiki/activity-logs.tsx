@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths, subDays } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType } from '@/lib/types';
 import { initialActivityLogs } from '@/lib/data';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,17 +47,30 @@ const ITEMS_PER_PAGE = 10;
 
 export default function ActivityLogs() {
     const [logs] = useState<ActivityLog[]>(initialActivityLogs);
+    
+    // UI Filter States (Pending Application)
     const [activityTypeFilter, setActivityTypeFilter] = useState<string>('all');
     const [definitionSearch, setDefinitionSearch] = useState<string>('');
-    const [timeFrame, setTimeFrame] = useState('last-30-days'); // Default to Last 30 Days
+    const [timeFrame, setTimeFrame] = useState('last-30-days');
     const [customRange, setCustomRange] = useState<{ from: Date; to: Date } | undefined>();
+    const [isViewedOnly, setIsViewedOnly] = useState(false);
+
+    // Applied Filter State (Commit on Search)
+    const [appliedFilters, setAppliedFilters] = useState<{
+        activityType: string;
+        definitionSearch: string;
+        timeFrame: string;
+        customRange: { from: Date; to: Date } | undefined;
+        isViewedOnly: boolean;
+    } | null>(null);
+
     const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState<{ key: keyof ActivityLog; direction: 'asc' | 'desc' }>({
         key: 'occurredDate',
         direction: 'desc'
     });
     
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isSearchSuggestionsOpen, setIsSearchSuggestionsOpen] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
 
@@ -63,7 +78,7 @@ export default function ActivityLogs() {
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-                setIsSearchOpen(false);
+                setIsSearchSuggestionsOpen(false);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
@@ -83,33 +98,41 @@ export default function ActivityLogs() {
         );
     }, [uniqueDefinitions, definitionSearch]);
 
-    // Show results if definition search has content
-    const showResults = definitionSearch.trim().length > 0;
+    const handleSearch = () => {
+        setAppliedFilters({
+            activityType: isViewedOnly ? 'Definition Viewed' : activityTypeFilter,
+            definitionSearch,
+            timeFrame,
+            customRange,
+            isViewedOnly
+        });
+        setCurrentPage(1);
+    };
 
     const filteredAndSortedLogs = useMemo(() => {
-        if (!showResults) return [];
+        if (!appliedFilters) return [];
 
         return logs.filter(log => {
-            const activityMatch = activityTypeFilter === 'all' || log.activityType === activityTypeFilter;
-            const definitionMatch = !definitionSearch || log.definitionName.toLowerCase().includes(definitionSearch.toLowerCase());
+            const activityMatch = appliedFilters.activityType === 'all' || log.activityType === appliedFilters.activityType;
+            const definitionMatch = !appliedFilters.definitionSearch || log.definitionName.toLowerCase().includes(appliedFilters.definitionSearch.toLowerCase());
 
             let timeMatch = true;
             const logDate = new Date(log.occurredDate);
             const now = new Date();
 
-            if (timeFrame === 'this-week') {
+            if (appliedFilters.timeFrame === 'this-week') {
                 timeMatch = isWithinInterval(logDate, { start: startOfWeek(now), end: endOfWeek(now) });
-            } else if (timeFrame === 'last-week') {
+            } else if (appliedFilters.timeFrame === 'last-week') {
                 const startOfLast = startOfWeek(subWeeks(now, 1));
                 const endOfLast = endOfWeek(subWeeks(now, 1));
                 timeMatch = isWithinInterval(logDate, { start: startOfLast, end: endOfLast });
-            } else if (timeFrame === 'this-month') {
+            } else if (appliedFilters.timeFrame === 'this-month') {
                 timeMatch = isWithinInterval(logDate, { start: startOfMonth(now), end: endOfMonth(now) });
-            } else if (timeFrame === 'last-30-days') {
+            } else if (appliedFilters.timeFrame === 'last-30-days') {
                 const thirtyDaysAgo = subDays(now, 30);
                 timeMatch = isWithinInterval(logDate, { start: thirtyDaysAgo, end: now });
-            } else if (timeFrame === 'custom' && customRange?.from && customRange?.to) {
-                timeMatch = isWithinInterval(logDate, { start: customRange.from, end: customRange.to });
+            } else if (appliedFilters.timeFrame === 'custom' && appliedFilters.customRange?.from && appliedFilters.customRange?.to) {
+                timeMatch = isWithinInterval(logDate, { start: appliedFilters.customRange.from, end: appliedFilters.customRange.to });
             }
 
             return activityMatch && definitionMatch && timeMatch;
@@ -130,7 +153,7 @@ export default function ActivityLogs() {
             if (stringA > stringB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [logs, activityTypeFilter, definitionSearch, timeFrame, customRange, sortConfig, showResults]);
+    }, [logs, appliedFilters, sortConfig]);
 
     const paginatedLogs = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -152,6 +175,8 @@ export default function ActivityLogs() {
         setDefinitionSearch('');
         setTimeFrame('last-30-days');
         setCustomRange(undefined);
+        setIsViewedOnly(false);
+        setAppliedFilters(null);
         setCurrentPage(1);
     };
 
@@ -285,33 +310,42 @@ export default function ActivityLogs() {
             </div>
 
             <Card>
-                <CardHeader className="py-3 bg-muted/5 border-b">
+                <CardHeader className="py-3 bg-muted/5 border-b flex flex-row items-center justify-between">
                     <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Search Filters</CardTitle>
+                    <div className="flex items-center space-x-2">
+                        <Switch 
+                            id="viewed-only" 
+                            checked={isViewedOnly}
+                            onCheckedChange={setIsViewedOnly}
+                        />
+                        <Label htmlFor="viewed-only" className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                            <Eye className="h-3 w-3" /> View Only Definitions Viewed
+                        </Label>
+                    </div>
                 </CardHeader>
                 <CardContent className="pt-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-600">Definition Name</label>
                             <div className="relative" ref={searchRef}>
                                 <div className="relative">
                                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                     <Input 
-                                        placeholder="Type to search definition..." 
+                                        placeholder="Search definition..." 
                                         className="pl-8 pr-10 bg-background"
                                         value={definitionSearch}
                                         onChange={(e) => {
                                             setDefinitionSearch(e.target.value);
-                                            setIsSearchOpen(true);
-                                            setCurrentPage(1);
+                                            setIsSearchSuggestionsOpen(true);
                                         }}
-                                        onFocus={() => setIsSearchOpen(true)}
+                                        onFocus={() => setIsSearchSuggestionsOpen(true)}
                                     />
                                     {definitionSearch && (
                                         <button 
                                             className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
                                             onClick={() => {
                                                 setDefinitionSearch('');
-                                                setIsSearchOpen(false);
+                                                setIsSearchSuggestionsOpen(false);
                                             }}
                                         >
                                             <X className="h-4 w-4" />
@@ -319,7 +353,7 @@ export default function ActivityLogs() {
                                     )}
                                 </div>
                                 
-                                {isSearchOpen && suggestions.length > 0 && (
+                                {isSearchSuggestionsOpen && suggestions.length > 0 && (
                                     <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto animate-in fade-in zoom-in-95">
                                         <div className="p-1">
                                             <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -334,8 +368,7 @@ export default function ActivityLogs() {
                                                     )}
                                                     onClick={() => {
                                                         setDefinitionSearch(name);
-                                                        setIsSearchOpen(false);
-                                                        setCurrentPage(1);
+                                                        setIsSearchSuggestionsOpen(false);
                                                     }}
                                                 >
                                                     <Check className={cn("h-3.5 w-3.5", definitionSearch === name ? "opacity-100" : "opacity-0")} />
@@ -350,7 +383,11 @@ export default function ActivityLogs() {
 
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-600">Activity Type</label>
-                            <Select value={activityTypeFilter} onValueChange={(v) => { setActivityTypeFilter(v); setCurrentPage(1); }}>
+                            <Select 
+                                value={isViewedOnly ? 'Definition Viewed' : activityTypeFilter} 
+                                onValueChange={setActivityTypeFilter}
+                                disabled={isViewedOnly}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Activities" />
                                 </SelectTrigger>
@@ -365,7 +402,7 @@ export default function ActivityLogs() {
 
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-600">Time Frame</label>
-                            <Select value={timeFrame} onValueChange={(v) => { setTimeFrame(v); setCurrentPage(1); }}>
+                            <Select value={timeFrame} onValueChange={setTimeFrame}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select Time Frame" />
                                 </SelectTrigger>
@@ -378,6 +415,13 @@ export default function ActivityLogs() {
                                     <SelectItem value="custom">Custom Range</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <Button className="flex-1 font-bold" onClick={handleSearch}>
+                                <Search className="h-4 w-4 mr-2" />
+                                Search
+                            </Button>
                         </div>
                     </div>
 
@@ -399,7 +443,7 @@ export default function ActivityLogs() {
                                                 mode="range"
                                                 defaultMonth={customRange?.from}
                                                 selected={customRange as any}
-                                                onSelect={(range) => { setCustomRange(range as any); setCurrentPage(1); }}
+                                                onSelect={(range) => setCustomRange(range as any)}
                                                 numberOfMonths={2}
                                                 disabled={{ after: new Date() }}
                                             />
@@ -414,14 +458,14 @@ export default function ActivityLogs() {
 
             <Card className="min-h-[400px] flex flex-col overflow-hidden">
                 <CardContent className="p-0 overflow-hidden flex-1">
-                    {!showResults ? (
+                    {!appliedFilters ? (
                         <div className="h-full flex flex-col items-center justify-center text-center py-32 px-4 bg-muted/5">
                             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                                 <History className="h-8 w-8 text-muted-foreground/50" />
                             </div>
                             <h3 className="text-xl font-bold text-slate-900">Activity History Ready</h3>
                             <p className="text-sm text-slate-500 max-w-sm mt-2">
-                                Search the definition name to get the activity logs.
+                                Configure your filters and click <strong>Search</strong> to retrieve activity logs.
                             </p>
                         </div>
                     ) : (
@@ -460,7 +504,10 @@ export default function ActivityLogs() {
                                         <TableCell className="font-medium py-4 text-slate-700 dark:text-slate-300">{log.userName}</TableCell>
                                         <TableCell className="text-slate-700 dark:text-slate-300">{log.definitionName}</TableCell>
                                         <TableCell className="text-slate-700 dark:text-slate-300">
-                                            {log.activityType}
+                                            <div className="flex items-center gap-2">
+                                                {log.activityType === 'Definition Viewed' && <Eye className="h-3.5 w-3.5 text-primary" />}
+                                                {log.activityType}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
                                             {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}
@@ -472,7 +519,7 @@ export default function ActivityLogs() {
                                         <TableCell colSpan={4} className="h-48 text-center bg-muted/5">
                                             <div className="flex flex-col items-center gap-2">
                                                 <Search className="h-8 w-8 text-muted-foreground/30" />
-                                                <p className="text-sm font-medium text-muted-foreground">No logs found matching your selected filters.</p>
+                                                <p className="text-sm font-medium text-muted-foreground">No logs found matching your search criteria.</p>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -482,7 +529,7 @@ export default function ActivityLogs() {
                     )}
                 </CardContent>
                 
-                {showResults && filteredAndSortedLogs.length > 0 && (
+                {appliedFilters && filteredAndSortedLogs.length > 0 && (
                     <div className="flex items-center justify-between p-4 border-t bg-muted/30">
                         <p className="text-sm text-muted-foreground">
                             Showing {paginatedLogs.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedLogs.length)} of {filteredAndSortedLogs.length} entries
