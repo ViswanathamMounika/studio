@@ -163,6 +163,47 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
         { id: 'REF_DATA', name: 'REF_DATA', typeId: 'Tables' },
         { id: 'CONFIG_PARAMS', name: 'CONFIG_PARAMS', typeId: 'Tables' },
         { id: 'SLA_MAPPING', name: 'SLA_MAPPING', typeId: 'Tables' },
+    ],
+    'SupportTbls_SQL Functions': [
+        { 
+            id: 'fn_GetBusinessDays', 
+            name: 'fn_GetBusinessDays', 
+            typeId: 'SQL Functions',
+            sqlMetadata: {
+                inputParameters: [
+                    { name: '@StartDate', type: 'datetime' },
+                    { name: '@EndDate', type: 'datetime' }
+                ],
+                outputType: 'int',
+                outputExample: '5'
+            }
+        },
+        { 
+            id: 'fn_FormatMemberName', 
+            name: 'fn_FormatMemberName', 
+            typeId: 'SQL Functions',
+            sqlMetadata: {
+                inputParameters: [
+                    { name: '@FirstName', type: 'varchar' },
+                    { name: '@LastName', type: 'varchar' },
+                    { name: '@FormatType', type: 'int' }
+                ],
+                outputType: 'varchar',
+                outputExample: 'DOE, JOHN'
+            }
+        },
+        { 
+            id: 'fn_GetAuthStatusDesc', 
+            name: 'fn_GetAuthStatusDesc', 
+            typeId: 'SQL Functions',
+            sqlMetadata: {
+                inputParameters: [
+                    { name: '@StatusCode', type: 'varchar' }
+                ],
+                outputType: 'varchar',
+                outputExample: 'Approved'
+            }
+        }
     ]
 };
 

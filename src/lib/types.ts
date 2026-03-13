@@ -149,6 +149,11 @@ export interface SourceObjectMetadata {
     id: string;
     name: string;
     typeId: string;
+    sqlMetadata?: {
+        inputParameters: InputParameter[];
+        outputType: 'varchar' | 'int' | 'date' | 'datetime';
+        outputExample: string;
+    };
 }
 
 export interface TemplateSection {

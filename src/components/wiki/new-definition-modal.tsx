@@ -159,6 +159,22 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     return mpmSourceObjects[key] || [];
   }, [selectedDbs, sourceType]);
 
+  // Handle auto-population for SupportTbls SQL Functions
+  useEffect(() => {
+    if (isSupportTblsOnly && sourceType === 'SQL Functions' && sourceName) {
+      const selectedObject = availableSourceNames.find(obj => obj.id === sourceName);
+      if (selectedObject?.sqlMetadata) {
+        const meta = selectedObject.sqlMetadata;
+        setSqlDetails({
+          inputParameters: meta.inputParameters.map(p => ({ ...p })),
+          outputType: meta.outputType,
+          outputExample: meta.outputExample,
+          locations: ['SupportTbls']
+        });
+      }
+    }
+  }, [sourceName, isSupportTblsOnly, sourceType, availableSourceNames]);
+
   const handleSave = (isDraft: boolean) => {
     const newDefinitionData = {
       name: name,
@@ -478,36 +494,38 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                           </Button>
                         </div>
 
-                        <div className="space-y-3">
-                          <Label className="text-xs font-bold">Location of the function</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" className="w-full justify-between">
-                                <span className="truncate">
-                                  {sqlDetails.locations.length > 0 
-                                    ? sqlDetails.locations.join(", ") 
-                                    : "Select locations..."}
-                                </span>
-                                <ChevronDown className="h-4 w-4 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[400px] p-0" align="start">
-                              <div className="p-2 space-y-1">
-                                {functionLocations.map(loc => (
-                                  <div 
-                                    key={loc} 
-                                    className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
-                                    onClick={() => handleToggleLocation(loc)}
-                                  >
-                                    <Checkbox checked={sqlDetails.locations.includes(loc)} onCheckedChange={() => handleToggleLocation(loc)} />
-                                    <span className="text-sm font-medium leading-none">{loc}</span>
-                                    {sqlDetails.locations.includes(loc) && <Check className="ml-auto h-4 w-4 text-primary" />}
-                                  </div>
-                                ))}
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
+                        {(!isSupportTblsOnly || sourceType !== 'SQL Functions') && (
+                          <div className="space-y-3">
+                            <Label className="text-xs font-bold">Location of the function</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full justify-between">
+                                  <span className="truncate">
+                                    {sqlDetails.locations.length > 0 
+                                      ? sqlDetails.locations.join(", ") 
+                                      : "Select locations..."}
+                                  </span>
+                                  <ChevronDown className="h-4 w-4 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[400px] p-0" align="start">
+                                <div className="p-2 space-y-1">
+                                  {functionLocations.map(loc => (
+                                    <div 
+                                      key={loc} 
+                                      className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
+                                      onClick={() => handleToggleLocation(loc)}
+                                    >
+                                      <Checkbox checked={sqlDetails.locations.includes(loc)} onCheckedChange={() => handleToggleLocation(loc)} />
+                                      <span className="text-sm font-medium leading-none">{loc}</span>
+                                      {sqlDetails.locations.includes(loc) && <Check className="ml-auto h-4 w-4 text-primary" />}
+                                    </div>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        )}
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
