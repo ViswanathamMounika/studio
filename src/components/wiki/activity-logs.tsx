@@ -92,7 +92,7 @@ export default function ActivityLogs() {
     }, [logs]);
 
     const suggestions = useMemo(() => {
-        if (!definitionSearch) return uniqueDefinitions;
+        if (!definitionSearch.trim()) return [];
         return uniqueDefinitions.filter(name => 
             name.toLowerCase().includes(definitionSearch.toLowerCase())
         );
@@ -418,7 +418,7 @@ export default function ActivityLogs() {
                         </div>
 
                         <div className="flex gap-2">
-                            <Button className="flex-1 font-bold" onClick={handleSearch}>
+                            <Button className="font-bold px-8" onClick={handleSearch}>
                                 <Search className="h-4 w-4 mr-2" />
                                 Search
                             </Button>
