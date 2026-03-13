@@ -43,6 +43,7 @@ export interface DiscussionMessage {
 export interface DynamicSection {
   sectionId: string;
   name: string;
+  description?: string;
   content: string;
   isMandatory: boolean;
   contentType: 'plain' | 'rich' | 'dropdown';
@@ -153,6 +154,7 @@ export interface SourceObjectMetadata {
 export interface TemplateSection {
   id: string;
   name: string;
+  description?: string;
   isMandatory: boolean;
   defaultValue?: string;
   contentType: 'plain' | 'rich' | 'dropdown';

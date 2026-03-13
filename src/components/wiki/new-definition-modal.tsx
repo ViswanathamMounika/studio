@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Save, Send, Plus, Trash2, ChevronDown, Check } from 'lucide-react';
+import { X, Upload, Eye, Save, Send, Plus, Trash2, ChevronDown, Check, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -117,6 +117,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
         const dynamicSecs: DynamicSection[] = (template.customSections || []).map(cs => ({
           sectionId: cs.id,
           name: cs.name,
+          description: cs.description,
           isMandatory: cs.isMandatory,
           content: cs.defaultValue || '',
           contentType: cs.contentType || 'rich',
@@ -504,15 +505,23 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                     <Badge variant="outline" className="text-[10px] uppercase">Required Layout</Badge>
                   </h3>
                   {dynamicSections.map(section => (
-                    <Card key={section.sectionId} className="border-l-4 border-l-primary">
+                    <Card key={section.sectionId} className="border-l-4 border-l-primary shadow-sm overflow-hidden">
                       <CardHeader className="py-3 bg-primary/5 flex flex-row items-center justify-between">
-                        <CardTitle className="text-sm font-bold flex items-center gap-2">
-                          {section.name}
-                          {section.isMandatory && <span className="text-destructive font-bold">*</span>}
-                          <Badge variant="ghost" className="ml-auto text-[10px] uppercase font-normal opacity-60">
-                            {section.contentType}
-                          </Badge>
-                        </CardTitle>
+                        <div className="flex flex-col gap-1">
+                          <CardTitle className="text-sm font-bold flex items-center gap-2">
+                            {section.name}
+                            {section.isMandatory && <span className="text-destructive font-bold">*</span>}
+                          </CardTitle>
+                          {section.description && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                              <Info className="h-3 w-3" />
+                              {section.description}
+                            </div>
+                          )}
+                        </div>
+                        <Badge variant="ghost" className="text-[10px] uppercase font-normal opacity-60">
+                          {section.contentType}
+                        </Badge>
                       </CardHeader>
                       <CardContent className="pt-4">
                         {section.contentType === 'rich' ? (

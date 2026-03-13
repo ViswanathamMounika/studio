@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Pencil, Trash2, Save, Upload, Plus, X, ListTodo, Layout, LayoutTemplate, Type, FileType, List } from 'lucide-react';
+import { Pencil, Trash2, Save, Upload, Plus, X, ListTodo, Layout, LayoutTemplate, Type, FileType, List, AlignLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Template, Attachment, TemplateSection, TemplateType } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
@@ -66,6 +66,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       customSections: [{
         id: `sec-${Date.now()}`,
         name: '',
+        description: '',
         isMandatory: false,
         defaultValue: '',
         contentType: 'rich',
@@ -123,41 +124,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     setShowErrors(false);
   };
 
-  const handleAddAttachmentClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      const newAttachment: Attachment = {
-        name: file.name,
-        url: URL.createObjectURL(file),
-        size: `${(file.size / 1024).toFixed(2)} KB`,
-        type: file.type.split('/')[1]?.toUpperCase() || 'FILE',
-      };
-      setCurrentTemplate(prev => ({
-        ...prev,
-        defaultAttachments: [...(prev.defaultAttachments || []), newAttachment]
-      }));
-    }
-    if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-    }
-  };
-
-  const handleRemoveAttachment = (name: string) => {
-    setCurrentTemplate(prev => ({
-      ...prev,
-      defaultAttachments: (prev.defaultAttachments || []).filter(att => att.name !== name)
-    }));
-  };
-
   const handleAddCustomSection = () => {
     const newSection: TemplateSection = {
       id: `sec-${Date.now()}`,
       name: '',
+      description: '',
       isMandatory: false,
       defaultValue: '',
       contentType: 'rich',
@@ -186,7 +157,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     <div className="space-y-6">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Template Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Admin</h1>
           <p className="text-muted-foreground">Define standard boilerplates or complex structured building blocks for your definitions.</p>
         </div>
         <div className="flex gap-2">
@@ -339,7 +310,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                             <span className="bg-primary text-primary-foreground h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black">
                               {idx + 1}
                             </span>
-                            <div className="flex flex-col flex-1 max-w-md gap-1.5">
+                            <div className="flex flex-col flex-1 max-w-sm gap-1.5">
                               <Label className="text-[10px] uppercase font-black text-slate-500 tracking-wider">Section Name <span className="text-destructive">*</span></Label>
                               <Input 
                                 value={section.name} 
@@ -349,6 +320,18 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                   "h-9 rounded-lg border-slate-200 focus-visible:ring-primary/20 font-medium",
                                   showErrors && !section.name?.trim() && "border-red-300 bg-red-50/30"
                                 )}
+                              />
+                            </div>
+
+                            <div className="flex flex-col flex-1 max-w-sm gap-1.5 ml-4">
+                              <Label className="text-[10px] uppercase font-black text-slate-500 tracking-wider flex items-center gap-1">
+                                <AlignLeft className="h-3 w-3" /> Section Description
+                              </Label>
+                              <Input 
+                                value={section.description || ''} 
+                                onChange={e => handleUpdateCustomSection(section.id, { description: e.target.value })}
+                                placeholder="Instructions for users..."
+                                className="h-9 rounded-lg border-slate-200 focus-visible:ring-primary/20"
                               />
                             </div>
                             
