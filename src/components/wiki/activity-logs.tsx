@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths, subDays } from 'date-fns';
 import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType } from '@/lib/types';
@@ -30,7 +30,7 @@ export default function ActivityLogs() {
     const [logs] = useState<ActivityLog[]>(initialActivityLogs);
     const [activityTypeFilter, setActivityTypeFilter] = useState<string>('all');
     const [definitionSearch, setDefinitionSearch] = useState<string>('');
-    const [timeFrame, setTimeFrame] = useState('last-month'); // Default to Last Month
+    const [timeFrame, setTimeFrame] = useState('last-30-days'); // Default to Last 30 Days
     const [customRange, setCustomRange] = useState<{ from: Date; to: Date } | undefined>();
     const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState<{ key: keyof ActivityLog; direction: 'asc' | 'desc' }>({
@@ -38,7 +38,6 @@ export default function ActivityLogs() {
         direction: 'desc'
     });
     
-    const [hasSearched, setHasSearched] = useState(false); // Track if user has clicked Search
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
@@ -67,9 +66,11 @@ export default function ActivityLogs() {
         );
     }, [uniqueDefinitions, definitionSearch]);
 
+    // Show results if definition search has content
+    const showResults = definitionSearch.trim().length > 0;
+
     const filteredAndSortedLogs = useMemo(() => {
-        // Only return logs if the user has clicked "Search"
-        if (!hasSearched) return [];
+        if (!showResults) return [];
 
         return logs.filter(log => {
             const activityMatch = activityTypeFilter === 'all' || log.activityType === activityTypeFilter;
@@ -87,10 +88,9 @@ export default function ActivityLogs() {
                 timeMatch = isWithinInterval(logDate, { start: startOfLast, end: endOfLast });
             } else if (timeFrame === 'this-month') {
                 timeMatch = isWithinInterval(logDate, { start: startOfMonth(now), end: endOfMonth(now) });
-            } else if (timeFrame === 'last-month') {
-                const startOfLast = startOfMonth(subMonths(now, 1));
-                const endOfLast = endOfMonth(subMonths(now, 1));
-                timeMatch = isWithinInterval(logDate, { start: startOfLast, end: endOfLast });
+            } else if (timeFrame === 'last-30-days') {
+                const thirtyDaysAgo = subDays(now, 30);
+                timeMatch = isWithinInterval(logDate, { start: thirtyDaysAgo, end: now });
             } else if (timeFrame === 'custom' && customRange?.from && customRange?.to) {
                 timeMatch = isWithinInterval(logDate, { start: customRange.from, end: customRange.to });
             }
@@ -113,7 +113,7 @@ export default function ActivityLogs() {
             if (stringA > stringB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [logs, activityTypeFilter, definitionSearch, timeFrame, customRange, sortConfig, hasSearched]);
+    }, [logs, activityTypeFilter, definitionSearch, timeFrame, customRange, sortConfig, showResults]);
 
     const paginatedLogs = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -130,17 +130,11 @@ export default function ActivityLogs() {
         setCurrentPage(1);
     };
 
-    const handleSearch = () => {
-        setHasSearched(true);
-        setCurrentPage(1);
-    };
-
     const resetFilters = () => {
         setActivityTypeFilter('all');
         setDefinitionSearch('');
-        setTimeFrame('last-month');
+        setTimeFrame('last-30-days');
         setCustomRange(undefined);
-        setHasSearched(false);
         setCurrentPage(1);
     };
 
@@ -230,7 +224,7 @@ export default function ActivityLogs() {
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold tracking-tight">Activity Logs</h1>
                 <div className="flex items-center gap-2">
-                    {hasSearched && filteredAndSortedLogs.length > 0 && (
+                    {showResults && filteredAndSortedLogs.length > 0 && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
@@ -250,14 +244,6 @@ export default function ActivityLogs() {
                             </DropdownMenuContent>
                         </DropdownMenu>
                     )}
-                    <Button 
-                        onClick={handleSearch} 
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
-                        size="sm"
-                    >
-                        <Search className="h-4 w-4 mr-2" />
-                        Search
-                    </Button>
                     <Button variant="outline" size="sm" onClick={resetFilters}>
                         <FilterX className="h-4 w-4 mr-2" />
                         Reset Filters
@@ -283,6 +269,7 @@ export default function ActivityLogs() {
                                         onChange={(e) => {
                                             setDefinitionSearch(e.target.value);
                                             setIsSearchOpen(true);
+                                            setCurrentPage(1);
                                         }}
                                         onFocus={() => setIsSearchOpen(true)}
                                     />
@@ -315,6 +302,7 @@ export default function ActivityLogs() {
                                                     onClick={() => {
                                                         setDefinitionSearch(name);
                                                         setIsSearchOpen(false);
+                                                        setCurrentPage(1);
                                                     }}
                                                 >
                                                     <Check className={cn("h-3.5 w-3.5", definitionSearch === name ? "opacity-100" : "opacity-0")} />
@@ -329,7 +317,7 @@ export default function ActivityLogs() {
 
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-600">Activity Type</label>
-                            <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
+                            <Select value={activityTypeFilter} onValueChange={(v) => { setActivityTypeFilter(v); setCurrentPage(1); }}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Activities" />
                                 </SelectTrigger>
@@ -344,7 +332,7 @@ export default function ActivityLogs() {
 
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-600">Time Frame</label>
-                            <Select value={timeFrame} onValueChange={setTimeFrame}>
+                            <Select value={timeFrame} onValueChange={(v) => { setTimeFrame(v); setCurrentPage(1); }}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select Time Frame" />
                                 </SelectTrigger>
@@ -353,7 +341,7 @@ export default function ActivityLogs() {
                                     <SelectItem value="this-week">This Week</SelectItem>
                                     <SelectItem value="last-week">Last Week</SelectItem>
                                     <SelectItem value="this-month">This Month</SelectItem>
-                                    <SelectItem value="last-month">Last Month</SelectItem>
+                                    <SelectItem value="last-30-days">Last 30 Days</SelectItem>
                                     <SelectItem value="custom">Custom Range</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -378,7 +366,7 @@ export default function ActivityLogs() {
                                                 mode="range"
                                                 defaultMonth={customRange?.from}
                                                 selected={customRange as any}
-                                                onSelect={setCustomRange}
+                                                onSelect={(range) => { setCustomRange(range as any); setCurrentPage(1); }}
                                                 numberOfMonths={2}
                                                 disabled={{ after: new Date() }}
                                             />
@@ -393,7 +381,7 @@ export default function ActivityLogs() {
 
             <Card className="min-h-[400px] flex flex-col overflow-hidden">
                 <CardContent className="p-0 overflow-hidden flex-1">
-                    {!hasSearched ? (
+                    {!showResults ? (
                         <div className="h-full flex flex-col items-center justify-center text-center py-32 px-4 bg-muted/5">
                             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                                 <History className="h-8 w-8 text-muted-foreground/50" />
@@ -461,7 +449,7 @@ export default function ActivityLogs() {
                     )}
                 </CardContent>
                 
-                {hasSearched && filteredAndSortedLogs.length > 0 && (
+                {showResults && filteredAndSortedLogs.length > 0 && (
                     <div className="flex items-center justify-between p-4 border-t bg-muted/30">
                         <p className="text-sm text-muted-foreground">
                             Showing {paginatedLogs.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedLogs.length)} of {filteredAndSortedLogs.length} entries

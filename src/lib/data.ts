@@ -55,7 +55,7 @@ export const vwAuthActionTimeTable: SupportingTable = {
     rows: [
         ['AUTH-55432', '2023-07-01 15:43:05.063', null, null, null, null],
         ['AUTH-55433', null, null, '2023-06-29 14:54:20.710', null, null],
-        ['AUTH-55434', null, '2023-07-05 16:16:40.180', null, null, null],
+        ['AUTH-55434', null, null, '2023-07-05 16:16:40.180', null, null],
         ['AUTH-55435', null, null, null, '2023-06-30 15:27:54.127', null],
         ['AUTH-55436', null, null, null, null, '2023-07-01 15:48:22.693'],
     ]
@@ -68,9 +68,16 @@ const getRandomName = () => {
 }
 
 const generateRandomDate = () => {
-    const start = new Date(2022, 0, 1);
-    const end = new Date();
-    const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    const now = new Date();
+    // 70% chance of being in the last 30 days to support the user's default filter request
+    if (Math.random() > 0.3) {
+        const start = new Date();
+        start.setDate(now.getDate() - 30);
+        return new Date(start.getTime() + Math.random() * (now.getTime() - start.getTime())).toISOString();
+    }
+    // Otherwise, somewhere in the last 2 years
+    const start = new Date(now.getFullYear() - 2, 0, 1);
+    const date = new Date(start.getTime() + Math.random() * (now.getTime() - start.getTime()));
     return date.toISOString();
 }
 
@@ -155,10 +162,10 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
 
 const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search', 'Submit', 'Approve', 'Reject', 'Request Changes'];
 
-export const initialActivityLogs: ActivityLog[] = Array.from({ length: 50 }, (_, i) => ({
+export const initialActivityLogs: ActivityLog[] = Array.from({ length: 150 }, (_, i) => ({
     id: `log-${i}`,
     userName: names[Math.floor(Math.random() * names.length)],
-    definitionName: ['Auth Decision Date', 'Contracted Rates', 'Service Type Mapping', 'Provider Demographics'][Math.floor(Math.random() * 4)],
+    definitionName: ['Auth Decision Date', 'Contracted Rates', 'Service Type Mapping', 'Provider Demographics', 'Auth Denial Reasons', 'fn_GetAuthTurnaroundTime', 'Standard Claim Codes', 'Credentialing Status'][Math.floor(Math.random() * 8)],
     activityType: activityTypes[Math.floor(Math.random() * activityTypes.length)],
     occurredDate: generateRandomDate(),
 }));
