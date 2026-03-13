@@ -157,8 +157,8 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     <div className="space-y-6">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin</h1>
-          <p className="text-muted-foreground">Define standard boilerplates or complex structured building blocks for your definitions.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Template Management</h1>
+          <p className="text-muted-foreground font-medium">Create standardized content blocks and structured elements to streamline definition creation.</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => handleCreateNew('Custom')}>
@@ -205,7 +205,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-xs truncate text-slate-600 dark:text-slate-400 font-medium">
-                    {template.description || <span className="italic opacity-50">No description provided</span>}
+                    {template.description || <span className="italic opacity-50 font-normal">No description provided</span>}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
