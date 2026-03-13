@@ -230,7 +230,7 @@ export default function ActivityLogs() {
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold tracking-tight">Activity Logs</h1>
                 <div className="flex items-center gap-2">
-                    {hasSearched && (
+                    {hasSearched && filteredAndSortedLogs.length > 0 && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
@@ -266,13 +266,13 @@ export default function ActivityLogs() {
             </div>
 
             <Card>
-                <CardHeader>
-                    <CardTitle className="text-sm font-medium">Search Filters</CardTitle>
+                <CardHeader className="py-3 bg-muted/5 border-b">
+                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Search Filters</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-medium">Definition Name</label>
+                            <label className="text-xs font-bold text-slate-600">Definition Name</label>
                             <div className="relative" ref={searchRef}>
                                 <div className="relative">
                                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -328,7 +328,7 @@ export default function ActivityLogs() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-medium">Activity Type</label>
+                            <label className="text-xs font-bold text-slate-600">Activity Type</label>
                             <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Activities" />
@@ -343,7 +343,7 @@ export default function ActivityLogs() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-medium">Time Frame</label>
+                            <label className="text-xs font-bold text-slate-600">Time Frame</label>
                             <Select value={timeFrame} onValueChange={setTimeFrame}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select Time Frame" />
@@ -363,7 +363,7 @@ export default function ActivityLogs() {
                     {timeFrame === 'custom' && (
                         <div className="flex items-center gap-4 mt-4 animate-in fade-in slide-in-from-top-2">
                             <div className="space-y-2">
-                                <label className="text-xs font-medium">Date Range</label>
+                                <label className="text-xs font-bold text-slate-600">Date Range</label>
                                 <div className="flex gap-2">
                                     <Popover>
                                         <PopoverTrigger asChild>
@@ -391,48 +391,44 @@ export default function ActivityLogs() {
                 </CardContent>
             </Card>
 
-            <Card className="min-h-[400px] flex flex-col">
+            <Card className="min-h-[400px] flex flex-col overflow-hidden">
                 <CardContent className="p-0 overflow-hidden flex-1">
                     {!hasSearched ? (
-                        <div className="h-full flex flex-col items-center justify-center text-center py-20 px-4">
+                        <div className="h-full flex flex-col items-center justify-center text-center py-32 px-4 bg-muted/5">
                             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                                 <History className="h-8 w-8 text-muted-foreground/50" />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900">Activity Logs Ready</h3>
+                            <h3 className="text-xl font-bold text-slate-900">Activity History Ready</h3>
                             <p className="text-sm text-slate-500 max-w-sm mt-2">
-                                Data is hidden by default. Apply your desired filters above and click <strong>Search</strong> to populate the activity history.
+                                Search the definition name to get the activity logs.
                             </p>
-                            <Button onClick={handleSearch} variant="secondary" className="mt-6">
-                                <Search className="h-4 w-4 mr-2" />
-                                Load Activity History
-                            </Button>
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
-                                <TableRow>
-                                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('userName')}>
-                                        <div className="flex items-center">
+                                <TableRow className="bg-muted/30">
+                                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors py-4" onClick={() => handleSort('userName')}>
+                                        <div className="flex items-center text-xs font-bold uppercase tracking-wider">
                                             User Name
-                                            <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'userName' ? "text-primary opacity-100" : "opacity-30")} />
+                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'userName' ? "text-primary opacity-100" : "opacity-30")} />
                                         </div>
                                     </TableHead>
                                     <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('definitionName')}>
-                                        <div className="flex items-center">
+                                        <div className="flex items-center text-xs font-bold uppercase tracking-wider">
                                             Definition Name
-                                            <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'definitionName' ? "text-primary opacity-100" : "opacity-30")} />
+                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'definitionName' ? "text-primary opacity-100" : "opacity-30")} />
                                         </div>
                                     </TableHead>
                                     <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('activityType')}>
-                                        <div className="flex items-center">
+                                        <div className="flex items-center text-xs font-bold uppercase tracking-wider">
                                             Activity Type
-                                            <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'activityType' ? "text-primary opacity-100" : "opacity-30")} />
+                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'activityType' ? "text-primary opacity-100" : "opacity-30")} />
                                         </div>
                                     </TableHead>
                                     <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('occurredDate')}>
-                                        <div className="flex items-center">
+                                        <div className="flex items-center text-xs font-bold uppercase tracking-wider">
                                             Occurred Date
-                                            <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key === 'occurredDate' ? "text-primary opacity-100" : "opacity-30")} />
+                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'occurredDate' ? "text-primary opacity-100" : "opacity-30")} />
                                         </div>
                                     </TableHead>
                                 </TableRow>
@@ -440,7 +436,7 @@ export default function ActivityLogs() {
                             <TableBody>
                                 {paginatedLogs.map(log => (
                                     <TableRow key={log.id}>
-                                        <TableCell className="font-medium">{log.userName}</TableCell>
+                                        <TableCell className="font-medium py-4">{log.userName}</TableCell>
                                         <TableCell>{log.definitionName}</TableCell>
                                         <TableCell>
                                             <Badge variant="outline">{log.activityType}</Badge>
@@ -452,8 +448,11 @@ export default function ActivityLogs() {
                                 ))}
                                 {paginatedLogs.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center">
-                                            No logs found matching the selected filters.
+                                        <TableCell colSpan={4} className="h-48 text-center bg-muted/5">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Search className="h-8 w-8 text-muted-foreground/30" />
+                                                <p className="text-sm font-medium text-muted-foreground">No logs found matching your selected filters.</p>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 )}
