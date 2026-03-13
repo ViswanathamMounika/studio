@@ -148,7 +148,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const isSupportTblsOnly = useMemo(() => selectedDbs.length === 1 && selectedDbs[0] === 'SupportTbls', [selectedDbs]);
 
   const availableSourceTypes = useMemo(() => {
-    // If multiple DBs are selected, we use the first one to determine available types
     const firstDb = selectedDbs[0];
     return firstDb ? mpmSourceTypes[firstDb] || [] : [];
   }, [selectedDbs]);
@@ -190,11 +189,9 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
         : [...current, dbId];
       return updated.join(', ');
     });
-    // Reset dependant fields if nothing is selected
-    if (selectedDbs.length === 1 && selectedDbs.includes(dbId)) {
-      setSourceType('');
-      setSourceName('');
-    }
+    // Requirement: Whenever there is change in the database select clear the source fields
+    setSourceType('');
+    setSourceName('');
   };
 
   const handleUpdateDynamicSection = (sectionId: string, content: string) => {
@@ -269,7 +266,8 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     }));
   };
 
-  const isPreviewAvailable = sourceName && (sourceType === 'Views' || sourceType === 'Tables');
+  // Requirement: if the source name is text box field disable the preview button
+  const isPreviewAvailable = isSupportTblsOnly && sourceName && (sourceType === 'Views' || sourceType === 'Tables');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -361,7 +359,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                       className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
                                       onClick={() => toggleDatabase(db.id)}
                                     >
-                                      <Checkbox checked={selectedDbs.includes(db.id)} />
+                                      <Checkbox checked={selectedDbs.includes(db.id)} onCheckedChange={() => toggleDatabase(db.id)} />
                                       <span className="text-sm font-medium">{db.name}</span>
                                       {selectedDbs.includes(db.id) && <Check className="ml-auto h-4 w-4 text-primary" />}
                                     </div>

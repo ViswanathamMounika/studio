@@ -104,11 +104,9 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
         : [...current, dbId];
       return updated.join(', ');
     });
-    // Reset dependant fields if nothing is selected
-    if (selectedDbs.length === 1 && selectedDbs.includes(dbId)) {
-      setSourceType('');
-      setSourceName('');
-    }
+    // Requirement: Whenever there is change in the database select clear the source fields
+    setSourceType('');
+    setSourceName('');
   };
 
   const handleUpdateDynamicSection = (sectionId: string, content: string) => {
@@ -145,7 +143,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
       };
       setAttachments([...attachments, newAttachment]);
     }
-    if(fileInputRef.current) {
+    if (fileInputRef.current) {
         fileInputRef.current.value = "";
     }
   };
@@ -183,7 +181,8 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
     }));
   };
 
-  const isPreviewAvailable = sourceName && (sourceType === 'Views' || sourceType === 'Tables');
+  // Requirement: if the source name is text box field disable the preview button
+  const isPreviewAvailable = isSupportTblsOnly && sourceName && (sourceType === 'Views' || sourceType === 'Tables');
 
   return (
     <div className="flex flex-col">
@@ -295,7 +294,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                                 className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
                                 onClick={() => toggleDatabase(db.id)}
                               >
-                                <Checkbox checked={selectedDbs.includes(db.id)} />
+                                <Checkbox checked={selectedDbs.includes(db.id)} onCheckedChange={() => toggleDatabase(db.id)} />
                                 <span className="text-sm font-medium">{db.name}</span>
                                 {selectedDbs.includes(db.id) && <Check className="ml-auto h-4 w-4 text-primary" />}
                               </div>
