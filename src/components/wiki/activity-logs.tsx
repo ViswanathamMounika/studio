@@ -443,7 +443,7 @@ export default function ActivityLogs() {
                                         <TableCell className="font-medium py-4">{log.userName}</TableCell>
                                         <TableCell>{log.definitionName}</TableCell>
                                         <TableCell>
-                                            <Badge variant="outline">{log.activityType}</Badge>
+                                            {log.activityType}
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
                                             {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}
