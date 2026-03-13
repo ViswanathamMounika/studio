@@ -107,7 +107,23 @@ export interface Notification {
     read: boolean;
 }
 
-export type ActivityType = 'View' | 'Edit' | 'Create' | 'Download' | 'Bookmark' | 'Archive' | 'Duplicate' | 'Search' | 'Submit' | 'Approve' | 'Reject' | 'Request Changes';
+export type ActivityType = 
+  | 'Definition Created'
+  | 'Definition Updated'
+  | 'Definition Bookmarked'
+  | 'Definition Archived'
+  | 'Definition Unarchived'
+  | 'Definition Duplicate'
+  | 'Definition Export'
+  | 'Definition Notes Added'
+  | 'Definition Notes Updated'
+  | 'Definition Notes Deleted'
+  | 'Definition Related Added'
+  | 'Definition Related Deleted'
+  | 'Definition Viewed'
+  | 'Definition Shared'
+  | 'Definition Searched'
+  | 'Definition Attachment Downloaded';
 
 export interface ActivityLog {
     id: string;

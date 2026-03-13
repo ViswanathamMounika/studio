@@ -1,4 +1,3 @@
-
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
@@ -160,7 +159,24 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
     ]
 };
 
-const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search', 'Submit', 'Approve', 'Reject', 'Request Changes'];
+const activityTypes: ActivityType[] = [
+  'Definition Created',
+  'Definition Updated',
+  'Definition Bookmarked',
+  'Definition Archived',
+  'Definition Unarchived',
+  'Definition Duplicate',
+  'Definition Export',
+  'Definition Notes Added',
+  'Definition Notes Updated',
+  'Definition Notes Deleted',
+  'Definition Related Added',
+  'Definition Related Deleted',
+  'Definition Viewed',
+  'Definition Shared',
+  'Definition Searched',
+  'Definition Attachment Downloaded'
+];
 
 export const initialActivityLogs: ActivityLog[] = Array.from({ length: 150 }, (_, i) => ({
     id: `log-${i}`,

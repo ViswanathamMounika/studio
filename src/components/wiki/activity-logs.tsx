@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -23,7 +22,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
 
-const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search', 'Submit', 'Approve', 'Reject', 'Request Changes'];
+const activityTypes: ActivityType[] = [
+  'Definition Created',
+  'Definition Updated',
+  'Definition Bookmarked',
+  'Definition Archived',
+  'Definition Unarchived',
+  'Definition Duplicate',
+  'Definition Export',
+  'Definition Notes Added',
+  'Definition Notes Updated',
+  'Definition Notes Deleted',
+  'Definition Related Added',
+  'Definition Related Deleted',
+  'Definition Viewed',
+  'Definition Shared',
+  'Definition Searched',
+  'Definition Attachment Downloaded'
+];
+
 const ITEMS_PER_PAGE = 10;
 
 export default function ActivityLogs() {
