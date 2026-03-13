@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -12,7 +13,7 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Archive, Bookmark, Copy, Download, MoreVertical, Pencil } from "lucide-react";
+import { Archive, Bookmark, Copy, Download, MoreVertical, Pencil, Undo2 } from "lucide-react";
 import type { Definition } from "@/lib/types";
 
 type DefinitionActionsProps = {
@@ -148,8 +149,17 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
             className="cursor-pointer"
             disabled={definition.isDraft}
           >
-            <Archive className="mr-2 h-4 w-4" />
-            <span>{definition.isArchived ? 'Unarchive' : 'Archive'}</span>
+            {definition.isArchived ? (
+              <>
+                <Undo2 className="mr-2 h-4 w-4" />
+                <span>Restore</span>
+              </>
+            ) : (
+              <>
+                <Archive className="mr-2 h-4 w-4" />
+                <span>Archive</span>
+              </>
+            )}
           </DropdownMenuItem>
         )}
 

@@ -290,12 +290,31 @@ export default function Wiki() {
      const ids = Array.isArray(id) ? id : [id];
      const updateArchiveStatus = (items: Definition[]): Definition[] => {
       return items.map(def => {
-        if (ids.includes(def.id)) return { ...def, isArchived: archive };
+        if (ids.includes(def.id)) {
+          // When restoring (archive is false), move to "New" status (Draft)
+          if (!archive) {
+            return { ...def, isArchived: false, isDraft: true, isPendingApproval: false };
+          }
+          return { ...def, isArchived: archive };
+        }
         if (def.children) return { ...def, children: updateArchiveStatus(def.children) };
         return def;
       });
     };
     setDefinitions(updateArchiveStatus(definitions));
+
+    if (!archive) {
+      // Logic for Restore (navigate to status New/Draft)
+      setSidebarTab('drafts');
+      const firstId = Array.isArray(id) ? id[0] : id;
+      if (firstId) handleSelectDefinition(firstId);
+      toast({ 
+        title: 'Definition Restored', 
+        description: 'The definition has been moved to Drafts (status New).' 
+      });
+    } else {
+      toast({ title: 'Definition Archived', description: 'The definition has been moved to Archive.' });
+    }
   };
 
   const handleDelete = (id: string) => {
