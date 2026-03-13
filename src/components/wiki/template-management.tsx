@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Pencil, Trash2, Save, Upload, Plus, X, ListTodo, Layout, LayoutTemplate, Type, FileType, List, AlignLeft } from 'lucide-react';
+import { Pencil, Trash2, Save, Upload, Plus, X, ListTodo, Layout, LayoutTemplate, Type, FileType, List, AlignLeft, Hash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Template, Attachment, TemplateSection, TemplateType } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
@@ -70,6 +70,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         isMandatory: false,
         defaultValue: '',
         contentType: 'rich',
+        maxLength: 1000,
       }],
     });
     setIsModalOpen(true);
@@ -99,11 +100,25 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     // Mandatory Section Name Validation
     const hasEmptySectionName = currentTemplate.customSections?.some(s => !s.name?.trim());
     if (hasEmptySectionName) {
-      setShowErrors(true); // Trigger visibility of red borders
+      setShowErrors(true);
       toast({ 
         variant: 'destructive', 
         title: 'Validation Error', 
         description: 'All sections must have a name before saving the template.' 
+      });
+      return;
+    }
+
+    // Mandatory Max Length Validation for Text types
+    const hasEmptyMaxLength = currentTemplate.customSections?.some(s => 
+      s.contentType !== 'dropdown' && (!s.maxLength || s.maxLength <= 0)
+    );
+    if (hasEmptyMaxLength) {
+      setShowErrors(true);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Validation Error', 
+        description: 'Max Length is required for all Rich/Plain text sections.' 
       });
       return;
     }
@@ -132,6 +147,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       isMandatory: false,
       defaultValue: '',
       contentType: 'rich',
+      maxLength: 1000,
     };
     setCurrentTemplate(prev => ({
       ...prev,
@@ -367,7 +383,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                 <Label className="text-[10px] uppercase font-black text-slate-500 tracking-wider">Editor Type</Label>
                                 <Select 
                                   value={section.contentType} 
-                                  onValueChange={v => handleUpdateCustomSection(section.id, { contentType: v as any })}
+                                  onValueChange={v => {
+                                    const updates: Partial<TemplateSection> = { contentType: v as any };
+                                    if (v === 'dropdown') updates.maxLength = undefined;
+                                    handleUpdateCustomSection(section.id, updates);
+                                  }}
                                 >
                                   <SelectTrigger className="h-9 w-36 rounded-lg border-slate-200 text-xs font-semibold">
                                     <SelectValue />
@@ -393,6 +413,27 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                     </SelectItem>
                                   </SelectContent>
                                 </Select>
+                              </div>
+
+                              <div className="flex flex-col w-24 gap-1.5">
+                                <Label className={cn(
+                                  "text-[10px] uppercase font-black tracking-wider flex items-center gap-1",
+                                  section.contentType === 'dropdown' ? "text-slate-300" : "text-slate-500"
+                                )}>
+                                  <Hash className="h-2.5 w-2.5" /> Max Length {section.contentType !== 'dropdown' && <span className="text-destructive font-bold text-[8px]">*</span>}
+                                </Label>
+                                <Input 
+                                  type="number"
+                                  min="1"
+                                  disabled={section.contentType === 'dropdown'}
+                                  value={section.maxLength || ''} 
+                                  onChange={e => handleUpdateCustomSection(section.id, { maxLength: parseInt(e.target.value) || undefined })}
+                                  placeholder={section.contentType === 'dropdown' ? "N/A" : "Chars"}
+                                  className={cn(
+                                    "h-9 rounded-lg border-slate-200 focus-visible:ring-primary/20 text-xs",
+                                    showErrors && (section.contentType !== 'dropdown') && !section.maxLength && "border-red-300 bg-red-50/30"
+                                  )}
+                                />
                               </div>
 
                               <div className="flex items-center gap-2 mt-4">

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2, ChevronDown, Check, Info } from 'lucide-react';
+import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2, ChevronDown, Check, Info, Hash } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -459,12 +459,19 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                       {section.name}
                       {section.isMandatory && <span className="text-destructive font-bold">*</span>}
                     </CardTitle>
-                    {section.description && (
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                        <Info className="h-3 w-3" />
-                        {section.description}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {section.description && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                          <Info className="h-3 w-3" />
+                          {section.description}
+                        </div>
+                      )}
+                      {section.maxLength && (
+                        <div className="flex items-center gap-1 text-xs font-bold text-primary/60 uppercase">
+                          <Hash className="h-3 w-3" /> Max: {section.maxLength}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <Badge variant="ghost" className="text-[10px] uppercase font-normal opacity-60">
                     {section.contentType}
@@ -496,6 +503,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                       onChange={e => handleUpdateDynamicSection(section.sectionId, e.target.value)}
                       className="min-h-[150px]"
                       placeholder={`Enter content for ${section.name}...`}
+                      maxLength={section.maxLength}
                     />
                   )}
                 </CardContent>

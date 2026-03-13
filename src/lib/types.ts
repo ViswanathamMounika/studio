@@ -48,6 +48,7 @@ export interface DynamicSection {
   isMandatory: boolean;
   contentType: 'plain' | 'rich' | 'dropdown';
   dropdownOptions?: string;
+  maxLength?: number;
 }
 
 export interface InputParameter {
@@ -163,6 +164,7 @@ export interface TemplateSection {
   defaultValue?: string;
   contentType: 'plain' | 'rich' | 'dropdown';
   dropdownOptions?: string;
+  maxLength?: number;
 }
 
 export type TemplateType = 'Standard' | 'Custom';

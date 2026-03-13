@@ -120,6 +120,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
           content: cs.defaultValue || '',
           contentType: cs.contentType || 'rich',
           dropdownOptions: cs.dropdownOptions,
+          maxLength: cs.maxLength,
         }));
         setDynamicSections(dynamicSecs);
       } else {
@@ -527,12 +528,19 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                             {section.name}
                             {section.isMandatory && <span className="text-destructive font-bold">*</span>}
                           </CardTitle>
-                          {section.description && (
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                              <Info className="h-3 w-3" />
-                              {section.description}
-                            </div>
-                          )}
+                          <div className="flex items-center gap-3">
+                            {section.description && (
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                                <Info className="h-3 w-3" />
+                                {section.description}
+                              </div>
+                            )}
+                            {section.maxLength && (
+                              <div className="flex items-center gap-1 text-xs font-bold text-primary/60 uppercase">
+                                <Hash className="h-3 w-3" /> Max: {section.maxLength}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <Badge variant="ghost" className="text-[10px] uppercase font-normal opacity-60">
                           {section.contentType}
@@ -564,6 +572,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                             onChange={e => handleUpdateDynamicSection(section.sectionId, e.target.value)}
                             className="min-h-[150px]"
                             placeholder={`Enter content for ${section.name}...`}
+                            maxLength={section.maxLength}
                           />
                         )}
                       </CardContent>
