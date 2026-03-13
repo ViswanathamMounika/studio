@@ -9,13 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Check, ChevronsUpDown, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType } from '@/lib/types';
 import { initialActivityLogs } from '@/lib/data';
-import { Checkbox } from '../ui/checkbox';
 import { Badge } from '../ui/badge';
-import { ScrollArea } from '../ui/scroll-area';
 import { Input } from '../ui/input';
 import {
   DropdownMenu,
@@ -28,84 +26,8 @@ import { useToast } from '@/hooks/use-toast';
 const activityTypes: ActivityType[] = ['View', 'Edit', 'Create', 'Download', 'Bookmark', 'Archive', 'Duplicate', 'Search'];
 const ITEMS_PER_PAGE = 10;
 
-type MultiSelectFilterProps = {
-    title: string;
-    options: string[];
-    selected: string[];
-    onToggle: (value: string) => void;
-    placeholder: string;
-}
-
-function MultiSelectFilter({ title, options, selected, onToggle, placeholder }: MultiSelectFilterProps) {
-    const [search, setSearch] = useState('');
-    const filteredOptions = options.filter(opt => opt.toLowerCase().includes(search.toLowerCase()));
-
-    return (
-        <div className="space-y-2">
-            <label className="text-xs font-medium">{title}</label>
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button
-                        variant="outline"
-                        role="combobox"
-                        className="w-full justify-between h-auto min-h-[40px] px-3"
-                    >
-                        <div className="flex flex-wrap gap-1 items-center max-w-[200px]">
-                            {selected.length === 0 && <span className="text-muted-foreground">{placeholder}</span>}
-                            {selected.map(val => (
-                                <Badge key={val} variant="secondary" className="mr-1 text-[10px] py-0 px-1">
-                                    {val}
-                                </Badge>
-                            ))}
-                        </div>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0" align="start">
-                    <div className="p-2 border-b">
-                        <Input 
-                            placeholder={`Search ${title.toLowerCase()}...`} 
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="h-8"
-                        />
-                    </div>
-                    <ScrollArea className="h-64">
-                        <div className="p-1">
-                            {filteredOptions.length === 0 && (
-                                <p className="text-sm text-center py-4 text-muted-foreground">No results found.</p>
-                            )}
-                            {filteredOptions.map((option) => (
-                                <div
-                                    key={option}
-                                    className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
-                                    onClick={() => onToggle(option)}
-                                >
-                                    <Checkbox
-                                        id={`${title}-${option}`}
-                                        checked={selected.includes(option)}
-                                        onCheckedChange={() => onToggle(option)}
-                                    />
-                                    <label
-                                        htmlFor={`${title}-${option}`}
-                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                                    >
-                                        {option}
-                                    </label>
-                                    {selected.includes(option) && <Check className="h-4 w-4 text-primary" />}
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
-                </PopoverContent>
-            </Popover>
-        </div>
-    );
-}
-
 export default function ActivityLogs() {
     const [logs] = useState<ActivityLog[]>(initialActivityLogs);
-    const [userFilters, setUserFilters] = useState<string[]>([]);
     const [activityTypeFilter, setActivityTypeFilter] = useState<string>('all');
     const [definitionSearch, setDefinitionSearch] = useState<string>('');
     const [timeFrame, setTimeFrame] = useState('all');
@@ -118,20 +40,8 @@ export default function ActivityLogs() {
     
     const { toast } = useToast();
 
-    const users = useMemo(() => Array.from(new Set(logs.map(log => log.userName))).sort(), [logs]);
-
-    const handleToggleFilter = (setter: React.Dispatch<React.SetStateAction<string[]>>, current: string[], value: string) => {
-        if (current.includes(value)) {
-            setter(current.filter(v => v !== value));
-        } else {
-            setter([...current, value]);
-        }
-        setCurrentPage(1);
-    };
-
     const filteredAndSortedLogs = useMemo(() => {
         return logs.filter(log => {
-            const userMatch = userFilters.length === 0 || userFilters.includes(log.userName);
             const activityMatch = activityTypeFilter === 'all' || log.activityType === activityTypeFilter;
             const definitionMatch = !definitionSearch || log.definitionName.toLowerCase().includes(definitionSearch.toLowerCase());
 
@@ -155,7 +65,7 @@ export default function ActivityLogs() {
                 timeMatch = isWithinInterval(logDate, { start: customRange.from, end: customRange.to });
             }
 
-            return userMatch && activityMatch && definitionMatch && timeMatch;
+            return activityMatch && definitionMatch && timeMatch;
         }).sort((a, b) => {
             const valA = a[sortConfig.key] || '';
             const valB = b[sortConfig.key] || '';
@@ -173,7 +83,7 @@ export default function ActivityLogs() {
             if (stringA > stringB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [logs, userFilters, activityTypeFilter, definitionSearch, timeFrame, customRange, sortConfig]);
+    }, [logs, activityTypeFilter, definitionSearch, timeFrame, customRange, sortConfig]);
 
     const paginatedLogs = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -191,7 +101,6 @@ export default function ActivityLogs() {
     };
 
     const resetFilters = () => {
-        setUserFilters([]);
         setActivityTypeFilter('all');
         setDefinitionSearch('');
         setTimeFrame('all');
@@ -315,15 +224,7 @@ export default function ActivityLogs() {
                     <CardTitle className="text-sm font-medium">Filters</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <MultiSelectFilter 
-                            title="User" 
-                            options={users} 
-                            selected={userFilters} 
-                            onToggle={(val) => handleToggleFilter(setUserFilters, userFilters, val)}
-                            placeholder="All Users"
-                        />
-
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <label className="text-xs font-medium">Search Definition</label>
                             <div className="relative">
@@ -499,4 +400,3 @@ export default function ActivityLogs() {
         </div>
     );
 }
-
