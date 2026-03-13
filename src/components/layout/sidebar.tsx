@@ -14,7 +14,7 @@ import {
     ShoppingCart,
     GanttChart,
     History,
-    Settings2
+    UserCog
 } from "lucide-react";
 import {
     Collapsible,
@@ -50,7 +50,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSideb
 
     const wikiNavItems = [
         { id: 'definitions', label: 'MPM Definitions', icon: KeyRound },
-        { id: 'template-management', label: 'Admin', icon: Settings2, adminOnly: true },
+        { id: 'template-management', label: 'Admin', icon: UserCog, adminOnly: true },
         { id: 'activity-logs', label: 'Activity Logs', icon: History, adminOnly: true },
         { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
         { id: 'acronyms', label: 'Healthcare Acronyms', icon: GanttChart },
