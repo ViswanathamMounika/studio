@@ -6,14 +6,11 @@ import {
   Palette,
   Bell,
   PlusCircle,
-  File,
-  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
@@ -30,7 +27,7 @@ type AppHeaderProps = {
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
     onDefinitionClick: (id: string) => void;
-    activeView: 'definitions' | 'activity-logs';
+    activeView: 'definitions' | 'activity-logs' | 'template-management';
 }
 
 export default function AppHeader({ 
@@ -50,6 +47,10 @@ export default function AppHeader({
     switch (activeView) {
       case 'definitions':
         return 'MPM Data Definitions';
+      case 'activity-logs':
+        return 'Activity Logs';
+      case 'template-management':
+        return 'Template Management';
       default:
         return 'MedPoint Wiki';
     }
@@ -67,24 +68,15 @@ export default function AppHeader({
         {activeView === 'definitions' && (
           <>
             <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    New Definition
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => onNewDefinitionClick('template')}>
-                    <File className="mr-2 h-4 w-4" />
-                    From Template
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onNewDefinitionClick('blank')}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Standard Definition
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => onNewDefinitionClick('template')}
+                className="font-semibold"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Definition
+              </Button>
 
               <Button variant="outline" size="sm" onClick={onRecentClick}>
                   <Clock className="h-4 w-4 mr-2" />
