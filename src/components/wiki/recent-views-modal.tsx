@@ -64,8 +64,8 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden border-none rounded-[20px] shadow-2xl">
-        <DialogHeader className="p-6 border-b bg-white">
+      <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden border-none rounded-[20px] shadow-2xl">
+        <DialogHeader className="p-6 border-b bg-white shrink-0">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Clock className="h-5 w-5 text-primary" />
@@ -79,16 +79,16 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
           </div>
         </DialogHeader>
         
-        <div className="flex-1 min-h-0 bg-slate-50/50">
+        <div className="flex-1 min-h-0 bg-slate-50/30">
             <ScrollArea className="h-full">
-                <div className="p-6 pt-4">
+                <div className="p-6">
                     <div className="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
                         <Table>
                             <TableHeader className="bg-slate-50/80 sticky top-0 z-10">
                                 <TableRow className="hover:bg-transparent border-slate-200">
-                                    <TableHead className="font-bold text-slate-900 h-12">Definition Name</TableHead>
-                                    <TableHead className="font-bold text-slate-900 h-12">Status</TableHead>
-                                    <TableHead className="text-right font-bold text-slate-900 h-12">Last Viewed</TableHead>
+                                    <TableHead className="font-black text-slate-900 h-12 uppercase text-[11px] tracking-wider px-6">Definition Name</TableHead>
+                                    <TableHead className="font-black text-slate-900 h-12 uppercase text-[11px] tracking-wider">Status</TableHead>
+                                    <TableHead className="text-right font-black text-slate-900 h-12 uppercase text-[11px] tracking-wider px-6">Last Viewed</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -96,21 +96,21 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
                                     const itemDate = new Date(item.date);
                                     return (
                                         <TableRow key={`${item.id}-${item.date}-${idx}`} className="hover:bg-slate-50/80 transition-colors border-slate-100">
-                                            <TableCell className="py-4">
+                                            <TableCell className="py-4 px-6">
                                                 <button 
                                                     className="text-primary hover:underline font-bold text-left text-[13px] block"
                                                     onClick={() => handleDefinitionClick(item.id)}
                                                 >
                                                     {item.name}
                                                 </button>
-                                                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mt-1 block">
+                                                <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1 block">
                                                     {item.module}
                                                 </span>
                                             </TableCell>
                                             <TableCell>
                                                 {getStatusBadge(item.status)}
                                             </TableCell>
-                                            <TableCell className="text-right text-slate-500 whitespace-nowrap text-xs font-medium">
+                                            <TableCell className="text-right text-slate-500 whitespace-nowrap text-xs font-medium px-6">
                                                 {isValid(itemDate) ? formatDistanceToNow(itemDate, { addSuffix: true }) : 'Recently'}
                                             </TableCell>
                                         </TableRow>
@@ -138,28 +138,28 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
             </ScrollArea>
         </div>
 
-        <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t p-4 px-6 bg-white shrink-0">
-            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Showing {recentViews.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} - {Math.min(currentPage * ITEMS_PER_PAGE, recentViews.length)} of {recentViews.length} entries
+        <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t p-4 px-6 bg-white shrink-0 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
+            <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                Showing {recentViews.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} - {Math.min(currentPage * ITEMS_PER_PAGE, recentViews.length)} of {recentViews.length}
             </div>
             <div className="flex items-center gap-3">
                 <Button 
                     variant="outline" 
                     size="sm" 
-                    className="rounded-lg h-9 px-4 border-slate-200 text-slate-600 hover:bg-slate-50 font-bold"
+                    className="rounded-xl h-9 px-4 border-slate-200 text-slate-600 hover:bg-slate-50 font-bold transition-all"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                 >
                     <ChevronLeft className="h-4 w-4 mr-1.5" />
                     Previous
                 </Button>
-                <div className="flex items-center justify-center min-w-[3rem] h-9 rounded-lg bg-slate-50 border border-slate-200 text-sm font-black text-primary">
+                <div className="flex items-center justify-center min-w-[3.5rem] h-9 rounded-xl bg-slate-50 border border-slate-200 text-sm font-black text-primary">
                     {currentPage} / {totalPages || 1}
                 </div>
                 <Button 
                     variant="outline" 
                     size="sm" 
-                    className="rounded-lg h-9 px-4 border-slate-200 text-slate-600 hover:bg-slate-50 font-bold"
+                    className="rounded-xl h-9 px-4 border-slate-200 text-slate-600 hover:bg-slate-50 font-bold transition-all"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage >= totalPages || totalPages === 0}
                 >

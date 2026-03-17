@@ -95,13 +95,12 @@ export default function Notifications({ notifications, setNotifications, onDefin
                   </div>
                   <div className="flex items-center shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 border border-transparent hover:border-primary/20"
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 rounded-lg text-primary border-primary/20 hover:bg-primary hover:text-white text-[10px] font-black uppercase transition-all"
                       onClick={() => handleMarkAsRead(notification.id)}
-                      title="Mark as Read"
                     >
-                        <Check className="h-4 w-4" />
+                        Mark as read
                     </Button>
                   </div>
                 </div>
