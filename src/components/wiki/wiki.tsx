@@ -393,13 +393,16 @@ export default function Wiki() {
   }, [definitions, searchQuery]);
 
   const categorizedDefinitions = useMemo(() => {
-    let itemsToFilter = searchQuery ? filteredDefinitions : definitions;
+    // Search only affects the published definitions
+    const itemsForPublished = searchQuery ? filteredDefinitions : definitions;
+    // Workflow items (Queue/Drafts) ignore the search query
+    const itemsForWorkflow = definitions;
 
     const filterByDraft = (items: Definition[], isDraft: boolean): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = item.children ? filterByDraft(item.children, isDraft) : [];
             const isMatch = isDraft ? (item.isDraft === true && !item.isPendingApproval) : (item.isDraft === false || item.isDraft === undefined);
-            if (children.length > 0 || (isMatch && item.description)) {
+            if (children.length > 0 || (isMatch && (item.description || item.shortDescription))) {
                 acc.push({ ...item, children });
             }
             return acc;
@@ -432,14 +435,14 @@ export default function Wiki() {
         }, []);
     };
 
-    let processedItems = itemsToFilter;
-    if (!showArchived) processedItems = filterArchived(processedItems);
-    if (showBookmarked) processedItems = filterBookmarked(processedItems);
+    let processedPublished = itemsForPublished;
+    if (!showArchived) processedPublished = filterArchived(processedPublished);
+    if (showBookmarked) processedPublished = filterBookmarked(processedPublished);
 
     return {
-        drafts: filterByDraft(processedItems, true),
-        published: filterByDraft(processedItems, false),
-        pending: filterPending(processedItems)
+        drafts: filterByDraft(itemsForWorkflow, true),
+        published: filterByDraft(processedPublished, false),
+        pending: filterPending(itemsForWorkflow)
     };
   }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
@@ -763,7 +766,7 @@ export default function Wiki() {
                                         selectedForExport={selectedForExport}
                                         isSelectMode={isSelectMode}
                                         activeSection={activeTab}
-                                        searchQuery={searchQuery}
+                                        searchQuery="" // Search filtering doesn't work for the workflow queue
                                         editLockId={editLockId}
                                     />
                                 ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No items pending review.</p>
@@ -778,7 +781,7 @@ export default function Wiki() {
                                         selectedForExport={selectedForExport}
                                         isSelectMode={isSelectMode}
                                         activeSection={activeTab}
-                                        searchQuery={searchQuery}
+                                        searchQuery="" // Search filtering doesn't work for drafts
                                         editLockId={editLockId}
                                     />
                                 ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No saved drafts found.</p>
@@ -871,7 +874,7 @@ export default function Wiki() {
                                     selectedForExport={selectedForExport}
                                     isSelectMode={isSelectMode}
                                     activeSection={activeTab}
-                                    searchQuery={searchQuery}
+                                    searchQuery={searchQuery} // Highlighting works for published definitions
                                     editLockId={editLockId}
                                 />
                             ) : (
