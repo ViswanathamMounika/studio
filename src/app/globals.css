@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -106,4 +107,26 @@
   .prose a {
       @apply text-primary underline;
   }
+
+  /* SQL-Specific Syntax Highlighting Theme (Prism Compatible) */
+  .prose pre, 
+  [contenteditable] pre {
+    @apply bg-[#1e1e1e] text-[#d4d4d4] rounded-xl p-5 font-mono text-[13px] leading-relaxed border border-slate-800 shadow-xl my-6 overflow-x-auto;
+    tab-size: 4;
+  }
+
+  .prose code,
+  [contenteditable] code {
+    @apply font-mono;
+  }
+
+  .token.keyword { color: #569cd6; font-weight: bold; } /* SELECT, FROM, WHERE */
+  .token.string { color: #ce9178; } /* 'text' */
+  .token.comment { color: #6a9955; font-style: italic; } /* -- comment */
+  .token.number { color: #b5cea8; } /* 123 */
+  .token.function { color: #dcdcaa; } /* COUNT(), SUM() */
+  .token.operator { color: #d4d4d4; } /* =, <, > */
+  .token.punctuation { color: #d4d4d4; } /* , () */
+  .token.boolean { color: #569cd6; }
+  .token.class-name { color: #4ec9b0; } /* Table names */
 }

@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useRef, useEffect } from "react";
-import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, Image, Table, AlignLeft, AlignCenter, AlignRight, AlignJustify, Code, Baseline, Highlighter, Palette } from "lucide-react"
+import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, Image, Table, AlignLeft, AlignCenter, AlignRight, AlignJustify, Code, Baseline, Highlighter } from "lucide-react"
 import { Button } from "../ui/button"
 import { Separator } from "../ui/separator"
 import { cn } from "@/lib/utils";
@@ -29,10 +29,9 @@ const ToolbarButton = ({ children, onClick, active, title }: { children: React.R
     </Button>
 )
 
-// SQL IDE inspired color palette
 const FONT_COLORS = [
     '#000000', '#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#F9FAFB',
-    '#0000FF', '#008000', '#A31515', '#795E26', '#AF00DB', '#001080', // Common SQL Colors
+    '#0000FF', '#008000', '#A31515', '#795E26', '#AF00DB', '#001080', 
     '#B91C1C', '#DC2626', '#EF4444', '#F87171', '#FCA5A5', '#FEE2E2',
     '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE',
     '#15803D', '#16A34A', '#22C55E', '#4ADE80', '#86EFAC', '#BBF7D0',
@@ -64,8 +63,6 @@ const ColorPalette = ({ colors, onSelect }: { colors: string[], onSelect: (color
 export default function WysiwygEditor({ value, onChange, className, placeholder }: WysiwygEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
 
-    // Initial load and external changes
-    // Only update innerHTML if it's different from the state to preserve cursor position
     useEffect(() => {
         if (editorRef.current && value !== editorRef.current.innerHTML) {
             editorRef.current.innerHTML = value;
@@ -74,7 +71,6 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
 
     const handleInput = (event: React.FormEvent<HTMLDivElement>) => {
         const content = event.currentTarget.innerHTML;
-        // Notify parent of change
         onChange(content);
     };
 
@@ -86,6 +82,41 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         }
     };
     
+    const handleInsertCode = () => {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) {
+            execCommand('formatBlock', 'pre');
+            return;
+        }
+        
+        const range = selection.getRangeAt(0);
+        const selectedText = range.toString();
+        
+        const pre = document.createElement('pre');
+        const code = document.createElement('code');
+        code.className = 'language-sql';
+        code.textContent = selectedText || 'SELECT * FROM table_name WHERE condition = 1;';
+        pre.appendChild(code);
+        
+        range.deleteContents();
+        range.insertNode(pre);
+        
+        const p = document.createElement('p');
+        p.innerHTML = '<br>';
+        pre.after(p);
+        
+        const newRange = document.createRange();
+        newRange.setStart(p, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+
+        editorRef.current?.focus();
+        if (editorRef.current) {
+            handleInput({ currentTarget: editorRef.current } as React.FormEvent<HTMLDivElement>);
+        }
+    };
+
     const handleLink = () => {
         const url = prompt('Enter the URL');
         if (url) {
@@ -122,7 +153,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     };
 
     return (
-        <div className="border rounded-md bg-background overflow-hidden">
+        <div className="border rounded-xl bg-background overflow-hidden shadow-sm">
             <div className="p-2 border-b flex flex-wrap items-center gap-1 sticky top-0 bg-muted/10 z-10 backdrop-blur-sm">
                 <ToolbarButton onClick={() => execCommand('bold')} title="Bold"><Bold className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('italic')} title="Italic"><Italic className="h-4 w-4" /></ToolbarButton>
@@ -160,11 +191,11 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
-                <ToolbarButton onClick={() => execCommand('formatBlock', 'pre')} title="Code Block"><Code className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={handleInsertCode} title="SQL Code Block"><Code className="h-4 w-4" /></ToolbarButton>
                 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 text-xs px-2">Size</Button>
+                        <Button variant="ghost" className="h-8 text-xs px-2 rounded-lg hover:bg-accent font-bold">Size</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                         <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('1'); }}>Small</DropdownMenuItem>
@@ -197,7 +228,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 onInput={handleInput}
                 dir="ltr"
                 className={cn(
-                    "prose prose-sm max-w-none w-full min-h-[300px] p-4 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left bg-background",
+                    "prose prose-sm max-w-none w-full min-h-[300px] p-6 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left bg-background",
                     className
                 )}
                 placeholder={placeholder || "Enter content..."}

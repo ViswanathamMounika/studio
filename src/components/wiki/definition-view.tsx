@@ -1,7 +1,10 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-sql';
 import type { Definition, Revision, SupportingTable, Note, DiscussionMessage } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -108,6 +111,11 @@ export default function DefinitionView({
     const [editingNoteText, setEditingNoteText] = useState('');
 
     const { toast } = useToast();
+
+    // Trigger SQL syntax highlighting
+    useEffect(() => {
+        Prism.highlightAll();
+    }, [definition, activeTab]);
 
     const tabs = [
         { value: 'description', label: 'Description' },
