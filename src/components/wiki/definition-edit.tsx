@@ -188,7 +188,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
 
   return (
     <div className="flex flex-col">
-      <div className="sticky top-0 z-[100] bg-background px-6 py-4 border-b space-y-4 shadow-sm">
+      <div className="sticky top-0 z-30 bg-background px-6 py-4 border-b space-y-4 shadow-sm">
         <Alert className="bg-primary/5 border-primary/20">
           <Lock className="h-4 w-4 text-primary" />
           <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>

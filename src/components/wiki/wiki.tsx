@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
@@ -582,7 +581,7 @@ export default function Wiki() {
                 <div className="relative">
                   {/* Sticky Header for Status Messages (View Mode Only) */}
                   {editLockId === selectedDefinitionId && !isEditing && (
-                    <div className="sticky top-0 z-[60] bg-background px-6 py-4 border-b shadow-sm">
+                    <div className="sticky top-0 z-30 bg-background px-6 py-4 border-b shadow-sm">
                         <Alert className="bg-primary/5 border-primary/20">
                           <Lock className="h-4 w-4 text-primary" />
                           <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>
