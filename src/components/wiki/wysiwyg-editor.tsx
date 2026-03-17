@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useRef, useEffect } from "react";
-import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, Image, Table, AlignLeft, AlignCenter, AlignRight, AlignJustify, Code } from "lucide-react"
+import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, Image, Table, AlignLeft, AlignCenter, AlignRight, AlignJustify, Code, Baseline, Highlighter, Palette } from "lucide-react"
 import { Button } from "../ui/button"
 import { Separator } from "../ui/separator"
 import { cn } from "@/lib/utils";
@@ -16,50 +16,50 @@ type WysiwygEditorProps = {
     placeholder?: string;
 }
 
-const ToolbarButton = ({ children, onClick, active }: { children: React.ReactNode, onClick: () => void, active?: boolean }) => (
+const ToolbarButton = ({ children, onClick, active, title }: { children: React.ReactNode, onClick: () => void, active?: boolean, title?: string }) => (
     <Button 
         variant={active ? "secondary" : "ghost"} 
         size="icon" 
         className="h-8 w-8" 
         onMouseDown={(e) => e.preventDefault()} 
-        onClick={onClick}>
+        onClick={onClick}
+        title={title}
+    >
         {children}
     </Button>
 )
 
-
+// SQL IDE inspired color palette
 const FONT_COLORS = [
     '#000000', '#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#F9FAFB',
+    '#0000FF', '#008000', '#A31515', '#795E26', '#AF00DB', '#001080', // Common SQL Colors
     '#B91C1C', '#DC2626', '#EF4444', '#F87171', '#FCA5A5', '#FEE2E2',
     '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE',
     '#15803D', '#16A34A', '#22C55E', '#4ADE80', '#86EFAC', '#BBF7D0',
     '#B45309', '#D97706', '#F59E0B', '#FBBF24', '#FCD34D', '#FEF3C7',
-    '#7E22CE', '#9333EA', '#A855F7', '#C084FC', '#D8B4FE', '#F3E8FF',
-    '#DB2777', '#EC4899', '#F472B6', '#F9A8D4', '#FBCFE8', '#FCE7F3'
+    '#7E22CE', '#9333EA', '#A855F7', '#C084FC', '#D8B4FE', '#F3E8FF'
 ];
 
 const BACKGROUND_COLORS = [
-    '#FFFFFF', '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF',
-    '#FEE2E2', '#FFE4E6', '#FFF4ED', '#FEF3C7', '#F7FEE7', '#ECFDF5',
-    '#EFF6FF', '#F5F3FF', '#FAFAF9',
-    '#FCA5A5', '#F9A8D4', '#FCD34D', '#FBBF24', '#A7F3D0', '#93C5FD',
-    '#C4B5FD', '#D1D5DB', '#FED7AA', '#FDE68A', '#A7F3D0', '#BFDBFE'
+    '#FFFFFF', '#F1F5F9', '#E2E8F0', '#CBD5E1', '#94A3B8', '#64748B',
+    '#FEF9C3', '#FFEDD5', '#FEE2E2', '#DCFCE7', '#DBEAFE', '#F3E8FF',
+    '#FDE047', '#FB923C', '#F87171', '#4ADE80', '#60A5FA', '#C084FC',
+    '#EAB308', '#EA580C', '#DC2626', '#16A34A', '#2563EB', '#9333EA'
 ];
 
 const ColorPalette = ({ colors, onSelect }: { colors: string[], onSelect: (color: string) => void }) => (
-    <div className="grid grid-cols-6 gap-2">
+    <div className="grid grid-cols-6 gap-1 p-1">
         {colors.map(color => (
             <button
                 key={color}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onSelect(color)}
-                className="h-6 w-6 rounded-full border cursor-pointer hover:ring-2 hover:ring-ring"
+                className="h-6 w-6 rounded-sm border border-slate-200 cursor-pointer hover:scale-110 transition-transform"
                 style={{ backgroundColor: color }}
             />
         ))}
     </div>
 );
-
 
 export default function WysiwygEditor({ value, onChange, className, placeholder }: WysiwygEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
@@ -124,17 +124,47 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     return (
         <div className="border rounded-md bg-background overflow-hidden">
             <div className="p-2 border-b flex flex-wrap items-center gap-1 sticky top-0 bg-muted/10 z-10 backdrop-blur-sm">
-                <ToolbarButton onClick={() => execCommand('bold')}><Bold className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('italic')}><Italic className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('underline')}><Underline className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('strikethrough')}><Strikethrough className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('formatBlock', 'pre')}><Code className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('bold')} title="Bold"><Bold className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('italic')} title="Italic"><Italic className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('underline')} title="Underline"><Underline className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('strikethrough')} title="Strikethrough"><Strikethrough className="h-4 w-4" /></ToolbarButton>
                 
                 <Separator orientation="vertical" className="h-6 mx-1" />
+
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Text Color">
+                            <div className="flex flex-col items-center">
+                                <Baseline className="h-4 w-4" />
+                                <div className="h-0.5 w-3 bg-primary mt-[-2px]" />
+                            </div>
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2" align="start">
+                        <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2 px-1">Text Color</p>
+                        <ColorPalette colors={FONT_COLORS} onSelect={(color) => execCommand('foreColor', color)} />
+                    </PopoverContent>
+                </Popover>
+
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Highlight Color">
+                            <Highlighter className="h-4 w-4" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2" align="start">
+                        <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2 px-1">Highlight Color</p>
+                        <ColorPalette colors={BACKGROUND_COLORS} onSelect={(color) => execCommand('backColor', color)} />
+                    </PopoverContent>
+                </Popover>
+
+                <Separator orientation="vertical" className="h-6 mx-1" />
+                
+                <ToolbarButton onClick={() => execCommand('formatBlock', 'pre')} title="Code Block"><Code className="h-4 w-4" /></ToolbarButton>
                 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 text-xs">Size</Button>
+                        <Button variant="ghost" className="h-8 text-xs px-2">Size</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                         <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('1'); }}>Small</DropdownMenuItem>
@@ -144,43 +174,22 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                     </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-xs font-bold">A</Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-2">
-                        <ColorPalette colors={FONT_COLORS} onSelect={(color) => execCommand('foreColor', color)} />
-                    </PopoverContent>
-                </Popover>
-
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <span className="h-4 w-4 border border-foreground rounded-sm bg-yellow-300"></span>
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-2">
-                        <ColorPalette colors={BACKGROUND_COLORS} onSelect={(color) => execCommand('backColor', color)} />
-                    </PopoverContent>
-                </Popover>
-
+                <Separator orientation="vertical" className="h-6 mx-1" />
+                
+                <ToolbarButton onClick={() => execCommand('justifyLeft')} title="Align Left"><AlignLeft className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('justifyCenter')} title="Align Center"><AlignCenter className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('justifyRight')} title="Align Right"><AlignRight className="h-4 w-4" /></ToolbarButton>
 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
-                <ToolbarButton onClick={() => execCommand('justifyLeft')}><AlignLeft className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('justifyCenter')}><AlignCenter className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('justifyRight')}><AlignRight className="h-4 w-4" /></ToolbarButton>
-
-                <Separator orientation="vertical" className="h-6 mx-1" />
-                
-                <ToolbarButton onClick={() => execCommand('insertUnorderedList')}><List className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('insertOrderedList')}><ListOrdered className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('insertUnorderedList')} title="Bullet List"><List className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('insertOrderedList')} title="Numbered List"><ListOrdered className="h-4 w-4" /></ToolbarButton>
                 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
-                <ToolbarButton onClick={handleLink}><Link className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={handleImage}><Image className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={handleInsertTable}><Table className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={handleLink} title="Insert Link"><Link className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={handleImage} title="Insert Image"><Image className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={handleInsertTable} title="Insert Table"><Table className="h-4 w-4" /></ToolbarButton>
             </div>
             <div
                 ref={editorRef}
