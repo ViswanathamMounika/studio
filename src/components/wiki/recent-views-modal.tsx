@@ -64,56 +64,69 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="p-6 border-b">
-          <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-            <Clock className="h-5 w-5 text-primary" />
-            Recently Viewed Definitions
-          </DialogTitle>
-          <DialogDescription className="text-sm">
-            A history of definitions you have accessed recently.
-          </DialogDescription>
+      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden border-none rounded-[20px] shadow-2xl">
+        <DialogHeader className="p-6 border-b bg-white">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Clock className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+                <DialogTitle className="text-xl font-bold tracking-tight">Recent Activity</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500">
+                    A comprehensive history of definitions you have accessed recently.
+                </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         
-        <div className="flex-1 min-h-0 bg-slate-50/30">
+        <div className="flex-1 min-h-0 bg-slate-50/50">
             <ScrollArea className="h-full">
                 <div className="p-6 pt-4">
-                    <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+                    <div className="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
                         <Table>
-                            <TableHeader className="bg-slate-50 sticky top-0 z-10">
-                                <TableRow>
-                                    <TableHead className="font-bold">Definition Name</TableHead>
-                                    <TableHead className="font-bold">Status</TableHead>
-                                    <TableHead className="text-right font-bold">Last Viewed</TableHead>
+                            <TableHeader className="bg-slate-50/80 sticky top-0 z-10">
+                                <TableRow className="hover:bg-transparent border-slate-200">
+                                    <TableHead className="font-bold text-slate-900 h-12">Definition Name</TableHead>
+                                    <TableHead className="font-bold text-slate-900 h-12">Status</TableHead>
+                                    <TableHead className="text-right font-bold text-slate-900 h-12">Last Viewed</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {paginatedViews.map(item => {
+                                {paginatedViews.map((item, idx) => {
                                     const itemDate = new Date(item.date);
                                     return (
-                                        <TableRow key={`${item.id}-${item.date}`} className="hover:bg-slate-50/80 transition-colors">
+                                        <TableRow key={`${item.id}-${item.date}-${idx}`} className="hover:bg-slate-50/80 transition-colors border-slate-100">
                                             <TableCell className="py-4">
                                                 <button 
-                                                    className="text-primary hover:underline font-bold text-left text-sm"
+                                                    className="text-primary hover:underline font-bold text-left text-[13px] block"
                                                     onClick={() => handleDefinitionClick(item.id)}
                                                 >
                                                     {item.name}
                                                 </button>
-                                                <p className="text-[10px] text-muted-foreground uppercase font-medium mt-0.5">{item.module}</p>
+                                                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mt-1 block">
+                                                    {item.module}
+                                                </span>
                                             </TableCell>
-                                            <TableCell>{getStatusBadge(item.status)}</TableCell>
-                                            <TableCell className="text-right text-muted-foreground whitespace-nowrap text-xs">
-                                                {isValid(itemDate) ? formatDistanceToNow(itemDate, { addSuffix: true }) : ''}
+                                            <TableCell>
+                                                {getStatusBadge(item.status)}
+                                            </TableCell>
+                                            <TableCell className="text-right text-slate-500 whitespace-nowrap text-xs font-medium">
+                                                {isValid(itemDate) ? formatDistanceToNow(itemDate, { addSuffix: true }) : 'Recently'}
                                             </TableCell>
                                         </TableRow>
                                     )
                                 })}
                                 {paginatedViews.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="h-48 text-center text-muted-foreground">
-                                            <div className="flex flex-col items-center gap-2 opacity-40">
-                                                <Clock className="h-10 w-10" />
-                                                <p className="text-sm font-medium">No recent activity found.</p>
+                                        <TableCell colSpan={3} className="h-64 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-3 py-12">
+                                                <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center">
+                                                    <Clock className="h-8 w-8 text-slate-300" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-bold text-slate-900">No recent activity</p>
+                                                    <p className="text-xs text-slate-500">Definitions you view will appear here for quick access.</p>
+                                                </div>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -125,33 +138,33 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
             </ScrollArea>
         </div>
 
-        <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t p-4 px-6 bg-white">
-            <div className="text-sm text-muted-foreground font-medium">
-                Showing {recentViews.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} - {Math.min(currentPage * ITEMS_PER_PAGE, recentViews.length)} of {recentViews.length}
+        <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t p-4 px-6 bg-white shrink-0">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Showing {recentViews.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} - {Math.min(currentPage * ITEMS_PER_PAGE, recentViews.length)} of {recentViews.length} entries
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
                 <Button 
                     variant="outline" 
                     size="sm" 
-                    className="rounded-lg h-9 px-4"
+                    className="rounded-lg h-9 px-4 border-slate-200 text-slate-600 hover:bg-slate-50 font-bold"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                 >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    <ChevronLeft className="h-4 w-4 mr-1.5" />
                     Previous
                 </Button>
-                <div className="flex items-center justify-center min-w-[3rem] text-sm font-bold text-slate-700">
+                <div className="flex items-center justify-center min-w-[3rem] h-9 rounded-lg bg-slate-50 border border-slate-200 text-sm font-black text-primary">
                     {currentPage} / {totalPages || 1}
                 </div>
                 <Button 
                     variant="outline" 
                     size="sm" 
-                    className="rounded-lg h-9 px-4"
+                    className="rounded-lg h-9 px-4 border-slate-200 text-slate-600 hover:bg-slate-50 font-bold"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage >= totalPages || totalPages === 0}
                 >
                     Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
+                    <ChevronRight className="h-4 w-4 ml-1.5" />
                 </Button>
             </div>
         </DialogFooter>
