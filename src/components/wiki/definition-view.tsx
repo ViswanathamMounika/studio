@@ -397,7 +397,7 @@ export default function DefinitionView({
                     <DefinitionActions 
                         definition={definition} 
                         onEdit={onEdit} 
-                        onDuplicate={onDuplicate} 
+                        onDuplicate={handleDuplicate} 
                         onArchive={onArchive} 
                         onToggleBookmark={onToggleBookmark} 
                         isAdmin={isAdmin}
@@ -708,7 +708,13 @@ export default function DefinitionView({
         )}
 
         {showComparison && selectedRevisions.length === 2 && (
-             <RevisionComparisonDialog open={showComparison} onOpenChange={setShowComparison} revision1={selectedRevisions[0]} revision2={selectedRevisions[1]} currentDefinitionName={definition.name} />
+             <RevisionComparisonDialog 
+                open={showComparison} 
+                onOpenChange={setShowComparison} 
+                revision1={selectedRevisions[0]} 
+                revision2={selectedRevisions[1]} 
+                definition={definition} 
+             />
         )}
     </TooltipProvider>
   );

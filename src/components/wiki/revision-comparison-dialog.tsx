@@ -1,25 +1,26 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { type Revision } from "@/lib/types";
+import { type Revision, type Definition } from "@/lib/types";
 import diff_match_patch, { type Diff } from 'diff-match-patch';
 import { Separator } from "../ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Info } from "lucide-react";
+import { format } from "date-fns";
 
 type RevisionComparisonDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   revision1: Revision;
   revision2: Revision;
-  currentDefinitionName: string;
+  definition: Definition;
 };
 
 const dmp = new diff_match_patch();
@@ -51,9 +52,16 @@ export default function RevisionComparisonDialog({
   onOpenChange,
   revision1,
   revision2,
-  currentDefinitionName
+  definition
 }: RevisionComparisonDialogProps) {
+    // Sort selected revisions chronologically
     const [revA, revB] = [revision1, revision2].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    // Find the revision ranks (indices in the full history)
+    const sortedHistory = [...definition.revisions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const rankA = sortedHistory.findIndex(r => r.ticketId === revA.ticketId) + 1;
+    const rankB = sortedHistory.findIndex(r => r.ticketId === revB.ticketId) + 1;
+
     const [scrollMode, setScrollMode] = useState<'sync' | 'independent'>('sync');
     
     const leftScrollRef = useRef<HTMLDivElement>(null);
@@ -72,7 +80,6 @@ export default function RevisionComparisonDialog({
         if (sourceEl && targetEl) {
             isSyncingRef.current = true;
             targetEl.scrollTop = sourceEl.scrollTop;
-            // Timeout to prevent infinite feedback loops between the two listeners
             setTimeout(() => {
                 isSyncingRef.current = false;
             }, 50);
@@ -87,38 +94,51 @@ export default function RevisionComparisonDialog({
 
     Object.values(diffs).forEach(d => dmp.diff_cleanupSemantic(d));
 
+    const formatDateString = (dateStr: string) => {
+        try {
+            return format(new Date(dateStr), "MM/dd/yyyy");
+        } catch (e) {
+            return dateStr;
+        }
+    };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl w-full h-[90vh] flex flex-col">
-        <DialogHeader>
-          <div className="flex items-center justify-between pr-8">
-            <DialogTitle>Compare Revisions: {currentDefinitionName}</DialogTitle>
-            <div className="flex items-center gap-4 bg-muted/50 px-4 py-2 rounded-lg border">
-                <span className="text-sm font-medium">Scroll Mode:</span>
+      <DialogContent className="max-w-[95vw] w-full h-[95vh] flex flex-col p-0 overflow-hidden gap-0">
+        <DialogHeader className="p-6 pb-4 border-b bg-background sticky top-0 z-20">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              Compare Revisions for : {definition.name}
+              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+            </DialogTitle>
+            <div className="flex items-center gap-4 bg-muted/30 px-3 py-1.5 rounded-lg border mr-8">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Scroll Mode:</span>
                 <RadioGroup 
                     value={scrollMode} 
                     onValueChange={(val) => setScrollMode(val as 'sync' | 'independent')}
                     className="flex items-center gap-4"
                 >
                     <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="sync" id="sync" />
-                        <Label htmlFor="sync" className="cursor-pointer">Simultaneous</Label>
+                        <RadioGroupItem value="sync" id="sync" className="h-3.5 w-3.5" />
+                        <Label htmlFor="sync" className="cursor-pointer text-sm">Simultaneous</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="independent" id="independent" />
-                        <Label htmlFor="independent" className="cursor-pointer">Independent</Label>
+                        <RadioGroupItem value="independent" id="independent" className="h-3.5 w-3.5" />
+                        <Label htmlFor="independent" className="cursor-pointer text-sm">Independent</Label>
                     </div>
                 </RadioGroup>
             </div>
           </div>
         </DialogHeader>
         
-        <div className="flex-1 min-h-0 grid grid-cols-2 gap-x-6">
+        <div className="flex-1 min-h-0 grid grid-cols-2">
             {/* Left Panel - Revision A */}
-            <div className="flex flex-col border rounded-lg bg-background overflow-hidden">
-                <div className="p-4 border-b bg-muted/30">
-                    <h3 className="font-bold text-lg">Revision: {revA.date}</h3>
-                    <p className="text-xs text-muted-foreground">Contributor: {revA.developer}</p>
+            <div className="flex flex-col border-r bg-slate-50/30 overflow-hidden">
+                <div className="px-6 py-4 border-b bg-muted/40">
+                    <h3 className="font-bold text-base leading-tight">Revision: MPM-{rankA}</h3>
+                    <p className="text-[13px] text-muted-foreground mt-0.5">
+                        {formatDateString(revA.date)} by {revA.developer}
+                    </p>
                 </div>
                 <div 
                     ref={leftScrollRef}
@@ -126,27 +146,27 @@ export default function RevisionComparisonDialog({
                     className="flex-1 overflow-y-auto p-6 space-y-8"
                 >
                     <section>
-                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Description</h4>
-                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.description, 'deletion') || 'No content' }} />
+                        <h4 className="text-sm font-bold text-slate-800 mb-3">Description</h4>
+                        <div className="prose prose-sm max-w-none bg-white p-4 rounded-md border shadow-sm" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.description, 'deletion') || '<p class="italic text-muted-foreground">No content</p>' }} />
                     </section>
-                    <Separator />
                     <section>
-                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Technical Details</h4>
-                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.technical, 'deletion') || 'No content' }} />
+                        <h4 className="text-sm font-bold text-slate-800 mb-3">Technical Details</h4>
+                        <div className="prose prose-sm max-w-none bg-white p-4 rounded-md border shadow-sm" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.technical, 'deletion') || '<p class="italic text-muted-foreground">No content</p>' }} />
                     </section>
-                    <Separator />
                     <section>
-                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Usage Examples</h4>
-                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.usage, 'deletion') || 'No content' }} />
+                        <h4 className="text-sm font-bold text-slate-800 mb-3">Usage Examples</h4>
+                        <div className="prose prose-sm max-w-none bg-white p-4 rounded-md border shadow-sm" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.usage, 'deletion') || '<p class="italic text-muted-foreground">No content</p>' }} />
                     </section>
                 </div>
             </div>
 
             {/* Right Panel - Revision B */}
-            <div className="flex flex-col border rounded-lg bg-background overflow-hidden">
-                <div className="p-4 border-b bg-muted/30">
-                    <h3 className="font-bold text-lg">Revision: {revB.date}</h3>
-                    <p className="text-xs text-muted-foreground">Contributor: {revB.developer}</p>
+            <div className="flex flex-col bg-slate-50/30 overflow-hidden">
+                <div className="px-6 py-4 border-b bg-muted/40">
+                    <h3 className="font-bold text-base leading-tight">Revision: MPM-{rankB}</h3>
+                    <p className="text-[13px] text-muted-foreground mt-0.5">
+                        {formatDateString(revB.date)} by {revB.developer}
+                    </p>
                 </div>
                 <div 
                     ref={rightScrollRef}
@@ -154,18 +174,16 @@ export default function RevisionComparisonDialog({
                     className="flex-1 overflow-y-auto p-6 space-y-8"
                 >
                     <section>
-                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Description</h4>
-                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.description, 'insertion') || 'No content' }} />
+                        <h4 className="text-sm font-bold text-slate-800 mb-3">Description</h4>
+                        <div className="prose prose-sm max-w-none bg-white p-4 rounded-md border shadow-sm" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.description, 'insertion') || '<p class="italic text-muted-foreground">No content</p>' }} />
                     </section>
-                    <Separator />
                     <section>
-                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Technical Details</h4>
-                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.technical, 'insertion') || 'No content' }} />
+                        <h4 className="text-sm font-bold text-slate-800 mb-3">Technical Details</h4>
+                        <div className="prose prose-sm max-w-none bg-white p-4 rounded-md border shadow-sm" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.technical, 'insertion') || '<p class="italic text-muted-foreground">No content</p>' }} />
                     </section>
-                    <Separator />
                     <section>
-                        <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Usage Examples</h4>
-                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.usage, 'insertion') || 'No content' }} />
+                        <h4 className="text-sm font-bold text-slate-800 mb-3">Usage Examples</h4>
+                        <div className="prose prose-sm max-w-none bg-white p-4 rounded-md border shadow-sm" dangerouslySetInnerHTML={{ __html: createDiffHtml(diffs.usage, 'insertion') || '<p class="italic text-muted-foreground">No content</p>' }} />
                     </section>
                 </div>
             </div>
