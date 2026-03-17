@@ -231,7 +231,7 @@ export default function DefinitionView({
 
     const resolvedSourceInfo = useMemo(() => {
         const dbIds = definition.sourceDb ? definition.sourceDb.split(',').map(s => s.trim()) : [];
-        const dbNames = dbIds.map(id => mpmDatabases.find(id => id.id === id)?.name || id).join(', ');
+        const dbNames = dbIds.map(id => mpmDatabases.find(d => d.id === id)?.name || id).join(', ');
         
         const firstDb = dbIds[0];
         const types = firstDb ? mpmSourceTypes[firstDb] : [];
@@ -397,7 +397,7 @@ export default function DefinitionView({
                     <DefinitionActions 
                         definition={definition} 
                         onEdit={onEdit} 
-                        onDuplicate={handleDuplicate} 
+                        onDuplicate={onDuplicate} 
                         onArchive={onArchive} 
                         onToggleBookmark={onToggleBookmark} 
                         isAdmin={isAdmin}
@@ -645,7 +645,7 @@ export default function DefinitionView({
                                                                 variant="ghost" 
                                                                 size="icon" 
                                                                 className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors group/note-btn" 
-                                                                onClick={() => handleDeleteNote(noteId)}
+                                                                onClick={() => handleDeleteNote(note.id)}
                                                             >
                                                                 <Trash2 className="h-4 w-4 transition-colors group-hover/note-btn:text-white" />
                                                             </Button>
