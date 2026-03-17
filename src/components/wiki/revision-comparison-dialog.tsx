@@ -6,14 +6,16 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { type Revision, type Definition } from "@/lib/types";
 import diff_match_patch, { type Diff } from 'diff-match-patch';
 import { Separator } from "../ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Info } from "lucide-react";
+import { Info, X } from "lucide-react";
 import { format } from "date-fns";
+import { Button } from "../ui/button";
 
 type RevisionComparisonDialogProps = {
   open: boolean;
@@ -111,22 +113,32 @@ export default function RevisionComparisonDialog({
               Compare Revisions for : {definition.name}
               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
             </DialogTitle>
-            <div className="flex items-center gap-4 bg-muted/30 px-3 py-1.5 rounded-lg border mr-8">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Scroll Mode:</span>
-                <RadioGroup 
-                    value={scrollMode} 
-                    onValueChange={(val) => setScrollMode(val as 'sync' | 'independent')}
-                    className="flex items-center gap-4"
-                >
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="sync" id="sync" className="h-3.5 w-3.5" />
-                        <Label htmlFor="sync" className="cursor-pointer text-sm">Simultaneous</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="independent" id="independent" className="h-3.5 w-3.5" />
-                        <Label htmlFor="independent" className="cursor-pointer text-sm">Independent</Label>
-                    </div>
-                </RadioGroup>
+            
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 bg-muted/30 px-3 py-1.5 rounded-lg border">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Scroll Mode:</span>
+                    <RadioGroup 
+                        value={scrollMode} 
+                        onValueChange={(val) => setScrollMode(val as 'sync' | 'independent')}
+                        className="flex items-center gap-4"
+                    >
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="sync" id="sync" className="h-3.5 w-3.5" />
+                            <Label htmlFor="sync" className="cursor-pointer text-sm font-medium">Simultaneous</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="independent" id="independent" className="h-3.5 w-3.5" />
+                            <Label htmlFor="independent" className="cursor-pointer text-sm font-medium">Independent</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+                
+                <DialogClose asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
+                        <X className="h-5 w-5" />
+                        <span className="sr-only">Close comparison</span>
+                    </Button>
+                </DialogClose>
             </div>
           </div>
         </DialogHeader>
