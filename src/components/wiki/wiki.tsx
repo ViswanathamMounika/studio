@@ -431,13 +431,6 @@ export default function Wiki() {
         }, []);
     }
 
-    const filterArchived = (items: Definition[]): Definition[] => {
-      return items.filter(item => !item.isArchived || showArchived).map(item => {
-        const children = item.children ? filterArchived(item.children) : [];
-        return {...item, children};
-      }).filter(item => item.children?.length > 0 || !item.isArchived || showArchived)
-    }
-
     const filterBookmarked = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = filterBookmarked(item.children || []);
@@ -447,8 +440,37 @@ export default function Wiki() {
     };
 
     let processedPublished = itemsForPublished;
-    if (!showArchived) processedPublished = filterArchived(processedPublished);
-    if (showBookmarked) processedPublished = filterBookmarked(processedPublished);
+    
+    // Filter by Archived status (Exclusive behavior)
+    if (showArchived) {
+        // Exclusive: Only show archived (and their module parents)
+        const getOnlyArchived = (items: Definition[]): Definition[] => {
+            return items.reduce((acc: Definition[], item) => {
+                const children = getOnlyArchived(item.children || []);
+                if (item.isArchived || children.length > 0) {
+                    acc.push({ ...item, children });
+                }
+                return acc;
+            }, []);
+        };
+        processedPublished = getOnlyArchived(processedPublished);
+    } else {
+        // Standard: Hide archived items completely
+        const getHideArchived = (items: Definition[]): Definition[] => {
+            return items.reduce((acc: Definition[], item) => {
+                if (item.isArchived) return acc;
+                const children = getHideArchived(item.children || []);
+                acc.push({ ...item, children });
+                return acc;
+            }, []);
+        };
+        processedPublished = getHideArchived(processedPublished);
+    }
+
+    // Filter by Bookmarked status
+    if (showBookmarked) {
+        processedPublished = filterBookmarked(processedPublished);
+    }
 
     return {
         drafts: filterByDraft(itemsForWorkflow, true),
@@ -891,7 +913,7 @@ export default function Wiki() {
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                                     <Info className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                                    <p className="text-xs text-muted-foreground italic">No published definitions found.</p>
+                                    <p className="text-xs text-muted-foreground italic">No definitions found for this filter.</p>
                                 </div>
                             )}
                           </div>
