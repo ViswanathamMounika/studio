@@ -411,7 +411,7 @@ export default function DefinitionView({
                     <DefinitionActions 
                         definition={definition} 
                         onEdit={onEdit} 
-                        onDuplicate={handleDuplicate} 
+                        onDuplicate={onDuplicate} 
                         onArchive={onArchive} 
                         onToggleBookmark={onToggleBookmark} 
                         isAdmin={isAdmin}
