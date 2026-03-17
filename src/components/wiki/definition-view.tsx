@@ -231,7 +231,7 @@ export default function DefinitionView({
 
     const resolvedSourceInfo = useMemo(() => {
         const dbIds = definition.sourceDb ? definition.sourceDb.split(',').map(s => s.trim()) : [];
-        const dbNames = dbIds.map(id => mpmDatabases.find(d => d.id === id)?.name || id).join(', ');
+        const dbNames = dbIds.map(id => mpmDatabases.find(id => id.id === id)?.name || id).join(', ');
         
         const firstDb = dbIds[0];
         const types = firstDb ? mpmSourceTypes[firstDb] : [];
@@ -546,10 +546,25 @@ export default function DefinitionView({
                             <CardHeader><div className="flex justify-end"><Button onClick={() => setShowComparison(true)} disabled={selectedRevisions.length !== 2}>Compare Revisions</Button></div></CardHeader>
                             <CardContent className="p-6">
                                 <Table>
-                                    <TableHeader><TableRow><TableHead className="w-[40px]"></TableHead><TableHead>Ticket ID</TableHead><TableHead>Date</TableHead><TableHead>Developer</TableHead><TableHead>Description</TableHead></TableRow></TableHeader>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-[40px]"></TableHead>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Developer</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
                                     <TableBody>
                                         {definition.revisions.map((rev) => (
-                                            <TableRow key={rev.ticketId}><TableCell><Checkbox onCheckedChange={(checked) => handleRevisionSelect(rev, !!checked)} checked={selectedRevisions.some(r => r.ticketId === rev.ticketId)} /></TableCell><TableCell className="font-medium">{rev.ticketId}</TableCell><TableCell>{rev.date}</TableCell><TableCell>{rev.developer}</TableCell><TableCell>{rev.description}</TableCell></TableRow>
+                                            <TableRow key={rev.ticketId}>
+                                                <TableCell>
+                                                    <Checkbox 
+                                                        onCheckedChange={(checked) => handleRevisionSelect(rev, !!checked)} 
+                                                        checked={selectedRevisions.some(r => r.ticketId === rev.ticketId)} 
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="font-medium">{rev.date}</TableCell>
+                                                <TableCell>{rev.developer}</TableCell>
+                                            </TableRow>
                                         ))}
                                     </TableBody>
                                 </Table>

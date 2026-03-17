@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -118,8 +117,8 @@ export default function RevisionComparisonDialog({
             {/* Left Panel - Revision A */}
             <div className="flex flex-col border rounded-lg bg-background overflow-hidden">
                 <div className="p-4 border-b bg-muted/30">
-                    <h3 className="font-bold text-lg">Revision: {revA.ticketId}</h3>
-                    <p className="text-xs text-muted-foreground">{revA.date} by {revA.developer}</p>
+                    <h3 className="font-bold text-lg">Revision: {revA.date}</h3>
+                    <p className="text-xs text-muted-foreground">Contributor: {revA.developer}</p>
                 </div>
                 <div 
                     ref={leftScrollRef}
@@ -146,8 +145,8 @@ export default function RevisionComparisonDialog({
             {/* Right Panel - Revision B */}
             <div className="flex flex-col border rounded-lg bg-background overflow-hidden">
                 <div className="p-4 border-b bg-muted/30">
-                    <h3 className="font-bold text-lg">Revision: {revB.ticketId}</h3>
-                    <p className="text-xs text-muted-foreground">{revB.date} by {revB.developer}</p>
+                    <h3 className="font-bold text-lg">Revision: {revB.date}</h3>
+                    <p className="text-xs text-muted-foreground">Contributor: {revB.developer}</p>
                 </div>
                 <div 
                     ref={rightScrollRef}
