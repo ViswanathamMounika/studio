@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -274,15 +275,34 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-full h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>
-            {templateId ? `Create from Template: ${templates.find(t => t.id === templateId)?.name}` : 'Create New Definition'}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl w-full h-[90vh] flex flex-col p-0 overflow-hidden">
+        <div className="p-6 border-b bg-background sticky top-0 z-50 flex justify-between items-center shadow-sm">
+          <DialogHeader className="p-0">
+            <DialogTitle className="text-2xl font-bold">
+              {templateId ? `Create from Template: ${templates.find(t => t.id === templateId)?.name}` : 'Create New Definition'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <DialogClose asChild>
+              <Button variant="outline" className="rounded-xl">Cancel</Button>
+            </DialogClose>
+            <Button variant="secondary" onClick={() => handleSave(true)} disabled={!name.trim()} className="rounded-xl">
+                <Save className="mr-2 h-4 w-4" />
+                Save Draft
+            </Button>
+            <Button 
+              onClick={() => handleSave(false)} 
+              disabled={!name.trim()}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl"
+            >
+                <Send className="mr-2 h-4 w-4" />
+                {isAdmin ? 'Publish' : 'Submit for Approval'}
+            </Button>
+          </div>
+        </div>
         <div className="flex-1 min-h-0">
           <ScrollArea className="h-full pr-6">
-            <div className="space-y-6 py-4">
+            <div className="space-y-6 py-4 px-6">
               <Card>
                 <CardHeader>
                     <CardTitle>Core Information</CardTitle>
@@ -317,9 +337,9 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                     <Label htmlFor="new-def-keywords">Keywords (DEF_KEYWORDS)</Label>
                     <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md min-h-[40px]">
                       {keywords.map(keyword => (
-                        <Badge key={keyword} variant="secondary" className="gap-1">
+                        <Badge key={keyword} variant="outline" className="bg-primary/10 text-primary border-primary/20 gap-1">
                           {keyword}
-                          <button onClick={() => removeKeyword(keyword)} className="rounded-full hover:bg-muted-foreground/20">
+                          <button onClick={() => removeKeyword(keyword)} className="rounded-full hover:bg-primary/20">
                             <X className="h-3 w-3" />
                           </button>
                         </Badge>
@@ -622,22 +642,22 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
             </div>
           </ScrollArea>
         </div>
-        <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t pt-4">
+        <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t p-4 px-6 bg-slate-50/50">
           <div className="text-sm text-muted-foreground">
             <span className="text-destructive font-bold">*</span> Indicates required fields
           </div>
           <div className="flex gap-2">
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline" className="rounded-xl">Cancel</Button>
             </DialogClose>
-            <Button variant="secondary" onClick={() => handleSave(true)} disabled={!name.trim()}>
+            <Button variant="secondary" onClick={() => handleSave(true)} disabled={!name.trim()} className="rounded-xl">
                 <Save className="mr-2 h-4 w-4" />
                 Save Draft
             </Button>
             <Button 
               onClick={() => handleSave(false)} 
               disabled={!name.trim()}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl"
             >
                 <Send className="mr-2 h-4 w-4" />
                 {isAdmin ? 'Publish' : 'Submit for Approval'}

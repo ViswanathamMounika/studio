@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -375,11 +376,11 @@ export default function DefinitionView({
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="hover:bg-accent" 
+                                className="hover:bg-primary/10 transition-colors" 
                                 onClick={handleShare}
                                 disabled={definition.isDraft}
                             >
-                                <Share2 className="h-6 w-6 text-muted-foreground"/>
+                                <Share2 className="h-6 w-6 text-primary"/>
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -391,11 +392,11 @@ export default function DefinitionView({
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="hover:bg-primary/10" 
+                                className="hover:bg-primary/10 transition-colors" 
                                 onClick={() => onToggleBookmark(definition.id)}
                                 disabled={definition.isDraft}
                             >
-                                <Bookmark className={cn("h-6 w-6 text-muted-foreground", definition.isBookmarked && "fill-primary text-primary")}/>
+                                <Bookmark className={cn("h-6 w-6 text-primary", definition.isBookmarked && "fill-primary")}/>
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -410,7 +411,7 @@ export default function DefinitionView({
                     <DefinitionActions 
                         definition={definition} 
                         onEdit={onEdit} 
-                        onDuplicate={onDuplicate} 
+                        onDuplicate={handleDuplicate} 
                         onArchive={onArchive} 
                         onToggleBookmark={onToggleBookmark} 
                         isAdmin={isAdmin}
@@ -420,7 +421,7 @@ export default function DefinitionView({
 
             <div className="flex flex-wrap gap-2 my-4">
                 {definition.keywords.map(keyword => (
-                    <Badge key={keyword} variant="secondary">
+                    <Badge key={keyword} variant="outline" className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors">
                         <HighlightedText text={keyword} highlight={searchQuery} />
                     </Badge>
                 ))}

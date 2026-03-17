@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
@@ -251,9 +252,9 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
               <Label htmlFor="keywords">Keywords (DEF_KEYWORDS)</Label>
               <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md min-h-[40px]">
                 {keywords.map(keyword => (
-                  <Badge key={keyword} variant="secondary" className="gap-1">
+                  <Badge key={keyword} variant="outline" className="bg-primary/10 text-primary border-primary/20 gap-1">
                     {keyword}
-                    <button onClick={() => removeKeyword(keyword)} className="rounded-full hover:bg-muted-foreground/20">
+                    <button onClick={() => removeKeyword(keyword)} className="rounded-full hover:bg-primary/20">
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
