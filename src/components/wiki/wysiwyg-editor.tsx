@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useRef, useEffect } from "react";
-import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, Image, Table, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react"
+import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, Image, Table, AlignLeft, AlignCenter, AlignRight, AlignJustify, Code } from "lucide-react"
 import { Button } from "../ui/button"
 import { Separator } from "../ui/separator"
 import { cn } from "@/lib/utils";
@@ -128,6 +128,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 <ToolbarButton onClick={() => execCommand('italic')}><Italic className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('underline')}><Underline className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('strikethrough')}><Strikethrough className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('formatBlock', 'pre')}><Code className="h-4 w-4" /></ToolbarButton>
                 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
