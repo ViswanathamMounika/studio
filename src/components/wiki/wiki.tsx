@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
@@ -80,7 +81,7 @@ export default function Wiki() {
   const [showBookmarked, setShowBookmarked] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
   const [searchQuery, setSearchQuery] = useState("");
-  const { isMounted, toggleBookmark, isBookmarked } = useBookmarks();
+  const { isMounted, bookmarks, toggleBookmark, isBookmarked } = useBookmarks();
   const [selectedForExport, setSelectedForExport] = useState<string[]>([]);
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
@@ -376,6 +377,17 @@ export default function Wiki() {
     });
   };
 
+  const enrichedDefinitions = useMemo(() => {
+    const enrich = (items: Definition[]): Definition[] => {
+      return items.map(item => ({
+        ...item,
+        isBookmarked: isBookmarked(item.id),
+        children: item.children ? enrich(item.children) : []
+      }));
+    };
+    return enrich(definitions);
+  }, [definitions, bookmarks, isBookmarked]);
+
   const filteredDefinitions = useMemo(() => {
     const filterItems = (items: Definition[], query: string): Definition[] => {
         if (!query) return items;
@@ -388,14 +400,14 @@ export default function Wiki() {
             return acc;
         }, []);
     };
-    return filterItems(definitions, searchQuery);
-  }, [definitions, searchQuery]);
+    return filterItems(enrichedDefinitions, searchQuery);
+  }, [enrichedDefinitions, searchQuery]);
 
   const categorizedDefinitions = useMemo(() => {
     // Search only affects the published definitions
-    const itemsForPublished = searchQuery ? filteredDefinitions : definitions;
+    const itemsForPublished = searchQuery ? filteredDefinitions : enrichedDefinitions;
     // Workflow items (Queue/Drafts) ignore the search query
-    const itemsForWorkflow = definitions;
+    const itemsForWorkflow = enrichedDefinitions;
 
     const filterByDraft = (items: Definition[], isDraft: boolean): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
@@ -443,7 +455,7 @@ export default function Wiki() {
         published: filterByDraft(processedPublished, false),
         pending: filterPending(itemsForWorkflow)
     };
-  }, [definitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
+  }, [enrichedDefinitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
   const toggleSelectionForExport = (id: string, checked: boolean) => {
     const getChildrenIds = (item: Definition): string[] => {
