@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -112,9 +111,12 @@ export default function DefinitionView({
 
     const { toast } = useToast();
 
-    // Trigger SQL syntax highlighting
+    // Trigger SQL syntax highlighting reliably
     useEffect(() => {
-        Prism.highlightAll();
+        const timer = setTimeout(() => {
+            Prism.highlightAll();
+        }, 100);
+        return () => clearTimeout(timer);
     }, [definition, activeTab]);
 
     const tabs = [

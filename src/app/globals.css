@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -120,13 +119,16 @@
     @apply font-mono;
   }
 
-  .token.keyword { color: #569cd6; font-weight: bold; } /* SELECT, FROM, WHERE */
-  .token.string { color: #ce9178; } /* 'text' */
-  .token.comment { color: #6a9955; font-style: italic; } /* -- comment */
-  .token.number { color: #b5cea8; } /* 123 */
-  .token.function { color: #dcdcaa; } /* COUNT(), SUM() */
-  .token.operator { color: #d4d4d4; } /* =, <, > */
-  .token.punctuation { color: #d4d4d4; } /* , () */
-  .token.boolean { color: #569cd6; }
-  .token.class-name { color: #4ec9b0; } /* Table names */
+  /* Specific Syntax Token Colors */
+  .token.keyword { color: #569cd6 !important; font-weight: bold; } /* SELECT, FROM, WHERE */
+  .token.string { color: #ce9178 !important; } /* 'text' */
+  .token.comment { color: #6a9955 !important; font-style: italic; } /* -- comment */
+  .token.number { color: #b5cea8 !important; } /* 123 */
+  .token.function { color: #dcdcaa !important; } /* COUNT(), SUM() */
+  .token.operator { color: #d4d4d4 !important; } /* =, <, > */
+  .token.punctuation { color: #d4d4d4 !important; } /* , () */
+  .token.boolean { color: #569cd6 !important; }
+  .token.class-name { color: #4ec9b0 !important; } /* Table names */
+  .token.property { color: #9cdcfe !important; }
+  .token.variable { color: #9cdcfe !important; }
 }
