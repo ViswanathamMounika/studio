@@ -15,7 +15,8 @@ import {
     GanttChart,
     History,
     UserCog,
-    Settings2
+    Settings2,
+    ShieldCheck
 } from "lucide-react";
 import {
     Collapsible,
@@ -32,6 +33,8 @@ import {
     SidebarFooter,
 } from "../ui/sidebar";
 import { cn } from '@/lib/utils';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 
 type View = 'definitions' | 'activity-logs' | 'template-management';
 
@@ -39,6 +42,7 @@ type AppSidebarProps = {
     activeView: View;
     onNavigate: (view: View) => void;
     isAdmin: boolean;
+    onToggleAdmin: (isAdmin: boolean) => void;
 };
 
 const topNavItems = [
@@ -46,7 +50,7 @@ const topNavItems = [
     { id: 'posts', label: 'Posts', icon: Newspaper },
 ];
 
-export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSidebarProps) {
+export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAdmin }: AppSidebarProps) {
     const [isWikiOpen, setIsWikiOpen] = useState(true);
     const [isAdminOpen, setIsAdminOpen] = useState(false);
 
@@ -73,12 +77,35 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSideb
 
     return (
         <Sidebar>
-            <SidebarHeader>
-                 <div className="flex items-center gap-2">
+            <SidebarHeader className="border-b">
+                 <div className="flex items-center justify-between p-2">
                     <div className="flex flex-col">
-                        <h1 className="text-lg font-bold tracking-tight text-primary">MedPOINT</h1>
-                        <p className='text-[10px] font-black tracking-[0.2em] text-muted-foreground -mt-1'>MANAGEMENT</p>
+                        <h1 className="text-lg font-bold tracking-tight text-primary leading-none">MedPOINT</h1>
+                        <p className='text-[10px] font-black tracking-[0.2em] text-muted-foreground mt-0.5'>MANAGEMENT</p>
                     </div>
+                </div>
+                
+                <div className="mx-2 mb-2 px-3 py-2.5 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className={cn(
+                            "h-7 w-7 rounded-lg flex items-center justify-center transition-colors",
+                            isAdmin ? "bg-primary text-white" : "bg-slate-200 text-slate-500"
+                        )}>
+                            <ShieldCheck className="h-4 w-4" />
+                        </div>
+                        <div className="flex flex-col">
+                            <Label htmlFor="admin-mode" className="text-[11px] font-black uppercase tracking-wider text-slate-700 cursor-pointer">
+                                {isAdmin ? 'Admin Mode' : 'Standard'}
+                            </Label>
+                            <span className="text-[9px] font-medium text-slate-500 leading-none">Role Switcher</span>
+                        </div>
+                    </div>
+                    <Switch 
+                        id="admin-mode"
+                        checked={isAdmin} 
+                        onCheckedChange={onToggleAdmin}
+                        className="scale-75 origin-right"
+                    />
                 </div>
             </SidebarHeader>
             <SidebarContent>

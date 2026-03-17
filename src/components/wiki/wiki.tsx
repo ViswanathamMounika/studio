@@ -711,7 +711,12 @@ export default function Wiki() {
 
   return (
     <SidebarProvider>
-      <AppSidebar activeView={activeView} onNavigate={handleNavigate} isAdmin={isAdmin} />
+      <AppSidebar 
+        activeView={activeView} 
+        onNavigate={handleNavigate} 
+        isAdmin={isAdmin} 
+        onToggleAdmin={setIsAdmin}
+      />
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background">
           <AppHeader
