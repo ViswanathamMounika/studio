@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Save, Send, Plus, Trash2, ChevronDown, Check, Info } from 'lucide-react';
+import { X, Upload, Eye, Save, Send, Plus, Trash2, ChevronDown, Check, Info, Hash } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -397,7 +397,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                         <div className="col-span-2">
                             <Label htmlFor="new-def-source-name">Source Name</Label>
                             <div className="flex items-center gap-2 mt-1">
-                              {isSupportTblsOnly ? (
                                 <Select 
                                     value={sourceName} 
                                     onValueChange={setSourceName}
@@ -410,18 +409,11 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                         {availableSourceNames.map(obj => (
                                             <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
                                         ))}
+                                        {availableSourceNames.length === 0 && (
+                                          <div className="p-2 text-xs text-muted-foreground italic text-center">No objects found</div>
+                                        )}
                                     </SelectContent>
                                 </Select>
-                              ) : (
-                                <Input 
-                                  id="new-def-source-name"
-                                  value={sourceName}
-                                  onChange={(e) => setSourceName(e.target.value)}
-                                  placeholder={sourceType ? "Enter Source Name" : "Select Source Type first"}
-                                  disabled={!sourceType}
-                                  className="flex-1"
-                                />
-                              )}
                               {showPreviewButton && (
                                 <Button 
                                   variant="outline" 

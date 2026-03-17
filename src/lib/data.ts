@@ -134,6 +134,8 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
     'DW_Reporting_Tables': [
         { id: 'AUTHORIZATION_MASTER', name: 'AUTHORIZATION_MASTER', typeId: 'Tables' },
         { id: 'MEMBER_MASTER', name: 'MEMBER_MASTER', typeId: 'Tables' },
+        { id: 'PROCEDURE_CODES', name: 'PROCEDURE_CODES', typeId: 'Tables' },
+        { id: 'DENIAL_REASONS_MASTER', name: 'DENIAL_REASONS_MASTER', typeId: 'Tables' },
     ],
     'DW_Reporting_Stored Procedures': [
         { id: 'sp_CalculateSLA', name: 'sp_CalculateSLA', typeId: 'Stored Procedures' },
@@ -149,18 +151,30 @@ export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
         { id: 'FEE_SCHEDULES', name: 'FEE_SCHEDULES', typeId: 'Tables' },
         { id: 'CLAIM_PAYMENTS', name: 'CLAIM_PAYMENTS', typeId: 'Tables' },
     ],
+    'Finance_Views': [
+        { id: 'vw_FinancialReconciliation', name: 'vw_FinancialReconciliation', typeId: 'Views' },
+    ],
     'Provider_Data_Views': [
         { id: 'vw_ProviderDirectory', name: 'vw_ProviderDirectory', typeId: 'Views' },
         { id: 'vw_NetworkParticipation', name: 'vw_NetworkParticipation', typeId: 'Views' },
+    ],
+    'Provider_Data_Tables': [
+        { id: 'PROVIDER_MASTER', name: 'PROVIDER_MASTER', typeId: 'Tables' },
     ],
     'Claims_Tables': [
         { id: 'CLAIMS_MASTER', name: 'CLAIMS_MASTER', typeId: 'Tables' },
         { id: 'CLAIM_ADJUDICATION_LOG', name: 'CLAIM_ADJUDICATION_LOG', typeId: 'Tables' },
     ],
+    'Claims_Views': [
+        { id: 'vw_ClaimStatusTracking', name: 'vw_ClaimStatusTracking', typeId: 'Views' },
+    ],
     'SupportTbls_Tables': [
         { id: 'REF_DATA', name: 'REF_DATA', typeId: 'Tables' },
         { id: 'CONFIG_PARAMS', name: 'CONFIG_PARAMS', typeId: 'Tables' },
         { id: 'SLA_MAPPING', name: 'SLA_MAPPING', typeId: 'Tables' },
+    ],
+    'SupportTbls_Views': [
+        { id: 'vw_AuditTrail', name: 'vw_AuditTrail', typeId: 'Views' },
     ],
     'SupportTbls_SQL Functions': [
         { 

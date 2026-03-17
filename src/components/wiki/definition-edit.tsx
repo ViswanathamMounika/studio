@@ -331,7 +331,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                   <div className="col-span-2">
                       <Label htmlFor="source_name">Source Name</Label>
                       <div className="flex items-center gap-2 mt-1">
-                        {isSupportTblsOnly ? (
                           <Select 
                               value={sourceName} 
                               onValueChange={setSourceName}
@@ -344,18 +343,11 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                                   {availableSourceNames.map(obj => (
                                       <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
                                   ))}
+                                  {availableSourceNames.length === 0 && (
+                                    <div className="p-2 text-xs text-muted-foreground italic text-center">No objects found</div>
+                                  )}
                               </SelectContent>
                           </Select>
-                        ) : (
-                          <Input 
-                            id="source_name"
-                            value={sourceName}
-                            onChange={(e) => setSourceName(e.target.value)}
-                            placeholder={sourceType ? "Enter Source Name" : "Select Source Type first"}
-                            disabled={!sourceType}
-                            className="flex-1"
-                          />
-                        )}
                         {showPreviewButton && (
                           <Button 
                             variant="outline" 
