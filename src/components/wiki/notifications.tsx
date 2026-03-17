@@ -5,7 +5,7 @@ import React from 'react';
 import type { Notification } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bell, Check } from 'lucide-react';
+import { Bell, Check, User2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 
@@ -31,50 +31,58 @@ export default function Notifications({ notifications, setNotifications, onDefin
 
   return (
       <Card className="border-0 shadow-none">
-        <CardHeader className="p-4">
+        <CardHeader className="p-4 border-b">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <CardTitle className="text-base">Notifications</CardTitle>
-              {unreadCount > 0 && <Badge>{unreadCount} New</Badge>}
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-base font-bold">Notifications</CardTitle>
+              {unreadCount > 0 && <Badge variant="destructive" className="h-5 px-1.5 min-w-[20px] justify-center">{unreadCount}</Badge>}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} disabled={notifications.length === 0}>
-                Mark All as Read
+              <Button variant="ghost" size="sm" className="text-xs font-bold text-primary hover:bg-primary/10" onClick={handleMarkAllAsRead} disabled={notifications.length === 0}>
+                Clear All
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ScrollArea className="h-72">
+          <ScrollArea className="h-[400px]">
           {notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center py-12">
-              <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold">No notifications yet</h3>
-              <p className="text-sm text-muted-foreground mt-1">Bookmark definitions for updates.</p>
+            <div className="flex flex-col items-center justify-center text-center py-20 px-6">
+              <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center mb-4">
+                <Bell className="h-6 w-6 text-slate-300" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">All caught up!</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-[200px]">Bookmark definitions to receive updates when they are modified.</p>
             </div>
           ) : (
-            <div className="space-y-2 p-4 pt-0">
+            <div className="p-2 space-y-1">
               {notifications.map(notification => (
-                <div key={notification.id} className={`flex items-start gap-3 p-3 border rounded-lg ${!notification.read ? 'bg-primary/5' : 'bg-background'}`}>
-                  <div className="flex-1">
+                <div 
+                  key={notification.id} 
+                  className={`flex items-start gap-3 p-3 rounded-xl transition-all border border-transparent hover:border-slate-100 ${!notification.read ? 'bg-primary/5' : 'bg-background'}`}
+                >
+                  <div className="h-8 w-8 rounded-full bg-white border shadow-sm flex items-center justify-center shrink-0">
+                    <User2 className="h-4 w-4 text-primary/60" />
+                  </div>
+                  <div className="flex-1 min-w-0">
                     <p 
-                        className="font-medium hover:underline cursor-pointer text-sm"
+                        className="font-bold text-[13px] hover:text-primary cursor-pointer transition-colors truncate"
                         onClick={() => onDefinitionClick(notification.definitionId)}
                     >
                         {notification.definitionName}
                     </p>
-                    <p className="text-xs text-muted-foreground">{notification.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{new Date(notification.date).toLocaleString()}</p>
+                    <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{notification.message}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-2">{new Date(notification.date).toLocaleString()}</p>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center shrink-0">
                     <Button 
                       variant="ghost" 
-                      size="sm" 
-                      className="h-8 px-2 flex items-center gap-1 text-primary hover:text-primary hover:bg-primary/10"
+                      size="icon" 
+                      className="h-8 w-8 rounded-full text-slate-400 hover:text-primary hover:bg-primary/10"
                       onClick={() => handleMarkAsRead(notification.id)}
+                      title="Mark as Read"
                     >
                         <Check className="h-4 w-4" />
-                        Mark Read
                     </Button>
                   </div>
                 </div>

@@ -64,81 +64,91 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-6 border-b">
+          <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+            <Clock className="h-5 w-5 text-primary" />
             Recently Viewed Definitions
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             A history of definitions you have accessed recently.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 min-h-0 py-4">
-            <ScrollArea className="h-full border rounded-md">
-                <Table>
-                    <TableHeader className="bg-muted/50 sticky top-0 z-10">
-                        <TableRow>
-                            <TableHead>Definition Name</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Last Viewed</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {paginatedViews.map(item => {
-                            const itemDate = new Date(item.date);
-                            return (
-                                <TableRow key={`${item.id}-${item.date}`} className="hover:bg-muted/50">
-                                    <TableCell>
-                                        <button 
-                                            className="text-primary hover:underline font-medium text-left"
-                                            onClick={() => handleDefinitionClick(item.id)}
-                                        >
-                                            {item.name}
-                                        </button>
-                                    </TableCell>
-                                    <TableCell>{getStatusBadge(item.status)}</TableCell>
-                                    <TableCell className="text-right text-muted-foreground whitespace-nowrap">
-                                        {isValid(itemDate) ? formatDistanceToNow(itemDate, { addSuffix: true }) : ''}
-                                    </TableCell>
+        <div className="flex-1 min-h-0 bg-slate-50/30">
+            <ScrollArea className="h-full">
+                <div className="p-6 pt-4">
+                    <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+                        <Table>
+                            <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                                <TableRow>
+                                    <TableHead className="font-bold">Definition Name</TableHead>
+                                    <TableHead className="font-bold">Status</TableHead>
+                                    <TableHead className="text-right font-bold">Last Viewed</TableHead>
                                 </TableRow>
-                            )
-                        })}
-                        {paginatedViews.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={3} className="h-32 text-center text-muted-foreground">
-                                    No recent activity found.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {paginatedViews.map(item => {
+                                    const itemDate = new Date(item.date);
+                                    return (
+                                        <TableRow key={`${item.id}-${item.date}`} className="hover:bg-slate-50/80 transition-colors">
+                                            <TableCell className="py-4">
+                                                <button 
+                                                    className="text-primary hover:underline font-bold text-left text-sm"
+                                                    onClick={() => handleDefinitionClick(item.id)}
+                                                >
+                                                    {item.name}
+                                                </button>
+                                                <p className="text-[10px] text-muted-foreground uppercase font-medium mt-0.5">{item.module}</p>
+                                            </TableCell>
+                                            <TableCell>{getStatusBadge(item.status)}</TableCell>
+                                            <TableCell className="text-right text-muted-foreground whitespace-nowrap text-xs">
+                                                {isValid(itemDate) ? formatDistanceToNow(itemDate, { addSuffix: true }) : ''}
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
+                                {paginatedViews.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-48 text-center text-muted-foreground">
+                                            <div className="flex flex-col items-center gap-2 opacity-40">
+                                                <Clock className="h-10 w-10" />
+                                                <p className="text-sm font-medium">No recent activity found.</p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
             </ScrollArea>
         </div>
 
-        <DialogFooter className="flex items-center justify-between sm:justify-between w-full pt-2">
-            <div className="text-sm text-muted-foreground">
-                Showing {recentViews.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} to {Math.min(currentPage * ITEMS_PER_PAGE, recentViews.length)} of {recentViews.length} entries
+        <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t p-4 px-6 bg-white">
+            <div className="text-sm text-muted-foreground font-medium">
+                Showing {recentViews.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} - {Math.min(currentPage * ITEMS_PER_PAGE, recentViews.length)} of {recentViews.length}
             </div>
             <div className="flex items-center gap-2">
                 <Button 
                     variant="outline" 
                     size="sm" 
+                    className="rounded-lg h-9 px-4"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                 >
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Previous
                 </Button>
-                <div className="flex items-center justify-center min-w-[3rem] text-sm font-medium">
+                <div className="flex items-center justify-center min-w-[3rem] text-sm font-bold text-slate-700">
                     {currentPage} / {totalPages || 1}
                 </div>
                 <Button 
                     variant="outline" 
                     size="sm" 
+                    className="rounded-lg h-9 px-4"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage >= totalPages}
+                    disabled={currentPage >= totalPages || totalPages === 0}
                 >
                     Next
                     <ChevronRight className="h-4 w-4 ml-1" />
