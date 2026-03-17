@@ -236,7 +236,7 @@ export default function DefinitionView({
         url.searchParams.set('definitionId', id);
         if (sectionId) url.searchParams.set('section', sectionId);
         window.history.pushState({}, '', url.toString());
-        window.dispatchEvent(new PopStateEvent('popstate'));
+        window.dispatchEvent(new PopstateEvent('popstate'));
     };
 
     const resolvedSourceInfo = useMemo(() => {
@@ -247,10 +247,13 @@ export default function DefinitionView({
         const types = firstDb ? mpmSourceTypes[firstDb] : [];
         const type = types?.find(t => t.id === definition.sourceType);
         
+        const canPreview = (definition.sourceType === 'Views' || definition.sourceType === 'Tables') && dbIds.includes('SupportTbls');
+        
         return { 
             database: dbNames || 'N/A', 
             type: type?.name || definition.sourceType || 'N/A', 
-            name: definition.sourceName || 'N/A' 
+            name: definition.sourceName || 'N/A',
+            canPreview
         };
     }, [definition]);
 
@@ -443,7 +446,18 @@ export default function DefinitionView({
                                     <div className="flex flex-col gap-4 text-sm">
                                         <div><p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Database(s)</p><p className="mt-1 font-medium">{resolvedSourceInfo.database}</p></div>
                                         <div><p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Source Type</p><p className="mt-1 font-medium">{resolvedSourceInfo.type}</p></div>
-                                        <div><p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Source Name</p><p className="mt-1 font-medium">{resolvedSourceInfo.name !== 'N/A' ? (<button onClick={() => setIsPreviewDialogOpen(true)} className="text-primary font-bold hover:underline">{resolvedSourceInfo.name}</button>) : 'N/A'}</p></div>
+                                        <div>
+                                            <p className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Source Name</p>
+                                            <p className="mt-1 font-medium">
+                                                {resolvedSourceInfo.name !== 'N/A' ? (
+                                                    resolvedSourceInfo.canPreview ? (
+                                                        <button onClick={() => setIsPreviewDialogOpen(true)} className="text-primary font-bold hover:underline">{resolvedSourceInfo.name}</button>
+                                                    ) : (
+                                                        <span>{resolvedSourceInfo.name}</span>
+                                                    )
+                                                ) : 'N/A'}
+                                            </p>
+                                        </div>
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>

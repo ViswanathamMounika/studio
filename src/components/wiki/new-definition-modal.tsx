@@ -272,6 +272,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   };
 
   const isPreviewAvailable = isSupportTblsOnly && sourceName && (sourceType === 'Views' || sourceType === 'Tables');
+  const showPreviewButton = sourceType === 'Views' || sourceType === 'Tables';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -421,15 +422,17 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                   className="flex-1"
                                 />
                               )}
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                disabled={!isPreviewAvailable}
-                                onClick={() => setIsPreviewOpen(true)}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                Preview
-                              </Button>
+                              {showPreviewButton && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  disabled={!isPreviewAvailable}
+                                  onClick={() => setIsPreviewOpen(true)}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Preview
+                                </Button>
+                              )}
                             </div>
                         </div>
                    </div>

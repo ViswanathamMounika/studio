@@ -186,6 +186,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
   };
 
   const isPreviewAvailable = isSupportTblsOnly && sourceName && (sourceType === 'Views' || sourceType === 'Tables');
+  const showPreviewButton = sourceType === 'Views' || sourceType === 'Tables';
 
   return (
     <div className="flex flex-col">
@@ -355,15 +356,17 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                             className="flex-1"
                           />
                         )}
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          disabled={!isPreviewAvailable}
-                          onClick={() => setIsPreviewOpen(true)}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          Preview
-                        </Button>
+                        {showPreviewButton && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            disabled={!isPreviewAvailable}
+                            onClick={() => setIsPreviewOpen(true)}
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview
+                          </Button>
+                        )}
                       </div>
                   </div>
               </div>
