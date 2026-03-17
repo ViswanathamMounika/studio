@@ -60,8 +60,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
 
   const selectedDbs = useMemo(() => sourceDb ? sourceDb.split(',').map(s => s.trim()) : [], [sourceDb]);
 
-  const isSupportTblsOnly = useMemo(() => selectedDbs.length === 1 && selectedDbs[0] === 'SupportTbls', [selectedDbs]);
-
   const availableSourceTypes = useMemo(() => {
     const firstDb = selectedDbs[0];
     return firstDb ? mpmSourceTypes[firstDb] || [] : [];
@@ -74,9 +72,9 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
     return mpmSourceObjects[key] || [];
   }, [selectedDbs, sourceType]);
 
-  // Handle auto-population for SupportTbls SQL Functions
+  // Handle auto-population for SQL Functions
   useEffect(() => {
-    if (isSupportTblsOnly && sourceType === 'SQL Functions' && sourceName) {
+    if (sourceType === 'SQL Functions' && sourceName) {
       const selectedObject = availableSourceNames.find(obj => obj.id === sourceName);
       if (selectedObject?.sqlMetadata) {
         const meta = selectedObject.sqlMetadata;
@@ -87,7 +85,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
         });
       }
     }
-  }, [sourceName, isSupportTblsOnly, sourceType, availableSourceNames]);
+  }, [sourceName, sourceType, availableSourceNames]);
 
   const handleSave = (isDraft: boolean) => {
     onSave({
@@ -185,8 +183,8 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
     }));
   };
 
-  const isPreviewAvailable = isSupportTblsOnly && sourceName && (sourceType === 'Views' || sourceType === 'Tables');
-  const showPreviewButton = sourceType === 'Views' || sourceType === 'Tables';
+  const isTableOrView = sourceType === 'Views' || sourceType === 'Tables';
+  const isPreviewAvailable = !!sourceName && isTableOrView;
 
   return (
     <div className="flex flex-col">
@@ -348,7 +346,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                                   )}
                               </SelectContent>
                           </Select>
-                        {showPreviewButton && (
+                        {isTableOrView && (
                           <Button 
                             variant="outline" 
                             size="sm" 
