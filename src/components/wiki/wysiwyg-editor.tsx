@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useRef, useEffect } from "react";
-import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, Image, Table, AlignLeft, AlignCenter, AlignRight, AlignJustify, Code, Baseline, Highlighter } from "lucide-react"
+import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, AlignLeft, AlignCenter, AlignRight, Code, Baseline, Highlighter } from "lucide-react"
 import { Button } from "../ui/button"
 import { Separator } from "../ui/separator"
 import { cn } from "@/lib/utils";
@@ -123,32 +123,8 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         }
     };
 
-    const handleImage = () => {
-        const url = prompt('Enter the Image URL');
-        if (url) {
-            execCommand('insertImage', url);
-        }
-    };
-
-    const applyFontSize = (size: string) => {
-        execCommand('fontSize', size);
-    };
-    
-    const handleInsertTable = () => {
-        const rows = prompt("Enter number of rows", "2");
-        const cols = prompt("Enter number of columns", "2");
-        if (rows && cols) {
-            let table = '<table style="border-collapse: collapse; width: 100%; border: 1px solid #ccc;">';
-            for (let i = 0; i < parseInt(rows); i++) {
-                table += '<tr>';
-                for (let j = 0; j < parseInt(cols); j++) {
-                    table += '<td style="border: 1px solid #ccc; padding: 8px;">&nbsp;</td>';
-                }
-                table += '</tr>';
-            }
-            table += '</table>';
-            execCommand('insertHTML', table);
-        }
+    const applyHeader = (tag: string) => {
+        execCommand('formatBlock', tag);
     };
 
     return (
@@ -194,13 +170,13 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 text-xs px-2 rounded-lg hover:bg-accent font-bold">Size</Button>
+                        <Button variant="ghost" className="h-8 text-xs px-2 rounded-lg hover:bg-accent font-bold">Headers</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('1'); }}>Small</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('3'); }}>Normal</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('5'); }}>Large</DropdownMenuItem>
-                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyFontSize('7'); }}>Huge</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyHeader('H1'); }}>Heading 1</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyHeader('H2'); }}>Heading 2</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyHeader('H3'); }}>Heading 3</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyHeader('P'); }}>Paragraph</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -218,8 +194,6 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
                 <ToolbarButton onClick={handleLink} title="Insert Link"><Link className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={handleImage} title="Insert Image"><Image className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={handleInsertTable} title="Insert Table"><Table className="h-4 w-4" /></ToolbarButton>
             </div>
             <div
                 ref={editorRef}
