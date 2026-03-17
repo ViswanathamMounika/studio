@@ -223,7 +223,7 @@ export default function Wiki() {
             id: Date.now().toString(),
             definitionId: updatedDefinition.id,
             definitionName: updatedDefinition.name,
-            message: `Definition "${updatedDefinition.name}" was updated.`,
+            message: `Definition "${updatedDefinition.name}" was updated by ${currentUser.name}.`,
             date: new Date().toISOString(),
             read: false,
         };

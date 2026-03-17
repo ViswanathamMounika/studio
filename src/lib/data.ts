@@ -1,3 +1,4 @@
+
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
@@ -330,7 +331,26 @@ const definition111_rev4 = {
         { name: 'State-Mandate-TX-112.docx', url: '#', size: '1.2 MB', type: 'DOCX' },
         { name: 'SQL-Query-Examples.txt', url: '#', size: '12 KB', type: 'TXT' },
     ],
-    notes: [],
+    notes: [
+        {
+            id: 'note-1',
+            authorId: 'user_123',
+            author: 'Dhilip Sagadevan',
+            avatar: 'https://picsum.photos/seed/dhilip/40/40',
+            date: '2024-03-01T10:00:00Z',
+            content: 'Need to verify if the 5:00 PM cutoff applies to all time zones or just Pacific.',
+            isShared: true
+        },
+        {
+            id: 'note-2',
+            authorId: 'other_user',
+            author: 'Jane Smith',
+            avatar: 'https://picsum.photos/seed/jane/40/40',
+            date: '2024-03-02T14:30:00Z',
+            content: 'The cutoff is based on the local time of the health plan headquarters.',
+            isShared: true
+        }
+    ],
     relatedDefinitions: ['1.1.2', '1.1.3']
 };
 
