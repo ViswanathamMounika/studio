@@ -61,7 +61,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSideb
 
     const adminNavItems = [
         { id: 'template-management', label: 'Template Management', icon: Settings2 },
-        { id: 'activity-logs', label: 'Activity Logs', icon: History },
     ];
 
     const handleNavigate = (id: string) => {
@@ -121,38 +120,52 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin }: AppSideb
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
 
-                                {/* Admin Collapsible */}
+                                {/* Admin Section */}
                                 {isAdmin && (
-                                    <Collapsible open={isAdminOpen} onOpenChange={setIsAdminOpen}>
+                                    <>
+                                        <Collapsible open={isAdminOpen} onOpenChange={setIsAdminOpen}>
+                                            <SidebarMenuItem>
+                                                <CollapsibleTrigger asChild>
+                                                    <SidebarMenuButton className={cn(
+                                                        "h-8 font-semibold text-foreground hover:text-primary transition-colors",
+                                                        (activeView === 'template-management') && "text-primary"
+                                                    )}>
+                                                        <UserCog className="h-4 w-4" />
+                                                        <span>Admin</span>
+                                                        <ChevronDown className={cn("ml-auto h-3 w-3 transition-transform", isAdminOpen && "rotate-180")} />
+                                                    </SidebarMenuButton>
+                                                </CollapsibleTrigger>
+                                            </SidebarMenuItem>
+                                            <CollapsibleContent>
+                                                <SidebarMenu className="pl-4">
+                                                    {adminNavItems.map(item => (
+                                                        <SidebarMenuItem key={item.id}>
+                                                            <SidebarMenuButton
+                                                                isActive={activeView === item.id}
+                                                                onClick={() => handleNavigate(item.id)}
+                                                                className="h-8 text-[13px]"
+                                                            >
+                                                                <item.icon className="h-3.5 w-3.5" />
+                                                                {item.label}
+                                                            </SidebarMenuButton>
+                                                        </SidebarMenuItem>
+                                                    ))}
+                                                </SidebarMenu>
+                                            </CollapsibleContent>
+                                        </Collapsible>
+
+                                        {/* Activity Logs Standalone Item (After Admin Collapsible) */}
                                         <SidebarMenuItem>
-                                            <CollapsibleTrigger asChild>
-                                                <SidebarMenuButton className={cn(
-                                                    "h-8 font-semibold text-foreground hover:text-primary transition-colors",
-                                                    (activeView === 'activity-logs' || activeView === 'template-management') && "text-primary"
-                                                )}>
-                                                    <UserCog className="h-4 w-4" />
-                                                    <span>Admin</span>
-                                                    <ChevronDown className={cn("ml-auto h-3 w-3 transition-transform", isAdminOpen && "rotate-180")} />
-                                                </SidebarMenuButton>
-                                            </CollapsibleTrigger>
+                                            <SidebarMenuButton
+                                                isActive={activeView === 'activity-logs'}
+                                                onClick={() => handleNavigate('activity-logs')}
+                                                className="h-8"
+                                            >
+                                                <History className="h-4 w-4" />
+                                                <span>Activity Logs</span>
+                                            </SidebarMenuButton>
                                         </SidebarMenuItem>
-                                        <CollapsibleContent>
-                                            <SidebarMenu className="pl-4">
-                                                {adminNavItems.map(item => (
-                                                    <SidebarMenuItem key={item.id}>
-                                                        <SidebarMenuButton
-                                                            isActive={activeView === item.id}
-                                                            onClick={() => handleNavigate(item.id)}
-                                                            className="h-8 text-[13px]"
-                                                        >
-                                                            <item.icon className="h-3.5 w-3.5" />
-                                                            {item.label}
-                                                        </SidebarMenuButton>
-                                                    </SidebarMenuItem>
-                                                ))}
-                                            </SidebarMenu>
-                                        </CollapsibleContent>
-                                    </Collapsible>
+                                    </>
                                 )}
 
                                 {/* Remaining Wiki Items */}
