@@ -39,13 +39,13 @@ const defaultSqlDetails: SqlFunctionDetails = {
 export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
   const [module, setModule] = useState(definition.module);
-  const [keywords, setKeywords] = useState<string[]>(definition.keywords);
+  const [keywords, setKeywords] = useState<string[]>(definition.keywords || []);
   const [currentKeyword, setCurrentKeyword] = useState('');
-  const [description, setDescription] = useState(definition.description);
+  const [description, setDescription] = useState(definition.description || '');
   const [shortDescription, setShortDescription] = useState(definition.shortDescription || '');
   const [technicalDetails, setTechnicalDetails] = useState(definition.technicalDetails || '');
   const [usageExamples, setUsageExamples] = useState(definition.usageExamples || '');
-  const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments);
+  const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments || []);
   const [dynamicSections, setDynamicSections] = useState<DynamicSection[]>(definition.dynamicSections || []);
   
   const [sourceDb, setSourceDb] = useState(definition.sourceDb || '');
@@ -108,7 +108,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
   };
 
   const handleUpdateDynamicSection = (sectionId: string, content: string) => {
-    setDynamicSections(prev => prev.map(s => s.sectionId === sectionId ? { ...s, content } : s));
+    setDynamicSections(prev => (prev || []).map(s => s.sectionId === sectionId ? { ...s, content } : s));
   };
 
   const handleKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -189,7 +189,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
             <Button variant="outline" onClick={onCancel} className="rounded-xl">Cancel</Button>
             <Button variant="secondary" onClick={() => handleSaveManual(true)} disabled={!name.trim()} className="rounded-xl">
                 <Save className="mr-2 h-4 w-4" />
-                Save
+                Save Draft
             </Button>
             <Button 
               onClick={() => handleSaveManual(false)} 
@@ -439,7 +439,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
           </CardContent>
         </Card>
 
-        {dynamicSections.length > 0 && (
+        {(dynamicSections || []).length > 0 && (
           <div className="space-y-6">
             <h3 className="font-bold text-lg">Template Specific Sections</h3>
             {dynamicSections.map(section => (

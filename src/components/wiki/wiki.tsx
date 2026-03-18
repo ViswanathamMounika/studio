@@ -73,8 +73,8 @@ const initialNotifications: NotificationType[] = [
 ];
 
 export default function Wiki() {
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v7', initialDefinitions);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v7', initialTemplates);
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v11', initialDefinitions);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v11', initialTemplates);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
@@ -87,14 +87,14 @@ export default function Wiki() {
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v7', true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v11', true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('queue');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v7', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v11', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v7', null);
+  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v11', null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -143,7 +143,7 @@ export default function Wiki() {
     setSelectedDefinitionId(id);
     
     if (!isSameDefinition) {
-        const def = findDefinition(definitions, id);
+        const def = findDefinition(definitions || [], id);
         if (def) {
             const status = getStatusText(def);
             trackView(id, def.name, def.module, status);
@@ -196,7 +196,6 @@ export default function Wiki() {
     };
   }, [handlePopState]);
 
-  // Sync isEditing with current selection and lock
   useEffect(() => {
     if (selectedDefinitionId && selectedDefinitionId === editLockId) {
       setIsEditing(true);
@@ -206,7 +205,7 @@ export default function Wiki() {
 
   const handleSave = (updatedDefinition: Definition) => {
     const updateItems = (items: Definition[]): Definition[] => {
-      return items.map(def => {
+      return (items || []).map(def => {
         if (def.id === updatedDefinition.id) {
             return updatedDefinition;
         }
@@ -214,16 +213,22 @@ export default function Wiki() {
         return def;
       });
     };
-    setDefinitions(updateItems(definitions));
+    
+    setDefinitions(prev => updateItems(prev || []));
     
     if (updatedDefinition.isDraft && sidebarTab !== 'drafts') {
         setSidebarTab('drafts');
     }
 
-    if (!updatedDefinition.isDraft || (updatedDefinition.isDraft && !isEditing)) {
-        setIsEditing(false);
-        setEditLockId(null);
-    }
+    // Explicitly handle closing editor on manual save
+    setIsEditing(false);
+    setEditLockId(null);
+    setViewingMode(updatedDefinition.isDraft ? 'draft' : 'live');
+
+    toast({
+        title: "Changes Persisted",
+        description: updatedDefinition.isDraft ? "Definition updated in your drafts." : "Definition has been updated.",
+    });
 
     if (isBookmarked(updatedDefinition.id)) {
         const newNotification: NotificationType = {
@@ -234,7 +239,7 @@ export default function Wiki() {
             date: new Date().toISOString(),
             read: false,
         };
-        setNotifications((prev: any) => [newNotification, ...prev]);
+        setNotifications((prev: any) => [newNotification, ...(prev || [])]);
     }
   };
   
@@ -255,21 +260,21 @@ export default function Wiki() {
         relatedDefinitions: [],
     };
     const addDefinitionToModule = (items: Definition[], moduleName: string, def: Definition): Definition[] => {
-        return items.map(item => {
+        return (items || []).map(item => {
             if (item.name === moduleName && item.children) return { ...item, children: [def, ...item.children] };
             if (item.children) return { ...item, children: addDefinitionToModule(item.children, moduleName, def) };
             return item;
         });
     };
     setDefinitions(prev => {
-        const moduleExists = prev.some(m => m.name === newDefinition.module);
-        if (moduleExists) return addDefinitionToModule(prev, newDefinition.module, newDefinition);
+        const moduleExists = (prev || []).some(m => m.name === newDefinition.module);
+        if (moduleExists) return addDefinitionToModule(prev || [], newDefinition.module, newDefinition);
         const newModule: Definition = {
             id: `mod-${Date.now()}`, name: newDefinition.module, module: newDefinition.module,
             keywords: [], description: '', revisions: [], isArchived: false, supportingTables: [], attachments: [], notes: [], discussions: [],
             children: [newDefinition]
         };
-        return [...prev, newModule];
+        return [...(prev || []), newModule];
     });
     setIsNewDefinitionModalOpen(false);
     setIsTemplatesModalOpen(false);
@@ -284,7 +289,7 @@ export default function Wiki() {
   };
 
   const handleDuplicate = (id: string) => {
-    const definitionToDuplicate = findDefinition(definitions, id);
+    const definitionToDuplicate = findDefinition(definitions || [], id);
     if (!definitionToDuplicate) return;
     
     const newId = Date.now().toString();
@@ -318,7 +323,7 @@ export default function Wiki() {
   const handleArchive = (id: string | string[], archive: boolean) => {
      const ids = Array.isArray(id) ? id : [id];
      const updateArchiveStatus = (items: Definition[]): Definition[] => {
-      return items.map(def => {
+      return (items || []).map(def => {
         if (ids.includes(def.id)) {
           return { ...def, isArchived: archive };
         }
@@ -326,7 +331,7 @@ export default function Wiki() {
         return def;
       });
     };
-    setDefinitions(updateArchiveStatus(definitions));
+    setDefinitions(prev => updateArchiveStatus(prev || []));
     toast({ 
       title: archive ? 'Definition Archived' : 'Definition Unarchived', 
       description: archive ? 'The definition has been moved to Archive.' : 'The definition has been removed from Archive.' 
@@ -335,12 +340,12 @@ export default function Wiki() {
 
   const handleDelete = (id: string) => {
     const remove = (items: Definition[], idToDelete: string): Definition[] => {
-      return items.filter(def => def.id !== idToDelete).map(def => {
+      return (items || []).filter(def => def.id !== idToDelete).map(def => {
           if (def.children) def.children = remove(def.children, idToDelete);
           return def;
         });
     };
-    setDefinitions(prev => remove(prev, id));
+    setDefinitions(prev => remove(prev || [], id));
     if (selectedDefinitionId === id) setSelectedDefinitionId(null);
   };
 
@@ -350,26 +355,26 @@ export default function Wiki() {
         return;
     }
     const publishItem = (items: Definition[]): Definition[] => {
-      return items.map(def => {
+      return (items || []).map(def => {
         if (def.id === id) return { ...def, isDraft: false, isPendingApproval: false, publishedSnapshot: undefined };
         if (def.children) return { ...def, children: publishItem(def.children) };
         return def;
       });
     };
-    setDefinitions(publishItem(definitions));
+    setDefinitions(prev => publishItem(prev || []));
     setViewingMode('live');
     toast({ title: 'Definition Published', description: 'The definition is now available in the MPM Wiki.' });
   };
 
   const handleRequestApproval = (id: string) => {
     const updateItem = (items: Definition[]): Definition[] => {
-      return items.map(def => {
+      return (items || []).map(def => {
         if (def.id === id) return { ...def, isPendingApproval: true };
         if (def.children) return { ...def, children: updateItem(def.children) };
         return def;
       });
     };
-    setDefinitions(updateItem(definitions));
+    setDefinitions(prev => updateItem(prev || []));
     toast({ title: 'Submitted', description: 'Your definition has been submitted for approval.' });
   };
 
@@ -377,7 +382,7 @@ export default function Wiki() {
     if (!isAdmin) return;
     
     const updateItem = (items: Definition[]): Definition[] => {
-      return items.map(def => {
+      return (items || []).map(def => {
         if (def.id === id) {
           const updatedDiscussions = [...(def.discussions || [])];
           if (requestData) {
@@ -400,7 +405,7 @@ export default function Wiki() {
         return def;
       });
     };
-    setDefinitions(updateItem(definitions));
+    setDefinitions(prev => updateItem(prev || []));
     toast({ 
         title: requestData?.isRejection ? 'Definition Rejected' : 'Changes Requested', 
         description: `The definition has been returned to draft status with feedback.` 
@@ -409,23 +414,23 @@ export default function Wiki() {
 
   const enrichedDefinitions = useMemo(() => {
     const enrich = (items: Definition[]): Definition[] => {
-      return items.map(item => ({
+      return (items || []).map(item => ({
         ...item,
         isBookmarked: isBookmarked(item.id),
         children: item.children ? enrich(item.children) : []
       }));
     };
-    return enrich(definitions);
+    return enrich(definitions || []);
   }, [definitions, bookmarks, isBookmarked]);
 
   const filteredDefinitions = useMemo(() => {
     const filterItems = (items: Definition[], query: string): Definition[] => {
         if (!query) return items;
         const lowerCaseQuery = query.toLowerCase();
-        return items.reduce((acc: Definition[], item) => {
+        return (items || []).reduce((acc: Definition[], item) => {
             const children = item.children ? filterItems(item.children, query) : [];
-            const nameMatch = item.name.toLowerCase().includes(lowerCaseQuery);
-            const keywordsMatch = item.keywords.some(k => k.toLowerCase().includes(lowerCaseQuery));
+            const nameMatch = (item.name || '').toLowerCase().includes(lowerCaseQuery);
+            const keywordsMatch = (item.keywords || []).some(k => k.toLowerCase().includes(lowerCaseQuery));
             if (nameMatch || keywordsMatch || children.length > 0) acc.push({ ...item, children });
             return acc;
         }, []);
@@ -438,8 +443,8 @@ export default function Wiki() {
     const itemsForWorkflow = enrichedDefinitions;
 
     const filterByDraft = (items: Definition[], isDraft: boolean): Definition[] => {
-        return items.reduce((acc: Definition[], item) => {
-            const children = item.children ? filterByDraft(item.children, isDraft) : [];
+        return (items || []).reduce((acc: Definition[], item) => {
+            const children = filterByDraft(item.children || [], isDraft);
             const isMatch = isDraft ? (item.isDraft === true && !item.isPendingApproval) : (item.isDraft === false || item.isDraft === undefined);
             if (children.length > 0 || (isMatch && (item.description || item.shortDescription))) {
                 acc.push({ ...item, children });
@@ -449,7 +454,7 @@ export default function Wiki() {
     };
 
     const filterPublishedWithSnapshots = (items: Definition[]): Definition[] => {
-        return items.reduce((acc: Definition[], item) => {
+        return (items || []).reduce((acc: Definition[], item) => {
             const children = filterPublishedWithSnapshots(item.children || []);
             // Show if it's explicitly published OR it's a draft that HAS a published snapshot
             const isMatch = (!item.isDraft || !!item.publishedSnapshot) && (item.description || item.shortDescription || children.length > 0);
@@ -466,7 +471,7 @@ export default function Wiki() {
     };
 
     const filterPending = (items: Definition[]): Definition[] => {
-        return items.reduce((acc: Definition[], item) => {
+        return (items || []).reduce((acc: Definition[], item) => {
             const children = filterPending(item.children || []);
             const isSelfPending = item.isPendingApproval === true;
             if (isSelfPending || children.length > 0) {
@@ -477,7 +482,7 @@ export default function Wiki() {
     }
 
     const filterBookmarked = (items: Definition[]): Definition[] => {
-        return items.reduce((acc: Definition[], item) => {
+        return (items || []).reduce((acc: Definition[], item) => {
             const children = filterBookmarked(item.children || []);
             if (isBookmarked(item.id) || children.length > 0) acc.push({ ...item, children });
             return acc;
@@ -488,7 +493,7 @@ export default function Wiki() {
     
     if (showArchived) {
         const getOnlyArchived = (items: Definition[]): Definition[] => {
-            return items.reduce((acc: Definition[], item) => {
+            return (items || []).reduce((acc: Definition[], item) => {
                 const children = getOnlyArchived(item.children || []);
                 if (item.isArchived || children.length > 0) {
                     acc.push({ ...item, children });
@@ -499,7 +504,7 @@ export default function Wiki() {
         processedPublished = getOnlyArchived(processedPublished);
     } else {
         const getHideArchived = (items: Definition[]): Definition[] => {
-            return items.reduce((acc: Definition[], item) => {
+            return (items || []).reduce((acc: Definition[], item) => {
                 if (item.isArchived) return acc;
                 const children = getHideArchived(item.children || []);
                 acc.push({ ...item, children });
@@ -522,7 +527,7 @@ export default function Wiki() {
 
   const toggleSelectionForExport = (id: string, checked: boolean) => {
     const getChildrenIdsFromTree = (items: Definition[], targetId: string): string[] | null => {
-        for (const item of items) {
+        for (const item of (items || [])) {
             if (item.id === targetId) {
                 const gather = (node: Definition): string[] => {
                     let ids = [node.id];
@@ -543,34 +548,34 @@ export default function Wiki() {
     if (!idsToToggle) return;
 
     setSelectedForExport(prev => {
-        if (checked) return [...new Set([...prev, ...idsToToggle])];
-        return prev.filter(selectedId => !idsToToggle.includes(selectedId));
+        if (checked) return [...new Set([...(prev || []), ...idsToToggle])];
+        return (prev || []).filter(selectedId => !idsToToggle.includes(selectedId));
     });
   };
 
   const leafSelectionCount = useMemo(() => {
     const flattenToLeafIds = (items: Definition[]): string[] => {
         let ids: string[] = [];
-        items.forEach(item => {
+        (items || []).forEach(item => {
             if (item.description || item.shortDescription) ids.push(item.id);
             if (item.children) ids = [...ids, ...flattenToLeafIds(item.children)];
         });
         return ids;
     };
     const allPublishedLeafIds = new Set(flattenToLeafIds(categorizedDefinitions.published));
-    return selectedForExport.filter(id => allPublishedLeafIds.has(id)).length;
+    return (selectedForExport || []).filter(id => allPublishedLeafIds.has(id)).length;
   }, [selectedForExport, categorizedDefinitions.published]);
 
   const handleExport = async (formatType: 'pdf' | 'json' | 'xlsx' | 'html') => {
     const flatten = (items: Definition[]): Definition[] => {
         let flat: Definition[] = [];
-        items.forEach(item => {
+        (items || []).forEach(item => {
             flat.push(item);
             if (item.children) flat = [...flat, ...flatten(item.children)];
         });
         return flat;
     };
-    const definitionsToExport = flatten(definitions).filter(d => selectedForExport.includes(d.id) && (d.description || d.shortDescription));
+    const definitionsToExport = flatten(definitions || []).filter(d => (selectedForExport || []).includes(d.id) && (d.description || d.shortDescription));
     if (definitionsToExport.length === 0) return;
 
     if (formatType === 'json') {
@@ -634,7 +639,7 @@ export default function Wiki() {
 
   const selectedDefinition = useMemo(() => {
     if (!selectedDefinitionId) return null;
-    const def = findDefinition(definitions, selectedDefinitionId);
+    const def = findDefinition(definitions || [], selectedDefinitionId);
     if (!def) return null;
     
     // If in "live" viewing mode and there is a published snapshot, return the snapshot data
@@ -649,7 +654,7 @@ export default function Wiki() {
     if (!selectedDefinitionId) return;
     
     // Find the definition to transition it to draft immediately
-    const def = findDefinition(definitions, selectedDefinitionId);
+    const def = findDefinition(definitions || [], selectedDefinitionId);
     
     if (def && !def.isDraft) {
       // Create a snapshot of the current state for the "Live" tree visibility
@@ -662,14 +667,14 @@ export default function Wiki() {
       };
 
       const updateItems = (items: Definition[]): Definition[] => {
-        return items.map(d => {
+        return (items || []).map(d => {
           if (d.id === updatedDefinition.id) return updatedDefinition;
           if (d.children) return { ...d, children: updateItems(d.children) };
           return d;
         });
       };
       
-      setDefinitions(updateItems(definitions));
+      setDefinitions(prev => updateItems(prev || []));
       setSidebarTab('drafts');
       toast({ 
         title: "Draft Created", 
@@ -684,7 +689,7 @@ export default function Wiki() {
   
   const handleCancelEdit = () => {
     if (selectedDefinitionId) {
-      const def = findDefinition(definitions, selectedDefinitionId);
+      const def = findDefinition(definitions || [], selectedDefinitionId);
       if (def && def.publishedSnapshot) {
         // Revert to published state by restoring from snapshot
         const restoredDefinition: Definition = {
@@ -694,13 +699,13 @@ export default function Wiki() {
           publishedSnapshot: undefined
         };
         const updateItems = (items: Definition[]): Definition[] => {
-          return items.map(d => {
+          return (items || []).map(d => {
             if (d.id === restoredDefinition.id) return restoredDefinition;
             if (d.children) return { ...d, children: updateItems(d.children) };
             return d;
           });
         };
-        setDefinitions(updateItems(definitions));
+        setDefinitions(prev => updateItems(prev || []));
         setViewingMode('live');
         toast({ 
           title: "Edit Cancelled", 
@@ -783,7 +788,7 @@ export default function Wiki() {
   };
   
   const handleUseTemplate = (templateData: Partial<Definition>, templateId?: string) => {
-      const template = templates.find(t => t.id === templateId);
+      const template = (templates || []).find(t => t.id === templateId);
       if (template) {
         setDraftedDefinitionData({ 
           ...templateData, 
@@ -800,7 +805,7 @@ export default function Wiki() {
   if (!isMounted) return null;
 
   const countLeafPending = (items: Definition[]): number => {
-    return items.reduce((acc, item) => {
+    return (items || []).reduce((acc, item) => {
       const isPendingLeaf = item.isPendingApproval && (item.description || item.shortDescription);
       return acc + (isPendingLeaf ? 1 : 0) + (item.children ? countLeafPending(item.children) : 0);
     }, 0);
@@ -808,7 +813,7 @@ export default function Wiki() {
   const totalPendingCount = countLeafPending(categorizedDefinitions.pending);
 
   const countLeafDrafts = (items: Definition[]): number => {
-    return items.reduce((acc, item) => {
+    return (items || []).reduce((acc, item) => {
       const isDraftLeaf = item.isDraft && !item.isPendingApproval && (item.description || item.shortDescription);
       return acc + (isDraftLeaf ? 1 : 0) + (item.children ? countLeafDrafts(item.children) : 0);
     }, 0);
