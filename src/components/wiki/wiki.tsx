@@ -510,23 +510,47 @@ export default function Wiki() {
   }, [enrichedDefinitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
   const toggleSelectionForExport = (id: string, checked: boolean) => {
-    const getChildrenIds = (item: Definition): string[] => {
-        let ids = [item.id];
-        if (item.children) {
-            item.children.forEach(child => {
-                ids = [...ids, ...getChildrenIds(child)];
-            });
+    const getChildrenIdsFromTree = (items: Definition[], targetId: string): string[] | null => {
+        for (const item of items) {
+            if (item.id === targetId) {
+                const gather = (node: Definition): string[] => {
+                    let ids = [node.id];
+                    if (node.children) node.children.forEach(c => ids.push(...gather(c)));
+                    return ids;
+                };
+                return gather(item);
+            }
+            if (item.children) {
+                const found = getChildrenIdsFromTree(item.children, targetId);
+                if (found) return found;
+            }
         }
-        return ids;
+        return null;
     };
-    const definition = findDefinition(definitions, id);
-    if (!definition) return;
-    const idsToToggle = getChildrenIds(definition);
+
+    // Only allow selection from the Published tree
+    const idsToToggle = getChildrenIdsFromTree(categorizedDefinitions.published, id);
+    if (!idsToToggle) return;
+
     setSelectedForExport(prev => {
         if (checked) return [...new Set([...prev, ...idsToToggle])];
         return prev.filter(selectedId => !idsToToggle.includes(selectedId));
     });
   };
+
+  // Only count documented definitions (leaf nodes) in the UI counter
+  const leafSelectionCount = useMemo(() => {
+    const flattenToLeafIds = (items: Definition[]): string[] => {
+        let ids: string[] = [];
+        items.forEach(item => {
+            if (item.description || item.shortDescription) ids.push(item.id);
+            if (item.children) ids = [...ids, ...flattenToLeafIds(item.children)];
+        });
+        return ids;
+    };
+    const allPublishedLeafIds = new Set(flattenToLeafIds(categorizedDefinitions.published));
+    return selectedForExport.filter(id => allPublishedLeafIds.has(id)).length;
+  }, [selectedForExport, categorizedDefinitions.published]);
 
   const handleExport = async (formatType: 'pdf' | 'json' | 'xlsx' | 'html') => {
     const flatten = (items: Definition[]): Definition[] => {
@@ -537,7 +561,7 @@ export default function Wiki() {
         });
         return flat;
     };
-    const definitionsToExport = flatten(definitions).filter(d => selectedForExport.includes(d.id));
+    const definitionsToExport = flatten(definitions).filter(d => selectedForExport.includes(d.id) && (d.description || d.shortDescription));
     if (definitionsToExport.length === 0) return;
 
     if (formatType === 'json') {
@@ -883,14 +907,14 @@ export default function Wiki() {
                               </DropdownMenu>
                           </div>
                           
-                          {isSelectMode && selectedForExport.length > 0 && (
+                          {isSelectMode && leafSelectionCount > 0 && (
                               <div className="mx-4 my-2 p-3 bg-primary/5 border rounded-lg flex flex-col gap-3 sticky top-2 z-20 shadow-sm">
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                       <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
                                         <Check className="h-3 w-3 text-primary-foreground" />
                                       </div>
-                                      <span className="text-sm font-bold">{selectedForExport.length} selected</span>
+                                      <span className="text-sm font-bold">{leafSelectionCount} selected</span>
                                     </div>
                                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setIsSelectMode(false); setSelectedForExport([]); }}>
                                         <X className="h-4 w-4" />
@@ -899,7 +923,7 @@ export default function Wiki() {
                                   <div className="grid grid-cols-2 gap-2">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="outline" size="sm" className="h-9 text-xs" disabled={selectedForExport.length === 0}>
+                                            <Button variant="outline" size="sm" className="h-9 text-xs" disabled={leafSelectionCount === 0}>
                                                 <Download className="mr-2 h-4 w-4" />
                                                 Export
                                             </Button>
@@ -923,7 +947,7 @@ export default function Wiki() {
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
-                                    <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { handleArchive(selectedForExport, true); setIsSelectMode(false); setSelectedForExport([]); }} disabled={selectedForExport.length === 0}>
+                                    <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { handleArchive(selectedForExport, true); setIsSelectMode(false); setSelectedForExport([]); }} disabled={leafSelectionCount === 0}>
                                         <Archive className="mr-2 h-4 w-4" />
                                         Archive
                                     </Button>
