@@ -208,15 +208,7 @@ export default function Wiki() {
     const updateItems = (items: Definition[]): Definition[] => {
       return items.map(def => {
         if (def.id === updatedDefinition.id) {
-            let finalUpdate = { ...updatedDefinition };
-            
-            // If transitioning from Published -> Draft for the first time, store snapshot
-            if (!def.isDraft && updatedDefinition.isDraft && !def.publishedSnapshot) {
-                const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = def;
-                finalUpdate.publishedSnapshot = snapshot;
-            }
-            
-            return finalUpdate;
+            return updatedDefinition;
         }
         if (def.children) return { ...def, children: updateItems(def.children) };
         return def;
@@ -654,6 +646,37 @@ export default function Wiki() {
   }, [definitions, selectedDefinitionId, isBookmarked, viewingMode, isEditing]);
 
   const handleEditClick = () => {
+    if (!selectedDefinitionId) return;
+    
+    // Find the definition to transition it to draft immediately
+    const def = findDefinition(definitions, selectedDefinitionId);
+    
+    if (def && !def.isDraft) {
+      // Create a snapshot of the current state for the "Live" tree visibility
+      const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = def;
+      
+      const updatedDefinition: Definition = {
+        ...def,
+        isDraft: true,
+        publishedSnapshot: snapshot
+      };
+
+      const updateItems = (items: Definition[]): Definition[] => {
+        return items.map(d => {
+          if (d.id === updatedDefinition.id) return updatedDefinition;
+          if (d.children) return { ...d, children: updateItems(d.children) };
+          return d;
+        });
+      };
+      
+      setDefinitions(updateItems(definitions));
+      setSidebarTab('drafts');
+      toast({ 
+        title: "Draft Created", 
+        description: "A working copy has been created in your Drafts section." 
+      });
+    }
+
     setIsEditing(true);
     setViewingMode('draft');
     setEditLockId(selectedDefinitionId);

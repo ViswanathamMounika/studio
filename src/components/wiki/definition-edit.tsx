@@ -1,13 +1,13 @@
 
 "use client";
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import type { Definition, Attachment, DynamicSection, SqlFunctionDetails, InputParameter } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2, ChevronDown, Check, Info, Hash, Loader2 } from 'lucide-react';
+import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2, ChevronDown, Check, Info, Hash } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,8 +17,6 @@ import { mpmDatabases, mpmSourceTypes } from '@/lib/data';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { cn } from '@/lib/utils';
-import { useDebounce } from '@/hooks/use-debounce';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -57,51 +55,8 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
   const [sqlDetails, setSqlDetails] = useState<SqlFunctionDetails>(definition.sqlFunctionDetails || defaultSqlDetails);
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Group all edit state for debounced auto-save
-  const editState = useMemo(() => ({
-    name, module, keywords, description, shortDescription, technicalDetails, usageExamples, 
-    attachments, dynamicSections, sourceType, sourceDb, sourceName, sqlDetails
-  }), [name, module, keywords, description, shortDescription, technicalDetails, usageExamples, attachments, dynamicSections, sourceType, sourceDb, sourceName, sqlDetails]);
-
-  const debouncedEditState = useDebounce(editState, 1000);
-
-  // Trigger auto-save when debounced state changes
-  useEffect(() => {
-    // Skip the first render or if nothing changed from initial
-    const isInitial = 
-        name === definition.name && 
-        description === definition.description &&
-        shortDescription === (definition.shortDescription || '') &&
-        technicalDetails === (definition.technicalDetails || '') &&
-        usageExamples === (definition.usageExamples || '') &&
-        JSON.stringify(keywords) === JSON.stringify(definition.keywords) &&
-        JSON.stringify(attachments) === JSON.stringify(definition.attachments) &&
-        JSON.stringify(dynamicSections) === JSON.stringify(definition.dynamicSections || []) &&
-        sourceType === (definition.sourceType || '') &&
-        sourceDb === (definition.sourceDb || '') &&
-        sourceName === (definition.sourceName || '') &&
-        JSON.stringify(sqlDetails) === JSON.stringify(definition.sqlFunctionDetails || defaultSqlDetails);
-
-    if (isInitial) return;
-
-    setSaveStatus('saving');
-    
-    // Auto-save automatically transitions to draft if it was published
-    onSave({
-      ...definition,
-      ...debouncedEditState,
-      isDraft: true, // Always a draft once edited
-      isPendingApproval: false, // Return to active draft if it was pending
-      sqlFunctionDetails: debouncedEditState.sourceType === 'SQL Functions' ? debouncedEditState.sqlDetails : undefined,
-    });
-
-    const timer = setTimeout(() => setSaveStatus('saved'), 500);
-    return () => clearTimeout(timer);
-  }, [debouncedEditState]);
 
   const handleSaveManual = (isDraft: boolean) => {
     onSave({
@@ -215,15 +170,9 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
       <div className="sticky top-0 z-30 bg-background px-6 py-4 border-b space-y-4 shadow-md">
         <Alert className="bg-primary/5 border-primary/20">
           <Lock className="h-4 w-4 text-primary" />
-          <AlertTitle className="text-primary font-bold flex items-center justify-between">
-            <span>Edit Mode Active</span>
-            <div className="flex items-center gap-2 text-xs font-normal">
-                {saveStatus === 'saving' && <><Loader2 className="h-3 w-3 animate-spin" /> Auto-saving...</>}
-                {saveStatus === 'saved' && <><Check className="h-3 w-3 text-green-600" /> All changes saved to Drafts</>}
-            </div>
-          </AlertTitle>
+          <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>
           <AlertDescription className="text-muted-foreground">
-            Changes are saved automatically to your <strong>Drafts</strong> section.
+            You are editing a working draft. The original published definition remains live in the MPM Definitions section.
           </AlertDescription>
         </Alert>
         <div className="flex justify-between items-center">
