@@ -256,8 +256,8 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     }));
   };
 
-  const isTableOrView = sourceType === 'Views' || sourceType === 'Tables';
-  const isPreviewAvailable = !!sourceName.trim() && isTableOrView;
+  const canShowPreview = isSupportTblsOnly && (sourceType === 'Views' || sourceType === 'Tables');
+  const isPreviewAvailable = !!sourceName.trim() && canShowPreview;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -412,7 +412,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                       className="flex-1"
                                   />
                                 )}
-                              {isTableOrView && (
+                              {canShowPreview && (
                                 <Button 
                                   variant="outline" 
                                   size="sm" 

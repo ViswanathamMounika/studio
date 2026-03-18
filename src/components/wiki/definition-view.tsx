@@ -248,7 +248,7 @@ export default function DefinitionView({
         const types = firstDb ? mpmSourceTypes[firstDb] : [];
         const type = types?.find(t => t.id === definition.sourceType);
         
-        const canPreview = (definition.sourceType === 'Views' || definition.sourceType === 'Tables') && dbIds.includes('SupportTbls');
+        const canPreview = (definition.sourceType === 'Views' || definition.sourceType === 'Tables') && dbIds.length === 1 && dbIds[0] === 'SupportTbls';
         
         return { 
             database: dbNames || 'N/A', 
@@ -672,7 +672,7 @@ export default function DefinitionView({
                                                                 variant="ghost" 
                                                                 size="icon" 
                                                                 className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors group/note-btn" 
-                                                                onClick={() => handleDeleteNote(note.id)}
+                                                                onClick={() => handleDeleteNote(noteId)}
                                                             >
                                                                 <Trash2 className="h-4 w-4 transition-colors group-hover/note-btn:text-white" />
                                                             </Button>

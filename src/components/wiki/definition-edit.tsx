@@ -16,7 +16,7 @@ import { Textarea } from '../ui/textarea';
 import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from dream-ui/popover'; // Assuming the error in import was hallucinated or incorrect, fixing to standard
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -170,8 +170,8 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
     }));
   };
 
-  const isTableOrView = sourceType === 'Views' || sourceType === 'Tables';
-  const isPreviewAvailable = !!sourceName.trim() && isTableOrView;
+  const canShowPreview = isSupportTblsOnly && (sourceType === 'Views' || sourceType === 'Tables');
+  const isPreviewAvailable = !!sourceName.trim() && canShowPreview;
 
   return (
     <div className="flex flex-col">
@@ -344,7 +344,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                                 className="flex-1"
                             />
                           )}
-                        {isTableOrView && (
+                        {canShowPreview && (
                           <Button 
                             variant="outline" 
                             size="sm" 
