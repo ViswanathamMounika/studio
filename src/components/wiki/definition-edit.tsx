@@ -185,7 +185,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
   };
 
   const isTableOrView = sourceType === 'Views' || sourceType === 'Tables';
-  const isPreviewAvailable = !!sourceName && isTableOrView;
+  const isPreviewAvailable = !!sourceName.trim() && isTableOrView;
 
   return (
     <div className="flex flex-col">
@@ -330,23 +330,14 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                   <div className="col-span-2">
                       <Label htmlFor="source_name">Source Name</Label>
                       <div className="flex items-center gap-2 mt-1">
-                          <Select 
+                          <Input 
+                              id="source_name"
+                              placeholder={sourceType ? "Enter technical object name" : "Select Source Type first"}
                               value={sourceName} 
-                              onValueChange={setSourceName}
+                              onChange={(e) => setSourceName(e.target.value)}
                               disabled={!sourceType}
-                          >
-                              <SelectTrigger id="source_name" className="flex-1">
-                                  <SelectValue placeholder={sourceType ? "Select Source Name" : "Select Source Type first"} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  {availableSourceNames.map(obj => (
-                                      <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
-                                  ))}
-                                  {availableSourceNames.length === 0 && (
-                                    <div className="p-2 text-xs text-muted-foreground italic text-center">No objects found</div>
-                                  )}
-                              </SelectContent>
-                          </Select>
+                              className="flex-1"
+                          />
                         {isTableOrView && (
                           <Button 
                             variant="outline" 

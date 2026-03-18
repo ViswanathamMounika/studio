@@ -271,12 +271,12 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   };
 
   const isTableOrView = sourceType === 'Views' || sourceType === 'Tables';
-  const isPreviewAvailable = !!sourceName && isTableOrView;
+  const isPreviewAvailable = !!sourceName.trim() && isTableOrView;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-full h-[90vh] flex flex-col p-0 overflow-hidden">
-        <div className="p-6 border-b bg-background sticky top-0 z-50 flex justify-between items-center shadow-sm">
+        <div className="p-6 border-b bg-background sticky top-0 z-30 flex justify-between items-center shadow-sm">
           <DialogHeader className="p-0">
             <DialogTitle className="text-2xl font-bold">
               {templateId ? `Create from Template: ${templates.find(t => t.id === templateId)?.name}` : 'Create New Definition'}
@@ -415,23 +415,14 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                         <div className="col-span-2">
                             <Label htmlFor="new-def-source-name">Source Name</Label>
                             <div className="flex items-center gap-2 mt-1">
-                                <Select 
+                                <Input 
+                                    id="new-def-source-name"
+                                    placeholder={sourceType ? "Enter technical object name" : "Select Source Type first"}
                                     value={sourceName} 
-                                    onValueChange={setSourceName}
+                                    onChange={(e) => setSourceName(e.target.value)}
                                     disabled={!sourceType}
-                                >
-                                    <SelectTrigger id="new-def-source-name" className="flex-1">
-                                        <SelectValue placeholder={sourceType ? "Select Source Name" : "Select Source Type first"} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {availableSourceNames.map(obj => (
-                                            <SelectItem key={obj.id} value={obj.id}>{obj.name}</SelectItem>
-                                        ))}
-                                        {availableSourceNames.length === 0 && (
-                                          <div className="p-2 text-xs text-muted-foreground italic text-center">No objects found</div>
-                                        )}
-                                    </SelectContent>
-                                </Select>
+                                    className="flex-1"
+                                />
                               {isTableOrView && (
                                 <Button 
                                   variant="outline" 

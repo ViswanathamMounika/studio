@@ -84,29 +84,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                         <p className='text-[10px] font-black tracking-[0.2em] text-muted-foreground mt-0.5'>MANAGEMENT</p>
                     </div>
                 </div>
-                
-                <div className="mx-2 mb-2 px-3 py-2.5 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className={cn(
-                            "h-7 w-7 rounded-lg flex items-center justify-center transition-colors",
-                            isAdmin ? "bg-primary text-white" : "bg-slate-200 text-slate-500"
-                        )}>
-                            <ShieldCheck className="h-4 w-4" />
-                        </div>
-                        <div className="flex flex-col">
-                            <Label htmlFor="admin-mode" className="text-[11px] font-black uppercase tracking-wider text-slate-700 cursor-pointer">
-                                {isAdmin ? 'Admin Mode' : 'Standard'}
-                            </Label>
-                            <span className="text-[9px] font-medium text-slate-500 leading-none">Role Switcher</span>
-                        </div>
-                    </div>
-                    <Switch 
-                        id="admin-mode"
-                        checked={isAdmin} 
-                        onCheckedChange={onToggleAdmin}
-                        className="scale-75 origin-right"
-                    />
-                </div>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarMenu>
