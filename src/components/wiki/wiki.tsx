@@ -452,9 +452,9 @@ export default function Wiki() {
 
     const filterPending = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
-            const children = item.children ? filterPending(item.children) : [];
+            const children = filterPending(item.children || []);
             const isSelfPending = item.isPendingApproval === true;
-            if (children.length > 0 || isSelfPending) {
+            if (isSelfPending || children.length > 0) {
                 acc.push({ ...item, children });
             }
             return acc;
@@ -832,7 +832,7 @@ export default function Wiki() {
                                         onSelect={handleSelectDefinition}
                                         onToggleSelection={toggleSelectionForExport}
                                         selectedForExport={selectedForExport}
-                                        isSelectMode={isSelectMode}
+                                        isSelectMode={false} // Disable selection UI for Workflow Queue
                                         activeSection={activeTab}
                                         searchQuery="" // Search filtering doesn't work for the workflow queue
                                         editLockId={editLockId}
@@ -847,7 +847,7 @@ export default function Wiki() {
                                         onSelect={handleSelectDefinition}
                                         onToggleSelection={toggleSelectionForExport}
                                         selectedForExport={selectedForExport}
-                                        isSelectMode={isSelectMode}
+                                        isSelectMode={false} // Disable selection UI for Drafts
                                         activeSection={activeTab}
                                         searchQuery="" // Search filtering doesn't work for drafts
                                         editLockId={editLockId}
