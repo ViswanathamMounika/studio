@@ -328,7 +328,7 @@ export default function ActivityLogs() {
                             onCheckedChange={setIsViewedOnly}
                         />
                         <Label htmlFor="viewed-only" className="text-xs font-bold text-slate-600 flex items-center gap-1">
-                            <Eye className="h-3 w-3" /> Include 'Viewed' Activity
+                            <Eye className="h-3 w-3" /> viewed by
                         </Label>
                     </div>
                 </CardHeader>
