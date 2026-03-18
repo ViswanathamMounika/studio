@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -100,7 +101,7 @@ export default function ActivityLogs() {
 
     const handleSearch = () => {
         setAppliedFilters({
-            activityType: isViewedOnly ? 'Definition Viewed' : activityTypeFilter,
+            activityType: activityTypeFilter,
             definitionSearch,
             timeFrame,
             customRange,
@@ -113,7 +114,15 @@ export default function ActivityLogs() {
         if (!appliedFilters) return [];
 
         return logs.filter(log => {
-            const activityMatch = appliedFilters.activityType === 'all' || log.activityType === appliedFilters.activityType;
+            // Updated logic to include 'Definition Viewed' if toggled, alongside selected type
+            const isMainMatch = appliedFilters.activityType === 'all' 
+                ? (log.activityType !== 'Definition Viewed' && log.activityType !== 'Definition Searched')
+                : (log.activityType === appliedFilters.activityType);
+            
+            const isViewedMatch = appliedFilters.isViewedOnly && log.activityType === 'Definition Viewed';
+            
+            const activityMatch = isMainMatch || isViewedMatch;
+
             const definitionMatch = !appliedFilters.definitionSearch || log.definitionName.toLowerCase().includes(appliedFilters.definitionSearch.toLowerCase());
 
             let timeMatch = true;
@@ -319,7 +328,7 @@ export default function ActivityLogs() {
                             onCheckedChange={setIsViewedOnly}
                         />
                         <Label htmlFor="viewed-only" className="text-xs font-bold text-slate-600 flex items-center gap-1">
-                            <Eye className="h-3 w-3" /> View Only Definitions Viewed
+                            <Eye className="h-3 w-3" /> Include 'Viewed' Activity
                         </Label>
                     </div>
                 </CardHeader>
@@ -384,18 +393,20 @@ export default function ActivityLogs() {
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-600">Activity Type</label>
                             <Select 
-                                value={isViewedOnly ? 'Definition Viewed' : activityTypeFilter} 
+                                value={activityTypeFilter} 
                                 onValueChange={setActivityTypeFilter}
-                                disabled={isViewedOnly}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Activities" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Activities</SelectItem>
-                                    {activityTypes.map(type => (
-                                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                                    ))}
+                                    {activityTypes
+                                        .filter(t => t !== 'Definition Viewed' && t !== 'Definition Searched')
+                                        .map(type => (
+                                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                                        ))
+                                    }
                                 </SelectContent>
                             </Select>
                         </div>
