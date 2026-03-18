@@ -260,23 +260,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
               {templateId ? `Create from Template: ${templates.find(t => t.id === templateId)?.name}` : 'Create New Definition'}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex gap-2">
-            <DialogClose asChild>
-              <Button variant="outline" className="rounded-xl">Cancel</Button>
-            </DialogClose>
-            <Button variant="secondary" onClick={() => handleSave(true)} disabled={!name.trim()} className="rounded-xl">
-                <Save className="mr-2 h-4 w-4" />
-                Save Draft
-            </Button>
-            <Button 
-              onClick={() => handleSave(false)} 
-              disabled={!name.trim()}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl"
-            >
-                <Send className="mr-2 h-4 w-4" />
-                {isAdmin ? 'Publish' : 'Submit for Approval'}
-            </Button>
-          </div>
         </div>
         <div className="flex-1 min-h-0">
           <ScrollArea className="h-full pr-6">

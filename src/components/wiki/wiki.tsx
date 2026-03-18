@@ -68,7 +68,7 @@ const initialNotifications: NotificationType[] = [
     definitionName: 'Contracted Rates',
     message: 'A new note was added by Jane Smith.',
     date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    read: true,
+    read: false,
   },
 ];
 
