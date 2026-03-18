@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -23,7 +22,7 @@ export default function Notifications({ notifications, setNotifications, onDefin
   };
 
   const handleMarkAllAsRead = () => {
-    // Clear all if "Mark All as Read" is clicked
+    // Clear all if "Read All" is clicked
     setNotifications([]);
   };
 
@@ -52,7 +51,7 @@ export default function Notifications({ notifications, setNotifications, onDefin
                 onClick={handleMarkAllAsRead} 
                 disabled={notifications.length === 0}
               >
-                Clear All
+                Read All
               </Button>
             </div>
           </div>
