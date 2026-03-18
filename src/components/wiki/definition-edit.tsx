@@ -232,7 +232,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
             <Button variant="outline" onClick={onCancel}>Close Editor</Button>
             <Button variant="secondary" onClick={() => handleSaveManual(true)} disabled={!name.trim()}>
                 <Save className="mr-2 h-4 w-4" />
-                Mark as Final Draft
+                Save
             </Button>
             <Button 
               onClick={() => handleSaveManual(false)} 

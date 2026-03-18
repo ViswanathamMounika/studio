@@ -45,6 +45,7 @@ const TemplateManagement = dynamic(() => import('@/components/wiki/template-mana
 
 type View = 'definitions' | 'activity-logs' | 'template-management';
 type SidebarTab = 'queue' | 'drafts';
+type ViewingMode = 'live' | 'draft';
 
 const currentUser = {
     id: "user_123",
@@ -72,9 +73,10 @@ const initialNotifications: NotificationType[] = [
 ];
 
 export default function Wiki() {
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v6', initialDefinitions);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v6', initialTemplates);
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v7', initialDefinitions);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v7', initialTemplates);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
+  const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [showBookmarked, setShowBookmarked] = useState(false);
@@ -85,14 +87,14 @@ export default function Wiki() {
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v6', true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v7', true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('queue');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v6', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v7', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v6', null);
+  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v7', null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -134,11 +136,10 @@ export default function Wiki() {
     }
   }, [selectedDefinitionId, updateUrl]);
 
-  const handleSelectDefinition = useCallback((id: string, sectionId?: string, shouldUpdateUrl = true) => {
+  const handleSelectDefinition = useCallback((id: string, sectionId?: string, mode: ViewingMode = 'live', shouldUpdateUrl = true) => {
     const isSameDefinition = id === selectedDefinitionId;
     setActiveView('definitions');
-    
-    // Check lock but don't strictly force edit mode if navigation was intended to just view
+    setViewingMode(mode);
     setSelectedDefinitionId(id);
     
     if (!isSameDefinition) {
@@ -160,7 +161,7 @@ export default function Wiki() {
     }
     setActiveView(view);
     if (view === 'definitions') {
-        handleSelectDefinition('1.1.1', undefined, shouldUpdateUrl);
+        handleSelectDefinition('1.1.1', undefined, 'live', shouldUpdateUrl);
     } else {
         setSelectedDefinitionId(null);
         if(shouldUpdateUrl) {
@@ -179,10 +180,10 @@ export default function Wiki() {
         if (viewFromUrl && viewFromUrl !== 'definitions') {
             handleNavigate(viewFromUrl, false);
         } else if (definitionIdFromUrl) {
-            handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, false);
+            handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, 'live', false);
         } else {
             setActiveView('definitions');
-            handleSelectDefinition('1.1.1', undefined, false);
+            handleSelectDefinition('1.1.1', undefined, 'live', false);
         }
     }
   }, [isMounted, handleNavigate, handleSelectDefinition]);
@@ -199,25 +200,34 @@ export default function Wiki() {
   useEffect(() => {
     if (selectedDefinitionId && selectedDefinitionId === editLockId) {
       setIsEditing(true);
+      setViewingMode('draft');
     }
   }, [selectedDefinitionId, editLockId]);
 
   const handleSave = (updatedDefinition: Definition) => {
     const updateItems = (items: Definition[]): Definition[] => {
       return items.map(def => {
-        if (def.id === updatedDefinition.id) return updatedDefinition;
+        if (def.id === updatedDefinition.id) {
+            let finalUpdate = { ...updatedDefinition };
+            
+            // If transitioning from Published -> Draft for the first time, store snapshot
+            if (!def.isDraft && updatedDefinition.isDraft && !def.publishedSnapshot) {
+                const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = def;
+                finalUpdate.publishedSnapshot = snapshot;
+            }
+            
+            return finalUpdate;
+        }
         if (def.children) return { ...def, children: updateItems(def.children) };
         return def;
       });
     };
     setDefinitions(updateItems(definitions));
     
-    // Auto-save logic: If it transitions to draft, switch the sidebar tab automatically
     if (updatedDefinition.isDraft && sidebarTab !== 'drafts') {
         setSidebarTab('drafts');
     }
 
-    // Only close editor if user clicked "Publish" or a non-draft manual save
     if (!updatedDefinition.isDraft || (updatedDefinition.isDraft && !isEditing)) {
         setIsEditing(false);
         setEditLockId(null);
@@ -272,8 +282,9 @@ export default function Wiki() {
     setIsNewDefinitionModalOpen(false);
     setIsTemplatesModalOpen(false);
     setSelectedDefinitionId(newId);
+    setViewingMode('draft');
     setActiveView('definitions');
-    setSidebarTab('drafts'); // New creations always start in drafts
+    setSidebarTab('drafts');
     
     if (isPending) {
       toast({ title: 'Submitted', description: 'Your new definition has been sent for approval.' });
@@ -304,6 +315,7 @@ export default function Wiki() {
       isPendingApproval: false,
       notes: [duplicateNote],
       discussions: [],
+      publishedSnapshot: undefined,
     };
     
     handleCreateDefinition(newDefinition);
@@ -347,12 +359,13 @@ export default function Wiki() {
     }
     const publishItem = (items: Definition[]): Definition[] => {
       return items.map(def => {
-        if (def.id === id) return { ...def, isDraft: false, isPendingApproval: false };
+        if (def.id === id) return { ...def, isDraft: false, isPendingApproval: false, publishedSnapshot: undefined };
         if (def.children) return { ...def, children: publishItem(def.children) };
         return def;
       });
     };
     setDefinitions(publishItem(definitions));
+    setViewingMode('live');
     toast({ title: 'Definition Published', description: 'The definition is now available in the MPM Wiki.' });
   };
 
@@ -443,6 +456,23 @@ export default function Wiki() {
         }, []);
     };
 
+    const filterPublishedWithSnapshots = (items: Definition[]): Definition[] => {
+        return items.reduce((acc: Definition[], item) => {
+            const children = filterPublishedWithSnapshots(item.children || []);
+            // Show if it's explicitly published OR it's a draft that HAS a published snapshot
+            const isMatch = (!item.isDraft || !!item.publishedSnapshot) && (item.description || item.shortDescription || children.length > 0);
+            
+            if (isMatch) {
+                // For the published tree, we want to show the published data even if the main object is now a draft
+                const displayItem = (item.isDraft && item.publishedSnapshot)
+                    ? { ...item, ...item.publishedSnapshot, isDraft: false, children }
+                    : { ...item, children };
+                acc.push(displayItem as Definition);
+            }
+            return acc;
+        }, []);
+    };
+
     const filterPending = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = filterPending(item.children || []);
@@ -493,7 +523,7 @@ export default function Wiki() {
 
     return {
         drafts: filterByDraft(itemsForWorkflow, true),
-        published: filterByDraft(processedPublished, false),
+        published: filterPublishedWithSnapshots(processedPublished),
         pending: filterPending(itemsForWorkflow)
     };
   }, [enrichedDefinitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
@@ -614,11 +644,18 @@ export default function Wiki() {
     if (!selectedDefinitionId) return null;
     const def = findDefinition(definitions, selectedDefinitionId);
     if (!def) return null;
+    
+    // If in "live" viewing mode and there is a published snapshot, return the snapshot data
+    if (viewingMode === 'live' && def.publishedSnapshot && !isEditing) {
+        return { ...def, ...def.publishedSnapshot, isBookmarked: isBookmarked(def.id) } as Definition;
+    }
+
     return { ...def, isBookmarked: isBookmarked(def.id) };
-  }, [definitions, selectedDefinitionId, isBookmarked]);
+  }, [definitions, selectedDefinitionId, isBookmarked, viewingMode, isEditing]);
 
   const handleEditClick = () => {
     setIsEditing(true);
+    setViewingMode('draft');
     setEditLockId(selectedDefinitionId);
   };
   
@@ -645,7 +682,7 @@ export default function Wiki() {
                           <AlertDescription className="text-muted-foreground flex items-center justify-between">
                             <span>This definition is currently being modified. Your session is locked.</span>
                             <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Resume Editing</Button>
+                                <Button variant="outline" size="sm" onClick={() => { setIsEditing(true); setViewingMode('draft'); }}>Resume Editing</Button>
                                 <Button variant="ghost" size="sm" onClick={handleCancelResume}>Dismiss Lock</Button>
                             </div>
                           </AlertDescription>
@@ -741,7 +778,7 @@ export default function Wiki() {
               isAdmin={isAdmin}
               notifications={notifications}
               setNotifications={setNotifications}
-              onDefinitionClick={handleSelectDefinition}
+              onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')}
               activeView={activeView}
           />
           <main className="flex-1 flex overflow-hidden">
@@ -808,11 +845,11 @@ export default function Wiki() {
                         <div className="pt-2">
                             {sidebarTab === 'queue' ? (
                                 categorizedDefinitions.pending.length > 0 ? (
-                                    <DefinitionTree treeId="queue" definitions={categorizedDefinitions.pending} selectedId={selectedDefinitionId} onSelect={handleSelectDefinition} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={editLockId} />
+                                    <DefinitionTree treeId="queue" definitions={categorizedDefinitions.pending} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={editLockId} />
                                 ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No items pending review.</p>
                             ) : (
                                 categorizedDefinitions.drafts.length > 0 ? (
-                                    <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={handleSelectDefinition} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={editLockId} />
+                                    <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={editLockId} />
                                 ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No saved drafts found.</p>
                             )}
                         </div>
@@ -853,7 +890,7 @@ export default function Wiki() {
 
                           <div className="p-2">
                             {categorizedDefinitions.published.length > 0 ? (
-                                <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={handleSelectDefinition} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={editLockId} />
+                                <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'live')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={editLockId} />
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center"><Info className="h-8 w-8 text-muted-foreground/30 mb-2" /><p className="text-xs text-muted-foreground italic">No definitions found for this filter.</p></div>
                             )}
@@ -868,7 +905,7 @@ export default function Wiki() {
           </main>
         </div>
       </SidebarInset>
-      <RecentViewsModal open={isRecentModalOpen} onOpenChange={setIsRecentModalOpen} onDefinitionClick={handleSelectDefinition} />
+      <RecentViewsModal open={isRecentModalOpen} onOpenChange={setIsRecentModalOpen} onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')} />
       <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={templates} isAdmin={isAdmin} />
       <TemplatesModal open={isTemplatesModalOpen} onOpenChange={setIsTemplatesModalOpen} onUseTemplate={handleUseTemplate} managedTemplates={templates} />
     </SidebarProvider>

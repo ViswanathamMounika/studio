@@ -89,6 +89,7 @@ export interface Definition {
   templateId?: string;
   dynamicSections?: DynamicSection[];
   sqlFunctionDetails?: SqlFunctionDetails;
+  publishedSnapshot?: Partial<Omit<Definition, 'revisions' | 'children' | 'notes' | 'discussions'>>;
 }
 
 export interface SupportingTable {
