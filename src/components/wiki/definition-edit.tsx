@@ -178,15 +178,15 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
         <div className="flex justify-between items-center">
           <h2 className="text-3xl font-bold">Edit Definition</h2>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onCancel}>Close Editor</Button>
-            <Button variant="secondary" onClick={() => handleSaveManual(true)} disabled={!name.trim()}>
+            <Button variant="outline" onClick={onCancel} className="rounded-xl">Cancel</Button>
+            <Button variant="secondary" onClick={() => handleSaveManual(true)} disabled={!name.trim()} className="rounded-xl">
                 <Save className="mr-2 h-4 w-4" />
                 Save
             </Button>
             <Button 
               onClick={() => handleSaveManual(false)} 
               disabled={!name.trim()}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl"
             >
                 <Send className="mr-2 h-4 w-4" />
                 {isAdmin ? 'Publish Changes' : 'Submit for Approval'}

@@ -683,6 +683,31 @@ export default function Wiki() {
   };
   
   const handleCancelEdit = () => {
+    if (selectedDefinitionId) {
+      const def = findDefinition(definitions, selectedDefinitionId);
+      if (def && def.publishedSnapshot) {
+        // Revert to published state by restoring from snapshot
+        const restoredDefinition: Definition = {
+          ...def,
+          ...def.publishedSnapshot,
+          isDraft: false,
+          publishedSnapshot: undefined
+        };
+        const updateItems = (items: Definition[]): Definition[] => {
+          return items.map(d => {
+            if (d.id === restoredDefinition.id) return restoredDefinition;
+            if (d.children) return { ...d, children: updateItems(d.children) };
+            return d;
+          });
+        };
+        setDefinitions(updateItems(definitions));
+        setViewingMode('live');
+        toast({ 
+          title: "Edit Cancelled", 
+          description: "Reverted to the original published version." 
+        });
+      }
+    }
     setIsEditing(false);
     setEditLockId(null);
   };
