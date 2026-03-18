@@ -279,11 +279,30 @@ export default function Wiki() {
   const handleDuplicate = (id: string) => {
     const definitionToDuplicate = findDefinition(definitions, id);
     if (!definitionToDuplicate) return;
+    
     const newId = Date.now().toString();
+    
+    // Explicitly set isDraft: true and isPendingApproval: false for the duplicate
     const newDefinition: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
-      ...definitionToDuplicate, id: newId, name: `${definitionToDuplicate.name} (Copy)`, children: [],
+      ...definitionToDuplicate,
+      id: newId,
+      name: `${definitionToDuplicate.name} (Copy)`,
+      children: [],
+      isDraft: true,
+      isPendingApproval: false,
+      notes: [],
+      discussions: [],
     };
+    
     handleCreateDefinition(newDefinition);
+    
+    // Switch the sidebar tab to "Drafts" to show the newly duplicated item
+    setSidebarTab('drafts');
+    
+    toast({ 
+      title: 'Definition Duplicated', 
+      description: 'A copy has been created in your Drafts section.' 
+    });
   };
 
   const handleArchive = (id: string | string[], archive: boolean) => {
