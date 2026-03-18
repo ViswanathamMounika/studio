@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
-import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
+import { mpmDatabases, mpmSourceTypes } from '@/lib/data';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -65,28 +65,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
     const firstDb = selectedDbs[0];
     return firstDb ? mpmSourceTypes[firstDb] || [] : [];
   }, [selectedDbs]);
-
-  const availableSourceNames = useMemo(() => {
-    const firstDb = selectedDbs[0];
-    if (!firstDb || !sourceType) return [];
-    const key = `${firstDb}_${sourceType}`;
-    return mpmSourceObjects[key] || [];
-  }, [selectedDbs, sourceType]);
-
-  // Handle auto-population for SQL Functions
-  useEffect(() => {
-    if (sourceType === 'SQL Functions' && sourceName) {
-      const selectedObject = availableSourceNames.find(obj => obj.id === sourceName);
-      if (selectedObject?.sqlMetadata) {
-        const meta = selectedObject.sqlMetadata;
-        setSqlDetails({
-          inputParameters: meta.inputParameters.map(p => ({ ...p })),
-          outputType: meta.outputType,
-          outputExample: meta.outputExample,
-        });
-      }
-    }
-  }, [sourceName, sourceType, availableSourceNames]);
 
   const handleSave = (isDraft: boolean) => {
     onSave({
@@ -279,7 +257,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
           <CardContent className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                   <div>
-                      <Label htmlFor="source_db">Databases</Label>
+                      <Label htmlFor="source_db">Databases (Multiselect)</Label>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button variant="outline" className="w-full justify-between font-normal">

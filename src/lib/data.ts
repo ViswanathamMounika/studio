@@ -90,7 +90,7 @@ export const defDataTable = {
         ID: i + 1,
         OBJECT_TYPE: i % 2 + 1,
         SERVER_NAME: 'SQL-SERVER-PROD',
-        DATABASE_NAME: ['DW_Reporting', 'Finance', 'Provider_Data', 'Claims'][Math.floor(Math.random()*4)],
+        DATABASE_NAME: ['EzCAp', 'SupportTbls', 'Other', 'NetApps', 'AuditTables'][Math.floor(Math.random()*5)],
         QUERY: `SELECT * FROM table_${i+1}`,
         NAME: `Data Definition ${i+1}`,
         DESCRIPTION: `This is a description for data definition ${i+1}`,
@@ -104,11 +104,11 @@ export const defDataTable = {
 export const allDataTables = [authorizationStatusCodes, cmsComplianceMatrix, timestampChangedTable, vwAuthActionTimeTable, { ...defDataTable, rows: defDataTable.rows.map(Object.values) }];
 
 export const mpmDatabases: DatabaseMetadata[] = [
-    { id: 'DW_Reporting', name: 'DW_Reporting' },
-    { id: 'Finance', name: 'Finance' },
-    { id: 'Provider_Data', name: 'Provider_Data' },
-    { id: 'Claims', name: 'Claims' },
+    { id: 'EzCAp', name: 'EzCAp' },
     { id: 'SupportTbls', name: 'SupportTbls' },
+    { id: 'Other', name: 'Other' },
+    { id: 'NetApps', name: 'NetApps' },
+    { id: 'AuditTables', name: 'AuditTables' },
 ];
 
 const standardSourceTypes: SourceTypeMetadata[] = [
@@ -119,55 +119,24 @@ const standardSourceTypes: SourceTypeMetadata[] = [
 ];
 
 export const mpmSourceTypes: Record<string, SourceTypeMetadata[]> = {
-    'DW_Reporting': standardSourceTypes,
-    'Finance': standardSourceTypes,
-    'Provider_Data': standardSourceTypes,
-    'Claims': standardSourceTypes,
+    'EzCAp': standardSourceTypes,
     'SupportTbls': standardSourceTypes,
+    'Other': standardSourceTypes,
+    'NetApps': standardSourceTypes,
+    'AuditTables': standardSourceTypes,
 };
 
 export const mpmSourceObjects: Record<string, SourceObjectMetadata[]> = {
-    'DW_Reporting_Views': [
+    'EzCAp_Views': [
         { id: 'vw_AuthDecisionDate', name: 'vw_AuthDecisionDate', typeId: 'Views' },
         { id: 'vw_AuthActionTime', name: 'vw_AuthActionTime', typeId: 'Views' },
         { id: 'vw_MemberEligibility', name: 'vw_MemberEligibility', typeId: 'Views' },
     ],
-    'DW_Reporting_Tables': [
+    'EzCAp_Tables': [
         { id: 'AUTHORIZATION_MASTER', name: 'AUTHORIZATION_MASTER', typeId: 'Tables' },
         { id: 'MEMBER_MASTER', name: 'MEMBER_MASTER', typeId: 'Tables' },
         { id: 'PROCEDURE_CODES', name: 'PROCEDURE_CODES', typeId: 'Tables' },
         { id: 'DENIAL_REASONS_MASTER', name: 'DENIAL_REASONS_MASTER', typeId: 'Tables' },
-    ],
-    'DW_Reporting_Stored Procedures': [
-        { id: 'sp_CalculateSLA', name: 'sp_CalculateSLA', typeId: 'Stored Procedures' },
-        { id: 'sp_ProcessBatchAuths', name: 'sp_ProcessBatchAuths', typeId: 'Stored Procedures' },
-    ],
-    'DW_Reporting_SQL Functions': [
-        { id: 'fn_GetBusinessDays', name: 'fn_GetBusinessDays', typeId: 'SQL Functions' },
-        { id: 'fn_FormatMemberName', name: 'fn_FormatMemberName', typeId: 'SQL Functions' },
-        { id: 'fn_CalculateMemberAge', name: 'fn_CalculateMemberAge', typeId: 'SQL Functions' },
-        { id: 'fn_GetAuthTurnaroundTime', name: 'fn_GetAuthTurnaroundTime', typeId: 'SQL Functions' },
-    ],
-    'Finance_Tables': [
-        { id: 'FEE_SCHEDULES', name: 'FEE_SCHEDULES', typeId: 'Tables' },
-        { id: 'CLAIM_PAYMENTS', name: 'CLAIM_PAYMENTS', typeId: 'Tables' },
-    ],
-    'Finance_Views': [
-        { id: 'vw_FinancialReconciliation', name: 'vw_FinancialReconciliation', typeId: 'Views' },
-    ],
-    'Provider_Data_Views': [
-        { id: 'vw_ProviderDirectory', name: 'vw_ProviderDirectory', typeId: 'Views' },
-        { id: 'vw_NetworkParticipation', name: 'vw_NetworkParticipation', typeId: 'Views' },
-    ],
-    'Provider_Data_Tables': [
-        { id: 'PROVIDER_MASTER', name: 'PROVIDER_MASTER', typeId: 'Tables' },
-    ],
-    'Claims_Tables': [
-        { id: 'CLAIMS_MASTER', name: 'CLAIMS_MASTER', typeId: 'Tables' },
-        { id: 'CLAIM_ADJUDICATION_LOG', name: 'CLAIM_ADJUDICATION_LOG', typeId: 'Tables' },
-    ],
-    'Claims_Views': [
-        { id: 'vw_ClaimStatusTracking', name: 'vw_ClaimStatusTracking', typeId: 'Views' },
     ],
     'SupportTbls_Tables': [
         { id: 'REF_DATA', name: 'REF_DATA', typeId: 'Tables' },
@@ -287,7 +256,7 @@ const definition111_rev1 = {
     supportingTables: [{ id: 'auth-status-codes', name: 'Authorization Status Codes' }],
     attachments: [],
     notes: [],
-    sourceDb: 'DW_Reporting',
+    sourceDb: 'EzCAp',
     sourceType: 'Views',
     sourceName: 'vw_AuthDecisionDate'
 };
@@ -318,7 +287,7 @@ const definition111_rev4 = {
         <li>If AUTH ACTION DATE time is all 0’s then DECISION DATE = Date Auth moved to status 1</li>
       </ul>
     `,
-    technicalDetails: `<p>The underlying data is sourced from the <code>vw_AuthDecisionDate</code> view in the <code>DW_Reporting</code> database.</p>`,
+    technicalDetails: `<p>The underlying data is sourced from the <code>vw_AuthDecisionDate</code> view in the <code>EzCAp</code> database.</p>`,
     usageExamples: `<p><strong>Example 1: Calculating Turnaround Time</strong></p><pre><code>DATEDIFF(day, RequestDate, AuthDecisionDate) AS TurnaroundTime</code></pre>`,
     supportingTables: [
         { id: 'auth-status-codes', name: 'Authorization Status Codes' },
@@ -369,7 +338,7 @@ const definition111_rev5 = {
       </ul>
     `,
     technicalDetails: `
-      <p>The underlying data is sourced from the <code>vw_AuthDecisionDate</code> view in the <code>DW_Reporting</code> database.</p>
+      <p>The underlying data is sourced from the <code>vw_AuthDecisionDate</code> view in the <code>EzCAp</code> database.</p>
       <h4 class="font-bold mt-4 mb-2">Performance Tuning (SQL)</h4>
       <p>The view performs a left join across 5 major tables. To ensure query performance remains under 2 seconds, we have implemented non-clustered indexes on:</p>
       <ul class="list-disc pl-6">
@@ -438,7 +407,7 @@ export const initialDefinitions: Definition[] = [
         supportingTables: [],
         attachments: [],
         notes: [],
-        sourceDb: 'DW_Reporting',
+        sourceDb: 'EzCAp',
         sourceType: 'Tables',
         sourceName: 'PROCEDURE_CODES'
       },
@@ -456,7 +425,7 @@ export const initialDefinitions: Definition[] = [
         supportingTables: [],
         attachments: [],
         notes: [],
-        sourceDb: 'DW_Reporting',
+        sourceDb: 'EzCAp',
         sourceType: 'Tables',
         sourceName: 'DENIAL_REASONS_MASTER'
       },
@@ -474,7 +443,7 @@ export const initialDefinitions: Definition[] = [
         supportingTables: [],
         attachments: [],
         notes: [],
-        sourceDb: 'DW_Reporting',
+        sourceDb: 'EzCAp',
         sourceType: 'SQL Functions',
         sourceName: 'fn_GetAuthTurnaroundTime',
         sqlFunctionDetails: {
@@ -515,68 +484,9 @@ export const initialDefinitions: Definition[] = [
         supportingTables: [],
         attachments: [],
         notes: [],
-        sourceDb: 'Claims',
+        sourceDb: 'EzCAp',
         sourceType: 'Tables',
         sourceName: 'CLAIM_ADJUDICATION_LOG'
-      },
-      {
-        id: 'draft-claims-1',
-        name: 'Draft: Claim Payment Logic',
-        module: 'Claims',
-        keywords: ['draft', 'payment'],
-        description: '<p>Preliminary documentation for revised payment calculation rules.</p>',
-        shortDescription: 'Revised payment logic draft.',
-        revisions: [],
-        isArchived: false,
-        isDraft: true,
-        isPendingApproval: false,
-        supportingTables: [],
-        attachments: [],
-        notes: [],
-        sourceDb: 'Finance',
-        sourceType: 'Tables',
-        sourceName: 'CLAIM_PAYMENTS'
-      }
-    ]
-  },
-  {
-    id: 'member-root',
-    name: 'Member',
-    module: 'Member',
-    keywords: [],
-    description: '',
-    revisions: [],
-    isArchived: false,
-    isDraft: false,
-    supportingTables: [],
-    attachments: [],
-    notes: [],
-    children: [
-      {
-        id: 'pending-sql-func-1',
-        name: 'fn_CalculateMemberAge',
-        module: 'Member',
-        keywords: ['sql function', 'age', 'calculation'],
-        description: '<p>Standard SQL function to calculate member age based on date of birth.</p>',
-        shortDescription: 'Calculates member age.',
-        revisions: [],
-        isArchived: false,
-        isDraft: true,
-        isPendingApproval: true,
-        supportingTables: [],
-        attachments: [],
-        notes: [],
-        sourceDb: 'DW_Reporting',
-        sourceType: 'SQL Functions',
-        sourceName: 'fn_CalculateMemberAge',
-        sqlFunctionDetails: {
-          inputParameters: [
-            { name: '@DOB', type: 'date' },
-            { name: '@AsOfDate', type: 'date' }
-          ],
-          outputType: 'int',
-          outputExample: '42'
-        }
       }
     ]
   },
@@ -605,27 +515,9 @@ export const initialDefinitions: Definition[] = [
             supportingTables: [],
             attachments: [],
             notes: [],
-            sourceDb: 'Finance',
+            sourceDb: 'Other',
             sourceType: 'Tables',
             sourceName: 'FEE_SCHEDULES'
-        },
-        {
-            id: 'pending-provider-1',
-            name: 'Credentialing Status',
-            module: 'Provider',
-            keywords: ['credentialing', 'status', 'verification'],
-            description: '<p>Defines the lifecycle stages of a provider\'s credentialing process within the MPM network.</p>',
-            shortDescription: 'Provider verification lifecycle.',
-            revisions: [],
-            isArchived: false,
-            isDraft: true,
-            isPendingApproval: true,
-            supportingTables: [],
-            attachments: [],
-            notes: [],
-            sourceDb: 'Provider_Data',
-            sourceType: 'Views',
-            sourceName: 'vw_ProviderDirectory'
         }
     ]
   }
