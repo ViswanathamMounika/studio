@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
-import type { Definition, Notification as NotificationType, Template, DiscussionMessage } from '@/lib/types';
+import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note } from '@/lib/types';
 import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send, ShieldCheck, Clock, Settings2, FolderTree } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -245,7 +245,7 @@ export default function Wiki() {
         revisions: [],
         isArchived: false,
         children: [],
-        notes: [],
+        notes: newDefinitionData.notes || [],
         discussions: [],
         relatedDefinitions: [],
     };
@@ -282,6 +282,17 @@ export default function Wiki() {
     
     const newId = Date.now().toString();
     
+    // Create automatic "Copied from" note
+    const duplicateNote: Note = {
+      id: `note-dup-${Date.now()}`,
+      authorId: currentUser.id,
+      author: currentUser.name,
+      avatar: currentUser.avatar,
+      date: new Date().toISOString(),
+      content: `This definition is copied from ${definitionToDuplicate.name}`,
+      isShared: false,
+    };
+
     // Explicitly set isDraft: true and isPendingApproval: false for the duplicate
     const newDefinition: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
       ...definitionToDuplicate,
@@ -290,7 +301,7 @@ export default function Wiki() {
       children: [],
       isDraft: true,
       isPendingApproval: false,
-      notes: [],
+      notes: [duplicateNote],
       discussions: [],
     };
     
