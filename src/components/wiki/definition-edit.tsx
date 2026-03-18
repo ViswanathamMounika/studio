@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2, ChevronDown, Check, Info, Hash } from 'lucide-react';
+import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2, ChevronDown, Check, Info, Hash, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,6 +18,7 @@ import DataSourcePreviewDialog from './data-source-preview-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -49,24 +50,60 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
   const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments);
   const [dynamicSections, setDynamicSections] = useState<DynamicSection[]>(definition.dynamicSections || []);
   
-  const [sourceDb, setSourceDb] = useState(definition.sourceDb || ''); // stored as comma separated string
+  const [sourceDb, setSourceDb] = useState(definition.sourceDb || '');
   const [sourceType, setSourceType] = useState(definition.sourceType || '');
   const [sourceName, setSourceName] = useState(definition.sourceName || '');
   
   const [sqlDetails, setSqlDetails] = useState<SqlFunctionDetails>(definition.sqlFunctionDetails || defaultSqlDetails);
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const selectedDbs = useMemo(() => sourceDb ? sourceDb.split(',').map(s => s.trim()) : [], [sourceDb]);
+  // Group all edit state for debounced auto-save
+  const editState = useMemo(() => ({
+    name, module, keywords, description, shortDescription, technicalDetails, usageExamples, 
+    attachments, dynamicSections, sourceType, sourceDb, sourceName, sqlDetails
+  }), [name, module, keywords, description, shortDescription, technicalDetails, usageExamples, attachments, dynamicSections, sourceType, sourceDb, sourceName, sqlDetails]);
 
-  const availableSourceTypes = useMemo(() => {
-    const firstDb = selectedDbs[0];
-    return firstDb ? mpmSourceTypes[firstDb] || [] : [];
-  }, [selectedDbs]);
+  const debouncedEditState = useDebounce(editState, 1000);
 
-  const handleSave = (isDraft: boolean) => {
+  // Trigger auto-save when debounced state changes
+  useEffect(() => {
+    // Skip the first render or if nothing changed from initial
+    const isInitial = 
+        name === definition.name && 
+        description === definition.description &&
+        shortDescription === (definition.shortDescription || '') &&
+        technicalDetails === (definition.technicalDetails || '') &&
+        usageExamples === (definition.usageExamples || '') &&
+        JSON.stringify(keywords) === JSON.stringify(definition.keywords) &&
+        JSON.stringify(attachments) === JSON.stringify(definition.attachments) &&
+        JSON.stringify(dynamicSections) === JSON.stringify(definition.dynamicSections || []) &&
+        sourceType === (definition.sourceType || '') &&
+        sourceDb === (definition.sourceDb || '') &&
+        sourceName === (definition.sourceName || '') &&
+        JSON.stringify(sqlDetails) === JSON.stringify(definition.sqlFunctionDetails || defaultSqlDetails);
+
+    if (isInitial) return;
+
+    setSaveStatus('saving');
+    
+    // Auto-save automatically transitions to draft if it was published
+    onSave({
+      ...definition,
+      ...debouncedEditState,
+      isDraft: true, // Always a draft once edited
+      isPendingApproval: false, // Return to active draft if it was pending
+      sqlFunctionDetails: debouncedEditState.sourceType === 'SQL Functions' ? debouncedEditState.sqlDetails : undefined,
+    });
+
+    const timer = setTimeout(() => setSaveStatus('saved'), 500);
+    return () => clearTimeout(timer);
+  }, [debouncedEditState]);
+
+  const handleSaveManual = (isDraft: boolean) => {
     onSave({
       ...definition,
       name,
@@ -81,10 +118,18 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
       sourceDb,
       sourceName,
       isDraft: isDraft,
+      isPendingApproval: !isDraft && !isAdmin, // Handle standard user submission
       dynamicSections: dynamicSections,
       sqlFunctionDetails: sourceType === 'SQL Functions' ? sqlDetails : undefined,
     });
   };
+
+  const selectedDbs = useMemo(() => sourceDb ? sourceDb.split(',').map(s => s.trim()) : [], [sourceDb]);
+
+  const availableSourceTypes = useMemo(() => {
+    const firstDb = selectedDbs[0];
+    return firstDb ? mpmSourceTypes[firstDb] || [] : [];
+  }, [selectedDbs]);
 
   const toggleDatabase = (dbId: string) => {
     setSourceDb(prev => {
@@ -167,29 +212,35 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
 
   return (
     <div className="flex flex-col">
-      <div className="sticky top-0 z-30 bg-background px-6 py-4 border-b space-y-4 shadow-sm">
+      <div className="sticky top-0 z-30 bg-background px-6 py-4 border-b space-y-4 shadow-md">
         <Alert className="bg-primary/5 border-primary/20">
           <Lock className="h-4 w-4 text-primary" />
-          <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>
+          <AlertTitle className="text-primary font-bold flex items-center justify-between">
+            <span>Edit Mode Active</span>
+            <div className="flex items-center gap-2 text-xs font-normal">
+                {saveStatus === 'saving' && <><Loader2 className="h-3 w-3 animate-spin" /> Auto-saving...</>}
+                {saveStatus === 'saved' && <><Check className="h-3 w-3 text-green-600" /> All changes saved to Drafts</>}
+            </div>
+          </AlertTitle>
           <AlertDescription className="text-muted-foreground">
-            This definition is currently being modified. Your session is locked.
+            Changes are saved automatically to your <strong>Drafts</strong> section.
           </AlertDescription>
         </Alert>
         <div className="flex justify-between items-center">
           <h2 className="text-3xl font-bold">Edit Definition</h2>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onCancel}>Cancel</Button>
-            <Button variant="secondary" onClick={() => handleSave(true)} disabled={!name.trim()}>
+            <Button variant="outline" onClick={onCancel}>Close Editor</Button>
+            <Button variant="secondary" onClick={() => handleSaveManual(true)} disabled={!name.trim()}>
                 <Save className="mr-2 h-4 w-4" />
-                Save Draft
+                Mark as Final Draft
             </Button>
             <Button 
-              onClick={() => handleSave(false)} 
+              onClick={() => handleSaveManual(false)} 
               disabled={!name.trim()}
               className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
             >
                 <Send className="mr-2 h-4 w-4" />
-                {isAdmin ? 'Publish' : 'Submit for Approval'}
+                {isAdmin ? 'Publish Changes' : 'Submit for Approval'}
             </Button>
           </div>
         </div>

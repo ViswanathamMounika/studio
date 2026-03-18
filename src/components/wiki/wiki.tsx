@@ -72,7 +72,6 @@ const initialNotifications: NotificationType[] = [
 ];
 
 export default function Wiki() {
-  // Use v6 keys to ensure users see the latest module restructure and sample data
   const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v6', initialDefinitions);
   const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v6', initialTemplates);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
@@ -139,13 +138,9 @@ export default function Wiki() {
     const isSameDefinition = id === selectedDefinitionId;
     setActiveView('definitions');
     
-    if (id === editLockId) {
-      setIsEditing(true);
-    } else {
-      setIsEditing(false);
-    }
-    
+    // Check lock but don't strictly force edit mode if navigation was intended to just view
     setSelectedDefinitionId(id);
+    
     if (!isSameDefinition) {
         const def = findDefinition(definitions, id);
         if (def) {
@@ -156,7 +151,7 @@ export default function Wiki() {
     const targetSection = sectionId || 'description';
     setActiveTab(targetSection);
     if (shouldUpdateUrl) updateUrl(id, targetSection);
-  }, [definitions, selectedDefinitionId, editLockId, updateUrl, getStatusText]);
+  }, [definitions, selectedDefinitionId, updateUrl, getStatusText]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
     if ((view === 'activity-logs' || view === 'template-management') && !isAdmin) {
@@ -200,6 +195,7 @@ export default function Wiki() {
     };
   }, [handlePopState]);
 
+  // Sync isEditing with current selection and lock
   useEffect(() => {
     if (selectedDefinitionId && selectedDefinitionId === editLockId) {
       setIsEditing(true);
@@ -215,8 +211,17 @@ export default function Wiki() {
       });
     };
     setDefinitions(updateItems(definitions));
-    setIsEditing(false);
-    setEditLockId(null);
+    
+    // Auto-save logic: If it transitions to draft, switch the sidebar tab automatically
+    if (updatedDefinition.isDraft && sidebarTab !== 'drafts') {
+        setSidebarTab('drafts');
+    }
+
+    // Only close editor if user clicked "Publish" or a non-draft manual save
+    if (!updatedDefinition.isDraft || (updatedDefinition.isDraft && !isEditing)) {
+        setIsEditing(false);
+        setEditLockId(null);
+    }
 
     if (isBookmarked(updatedDefinition.id)) {
         const newNotification: NotificationType = {
@@ -233,15 +238,13 @@ export default function Wiki() {
   
   const handleCreateDefinition = (newDefinitionData: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => {
     const newId = Date.now().toString();
-    
-    // If user clicked "Submit" (isDraft is false) and they aren't admin, it's pending
     const isPending = !newDefinitionData.isDraft && !isAdmin;
     
     const newDefinition: Definition = {
         ...newDefinitionData,
         id: newId,
         isPendingApproval: isPending,
-        isDraft: newDefinitionData.isDraft || isPending, // Treat pending as a draft variant for now
+        isDraft: newDefinitionData.isDraft || isPending,
         revisions: [],
         isArchived: false,
         children: [],
@@ -270,6 +273,7 @@ export default function Wiki() {
     setIsTemplatesModalOpen(false);
     setSelectedDefinitionId(newId);
     setActiveView('definitions');
+    setSidebarTab('drafts'); // New creations always start in drafts
     
     if (isPending) {
       toast({ title: 'Submitted', description: 'Your new definition has been sent for approval.' });
@@ -281,8 +285,6 @@ export default function Wiki() {
     if (!definitionToDuplicate) return;
     
     const newId = Date.now().toString();
-    
-    // Create automatic "Copied from" note
     const duplicateNote: Note = {
       id: `note-dup-${Date.now()}`,
       authorId: currentUser.id,
@@ -293,7 +295,6 @@ export default function Wiki() {
       isShared: false,
     };
 
-    // Explicitly set isDraft: true and isPendingApproval: false for the duplicate
     const newDefinition: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
       ...definitionToDuplicate,
       id: newId,
@@ -306,14 +307,8 @@ export default function Wiki() {
     };
     
     handleCreateDefinition(newDefinition);
-    
-    // Switch the sidebar tab to "Drafts" to show the newly duplicated item
     setSidebarTab('drafts');
-    
-    toast({ 
-      title: 'Definition Duplicated', 
-      description: 'A copy has been created in your Drafts section.' 
-    });
+    toast({ title: 'Definition Duplicated', description: 'A copy has been created in your Drafts section.' });
   };
 
   const handleArchive = (id: string | string[], archive: boolean) => {
@@ -434,9 +429,7 @@ export default function Wiki() {
   }, [enrichedDefinitions, searchQuery]);
 
   const categorizedDefinitions = useMemo(() => {
-    // Search only affects the published definitions
     const itemsForPublished = searchQuery ? filteredDefinitions : enrichedDefinitions;
-    // Workflow items (Queue/Drafts) ignore the search query
     const itemsForWorkflow = enrichedDefinitions;
 
     const filterByDraft = (items: Definition[], isDraft: boolean): Definition[] => {
@@ -471,9 +464,7 @@ export default function Wiki() {
 
     let processedPublished = itemsForPublished;
     
-    // Filter by Archived status (Exclusive behavior)
     if (showArchived) {
-        // Exclusive: Only show archived (and their module parents)
         const getOnlyArchived = (items: Definition[]): Definition[] => {
             return items.reduce((acc: Definition[], item) => {
                 const children = getOnlyArchived(item.children || []);
@@ -485,7 +476,6 @@ export default function Wiki() {
         };
         processedPublished = getOnlyArchived(processedPublished);
     } else {
-        // Standard: Hide archived items completely
         const getHideArchived = (items: Definition[]): Definition[] => {
             return items.reduce((acc: Definition[], item) => {
                 if (item.isArchived) return acc;
@@ -497,7 +487,6 @@ export default function Wiki() {
         processedPublished = getHideArchived(processedPublished);
     }
 
-    // Filter by Bookmarked status
     if (showBookmarked) {
         processedPublished = filterBookmarked(processedPublished);
     }
@@ -528,7 +517,6 @@ export default function Wiki() {
         return null;
     };
 
-    // Only allow selection from the Published tree
     const idsToToggle = getChildrenIdsFromTree(categorizedDefinitions.published, id);
     if (!idsToToggle) return;
 
@@ -538,7 +526,6 @@ export default function Wiki() {
     });
   };
 
-  // Only count documented definitions (leaf nodes) in the UI counter
   const leafSelectionCount = useMemo(() => {
     const flattenToLeafIds = (items: Definition[]): string[] => {
         let ids: string[] = [];
@@ -565,10 +552,7 @@ export default function Wiki() {
     if (definitionsToExport.length === 0) return;
 
     if (formatType === 'json') {
-        const exportData = {
-            exportDate: new Date().toISOString(),
-            definitions: definitionsToExport
-        };
+        const exportData = { exportDate: new Date().toISOString(), definitions: definitionsToExport };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
@@ -598,12 +582,8 @@ export default function Wiki() {
     } else if (formatType === 'xlsx') {
         const XLSX = await import('xlsx');
         const data = definitionsToExport.map(def => ({
-            ID: def.id,
-            Name: def.name,
-            Module: def.module,
-            Keywords: def.keywords.join(', '),
-            Description: def.description.replace(/<[^>]+>/g, ''),
-            Archived: def.isArchived,
+            ID: def.id, Name: def.name, Module: def.module, Keywords: def.keywords.join(', '),
+            Description: def.description.replace(/<[^>]+>/g, ''), Archived: def.isArchived,
         }));
         const worksheet = XLSX.utils.json_to_sheet(data);
         const workbook = XLSX.utils.book_new();
@@ -613,17 +593,7 @@ export default function Wiki() {
     } else if (formatType === 'html') {
         let htmlContent = `<html><head><title>Bulk Export</title><style>body { font-family: sans-serif; line-height: 1.6; padding: 2rem; } h1 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; } .def-block { margin-bottom: 4rem; } .keywords { font-style: italic; color: #777; }</style></head><body>`;
         definitionsToExport.forEach(def => {
-            htmlContent += `
-              <div class="def-block">
-                <h1>${def.name}</h1>
-                <p><strong>Module:</strong> ${def.module}</p>
-                <div class="keywords"><strong>Keywords:</strong> ${def.keywords.join(', ')}</div>
-                <hr/>
-                ${def.description}
-                ${def.technicalDetails ? `<h3>Technical Details</h3>${def.technicalDetails}` : ''}
-                ${def.usageExamples ? `<h3>Usage Examples</h3>${def.usageExamples}` : ''}
-              </div>
-            `;
+            htmlContent += `<div class="def-block"><h1>${def.name}</h1><p><strong>Module:</strong> ${def.module}</p><div class="keywords"><strong>Keywords:</strong> ${def.keywords.join(', ')}</div><hr/>${def.description}${def.technicalDetails ? `<h3>Technical Details</h3>${def.technicalDetails}` : ''}${def.usageExamples ? `<h3>Usage Examples</h3>${def.usageExamples}` : ''}</div>`;
         });
         htmlContent += `</body></html>`;
         const dataStr = "data:text/html;charset=utf-8," + encodeURIComponent(htmlContent);
@@ -667,7 +637,6 @@ export default function Wiki() {
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
         default: return (
                 <div className="relative">
-                  {/* Sticky Header for Status Messages (View Mode Only) */}
                   {editLockId === selectedDefinitionId && !isEditing && (
                     <div className="sticky top-0 z-30 bg-background px-6 py-4 border-b shadow-sm">
                         <Alert className="bg-primary/5 border-primary/20">
@@ -745,7 +714,6 @@ export default function Wiki() {
 
   if (!isMounted) return null;
 
-  // Count total leaf definitions pending approval
   const countLeafPending = (items: Definition[]): number => {
     return items.reduce((acc, item) => {
       const isPendingLeaf = item.isPendingApproval && (item.description || item.shortDescription);
@@ -754,7 +722,6 @@ export default function Wiki() {
   };
   const totalPendingCount = countLeafPending(categorizedDefinitions.pending);
 
-  // Count total leaf definitions in drafts
   const countLeafDrafts = (items: Definition[]): number => {
     return items.reduce((acc, item) => {
       const isDraftLeaf = item.isDraft && !item.isPendingApproval && (item.description || item.shortDescription);
@@ -765,12 +732,7 @@ export default function Wiki() {
 
   return (
     <SidebarProvider>
-      <AppSidebar 
-        activeView={activeView} 
-        onNavigate={handleNavigate} 
-        isAdmin={isAdmin} 
-        onToggleAdmin={setIsAdmin}
-      />
+      <AppSidebar activeView={activeView} onNavigate={handleNavigate} isAdmin={isAdmin} onToggleAdmin={setIsAdmin} />
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background">
           <AppHeader
@@ -786,9 +748,7 @@ export default function Wiki() {
              {activeView === 'definitions' && (
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card relative">
                   <div className="p-4 flex flex-col gap-4 border-b bg-background sticky top-0 z-30 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1>
-                    </div>
+                    <div className="flex items-center justify-between"><h1 className="text-xl font-bold tracking-tight">MPM Data Definitions</h1></div>
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -810,7 +770,6 @@ export default function Wiki() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto">
-                      {/* Workflow Switcher (Approval Queue/Drafts) */}
                       <div className="p-4 space-y-3 bg-muted/10 border-b">
                         <div className="flex items-center justify-between mb-1">
                             <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Workflow Queue</h2>
@@ -849,60 +808,24 @@ export default function Wiki() {
                         <div className="pt-2">
                             {sidebarTab === 'queue' ? (
                                 categorizedDefinitions.pending.length > 0 ? (
-                                    <DefinitionTree
-                                        treeId="queue"
-                                        definitions={categorizedDefinitions.pending}
-                                        selectedId={selectedDefinitionId}
-                                        onSelect={handleSelectDefinition}
-                                        onToggleSelection={toggleSelectionForExport}
-                                        selectedForExport={selectedForExport}
-                                        isSelectMode={false} // Disable selection UI for Workflow Queue
-                                        activeSection={activeTab}
-                                        searchQuery="" // Search filtering doesn't work for the workflow queue
-                                        editLockId={editLockId}
-                                    />
+                                    <DefinitionTree treeId="queue" definitions={categorizedDefinitions.pending} selectedId={selectedDefinitionId} onSelect={handleSelectDefinition} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={editLockId} />
                                 ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No items pending review.</p>
                             ) : (
                                 categorizedDefinitions.drafts.length > 0 ? (
-                                    <DefinitionTree
-                                        treeId="drafts"
-                                        definitions={categorizedDefinitions.drafts}
-                                        selectedId={selectedDefinitionId}
-                                        onSelect={handleSelectDefinition}
-                                        onToggleSelection={toggleSelectionForExport}
-                                        selectedForExport={selectedForExport}
-                                        isSelectMode={false} // Disable selection UI for Drafts
-                                        activeSection={activeTab}
-                                        searchQuery="" // Search filtering doesn't work for drafts
-                                        editLockId={editLockId}
-                                    />
+                                    <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={handleSelectDefinition} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={editLockId} />
                                 ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No saved drafts found.</p>
                             )}
                         </div>
                       </div>
 
-                      {/* MPM Definitions Panel (Always Visible) */}
                       <div className="flex flex-col flex-1 min-h-0">
                           <div className="px-4 py-3 bg-muted/5 border-b flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <FolderTree className="h-4 w-4 text-primary/70" />
-                                <h2 className="text-xs font-bold tracking-tight uppercase">MPM Definitions</h2>
-                              </div>
+                              <div className="flex items-center gap-2"><FolderTree className="h-4 w-4 text-primary/70" /><h2 className="text-xs font-bold tracking-tight uppercase">MPM Definitions</h2></div>
                               <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
-                                          <ListFilter className="h-4 w-4 text-muted-foreground" />
-                                      </Button>
-                                  </DropdownMenuTrigger>
+                                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 rounded-full"><ListFilter className="h-4 w-4 text-muted-foreground" /></Button></DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-48">
-                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
-                                          <Checkbox id="sidebar-show-archived" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} />
-                                          <Label htmlFor="sidebar-show-archived" className="text-xs cursor-pointer">Show Archived</Label>
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2">
-                                          <Checkbox id="sidebar-show-bookmarked" checked={showBookmarked} onCheckedChange={() => setShowBookmarked(!showBookmarked)} />
-                                          <Label htmlFor="sidebar-show-bookmarked" className="text-xs cursor-pointer">Show Bookmarked</Label>
-                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2"><Checkbox id="sidebar-show-archived" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} /><Label htmlFor="sidebar-show-archived" className="text-xs cursor-pointer">Show Archived</Label></DropdownMenuItem>
+                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2"><Checkbox id="sidebar-show-bookmarked" checked={showBookmarked} onCheckedChange={() => setShowBookmarked(!showBookmarked)} /><Label htmlFor="sidebar-show-bookmarked" className="text-xs cursor-pointer">Show Bookmarked</Label></DropdownMenuItem>
                                   </DropdownMenuContent>
                               </DropdownMenu>
                           </div>
@@ -910,70 +833,29 @@ export default function Wiki() {
                           {isSelectMode && leafSelectionCount > 0 && (
                               <div className="mx-4 my-2 p-3 bg-primary/5 border rounded-lg flex flex-col gap-3 sticky top-2 z-20 shadow-sm">
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                                        <Check className="h-3 w-3 text-primary-foreground" />
-                                      </div>
-                                      <span className="text-sm font-bold">{leafSelectionCount} selected</span>
-                                    </div>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setIsSelectMode(false); setSelectedForExport([]); }}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
+                                    <div className="flex items-center gap-2"><div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center"><Check className="h-3 w-3 text-primary-foreground" /></div><span className="text-sm font-bold">{leafSelectionCount} selected</span></div>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setIsSelectMode(false); setSelectedForExport([]); }}><X className="h-4 w-4" /></Button>
                                   </div>
                                   <div className="grid grid-cols-2 gap-2">
                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="outline" size="sm" className="h-9 text-xs" disabled={leafSelectionCount === 0}>
-                                                <Download className="mr-2 h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
+                                        <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="h-9 text-xs" disabled={leafSelectionCount === 0}><Download className="mr-2 h-4 w-4" />Export</Button></DropdownMenuTrigger>
                                         <DropdownMenuContent align="start">
-                                            <DropdownMenuItem onClick={() => handleExport('json')}>
-                                                <FileJson className="mr-2 h-4 w-4" />
-                                                JSON
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleExport('pdf')}>
-                                                <FileText className="mr-2 h-4 w-4" />
-                                                PDF
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleExport('xlsx')}>
-                                                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                                                Excel (XLSX)
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleExport('html')}>
-                                                <FileCode className="mr-2 h-4 w-4" />
-                                                HTML
-                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />PDF</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleExport('xlsx')}><FileSpreadsheet className="mr-2 h-4 w-4" />Excel (XLSX)</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleExport('html')}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
-                                    <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { handleArchive(selectedForExport, true); setIsSelectMode(false); setSelectedForExport([]); }} disabled={leafSelectionCount === 0}>
-                                        <Archive className="mr-2 h-4 w-4" />
-                                        Archive
-                                    </Button>
+                                    <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { handleArchive(selectedForExport, true); setIsSelectMode(false); setSelectedForExport([]); }} disabled={leafSelectionCount === 0}><Archive className="mr-2 h-4 w-4" />Archive</Button>
                                   </div>
                               </div>
                           )}
 
                           <div className="p-2">
                             {categorizedDefinitions.published.length > 0 ? (
-                                <DefinitionTree
-                                    treeId="mpm"
-                                    definitions={categorizedDefinitions.published}
-                                    selectedId={selectedDefinitionId}
-                                    onSelect={handleSelectDefinition}
-                                    onToggleSelection={toggleSelectionForExport}
-                                    selectedForExport={selectedForExport}
-                                    isSelectMode={isSelectMode}
-                                    activeSection={activeTab}
-                                    searchQuery={searchQuery} // Highlighting works for published definitions
-                                    editLockId={editLockId}
-                                />
+                                <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={handleSelectDefinition} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={editLockId} />
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                                    <Info className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                                    <p className="text-xs text-muted-foreground italic">No definitions found for this filter.</p>
-                                </div>
+                                <div className="flex flex-col items-center justify-center py-12 px-4 text-center"><Info className="h-8 w-8 text-muted-foreground/30 mb-2" /><p className="text-xs text-muted-foreground italic">No definitions found for this filter.</p></div>
                             )}
                           </div>
                       </div>
