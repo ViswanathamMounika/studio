@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
-import { mpmDatabases, mpmSourceTypes } from '@/lib/data';
+import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -73,13 +73,21 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
       sourceDb,
       sourceName,
       isDraft: isDraft,
-      isPendingApproval: !isDraft && !isAdmin, // Handle standard user submission
+      isPendingApproval: !isDraft && !isAdmin, 
       dynamicSections: dynamicSections,
       sqlFunctionDetails: sourceType === 'SQL Functions' ? sqlDetails : undefined,
     });
   };
 
   const selectedDbs = useMemo(() => sourceDb ? sourceDb.split(',').map(s => s.trim()) : [], [sourceDb]);
+
+  const isSupportTblsSelected = useMemo(() => selectedDbs.includes('SupportTbls'), [selectedDbs]);
+
+  const sourceObjectOptions = useMemo(() => {
+    if (!isSupportTblsSelected || !sourceType) return [];
+    const key = `SupportTbls_${sourceType}`;
+    return mpmSourceObjects[key] || [];
+  }, [isSupportTblsSelected, sourceType]);
 
   const availableSourceTypes = useMemo(() => {
     const firstDb = selectedDbs[0];
@@ -308,14 +316,34 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                   <div className="col-span-2">
                       <Label htmlFor="source_name">Source Name</Label>
                       <div className="flex items-center gap-2 mt-1">
-                          <Input 
-                              id="source_name"
-                              placeholder={sourceType ? "Enter technical object name" : "Select Source Type first"}
+                          {isSupportTblsSelected ? (
+                            <Select 
                               value={sourceName} 
-                              onChange={(e) => setSourceName(e.target.value)}
+                              onValueChange={setSourceName}
                               disabled={!sourceType}
-                              className="flex-1"
-                          />
+                            >
+                              <SelectTrigger className="flex-1">
+                                <SelectValue placeholder={sourceType ? "Select predefined object..." : "Select Source Type first"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {sourceObjectOptions.map(obj => (
+                                  <SelectItem key={obj.id} value={obj.name}>{obj.name}</SelectItem>
+                                ))}
+                                {sourceObjectOptions.length === 0 && (
+                                  <div className="p-2 text-xs text-muted-foreground text-center">No objects found for this type.</div>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input 
+                                id="source_name"
+                                placeholder={sourceType ? "Enter technical object name" : "Select Source Type first"}
+                                value={sourceName} 
+                                onChange={(e) => setSourceName(e.target.value)}
+                                disabled={!sourceType}
+                                className="flex-1"
+                            />
+                          )}
                         {isTableOrView && (
                           <Button 
                             variant="outline" 

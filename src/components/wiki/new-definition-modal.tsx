@@ -24,7 +24,7 @@ import AttachmentList from './attachments';
 import { ScrollArea } from '../ui/scroll-area';
 import { DraftedDefinition } from './draft-from-sql-modal';
 import { Textarea } from '../ui/textarea';
-import { mpmDatabases, mpmSourceTypes } from '@/lib/data';
+import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
@@ -78,7 +78,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [attachments, setAttachments] = useState<Attachment[]>(initialDefinitionState.attachments);
   const [dynamicSections, setDynamicSections] = useState<DynamicSection[]>(initialDefinitionState.dynamicSections);
   
-  const [sourceDb, setSourceDb] = useState(initialDefinitionState.sourceDb); // stored as comma separated string
+  const [sourceDb, setSourceDb] = useState(initialDefinitionState.sourceDb); 
   const [sourceType, setSourceType] = useState(initialDefinitionState.sourceType);
   const [sourceName, setSourceName] = useState(initialDefinitionState.sourceName);
 
@@ -144,6 +144,14 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   }, [open, initialData, templates]);
 
   const selectedDbs = useMemo(() => sourceDb ? sourceDb.split(',').map(s => s.trim()) : [], [sourceDb]);
+
+  const isSupportTblsSelected = useMemo(() => selectedDbs.includes('SupportTbls'), [selectedDbs]);
+
+  const sourceObjectOptions = useMemo(() => {
+    if (!isSupportTblsSelected || !sourceType) return [];
+    const key = `SupportTbls_${sourceType}`;
+    return mpmSourceObjects[key] || [];
+  }, [isSupportTblsSelected, sourceType]);
 
   const availableSourceTypes = useMemo(() => {
     const firstDb = selectedDbs[0];
@@ -376,14 +384,34 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                         <div className="col-span-2">
                             <Label htmlFor="new-def-source-name">Source Name</Label>
                             <div className="flex items-center gap-2 mt-1">
-                                <Input 
-                                    id="new-def-source-name"
-                                    placeholder={sourceType ? "Enter technical object name" : "Select Source Type first"}
+                                {isSupportTblsSelected ? (
+                                  <Select 
                                     value={sourceName} 
-                                    onChange={(e) => setSourceName(e.target.value)}
+                                    onValueChange={setSourceName}
                                     disabled={!sourceType}
-                                    className="flex-1"
-                                />
+                                  >
+                                    <SelectTrigger className="flex-1">
+                                      <SelectValue placeholder={sourceType ? "Select predefined object..." : "Select Source Type first"} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {sourceObjectOptions.map(obj => (
+                                        <SelectItem key={obj.id} value={obj.name}>{obj.name}</SelectItem>
+                                      ))}
+                                      {sourceObjectOptions.length === 0 && (
+                                        <div className="p-2 text-xs text-muted-foreground text-center">No objects found for this type.</div>
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <Input 
+                                      id="new-def-source-name"
+                                      placeholder={sourceType ? "Enter technical object name" : "Select Source Type first"}
+                                      value={sourceName} 
+                                      onChange={(e) => setSourceName(e.target.value)}
+                                      disabled={!sourceType}
+                                      className="flex-1"
+                                  />
+                                )}
                               {isTableOrView && (
                                 <Button 
                                   variant="outline" 
