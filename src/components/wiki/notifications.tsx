@@ -47,7 +47,7 @@ export default function Notifications({ notifications, setNotifications, onDefin
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-[11px] font-black uppercase tracking-wider text-primary hover:bg-primary/5 h-8 px-2" 
+                className="text-[11px] font-black uppercase tracking-wider text-primary hover:bg-primary hover:text-white h-8 px-2 transition-all" 
                 onClick={handleMarkAllAsRead} 
                 disabled={notifications.length === 0}
               >

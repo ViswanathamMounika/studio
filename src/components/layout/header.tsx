@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -6,6 +5,7 @@ import {
   Palette,
   Bell,
   PlusCircle,
+  UserCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,12 @@ import type { Notification } from "@/lib/types";
 import Notifications from "../wiki/notifications";
 import { Badge } from "../ui/badge";
 import { SidebarTrigger } from "../ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type AppHeaderProps = {
     children?: React.ReactNode;
@@ -94,23 +100,47 @@ export default function AppHeader({
                   </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="relative">
-                        <Bell className="h-4 w-4" />
-                        {unreadCount > 0 && (
-                            <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
-                        )}
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-96">
-                    <Notifications 
-                        notifications={notifications} 
-                        setNotifications={setNotifications}
-                        onDefinitionClick={onDefinitionClick}
-                    />
-                </DropdownMenuContent>
-            </DropdownMenu>
+            
+            <div className="flex items-center gap-2 border-l pl-2 ml-2">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon" className="relative h-9 w-9 rounded-xl border-slate-200">
+                            <Bell className="h-4 w-4" />
+                            {unreadCount > 0 && (
+                                <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
+                            )}
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-96 p-0 border-none shadow-2xl rounded-2xl overflow-hidden">
+                        <Notifications 
+                            notifications={notifications} 
+                            setNotifications={setNotifications}
+                            onDefinitionClick={onDefinitionClick}
+                        />
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-slate-100 transition-colors">
+                                <UserCircle className="h-5 w-5 text-slate-600" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" align="end" className="p-3 w-48 rounded-xl shadow-xl">
+                            <div className="space-y-1">
+                                <p className="font-bold text-sm text-slate-900">Dhilip Sagadevan</p>
+                                <div className="flex items-center gap-1.5">
+                                    <div className={`h-1.5 w-1.5 rounded-full ${isAdmin ? 'bg-indigo-500' : 'bg-emerald-500'}`} />
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                        {isAdmin ? 'Administrator' : 'Standard User'}
+                                    </p>
+                                </div>
+                            </div>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
           </>
         )}
       </div>
