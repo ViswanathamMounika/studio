@@ -26,7 +26,7 @@ import { DraftedDefinition } from './draft-from-sql-modal';
 import { Textarea } from '../ui/textarea';
 import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });

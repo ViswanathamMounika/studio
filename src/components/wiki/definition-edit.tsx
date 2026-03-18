@@ -16,7 +16,7 @@ import { Textarea } from '../ui/textarea';
 import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Popover, PopoverContent, PopoverTrigger } from dream-ui/popover'; // Assuming the error in import was hallucinated or incorrect, fixing to standard
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
