@@ -79,15 +79,15 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
     });
   };
 
-  const selectedDbs = useMemo(() => sourceDb ? sourceDb.split(',').map(s => s.trim()) : [], [sourceDb]);
+  const selectedDbs = useMemo(() => sourceDb ? sourceDb.split(',').map(s => s.trim()).filter(s => s !== '') : [], [sourceDb]);
 
-  const isSupportTblsSelected = useMemo(() => selectedDbs.includes('SupportTbls'), [selectedDbs]);
+  const isSupportTblsOnly = useMemo(() => selectedDbs.length === 1 && selectedDbs[0] === 'SupportTbls', [selectedDbs]);
 
   const sourceObjectOptions = useMemo(() => {
-    if (!isSupportTblsSelected || !sourceType) return [];
+    if (!isSupportTblsOnly || !sourceType) return [];
     const key = `SupportTbls_${sourceType}`;
     return mpmSourceObjects[key] || [];
-  }, [isSupportTblsSelected, sourceType]);
+  }, [isSupportTblsOnly, sourceType]);
 
   const availableSourceTypes = useMemo(() => {
     const firstDb = selectedDbs[0];
@@ -96,7 +96,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
 
   const toggleDatabase = (dbId: string) => {
     setSourceDb(prev => {
-      const current = prev ? prev.split(',').map(s => s.trim()) : [];
+      const current = prev ? prev.split(',').map(s => s.trim()).filter(s => s !== '') : [];
       const updated = current.includes(dbId) 
         ? current.filter(id => id !== dbId)
         : [...current, dbId];
@@ -316,7 +316,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
                   <div className="col-span-2">
                       <Label htmlFor="source_name">Source Name</Label>
                       <div className="flex items-center gap-2 mt-1">
-                          {isSupportTblsSelected ? (
+                          {isSupportTblsOnly ? (
                             <Select 
                               value={sourceName} 
                               onValueChange={setSourceName}
