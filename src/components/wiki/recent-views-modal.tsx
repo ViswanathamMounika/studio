@@ -10,6 +10,7 @@ import { Button } from '../ui/button';
 import { Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow, isValid } from 'date-fns';
 import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type RecentViewsModalProps = {
   open: boolean;
@@ -25,11 +26,10 @@ type RecentViewData = {
     status: string;
 }
 
-const ITEMS_PER_PAGE = 10;
-
 export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick }: RecentViewsModalProps) {
   const [recentViews, setRecentViews] = useState<RecentViewData[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     if (open) {
@@ -40,11 +40,11 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
   }, [open]);
 
   const paginatedViews = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return recentViews.slice(start, start + ITEMS_PER_PAGE);
-  }, [recentViews, currentPage]);
+    const start = (currentPage - 1) * itemsPerPage;
+    return recentViews.slice(start, start + itemsPerPage);
+  }, [recentViews, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(recentViews.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(recentViews.length / itemsPerPage);
 
   const handleDefinitionClick = (id: string) => {
     onDefinitionClick(id);
@@ -139,8 +139,23 @@ export default function RecentViewsModal({ open, onOpenChange, onDefinitionClick
         </div>
 
         <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t p-4 px-6 bg-white shrink-0 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
-            <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                Showing {recentViews.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} - {Math.min(currentPage * ITEMS_PER_PAGE, recentViews.length)} of {recentViews.length}
+            <div className="flex items-center gap-4">
+                <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                    Showing {recentViews.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(currentPage * itemsPerPage, recentViews.length)} of {recentViews.length}
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Items per page:</span>
+                    <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
+                        <SelectTrigger className="h-7 w-16 text-[11px] font-bold rounded-lg border-slate-200">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="5">5</SelectItem>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
             <div className="flex items-center gap-3">
                 <Button 

@@ -238,7 +238,7 @@ export default function ActivityLogs() {
         
         let y = 40;
         const headers = ['User', 'Definition', 'Activity', 'Date'];
-        const colWidths = [40, 70, 30, 50];
+        const colWidths = [45, 65, 45, 30]; // Adjusted for better alignment
         
         // Header
         doc.setFont('helvetica', 'bold');
@@ -268,7 +268,7 @@ export default function ActivityLogs() {
             
             row.forEach((text, i) => {
                 const x = 14 + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-                const truncated = String(text).substring(0, i === 1 ? 35 : 20);
+                const truncated = String(text).substring(0, i === 1 ? 30 : 25);
                 doc.text(truncated, x, y);
             });
             
@@ -328,7 +328,7 @@ export default function ActivityLogs() {
                             onCheckedChange={setIsViewedOnly}
                         />
                         <Label htmlFor="viewed-only" className="text-xs font-bold text-slate-600 flex items-center gap-1">
-                            <Eye className="h-3 w-3" /> viewed by
+                            viewed by
                         </Label>
                     </div>
                 </CardHeader>
@@ -515,10 +515,7 @@ export default function ActivityLogs() {
                                         <TableCell className="font-medium py-4 text-slate-700 dark:text-slate-300">{log.userName}</TableCell>
                                         <TableCell className="text-slate-700 dark:text-slate-300">{log.definitionName}</TableCell>
                                         <TableCell className="text-slate-700 dark:text-slate-300">
-                                            <div className="flex items-center gap-2">
-                                                {log.activityType === 'Definition Viewed' && <Eye className="h-3.5 w-3.5 text-primary" />}
-                                                {log.activityType}
-                                            </div>
+                                            {log.activityType}
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
                                             {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}

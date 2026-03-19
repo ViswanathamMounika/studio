@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
@@ -164,49 +165,68 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                     (hasChildren || isModule) ? "text-primary/70" : "text-muted-foreground/60",
                     isSelected && !isSelectMode && "text-primary"
                 )} />
-                <span className="truncate text-[13px] font-medium">
-                    <HighlightedText text={node.name} highlight={searchQuery} />
-                </span>
+                
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span className="truncate text-[13px] font-medium flex-1">
+                                <HighlightedText text={node.name} highlight={searchQuery} />
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            <p>{node.name}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+
                 <div className="ml-auto flex items-center gap-1.5 opacity-60 group-hover/item:opacity-100 transition-opacity pr-1">
                     {isLocked && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Pencil className="h-3 w-3 text-primary animate-pulse" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>You are currently editing this definition</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Pencil className="h-3 w-3 text-primary animate-pulse" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>You are currently editing this definition</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     )}
                     {node.isPendingApproval && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Clock className="h-3 w-3 text-amber-600 animate-pulse" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Pending Approval</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Clock className="h-3 w-3 text-amber-600 animate-pulse" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Pending Approval</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     )}
                     {node.isArchived && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Archive className="h-3 w-3 text-destructive" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>This definition is archived</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Archive className="h-3 w-3 text-destructive" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>This definition is archived</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     )}
                     {node.isBookmarked && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Bookmark className="h-3 w-3 fill-primary text-primary" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Bookmarked</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Bookmark className="h-3 w-3 fill-primary text-primary" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Bookmarked</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     )}
                 </div>
             </div>

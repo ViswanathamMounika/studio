@@ -72,6 +72,16 @@ const initialNotifications: NotificationType[] = [
   },
 ];
 
+const flattenDefinitions = (items: Definition[]): Definition[] => {
+    let flat: Definition[] = [];
+    if (!Array.isArray(items)) return [];
+    items.forEach(item => {
+        flat.push(item);
+        if (item.children) flat = [...flat, ...flattenDefinitions(item.children)];
+    });
+    return flat;
+};
+
 export default function Wiki() {
   const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v12', initialDefinitions);
   const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v12', initialTemplates);
@@ -294,6 +304,14 @@ export default function Wiki() {
     if (!definitionToDuplicate) return;
     
     const newId = Date.now().toString();
+    
+    // Calculate new name with numeric copy suffix
+    const baseName = definitionToDuplicate.name.replace(/ \(Copy\d*\)$/, '');
+    const flatDefs = flattenDefinitions(definitions || []);
+    const copies = flatDefs.filter(d => d.name.startsWith(`${baseName} (Copy`));
+    const nextCopyNumber = copies.length + 1;
+    const newName = `${baseName} (Copy${nextCopyNumber})`;
+
     const duplicateNote: Note = {
       id: `note-dup-${Date.now()}`,
       authorId: currentUser.id,
@@ -307,7 +325,7 @@ export default function Wiki() {
     const newDefinition: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
       ...definitionToDuplicate,
       id: newId,
-      name: `${definitionToDuplicate.name} (Copy)`,
+      name: newName,
       children: [],
       isDraft: true,
       isPendingApproval: false,
@@ -318,7 +336,7 @@ export default function Wiki() {
     
     handleCreateDefinition(newDefinition);
     setSidebarTab('drafts');
-    toast({ title: 'Definition Duplicated', description: 'A copy has been created in your Drafts section.' });
+    toast({ title: 'Definition Duplicated', description: `A copy has been created as "${newName}" in your Drafts section.` });
   };
 
   const handleArchive = (id: string | string[], archive: boolean) => {
