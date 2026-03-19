@@ -87,7 +87,7 @@ export default function RelatedDefinitions({
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Related Definitions</CardTitle>
-                {isAdmin && (
+                {isAdmin && !currentDefinition.isArchived && (
                     <div className="flex gap-2">
                         {isEditing ? (
                              <Button variant="outline" onClick={() => setIsEditing(false)}><X className="mr-2 h-4 w-4" />Cancel</Button>
@@ -98,7 +98,7 @@ export default function RelatedDefinitions({
                 )}
             </CardHeader>
             <CardContent>
-                {isEditing && (
+                {isEditing && !currentDefinition.isArchived && (
                     <div className="space-y-4 mb-6">
                         <div className="flex items-center gap-2 p-4 border rounded-lg">
                             <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -160,7 +160,7 @@ export default function RelatedDefinitions({
                                         <p className="font-semibold text-primary">{def.name}</p>
                                         <p className="text-sm text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: def.description.replace(/<[^>]+>/g, '') }}></p>
                                     </button>
-                                    {isEditing && (
+                                    {isEditing && !currentDefinition.isArchived && (
                                         <Button
                                             variant="ghost"
                                             size="icon"

@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal, MessageSquare, History } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -407,7 +407,7 @@ export default function DefinitionView({
                         </TooltipContent>
                     </Tooltip>
                     
-                    {isEditable && (
+                    {isEditable && !definition.isArchived && (
                         <Button onClick={onEdit}><Pencil className="mr-2 h-4 w-4" />Edit</Button>
                     )}
                     
@@ -610,7 +610,7 @@ export default function DefinitionView({
                                         {definition.revisions.length === 0 && (
                                             <TableRow>
                                                 <TableCell colSpan={4} className="h-32 text-center text-muted-foreground italic">
-                                                    Initial version created on {new Date().toLocaleDateString()}. No subsequent revisions logged.
+                                                    Initial version created. No subsequent revisions logged.
                                                 </TableCell>
                                             </TableRow>
                                         )}

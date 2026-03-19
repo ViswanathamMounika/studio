@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
@@ -184,21 +185,6 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
         </Alert>
         <div className="flex justify-between items-center">
           <h2 className="text-3xl font-bold">Edit Definition</h2>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onCancel} className="rounded-xl">Cancel</Button>
-            <Button variant="secondary" onClick={() => handleSaveManual(true)} disabled={!name.trim()} className="rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-900 border-none shadow-sm opacity-100">
-                <Save className="mr-2 h-4 w-4" />
-                Save
-            </Button>
-            <Button 
-              onClick={() => handleSaveManual(false)} 
-              disabled={!name.trim()}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl"
-            >
-                <Send className="mr-2 h-4 w-4" />
-                {isAdmin ? 'Publish Changes' : 'Submit for Approval'}
-            </Button>
-          </div>
         </div>
       </div>
       
@@ -548,6 +534,28 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
           </CardContent>
         </Card>
       </div>
+
+      <div className="sticky bottom-0 bg-slate-50 border-t p-4 px-6 flex justify-end gap-3 z-30">
+        <Button variant="outline" onClick={onCancel} className="rounded-xl">Cancel</Button>
+        <Button 
+          variant="outline" 
+          onClick={() => handleSaveManual(true)} 
+          disabled={!name.trim()} 
+          className="rounded-xl border-primary text-primary hover:bg-primary/10 shadow-sm font-bold"
+        >
+            <Save className="mr-2 h-4 w-4" />
+            Save Draft
+        </Button>
+        <Button 
+          onClick={() => handleSaveManual(false)} 
+          disabled={!name.trim()}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl font-bold px-8 shadow-lg"
+        >
+            <Send className="mr-2 h-4 w-4" />
+            {isAdmin ? 'Publish Changes' : 'Submit for Approval'}
+        </Button>
+      </div>
+
       <DataSourcePreviewDialog 
         open={isPreviewOpen} 
         onOpenChange={setIsPreviewOpen} 

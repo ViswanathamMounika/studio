@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
-import AppHeader from '@/components/header';
+import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note } from '@/lib/types';
 import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send, ShieldCheck, Clock, Settings2, FolderTree } from 'lucide-react';
@@ -76,6 +76,7 @@ const flattenDefinitions = (items: Definition[]): Definition[] => {
     let flat: Definition[] = [];
     if (!Array.isArray(items)) return [];
     items.forEach(item => {
+        if (!item) return;
         flat.push(item);
         if (item.children) flat = [...flat, ...flattenDefinitions(item.children)];
     });
@@ -83,8 +84,8 @@ const flattenDefinitions = (items: Definition[]): Definition[] => {
 };
 
 export default function Wiki() {
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v12', initialDefinitions);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v12', initialTemplates);
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v13', initialDefinitions);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v13', initialTemplates);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
@@ -97,14 +98,14 @@ export default function Wiki() {
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v12', true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v13', true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('queue');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v12', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v13', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v12', null);
+  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v13', null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -148,15 +149,12 @@ export default function Wiki() {
   }, [selectedDefinitionId, updateUrl]);
 
   const handleSelectDefinition = useCallback((id: string, sectionId?: string, mode: ViewingMode = 'live', shouldUpdateUrl = true) => {
-    const isSameDefinition = id === selectedDefinitionId;
-    
-    // Check if the node is a module/container (no description and has children)
     const def = findDefinition(definitions || [], id);
     if (def && !def.description && !def.shortDescription && def.children && def.children.length > 0) {
-        // It's a module, don't "open" it as a detail view
         return;
     }
 
+    const isSameDefinition = id === selectedDefinitionId;
     setActiveView('definitions');
     setViewingMode(mode);
     setSelectedDefinitionId(id);
@@ -309,8 +307,6 @@ export default function Wiki() {
     if (!definitionToDuplicate) return;
     
     const newId = Date.now().toString();
-    
-    // Calculate new name with numeric copy suffix
     const baseName = definitionToDuplicate.name.replace(/ \(Copy\d*\)$/, '');
     const flatDefs = flattenDefinitions(definitions || []);
     const copies = flatDefs.filter(d => d.name.startsWith(`${baseName} (Copy`));
@@ -523,12 +519,12 @@ export default function Wiki() {
         }, []);
     }
 
-    const filterBookmarked = (items: Definition[]): Definition[] => {
+    const filterBookmarkedRecursive = (items: Definition[]): Definition[] => {
         if (!Array.isArray(items)) return [];
         return items.reduce((acc: Definition[], item) => {
-            const children = filterBookmarked(item.children || []);
-            const isBookmarkedSelf = isBookmarked(item.id);
-            if (isBookmarkedSelf || children.length > 0) {
+            const children = filterBookmarkedRecursive(item.children || []);
+            const isSelfBookmarked = isBookmarked(item.id);
+            if (isSelfBookmarked || children.length > 0) {
                 acc.push({ ...item, children });
             }
             return acc;
@@ -563,7 +559,7 @@ export default function Wiki() {
     }
 
     if (showBookmarked) {
-        processedPublished = filterBookmarked(processedPublished);
+        processedPublished = filterBookmarkedRecursive(processedPublished);
     }
 
     return {

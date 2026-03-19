@@ -238,7 +238,7 @@ export default function ActivityLogs() {
         
         let y = 40;
         const headers = ['User', 'Definition', 'Activity', 'Date'];
-        const colWidths = [45, 65, 45, 30]; // Adjusted for better alignment
+        const colWidths = [45, 65, 45, 30]; // Optimized column widths for alignment
         
         // Header
         doc.setFont('helvetica', 'bold');

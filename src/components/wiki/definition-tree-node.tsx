@@ -85,7 +85,7 @@ const DefinitionSubItems = ({ definition, onSelect, activeSection, level }: { de
 
 
 export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isSelectMode, selectedForExport, activeSection, searchQuery, editLockId }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isSelectMode: boolean, selectedForExport: string[], activeSection: string, searchQuery: string, editLockId: string | null }) {
-  const isModule = !node.description; // Modules usually don't have descriptions
+  const isModule = !node.description && !node.shortDescription && node.children && node.children.length > 0;
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId !== null && node.id === selectedId;
   const isParentOfSelected = selectedId !== null && isParent(node, selectedId);
@@ -100,8 +100,6 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
     } else if (isParentOfSelected) {
         setIsNodeExpanded(true);
     }
-    // We intentionally exclude 'isSelected' from auto-expanding to prevent cross-tree expansion 
-    // when a shared folder ID is selected.
   }, [isParentOfSelected, searchQuery]);
   
   const handleNodeSelect = (e: React.MouseEvent) => {
@@ -109,7 +107,11 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
     if (isSelectMode) {
         onToggleSelection(node.id, !isSelectedForExport);
     } else {
-        onSelect(node.id);
+        if (isModule) {
+            setIsNodeExpanded(!isNodeExpanded);
+        } else {
+            onSelect(node.id);
+        }
     }
   };
 
@@ -129,8 +131,8 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
         <div 
             className={cn(
                 "flex items-center w-full group/item rounded-md transition-all h-9 px-1",
-                (isSelected && !isSelectMode) && "bg-primary/10 text-primary font-medium",
-                (isSelectMode && isSelectedForExport) ? "bg-primary/10" : "hover:bg-muted/50"
+                (isSelected && !isSelectMode) ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50",
+                (isSelectMode && isSelectedForExport) && "bg-primary/5"
             )}
             style={{ paddingLeft: `${level * 1.5}rem` }}
         >
@@ -174,7 +176,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                             </span>
                         </TooltipTrigger>
                         <TooltipContent side="right">
-                            <p>{node.name}</p>
+                            <p className="font-bold">{node.name}</p>
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>

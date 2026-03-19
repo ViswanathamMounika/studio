@@ -243,6 +243,23 @@ export const initialTemplates: Template[] = [
   }
 ];
 
+const baselineRevision = (name: string, desc: string): Revision => ({
+    ticketId: `MPM-BASE-${name.substring(0, 3).toUpperCase()}`,
+    date: '2023-01-01',
+    developer: 'System Admin',
+    description: 'Baseline documentation imported from master repository.',
+    snapshot: {
+        id: 'temp',
+        name,
+        description: desc,
+        keywords: [],
+        module: 'System',
+        isArchived: false,
+        supportingTables: [],
+        attachments: [],
+    }
+});
+
 const definition111_rev1 = {
     id: '1.1.1',
     name: 'Auth Decision Date',
@@ -401,13 +418,7 @@ export const initialDefinitions: Definition[] = [
         module: 'Authorizations',
         keywords: ['service type', 'procedure code', 'mapping'],
         description: '<p>Defines how provider-submitted procedure codes are mapped to internal service types.</p>',
-        revisions: [{
-            ticketId: 'MPM-INIT-112',
-            date: '2023-05-12',
-            developer: 'Admin',
-            description: 'Standard baseline documentation import.',
-            snapshot: { id: '1.1.2', name: 'Service Type Mapping', description: '<p>Standard mapping logic.</p>', keywords: ['service type'], module: 'Authorizations', isArchived: false, supportingTables: [], attachments: [] }
-        }],
+        revisions: [baselineRevision('Service Type Mapping', '<p>Standard mapping logic baseline.</p>')],
         isArchived: false,
         isDraft: false,
         supportingTables: [],
@@ -424,7 +435,7 @@ export const initialDefinitions: Definition[] = [
         keywords: ['denial', 'reasons', 'standardization'],
         description: '<p>A standardized list of denial reasons mapped to specific clinical criteria and state-mandated language.</p>',
         shortDescription: 'Standardized denial reason mapping.',
-        revisions: [],
+        revisions: [baselineRevision('Auth Denial Reasons', '<p>Draft baseline imported.</p>')],
         isArchived: false,
         isDraft: true,
         isPendingApproval: true,
@@ -442,7 +453,7 @@ export const initialDefinitions: Definition[] = [
         keywords: ['TAT', 'SLA', 'turnaround'],
         description: '<p>Calculates the total time in business days between authorization request and decision.</p>',
         shortDescription: 'Calculates Auth TAT in business days.',
-        revisions: [],
+        revisions: [baselineRevision('fn_GetAuthTurnaroundTime', '<p>Calculates TAT.</p>')],
         isArchived: false,
         isDraft: true,
         isPendingApproval: true,
@@ -483,7 +494,7 @@ export const initialDefinitions: Definition[] = [
         keywords: ['HCPCS', 'CPT', 'billing'],
         description: '<p>The primary reference for claim adjudication codes used in the EZ-CAP finance module.</p>',
         shortDescription: 'Primary billing code reference.',
-        revisions: [],
+        revisions: [baselineRevision('Standard Claim Codes', '<p>Baseline import.</p>')],
         isArchived: false,
         isDraft: true,
         isPendingApproval: true,
@@ -515,13 +526,7 @@ export const initialDefinitions: Definition[] = [
             module: 'Provider',
             keywords: ['provider', 'contract', 'rates'],
             description: '<p>The negotiated payment rates for services rendered by in-network providers.</p>',
-            revisions: [{
-                ticketId: 'MPM-INIT-211',
-                date: '2023-08-20',
-                developer: 'Finance Dept',
-                description: 'Baseline financial reference data import.',
-                snapshot: { id: '2.1.1', name: 'Contracted Rates', description: '<p>Initial baseline.</p>', keywords: ['provider'], module: 'Provider', isArchived: false, supportingTables: [], attachments: [] }
-            }],
+            revisions: [baselineRevision('Contracted Rates', '<p>Initial baseline payment logic.</p>')],
             isArchived: false,
             isDraft: false,
             supportingTables: [],
@@ -538,6 +543,7 @@ export const initialDefinitions: Definition[] = [
 export function findDefinition(definitions: Definition[], id: string): Definition | null {
   if (!Array.isArray(definitions)) return null;
   for (const definition of definitions) {
+    if (!definition) continue;
     if (definition.id === id) {
       return definition;
     }
