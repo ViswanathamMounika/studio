@@ -1,3 +1,4 @@
+
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {

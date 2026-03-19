@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/accordion";
 import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal, MessageSquare, History } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -207,7 +208,7 @@ export default function DefinitionView({
 
     const handleDeleteNote = (noteId: string) => {
         if (definition.isArchived) return;
-        onSave({ ...definition, notes: definition.notes?.filter(note => note.id !== noteId) });
+        onSave({ ...definition, notes: (definition.notes || []).filter(note => note.id !== noteId) });
         toast({ title: 'Note Deleted', description: 'Your note has been removed.' });
     };
 
@@ -229,7 +230,7 @@ export default function DefinitionView({
         });
     };
 
-    const filteredNotes = definition.notes?.filter(note => {
+    const filteredNotes = (definition.notes || []).filter(note => {
         if (notesViewTab === 'my') return note.authorId === currentUser.id;
         return note.isShared && note.authorId !== currentUser.id;
     });
