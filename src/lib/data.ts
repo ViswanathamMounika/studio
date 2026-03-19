@@ -353,6 +353,14 @@ const definition111_rev5 = {
     `
 };
 
+const defaultRevision = (def: any): Revision => ({
+    ticketId: `MPM-INIT-${def.id}`,
+    date: '2023-01-01',
+    developer: 'System',
+    description: 'Initial document baseline.',
+    snapshot: { ...def, revisions: [] }
+});
+
 export const initialDefinitions: Definition[] = [
   {
     id: '1',
@@ -401,7 +409,13 @@ export const initialDefinitions: Definition[] = [
         module: 'Authorizations',
         keywords: ['service type', 'procedure code', 'mapping'],
         description: '<p>Defines how provider-submitted procedure codes are mapped to internal service types.</p>',
-        revisions: [],
+        revisions: [{
+            ticketId: 'MPM-INIT-112',
+            date: '2023-05-12',
+            developer: 'Admin',
+            description: 'Standard baseline.',
+            snapshot: { id: '1.1.2', name: 'Service Type Mapping', description: '', keywords: [], module: 'Authorizations', isArchived: false, supportingTables: [], attachments: [] }
+        }],
         isArchived: false,
         isDraft: false,
         supportingTables: [],
@@ -509,7 +523,13 @@ export const initialDefinitions: Definition[] = [
             module: 'Provider',
             keywords: ['provider', 'contract', 'rates'],
             description: '<p>The negotiated payment rates for services rendered by in-network providers.</p>',
-            revisions: [],
+            revisions: [{
+                ticketId: 'MPM-INIT-211',
+                date: '2023-08-20',
+                developer: 'Finance Dept',
+                description: 'Baseline import.',
+                snapshot: { id: '2.1.1', name: 'Contracted Rates', description: '', keywords: [], module: 'Provider', isArchived: false, supportingTables: [], attachments: [] }
+            }],
             isArchived: false,
             isDraft: false,
             supportingTables: [],

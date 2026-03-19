@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal, MessageSquare } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal, MessageSquare, History } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
@@ -568,7 +568,15 @@ export default function DefinitionView({
 
                     <TabsContent value="revisions" className="mt-6">
                         <Card>
-                            <CardHeader><div className="flex justify-end"><Button onClick={() => setShowComparison(true)} disabled={selectedRevisions.length !== 2}>Compare Revisions</Button></div></CardHeader>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <History className="h-5 w-5 text-primary" />
+                                        <CardTitle className="text-lg font-bold">Version History</CardTitle>
+                                    </div>
+                                    <Button onClick={() => setShowComparison(true)} disabled={selectedRevisions.length !== 2}>Compare Selected</Button>
+                                </div>
+                            </CardHeader>
                             <CardContent className="p-6">
                                 <Table>
                                     <TableHeader>
@@ -576,6 +584,7 @@ export default function DefinitionView({
                                             <TableHead className="w-[40px]"></TableHead>
                                             <TableHead>Date</TableHead>
                                             <TableHead>Developer</TableHead>
+                                            <TableHead>Change Summary</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -589,8 +598,16 @@ export default function DefinitionView({
                                                 </TableCell>
                                                 <TableCell className="font-medium">{rev.date}</TableCell>
                                                 <TableCell>{rev.developer}</TableCell>
+                                                <TableCell className="text-muted-foreground text-xs">{rev.description}</TableCell>
                                             </TableRow>
                                         ))}
+                                        {definition.revisions.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="h-32 text-center text-muted-foreground italic">
+                                                    Initial version created on {new Date().toLocaleDateString()}. No subsequent revisions logged.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
                             </CardContent>
@@ -617,7 +634,10 @@ export default function DefinitionView({
                             </Card>
                             <Card className="bg-card border shadow-sm p-6">
                                 <div className="flex items-center gap-4 mb-6">
-                                    <span className="font-bold text-lg">Saved Notes</span>
+                                    <div className="flex items-center gap-2">
+                                        <MessageSquare className="h-5 w-5 text-primary" />
+                                        <span className="font-bold text-lg">Saved Notes</span>
+                                    </div>
                                     <Tabs value={notesViewTab} onValueChange={(val: any) => setNotesViewTab(val)} className="h-auto">
                                         <TabsList className="bg-transparent border-none p-0 h-auto gap-4">
                                             <TabsTrigger value="my" className="bg-transparent text-muted-foreground hover:text-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none p-0 py-1 text-sm font-semibold transition-all">My Notes</TabsTrigger>

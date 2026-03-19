@@ -149,16 +149,21 @@ export default function Wiki() {
 
   const handleSelectDefinition = useCallback((id: string, sectionId?: string, mode: ViewingMode = 'live', shouldUpdateUrl = true) => {
     const isSameDefinition = id === selectedDefinitionId;
+    
+    // Check if the node is a module/container (no description and has children)
+    const def = findDefinition(definitions || [], id);
+    if (def && !def.description && !def.shortDescription && def.children && def.children.length > 0) {
+        // It's a module, don't "open" it as a detail view
+        return;
+    }
+
     setActiveView('definitions');
     setViewingMode(mode);
     setSelectedDefinitionId(id);
     
-    if (!isSameDefinition) {
-        const def = findDefinition(definitions || [], id);
-        if (def) {
-            const status = getStatusText(def);
-            trackView(id, def.name, def.module, status);
-        }
+    if (!isSameDefinition && def) {
+        const status = getStatusText(def);
+        trackView(id, def.name, def.module, status);
     }
     const targetSection = sectionId || 'description';
     setActiveTab(targetSection);
@@ -490,10 +495,6 @@ export default function Wiki() {
             if (!item) return acc;
             const children = filterPublishedWithSnapshots(item.children || []);
             
-            // MPM Tree logic:
-            // 1. If NOT a draft -> it is published, show it.
-            // 2. If IS a draft but has a published snapshot -> it WAS published, show the snapshot.
-            // 3. Otherwise (new draft) -> don't show.
             const isCurrentlyPublished = item.isDraft !== true;
             const hasPublishedVersion = !!item.publishedSnapshot;
             
@@ -526,7 +527,10 @@ export default function Wiki() {
         if (!Array.isArray(items)) return [];
         return items.reduce((acc: Definition[], item) => {
             const children = filterBookmarked(item.children || []);
-            if (isBookmarked(item.id) || children.length > 0) acc.push({ ...item, children });
+            const isBookmarkedSelf = isBookmarked(item.id);
+            if (isBookmarkedSelf || children.length > 0) {
+                acc.push({ ...item, children });
+            }
             return acc;
         }, []);
     };
