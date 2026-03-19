@@ -189,7 +189,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
             <Button variant="outline" onClick={onCancel} className="rounded-xl">Cancel</Button>
             <Button variant="secondary" onClick={() => handleSaveManual(true)} disabled={!name.trim()} className="rounded-xl">
                 <Save className="mr-2 h-4 w-4" />
-                Save Draft
+                Save
             </Button>
             <Button 
               onClick={() => handleSaveManual(false)} 

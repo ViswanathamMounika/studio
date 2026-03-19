@@ -524,6 +524,7 @@ export const initialDefinitions: Definition[] = [
 ];
 
 export function findDefinition(definitions: Definition[], id: string): Definition | null {
+  if (!Array.isArray(definitions)) return null;
   for (const definition of definitions) {
     if (definition.id === id) {
       return definition;
