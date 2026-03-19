@@ -572,9 +572,7 @@ export default function DefinitionView({
                         <Card>
                             <CardHeader>
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <CardTitle className="text-lg font-bold">Version History</CardTitle>
-                                    </div>
+                                    <CardTitle className="text-2xl font-bold">Version History</CardTitle>
                                     <Button 
                                         onClick={() => setShowComparison(true)} 
                                         disabled={selectedRevisions.length !== 2 || definition.isArchived}
@@ -627,6 +625,7 @@ export default function DefinitionView({
 
                     <TabsContent value="notes" className="mt-6">
                         <div className="space-y-8">
+                            <h3 className="text-2xl font-bold mb-6">Notes</h3>
                             {!definition.isArchived && (
                                 <Card className="bg-card border shadow-sm">
                                     <CardHeader className="py-4">

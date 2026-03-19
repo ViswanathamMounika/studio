@@ -404,8 +404,8 @@ export const initialDefinitions: Definition[] = [
             ticketId: 'MPM-INIT-112',
             date: '2023-05-12',
             developer: 'Admin',
-            description: 'Standard baseline.',
-            snapshot: { id: '1.1.2', name: 'Service Type Mapping', description: '', keywords: [], module: 'Authorizations', isArchived: false, supportingTables: [], attachments: [] }
+            description: 'Standard baseline documentation import.',
+            snapshot: { id: '1.1.2', name: 'Service Type Mapping', description: '<p>Standard mapping logic.</p>', keywords: ['service type'], module: 'Authorizations', isArchived: false, supportingTables: [], attachments: [] }
         }],
         isArchived: false,
         isDraft: false,
@@ -518,8 +518,8 @@ export const initialDefinitions: Definition[] = [
                 ticketId: 'MPM-INIT-211',
                 date: '2023-08-20',
                 developer: 'Finance Dept',
-                description: 'Baseline import.',
-                snapshot: { id: '2.1.1', name: 'Contracted Rates', description: '', keywords: [], module: 'Provider', isArchived: false, supportingTables: [], attachments: [] }
+                description: 'Baseline financial reference data import.',
+                snapshot: { id: '2.1.1', name: 'Contracted Rates', description: '<p>Initial baseline.</p>', keywords: ['provider'], module: 'Provider', isArchived: false, supportingTables: [], attachments: [] }
             }],
             isArchived: false,
             isDraft: false,
