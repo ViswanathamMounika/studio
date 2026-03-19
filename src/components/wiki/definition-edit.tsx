@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
@@ -187,7 +186,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
           <h2 className="text-3xl font-bold">Edit Definition</h2>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onCancel} className="rounded-xl">Cancel</Button>
-            <Button variant="secondary" onClick={() => handleSaveManual(true)} disabled={!name.trim()} className="rounded-xl">
+            <Button variant="secondary" onClick={() => handleSaveManual(true)} disabled={!name.trim()} className="rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-900 border-none shadow-sm opacity-100">
                 <Save className="mr-2 h-4 w-4" />
                 Save
             </Button>

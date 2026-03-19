@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -163,7 +162,7 @@ export default function DefinitionView({
     };
 
     const handleSaveNote = () => {
-        if (!noteText.trim()) return;
+        if (!noteText.trim() || definition.isArchived) return;
         const newNote: Note = { 
             id: Date.now().toString(), 
             authorId: currentUser.id, 
@@ -180,6 +179,7 @@ export default function DefinitionView({
     };
 
     const handleStartEditNote = (note: Note) => {
+        if (definition.isArchived) return;
         setEditingNoteId(note.id);
         setEditingNoteText(note.content);
     };
@@ -190,7 +190,7 @@ export default function DefinitionView({
     };
 
     const handleUpdateNote = (noteId: string) => {
-        if (!editingNoteText.trim()) return;
+        if (!editingNoteText.trim() || definition.isArchived) return;
         
         const updatedNotes = (definition.notes || []).map(note => {
             if (note.id === noteId) {
@@ -206,11 +206,13 @@ export default function DefinitionView({
     };
 
     const handleDeleteNote = (noteId: string) => {
+        if (definition.isArchived) return;
         onSave({ ...definition, notes: definition.notes?.filter(note => note.id !== noteId) });
         toast({ title: 'Note Deleted', description: 'Your note has been removed.' });
     };
 
     const handleAddReply = (content: string) => {
+        if (definition.isArchived) return;
         const newMessage: DiscussionMessage = {
             id: Date.now().toString(),
             authorId: currentUser.id,
@@ -571,10 +573,14 @@ export default function DefinitionView({
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <History className="h-5 w-5 text-primary" />
                                         <CardTitle className="text-lg font-bold">Version History</CardTitle>
                                     </div>
-                                    <Button onClick={() => setShowComparison(true)} disabled={selectedRevisions.length !== 2}>Compare Selected</Button>
+                                    <Button 
+                                        onClick={() => setShowComparison(true)} 
+                                        disabled={selectedRevisions.length !== 2 || definition.isArchived}
+                                    >
+                                        Compare Selected
+                                    </Button>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-6">
@@ -593,7 +599,8 @@ export default function DefinitionView({
                                                 <TableCell>
                                                     <Checkbox 
                                                         onCheckedChange={(checked) => handleRevisionSelect(rev, !!checked)} 
-                                                        checked={selectedRevisions.some(r => r.ticketId === rev.ticketId)} 
+                                                        checked={selectedRevisions.some(r => r.ticketId === rev.ticketId)}
+                                                        disabled={definition.isArchived}
                                                     />
                                                 </TableCell>
                                                 <TableCell className="font-medium">{rev.date}</TableCell>
@@ -620,18 +627,25 @@ export default function DefinitionView({
 
                     <TabsContent value="notes" className="mt-6">
                         <div className="space-y-8">
-                            <Card className="bg-card border shadow-sm">
-                                <CardHeader className="py-4"><div className="flex items-center gap-2"><span className="font-bold">Add a Note</span><Info className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="relative">
-                                        <Textarea placeholder="Add a personal or shared note..." className="min-h-[120px] resize-none" value={noteText} onChange={(e) => setNoteText(e.target.value)} />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-2"><Checkbox id="share-note-check" checked={shareNote} onCheckedChange={(checked) => setShareNote(!!checked)} /><Label htmlFor="share-note-check" className="text-sm cursor-pointer">Share with everyone</Label></div>
-                                        <Button onClick={handleSaveNote} className="px-8">Save</Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            {!definition.isArchived && (
+                                <Card className="bg-card border shadow-sm">
+                                    <CardHeader className="py-4">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold">Add a Note</span>
+                                            <Info className="h-4 w-4 text-muted-foreground" />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="relative">
+                                            <Textarea placeholder="Add a personal or shared note..." className="min-h-[120px] resize-none" value={noteText} onChange={(e) => setNoteText(e.target.value)} />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-2"><Checkbox id="share-note-check" checked={shareNote} onCheckedChange={(checked) => setShareNote(!!checked)} /><Label htmlFor="share-note-check" className="text-sm cursor-pointer">Share with everyone</Label></div>
+                                            <Button onClick={handleSaveNote} className="px-8">Save</Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
                             <Card className="bg-card border shadow-sm p-6">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="flex items-center gap-2">
@@ -676,7 +690,7 @@ export default function DefinitionView({
                                                         </div>
                                                         <p className="text-sm mt-3 text-muted-foreground leading-relaxed whitespace-pre-wrap">{note.content}</p>
                                                     </div>
-                                                    {(note.authorId === currentUser.id || isAdmin) && (
+                                                    {(note.authorId === currentUser.id || isAdmin) && !definition.isArchived && (
                                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             {note.authorId === currentUser.id && (
                                                                 <Button 
@@ -711,7 +725,7 @@ export default function DefinitionView({
                     </TabsContent>
 
                     <TabsContent value="related-definitions" className="mt-6">
-                        <RelatedDefinitions currentDefinition={definition} allDefinitions={allDefinitions} onDefinitionClick={handleDefinitionClick} onSave={onSave} isAdmin={isAdmin} />
+                        <RelatedDefinitions currentDefinition={definition} allDefinitions={allDefinitions} onDefinitionClick={handleDefinitionClick} onSave={onSave} isAdmin={isAdmin && !definition.isArchived} />
                     </TabsContent>
                 </Tabs>
             </div>

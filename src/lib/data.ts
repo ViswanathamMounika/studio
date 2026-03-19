@@ -1,5 +1,4 @@
-
-import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template } from './types';
+import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
     id: 'auth-status-codes',
@@ -352,14 +351,6 @@ const definition111_rev5 = {
       <pre><code>DATEDIFF(day, RequestDate, AuthDecisionDate) AS TurnaroundTime</code></pre>
     `
 };
-
-const defaultRevision = (def: any): Revision => ({
-    ticketId: `MPM-INIT-${def.id}`,
-    date: '2023-01-01',
-    developer: 'System',
-    description: 'Initial document baseline.',
-    snapshot: { ...def, revisions: [] }
-});
 
 export const initialDefinitions: Definition[] = [
   {
