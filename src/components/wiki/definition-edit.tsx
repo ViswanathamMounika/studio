@@ -469,7 +469,7 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
                     <WysiwygEditor 
                       value={section.content} 
                       onChange={content => handleUpdateDynamicSection(section.sectionId, content)} 
-                    />
+                  />
                   ) : section.contentType === 'dropdown' ? (
                     <Select 
                       value={section.content} 
@@ -558,13 +558,13 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will soft-delete your current draft and release your editing lock. Any unsaved changes will be permanently lost.
+                Your draft will be deleted and the lock will be released. This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Keep Editing</AlertDialogCancel>
               <AlertDialogAction onClick={() => onDiscard(definition.id)} className="bg-destructive hover:bg-destructive/90">
-                Discard Changes
+                Discard Draft
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

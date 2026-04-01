@@ -316,7 +316,7 @@ export default function Wiki() {
     setIsEditing(false);
     setViewingMode('live');
     setSelectedDefinitionId(null);
-    toast({ title: "Draft Discarded", description: "Your changes have been discarded and the lock released." });
+    toast({ title: "Draft Discarded", description: "Your draft has been deleted and the lock released." });
   };
   
   const handleCreateDefinition = (newDefinitionData: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => {

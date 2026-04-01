@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal, MessageSquare, History, Lock as LockIcon } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal, MessageSquare, History, Lock as LockIcon, AlertTriangle } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
@@ -34,6 +34,7 @@ import RelatedDefinitions from './related-definitions';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
 import ChangeRequestModal from './change-request-modal';
 import DiscussionsPanel from './discussions-panel';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
 
@@ -282,6 +283,23 @@ export default function DefinitionView({
   return (
     <TooltipProvider>
         <article className="prose prose-sm max-w-none">
+            {definition.isDraft && (
+                <Alert className="mb-6 bg-indigo-50 border-indigo-100 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                            <LockIcon className="h-5 w-5 text-indigo-600" />
+                        </div>
+                        <div className="flex-1">
+                            <AlertTitle className="text-indigo-900 font-bold text-lg mb-0.5">Working Draft Workspace</AlertTitle>
+                            <AlertDescription className="text-indigo-700 font-medium">
+                                You are viewing a private working copy. The live documentation remains unchanged until published.
+                                {definition.lock && <span className="ml-2 opacity-70">Locked by {definition.lock.userName === currentUser.name ? 'you' : definition.lock.userName}</span>}
+                            </AlertDescription>
+                        </div>
+                    </div>
+                </Alert>
+            )}
+
             <div className="flex justify-between items-start">
                 <div>
                     <p className="text-sm text-muted-foreground">{definition.module}</p>
@@ -726,7 +744,7 @@ export default function DefinitionView({
                                                                 variant="ghost" 
                                                                 size="icon" 
                                                                 className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors group/note-btn" 
-                                                                onClick={() => handleDeleteNote(noteId)}
+                                                                onClick={() => handleDeleteNote(note.id)}
                                                             >
                                                                 <Trash2 className="h-4 w-4 transition-colors group-hover/note-btn:text-white" />
                                                             </Button>
