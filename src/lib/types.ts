@@ -40,26 +40,61 @@ export interface DiscussionMessage {
   round?: number;
 }
 
-export interface DynamicSection {
-  sectionId: string;
+// NEW SCHEMA TYPES
+export type FieldType = 'RichText' | 'PlainText' | 'Dropdown' | 'KeyValue';
+
+export interface TemplateOption {
+  id: string;
+  templateSectionId: string;
+  columnId?: string; // Links to a specific column if it's a KeyValue dropdown
+  label: string;
+  value: string;
+  sortOrder: number;
+  isDefault: boolean;
+}
+
+export interface TemplateColumn {
+  id: string;
+  templateSectionId: string;
   name: string;
-  description?: string;
-  content: string;
-  isMandatory: boolean;
-  contentType: 'plain' | 'rich' | 'dropdown';
-  dropdownOptions?: string;
+  inputType: 'TextBox' | 'Dropdown';
+  isMulti: boolean;
+  sortOrder: number;
+  isRequired: boolean;
   maxLength?: number;
+  options?: TemplateOption[];
 }
 
-export interface InputParameter {
+export interface TemplateSection {
+  id: string;
+  templateId: string;
   name: string;
-  type: string;
+  group?: string;
+  fieldType: FieldType;
+  isMulti: boolean;
+  maxLength?: number;
+  isRequired: boolean;
+  options?: TemplateOption[];
+  columns?: TemplateColumn[];
 }
 
-export interface SqlFunctionDetails {
-  inputParameters: InputParameter[];
-  outputType: 'varchar' | 'int' | 'date' | 'datetime';
-  outputExample: string;
+export interface Template {
+  id: string;
+  name: string;
+  description: string;
+  moduleId?: string;
+  isDefault: boolean;
+  isActive: boolean;
+  sections: TemplateSection[];
+}
+
+// STORAGE TYPES FOR DEFINITION VALUES
+export interface SectionValue {
+  sectionId: string;
+  raw: string;
+  html?: string;
+  multiValues?: string[]; // For Dropdown IsMulti=1
+  structuredRows?: Array<Record<string, string>>; // For KeyValue
 }
 
 export interface LockInfo {
@@ -71,14 +106,10 @@ export interface LockInfo {
 export interface Definition {
   id: string;
   name: string;
-  shortDescription?: string;
-  description: string; // Corresponds to DEF_LONG_DESCR
-  keywords: string[];
   module: string;
-  sourceType?: string;
-  sourceDb?: string;
-  sourceName?: string;
-  sourceServer?: string;
+  templateId?: string;
+  sectionValues?: SectionValue[];
+  keywords: string[];
   isArchived: boolean;
   isDraft?: boolean;
   isPendingApproval?: boolean;
@@ -92,13 +123,17 @@ export interface Definition {
   notes?: Note[];
   discussions?: DiscussionMessage[];
   relatedDefinitions?: string[];
-  technicalDetails?: string;
-  usageExamples?: string;
-  templateId?: string;
-  dynamicSections?: DynamicSection[];
-  sqlFunctionDetails?: SqlFunctionDetails;
   publishedSnapshot?: Partial<Omit<Definition, 'revisions' | 'children' | 'notes' | 'discussions'>>;
   lock?: LockInfo;
+  
+  // Backward compatibility fields
+  description: string; 
+  shortDescription?: string;
+  technicalDetails?: string;
+  usageExamples?: string;
+  sourceType?: string;
+  sourceDb?: string;
+  sourceName?: string;
 }
 
 export interface SupportingTable {
@@ -159,38 +194,4 @@ export interface SourceObjectMetadata {
     id: string;
     name: string;
     typeId: string;
-    sqlMetadata?: {
-        inputParameters: InputParameter[];
-        outputType: 'varchar' | 'int' | 'date' | 'datetime';
-        outputExample: string;
-    };
-}
-
-export interface TemplateSection {
-  id: string;
-  name: string;
-  description?: string;
-  isMandatory: boolean;
-  defaultValue?: string;
-  contentType: 'plain' | 'rich' | 'dropdown';
-  dropdownOptions?: string;
-  maxLength?: number;
-}
-
-export type TemplateType = 'Standard' | 'Custom';
-
-export interface Template {
-  id: string;
-  name: string;
-  type: TemplateType;
-  description?: string;
-  status: 'Active' | 'Inactive';
-  // Default values for standard fields
-  defaultShortDescription?: string;
-  defaultDescription?: string;
-  defaultTechnicalDetails?: string;
-  defaultUsageExamples?: string;
-  defaultAttachments?: Attachment[];
-  // Dynamic custom sections
-  customSections?: TemplateSection[];
 }
