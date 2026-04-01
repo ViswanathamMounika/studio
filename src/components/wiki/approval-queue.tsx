@@ -19,10 +19,11 @@ import {
     Check,
     FileText,
     History,
-    ShieldCheck
+    ShieldCheck,
+    AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import ChangeRequestModal from './change-request-modal';
 
 type ApprovalQueueProps = {
@@ -42,7 +43,8 @@ const ComparisonSection = ({
     submitted?: string; 
     isHtml?: boolean 
 }) => {
-    const isModified = published !== submitted;
+    // Basic comparison logic - in a real app, use diffing library
+    const isModified = (published || '').trim() !== (submitted || '').trim();
 
     return (
         <Card className="overflow-hidden border-slate-200 shadow-sm">
@@ -138,9 +140,12 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
         <div className="flex h-full overflow-hidden bg-slate-50/30">
             {/* Sidebar List */}
             <div className="w-80 border-r bg-white flex flex-col shrink-0">
-                <div className="p-6 border-b">
-                    <h2 className="text-lg font-bold tracking-tight text-slate-900">Approval Queue</h2>
-                    <p className="text-xs text-slate-500 mt-1 font-medium">{pendingDefinitions.length} items awaiting review</p>
+                <div className="p-6 border-b bg-slate-50/50">
+                    <div className="flex items-center justify-between mb-1">
+                        <h2 className="text-lg font-bold tracking-tight text-slate-900">Approval Queue</h2>
+                        <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none font-bold">{pendingDefinitions.length}</Badge>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium">Items awaiting your decision</p>
                 </div>
                 <ScrollArea className="flex-1">
                     <div className="p-3 space-y-1">
@@ -194,17 +199,21 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                 <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
                                     <Clock className="h-4 w-4 text-amber-600" />
                                 </div>
-                                <p className="text-sm font-medium text-amber-900">
-                                    Submitted by <span className="font-bold">{selectedDef.submittedBy || 'J. Doe'}</span> · <span className="text-amber-700 font-bold">Awaiting Action</span>
-                                </p>
+                                <div className="flex flex-col">
+                                    <p className="text-sm font-medium text-amber-900">
+                                        Submitted by <span className="font-bold">{selectedDef.submittedBy || 'J. Doe'}</span>
+                                    </p>
+                                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">
+                                        {selectedDef.submittedAt ? `Pending for ${formatDistanceToNow(new Date(selectedDef.submittedAt))}` : 'Awaiting Action'}
+                                    </p>
+                                </div>
                             </div>
                             
-                            {/* Action Buttons moved to top */}
                             <div className="flex items-center gap-3">
                                 <Button 
                                     variant="outline" 
                                     size="sm"
-                                    className="rounded-xl h-9 border-red-200 text-red-600 hover:bg-red-50 font-bold"
+                                    className="rounded-xl h-9 border-red-200 text-red-600 hover:bg-red-50 font-bold bg-white"
                                     onClick={() => handleActionClick('reject')}
                                 >
                                     <XCircle className="h-4 w-4 mr-2" />
@@ -213,7 +222,7 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                 <Button 
                                     variant="outline" 
                                     size="sm"
-                                    className="rounded-xl h-9 border-amber-200 text-amber-600 hover:bg-amber-50 font-bold"
+                                    className="rounded-xl h-9 border-amber-200 text-amber-600 hover:bg-amber-50 font-bold bg-white"
                                     onClick={() => handleActionClick('request')}
                                 >
                                     <RefreshCcw className="h-4 w-4 mr-2" />
@@ -221,7 +230,7 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                 </Button>
                                 <Button 
                                     size="sm"
-                                    className="rounded-xl h-9 bg-indigo-600 hover:bg-indigo-700 font-bold shadow-sm"
+                                    className="rounded-xl h-9 bg-primary hover:bg-primary/90 font-bold shadow-sm px-6"
                                     onClick={handleApprove}
                                 >
                                     <ShieldCheck className="h-4 w-4 mr-2" />
@@ -234,32 +243,30 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                             <ScrollArea className="flex-1">
                                 <div className="p-8 max-w-6xl mx-auto space-y-8">
                                     <div className="space-y-4">
+                                        <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                            <span>Approval Review</span>
+                                            <ChevronRight className="h-3 w-3" />
+                                            <span className="text-primary">{selectedDef.module}</span>
+                                        </div>
                                         <h1 className="text-4xl font-bold tracking-tight text-slate-900">{selectedDef.name}</h1>
                                         <div className="flex items-center gap-3">
                                             <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 h-6 gap-1.5 px-2.5">
-                                                <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                                                <AlertCircle className="h-3 w-3" />
                                                 Reviewing Version Comparison
                                             </Badge>
-                                            <span className="text-slate-300">•</span>
-                                            <span className="text-sm font-bold text-slate-500">{selectedDef.module}</span>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start pb-24">
                                         {/* Comparison List */}
                                         <div className="lg:col-span-2 space-y-6">
-                                            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                                Visual Diff Analysis
+                                            <div className="flex items-center gap-3">
+                                                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                                    Visual Diff Analysis
+                                                </h3>
                                                 <div className="h-px bg-slate-200 flex-1" />
-                                            </h3>
+                                            </div>
                                             
-                                            <ComparisonSection 
-                                                title="Technical Details" 
-                                                published={selectedDef.publishedSnapshot?.technicalDetails}
-                                                submitted={selectedDef.technicalDetails}
-                                                isHtml
-                                            />
-
                                             <ComparisonSection 
                                                 title="Short Description" 
                                                 published={selectedDef.publishedSnapshot?.shortDescription}
@@ -272,13 +279,20 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                                 submitted={selectedDef.description}
                                                 isHtml
                                             />
+
+                                            <ComparisonSection 
+                                                title="Technical Details" 
+                                                published={selectedDef.publishedSnapshot?.technicalDetails}
+                                                submitted={selectedDef.technicalDetails}
+                                                isHtml
+                                            />
                                         </div>
 
                                         {/* Sidebar Info */}
                                         <div className="space-y-6 sticky top-4">
                                             <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
                                                 <CardHeader className="bg-slate-50/50 border-b p-5">
-                                                    <CardTitle className="text-sm font-bold text-slate-800">Submission Info</CardTitle>
+                                                    <CardTitle className="text-sm font-bold text-slate-800">Submission Details</CardTitle>
                                                 </CardHeader>
                                                 <CardContent className="p-5 space-y-4">
                                                     <div className="flex justify-between items-center text-sm">
@@ -286,8 +300,14 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                                         <span className="text-slate-900 font-bold">{selectedDef.submittedBy || 'J. Doe'}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center text-sm">
-                                                        <span className="text-slate-500 font-medium">Date</span>
-                                                        <span className="text-slate-900 font-bold">{selectedDef.submittedAt ? format(new Date(selectedDef.submittedAt), 'MMM dd, HH:mm') : 'Mar 26, 09:14'}</span>
+                                                        <span className="text-slate-500 font-medium">Submitted</span>
+                                                        <span className="text-slate-900 font-bold">{selectedDef.submittedAt ? format(new Date(selectedDef.submittedAt), 'MMM dd, HH:mm') : 'Recently'}</span>
+                                                    </div>
+                                                    <div className="pt-2">
+                                                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                                                            <p className="text-sm font-bold text-amber-600">Pending Review</p>
+                                                        </div>
                                                     </div>
                                                 </CardContent>
                                             </Card>
@@ -304,7 +324,7 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                                             </div>
                                                             <div className="space-y-0.5">
                                                                 <p className="text-sm font-bold text-slate-800">Draft Completed</p>
-                                                                <p className="text-xs text-slate-500">{selectedDef.submittedBy || 'J. Doe'}</p>
+                                                                <p className="text-xs text-slate-500">{selectedDef.submittedBy || 'Author'}</p>
                                                             </div>
                                                         </div>
                                                         <div className="relative">
@@ -313,7 +333,7 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                                             </div>
                                                             <div className="space-y-0.5">
                                                                 <p className="text-sm font-bold text-amber-700">Awaiting Approval</p>
-                                                                <p className="text-xs text-slate-500 font-medium">Ready for review</p>
+                                                                <p className="text-xs text-slate-500 font-medium">Ready for decision</p>
                                                             </div>
                                                         </div>
                                                     </div>

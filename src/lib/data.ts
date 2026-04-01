@@ -16,8 +16,6 @@ export const authorizationStatusCodes: SupportingTable = {
     ]
 };
 
-const names = ['J. Doe', 'A. Smith', 'T. Johnson', 'S. Lee', 'M. Garcia', 'P. Williams', 'D. Brown', 'K. Nguyen', 'Dhilip Sagadevan'];
-
 export const mpmDatabases: DatabaseMetadata[] = [
     { id: 'EzCAp', name: 'EzCAp' },
     { id: 'SupportTbls', name: 'SupportTbls' },
@@ -142,8 +140,8 @@ export const initialDefinitions: Definition[] = [
         module: 'Authorizations',
         templateId: '1',
         keywords: ['authorization', 'decision date', 'SLA'],
-        description: '<p>The final date of adjudication.</p>',
-        shortDescription: 'Final decision date for auths.',
+        description: '<p>The date on which a final adjudication decision was reached for an authorization request.</p>',
+        shortDescription: 'Final decision date for authorizations.',
         sourceType: 'Views',
         sourceName: 'vw_AuthDecisionDate',
         isArchived: false,
@@ -152,8 +150,8 @@ export const initialDefinitions: Definition[] = [
         supportingTables: [],
         attachments: [],
         sectionValues: [
-          { sectionId: '1', raw: 'Final decision date for auths.' },
-          { sectionId: '2', raw: '<p>The date on which a final decision is made for an authorization request.</p>', html: '<p>The date on which a final decision is made for an authorization request.</p>' },
+          { sectionId: '1', raw: 'Final decision date for authorizations.' },
+          { sectionId: '2', raw: '<p>The date on which a final adjudication decision was reached for an authorization request.</p>', html: '<p>The date on which a final adjudication decision was reached for an authorization request.</p>' },
           { sectionId: '8', raw: 'EzCAP', multiValues: ['EzCAP'] }
         ]
       },
@@ -163,12 +161,37 @@ export const initialDefinitions: Definition[] = [
         module: 'Authorizations',
         templateId: '1',
         keywords: ['mapping', 'codes'],
-        description: '<p>Maps procedure codes to internal types.</p>',
+        description: '<p>Maps procedure codes to internal service types for utilization management reporting.</p>',
+        shortDescription: 'Internal service type code mapping.',
         sourceType: 'Tables',
         sourceName: 'tbl_ServiceTypeMap',
         isArchived: false,
         isDraft: false,
         revisions: [baselineRevision('Service Type Mapping', 'Baseline mapping logic.')],
+        supportingTables: [],
+        attachments: []
+      },
+      {
+        id: '1.1.3',
+        name: 'Authorization Timeliness SLA',
+        module: 'Authorizations',
+        templateId: '1',
+        keywords: ['SLA', 'timeliness', 'regulatory'],
+        description: '<p>Updated regulatory requirements for turnaround time. Now includes Saturday as a business day for urgent requests.</p>',
+        shortDescription: 'Regulatory SLA requirements for turnaround times.',
+        technicalDetails: '<h3>Calculation Logic</h3><ul><li>Urgent: 72 hours</li><li>Standard: 5 business days</li></ul>',
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: true,
+        submittedBy: 'Alex Smith',
+        submittedAt: new Date(Date.now() - 3600000 * 24).toISOString(), // 1 day ago
+        revisions: [baselineRevision('Auth Timeliness SLA', 'Initial SLA guidelines.')],
+        publishedSnapshot: {
+            name: 'Authorization Timeliness SLA',
+            description: '<p>Regulatory requirements for turnaround time. Business days are Mon-Fri.</p>',
+            shortDescription: 'SLA requirements for turnaround times.',
+            technicalDetails: '<h3>Calculation Logic</h3><ul><li>Urgent: 72 hours</li><li>Standard: 14 days</li></ul>'
+        },
         supportingTables: [],
         attachments: []
       }
@@ -192,13 +215,35 @@ export const initialDefinitions: Definition[] = [
         module: 'Claims',
         templateId: '1',
         keywords: ['claims', 'billing', 'rates'],
-        description: '<p>Contracted rate lookup logic.</p>',
+        description: '<p>Lookup logic for contracted provider rates based on plan ID and network tier.</p>',
         shortDescription: 'Rate calculation rules for providers.',
         sourceType: 'Stored Procedures',
         sourceName: 'usp_GetContractedRates',
         isArchived: false,
         isDraft: false,
         revisions: [baselineRevision('Contracted Rates', 'Baseline logic.')],
+        supportingTables: [],
+        attachments: []
+      },
+      {
+        id: '2.1.2',
+        name: 'Claim Denial Codes Mapping',
+        module: 'Claims',
+        templateId: '1',
+        keywords: ['denials', 'codes', 'mapping'],
+        description: '<p>This definition maps HIPAA standard reason codes to internal MedPoint operational denial categories.</p>',
+        shortDescription: 'Denial code crosswalk documentation.',
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: true,
+        submittedBy: 'Dhilip Sagadevan',
+        submittedAt: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago
+        revisions: [baselineRevision('Claim Denial Mapping', 'Initial crosswalk.')],
+        publishedSnapshot: {
+            name: 'Claim Denial Codes Mapping',
+            description: '<p>Mapping of reason codes to internal categories.</p>',
+            shortDescription: 'Internal denial code mapping.'
+        },
         supportingTables: [],
         attachments: []
       }
