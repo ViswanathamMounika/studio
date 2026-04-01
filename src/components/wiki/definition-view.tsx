@@ -10,13 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Pencil, Bookmark, Share2, Info, Lock as LockIcon, MessageSquare, History, MoreVertical } from 'lucide-react';
+import { Bookmark, Info, Lock as LockIcon, MessageSquare, History } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
-import { Label } from '../ui/label';
+import { Label } from '@/components/ui/label';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -52,6 +52,7 @@ export default function DefinitionView({
     const [showComparison, setShowComparison] = useState(false);
     const [noteText, setNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
+    const [notesTab, setNotesTab] = useState('my-notes');
     
     const { toast } = useToast();
 
@@ -65,15 +66,6 @@ export default function DefinitionView({
         }, 100);
         return () => clearTimeout(timer);
     }, [definition, activeTab]);
-
-    const handleShare = () => {
-        if (typeof window === 'undefined') return;
-        const url = new URL(window.location.href);
-        url.searchParams.set('definitionId', definition.id);
-        navigator.clipboard.writeText(url.toString()).then(() => {
-            toast({ title: 'Link Copied', description: 'Shareable link copied to clipboard.' });
-        });
-    };
 
     const handleSaveNote = () => {
         if (!noteText.trim() || definition.isArchived) return;
@@ -96,8 +88,14 @@ export default function DefinitionView({
         if (definition.isArchived) return;
         setSelectedRevisions(prev => {
             const isSelected = prev.some(r => r.ticketId === rev.ticketId);
-            if (isSelected) return prev.filter(r => r.ticketId !== rev.ticketId);
-            if (prev.length >= 2) return [prev[1], rev];
+            if (isSelected) {
+                return prev.filter(r => r.ticketId !== rev.ticketId);
+            }
+            if (prev.length >= 2) {
+                // If 2 already selected, just return current list. 
+                // User must uncheck to select a different one as per requirement.
+                return prev;
+            }
             return [...prev, rev];
         });
     };
@@ -112,6 +110,9 @@ export default function DefinitionView({
       }, {} as Record<string, typeof selectedTemplate.sections>);
     }, [selectedTemplate]);
 
+    const myNotes = (definition.notes || []).filter(n => n.authorId === currentUser.id);
+    const otherNotes = (definition.notes || []).filter(n => n.authorId !== currentUser.id);
+
     const tabs = [
         { id: 'description', label: 'Description' },
         { id: 'revisions', label: 'Version History' },
@@ -124,14 +125,14 @@ export default function DefinitionView({
     <TooltipProvider>
         <article className="max-w-none">
             {definition.isDraft && (
-                <Alert className="mb-6 bg-indigo-50 border-indigo-100 rounded-2xl shadow-sm">
+                <Alert className="mb-6 bg-primary/5 border-primary/10 rounded-2xl shadow-sm">
                     <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-                            <LockIcon className="h-5 w-5 text-indigo-600" />
+                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <LockIcon className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1">
-                            <AlertTitle className="text-indigo-900 font-bold text-lg mb-0.5">Working Draft Workspace</AlertTitle>
-                            <AlertDescription className="text-indigo-700 font-medium">
+                            <AlertTitle className="text-primary font-bold text-lg mb-0.5">Working Draft Workspace</AlertTitle>
+                            <AlertDescription className="text-slate-700 font-medium">
                                 You are viewing a private working copy.
                                 {definition.lock && <span className="ml-2 opacity-70">Locked by {definition.lock.userName}</span>}
                             </AlertDescription>
@@ -140,7 +141,6 @@ export default function DefinitionView({
                 </Alert>
             )}
 
-            {/* Reverted Header to match picture */}
             <div className="flex justify-between items-start mb-6">
                 <div>
                     <p className="text-xs font-semibold text-slate-500 mb-1">{definition.module}</p>
@@ -156,7 +156,7 @@ export default function DefinitionView({
                       <Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary text-primary")} />
                     </Button>
                     {!definition.isArchived && (
-                        <Button onClick={onEdit} className="bg-indigo-600 hover:bg-indigo-700 font-bold px-6 shadow-sm">
+                        <Button onClick={onEdit} className="bg-primary hover:bg-primary/90 font-bold px-6 shadow-sm">
                             Edit
                         </Button>
                     )}
@@ -164,14 +164,13 @@ export default function DefinitionView({
                 </div>
             </div>
 
-            {/* Reverted Tab Strip to match picture */}
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
                 <TabsList className="w-full bg-slate-100/80 border-b-0 rounded-lg p-1 h-12 flex justify-between gap-1 overflow-hidden">
                     {tabs.map(tab => (
                         <TabsTrigger 
                             key={tab.id} 
                             value={tab.id} 
-                            className="flex-1 rounded-md text-slate-500 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 py-2.5 text-sm font-bold transition-all"
+                            className="flex-1 rounded-md text-slate-500 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-primary py-2.5 text-sm font-bold transition-all"
                         >
                             {tab.label}
                         </TabsTrigger>
@@ -201,21 +200,18 @@ export default function DefinitionView({
                                         {section.fieldType === 'RichText' && (
                                             <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: value?.html || '<p class="italic text-slate-400">Not provided</p>' }} />
                                         )}
-                                        
                                         {section.fieldType === 'PlainText' && (
                                             <p className="text-sm text-slate-700 m-0 leading-relaxed font-medium">{value?.raw || 'Not provided'}</p>
                                         )}
-
                                         {section.fieldType === 'Dropdown' && (
                                             <div className="flex flex-wrap gap-2">
                                             {section.isMulti ? (
-                                                value?.multiValues?.map(v => <Badge key={v} className="bg-indigo-50 text-indigo-700 border-indigo-100 font-bold">{v}</Badge>)
+                                                value?.multiValues?.map(v => <Badge key={v} className="bg-primary/10 text-primary border-primary/20 font-bold">{v}</Badge>)
                                             ) : (
                                                 <Badge className="bg-slate-100 text-slate-700 border-slate-200 font-bold">{value?.raw || 'N/A'}</Badge>
                                             )}
                                             </div>
                                         )}
-
                                         {section.fieldType === 'KeyValue' && (
                                             <div className="border rounded-xl overflow-hidden shadow-none">
                                                 <Table>
@@ -259,7 +255,7 @@ export default function DefinitionView({
                             onClick={() => setShowComparison(true)}
                             className="rounded-xl font-bold border-slate-200"
                         >
-                            Compare Selected ({selectedRevisions.length})
+                            Compare Revision ({selectedRevisions.length})
                         </Button>
                     </div>
                     <Card className="rounded-2xl border-slate-200 overflow-hidden shadow-sm bg-white">
@@ -305,42 +301,70 @@ export default function DefinitionView({
                 <TabsContent value="notes" className="mt-8 space-y-6">
                     <h2 className="text-xl font-bold text-slate-900 mt-0">Notes</h2>
                     {!definition.isArchived && (
-                      <Card className="p-6 bg-indigo-50/30 border-indigo-100 rounded-2xl shadow-none">
-                        <Label className="text-sm font-bold text-indigo-900 mb-2 block">Add a Note</Label>
-                        <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Personal or shared insights..." className="rounded-xl border-indigo-100 mb-4 h-24 bg-white focus-visible:ring-primary/20" />
+                      <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl shadow-none">
+                        <Label className="text-sm font-bold text-primary mb-2 block">Add a Note</Label>
+                        <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Personal or shared insights..." className="rounded-xl border-primary/10 mb-4 h-24 bg-white focus-visible:ring-primary/20" />
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} />
-                            <Label htmlFor="share" className="text-xs font-bold text-indigo-700 cursor-pointer">Share with team</Label>
+                            <Label htmlFor="share" className="text-xs font-bold text-primary cursor-pointer">Share with team</Label>
                           </div>
-                          <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold shadow-sm">Save Note</Button>
+                          <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="bg-primary hover:bg-primary/90 rounded-xl font-bold shadow-sm">Save Note</Button>
                         </div>
                       </Card>
                     )}
                     
-                    <div className="space-y-4">
-                      <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4">Saved Notes</h3>
-                      {definition.notes && definition.notes.length > 0 ? (
-                        definition.notes.map(note => (
-                            <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="font-bold text-slate-900">{note.author}</span>
-                                    <span className="text-[10px] text-slate-400 uppercase font-black tracking-tighter">•</span>
-                                    <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
+                    <Tabs value={notesTab} onValueChange={setNotesTab} className="w-full">
+                        <TabsList className="bg-slate-100 p-1 rounded-lg h-9 mb-6">
+                            <TabsTrigger value="my-notes" className="text-xs font-bold px-4 data-[state=active]:bg-white data-[state=active]:text-primary">My Notes</TabsTrigger>
+                            <TabsTrigger value="others-notes" className="text-xs font-bold px-4 data-[state=active]:bg-white data-[state=active]:text-primary">Others' Notes</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="my-notes" className="space-y-4 m-0">
+                            {myNotes.length > 0 ? (
+                                myNotes.map(note => (
+                                    <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-slate-900">{note.author}</span>
+                                                <span className="text-[10px] text-slate-400 uppercase font-black tracking-tighter">•</span>
+                                                <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
+                                            </div>
+                                            {note.isShared && <Badge variant="outline" className="text-[9px] uppercase font-black h-5 border-primary/10 text-primary bg-primary/5">Shared</Badge>}
+                                        </div>
+                                        <p className="text-sm text-slate-600 m-0 leading-relaxed font-medium">{note.content}</p>
+                                    </Card>
+                                ))
+                            ) : (
+                                <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                                    <MessageSquare className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                                    <p className="text-sm text-slate-400 italic">No notes found from you.</p>
                                 </div>
-                                {note.isShared && <Badge variant="outline" className="text-[9px] uppercase font-black h-5 border-indigo-100 text-indigo-600 bg-indigo-50">Shared</Badge>}
-                            </div>
-                            <p className="text-sm text-slate-600 m-0 leading-relaxed font-medium">{note.content}</p>
-                            </Card>
-                        ))
-                      ) : (
-                        <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                            <MessageSquare className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                            <p className="text-sm text-slate-400 italic">No notes found for this definition.</p>
-                        </div>
-                      )}
-                    </div>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="others-notes" className="space-y-4 m-0">
+                            {otherNotes.length > 0 ? (
+                                otherNotes.map(note => (
+                                    <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-slate-900">{note.author}</span>
+                                                <span className="text-[10px] text-slate-400 uppercase font-black tracking-tighter">•</span>
+                                                <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-slate-600 m-0 leading-relaxed font-medium">{note.content}</p>
+                                    </Card>
+                                ))
+                            ) : (
+                                <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                                    <MessageSquare className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                                    <p className="text-sm text-slate-400 italic">No team notes found for this definition.</p>
+                                </div>
+                            )}
+                        </TabsContent>
+                    </Tabs>
                 </TabsContent>
 
                 <TabsContent value="related-definitions" className="mt-8">

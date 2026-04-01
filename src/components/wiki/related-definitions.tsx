@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -96,14 +95,14 @@ export default function RelatedDefinitions({
                         {isEditing ? (
                              <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-lg font-bold"><X className="mr-2 h-4 w-4" />Cancel</Button>
                         ) : (
-                            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-lg font-bold bg-white"><Pencil className="mr-2 h-4 w-4" />Manage</Button>
+                            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-lg font-bold bg-white border-slate-200"><Pencil className="mr-2 h-4 w-4" />Edit</Button>
                         )}
                     </div>
                 )}
             </CardHeader>
             <CardContent className="p-6">
                 {isEditing && !currentDefinition.isArchived && (
-                    <div className="space-y-4 mb-8 p-4 bg-indigo-50/30 rounded-xl border border-indigo-100 animate-in fade-in slide-in-from-top-2">
+                    <div className="space-y-4 mb-8 p-4 bg-primary/5 rounded-xl border border-primary/10 animate-in fade-in slide-in-from-top-2">
                         <div className="flex items-center gap-2">
                             <DropdownMenu open={open} onOpenChange={setOpen}>
                                 <DropdownMenuTrigger asChild>
@@ -111,11 +110,13 @@ export default function RelatedDefinitions({
                                         variant="outline"
                                         role="combobox"
                                         aria-expanded={open}
-                                        className="flex-1 justify-between rounded-xl bg-white border-slate-200 font-medium"
+                                        className="w-[300px] justify-between rounded-xl bg-white border-slate-200 font-medium"
                                     >
-                                        {selectedId
-                                            ? flatAllDefinitions.find(def => def.id === selectedId)?.name
-                                            : "Select a definition to link..."}
+                                        <span className="truncate">
+                                            {selectedId
+                                                ? flatAllDefinitions.find(def => def.id === selectedId)?.name
+                                                : "Select a definition to link..."}
+                                        </span>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="w-[400px] p-2 rounded-xl shadow-xl">
@@ -149,8 +150,8 @@ export default function RelatedDefinitions({
                                     </ScrollArea>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <Button onClick={handleAdd} disabled={!selectedId} className="bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold px-6 shadow-sm">
-                                <PlusCircle className="mr-2 h-4 w-4" /> Link
+                            <Button onClick={handleAdd} disabled={!selectedId} className="bg-primary hover:bg-primary/90 rounded-xl font-bold px-6 shadow-sm">
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Related
                             </Button>
                         </div>
                     </div>

@@ -10,7 +10,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 220 13% 95%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 231 48% 48%;
+    --primary: 231 48% 48%; /* #3F51B5 */
     --primary-foreground: 0 0% 98%;
     --secondary: 220 9% 91%;
     --secondary-foreground: 222.2 84% 4.9%;
@@ -73,26 +73,6 @@
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 231 48% 48%;
   }
-
-  .theme-green {
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --accent: 142.1 76.2% 36.3%;
-    --accent-foreground: 355.7 100% 97.3%;
-    --ring: 142.1 76.2% 36.3%;
-    --sidebar-primary: 142.1 76.2% 36.3%;
-    --sidebar-ring: 142.1 76.2% 36.3%;
-  }
-
-  .theme-blue {
-    --primary: 231 48% 48%;
-    --primary-foreground: 0 0% 98%;
-    --accent: 231 48% 48%;
-    --accent-foreground: 0 0% 98%;
-    --ring: 231 48% 48%;
-    --sidebar-primary: 231 48% 48%;
-    --sidebar-ring: 231 48% 48%;
-  }
 }
 
 @layer base {
@@ -103,32 +83,4 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-  .prose a {
-      @apply text-primary underline;
-  }
-
-  /* SQL-Specific Syntax Highlighting Theme (Prism Compatible) */
-  .prose pre, 
-  [contenteditable] pre {
-    @apply bg-[#1e1e1e] text-[#d4d4d4] rounded-xl p-5 font-mono text-[13px] leading-relaxed border border-slate-800 shadow-xl my-6 overflow-x-auto;
-    tab-size: 4;
-  }
-
-  .prose code,
-  [contenteditable] code {
-    @apply font-mono;
-  }
-
-  /* Specific Syntax Token Colors */
-  .token.keyword { color: #569cd6 !important; font-weight: bold; } /* SELECT, FROM, WHERE */
-  .token.string { color: #ce9178 !important; } /* 'text' */
-  .token.comment { color: #6a9955 !important; font-style: italic; } /* -- comment */
-  .token.number { color: #b5cea8 !important; } /* 123 */
-  .token.function { color: #dcdcaa !important; } /* COUNT(), SUM() */
-  .token.operator { color: #d4d4d4 !important; } /* =, <, > */
-  .token.punctuation { color: #d4d4d4 !important; } /* , () */
-  .token.boolean { color: #569cd6 !important; }
-  .token.class-name { color: #4ec9b0 !important; } /* Table names */
-  .token.property { color: #9cdcfe !important; }
-  .token.variable { color: #9cdcfe !important; }
 }
