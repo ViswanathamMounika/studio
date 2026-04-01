@@ -42,8 +42,9 @@ const RecentViewsModal = dynamic(() => import('@/components/wiki/recent-views-mo
 const NewDefinitionModal = dynamic(() => import('@/components/wiki/new-definition-modal'), { ssr: false });
 const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal'), { ssr: false });
 const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
+const ApprovalQueue = dynamic(() => import('@/components/wiki/approval-queue'), { ssr: false });
 
-type View = 'definitions' | 'activity-logs' | 'template-management';
+type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-queue';
 type SidebarTab = 'queue' | 'drafts';
 type ViewingMode = 'live' | 'draft';
 
@@ -87,8 +88,8 @@ const flattenDefinitions = (items: Definition[]): Definition[] => {
 };
 
 export default function Wiki() {
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v15', initialDefinitions);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v15', initialTemplates);
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v16', initialDefinitions);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v16', initialTemplates);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
@@ -101,10 +102,10 @@ export default function Wiki() {
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v15', true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v16', true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('queue');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v15', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v16', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -173,7 +174,7 @@ export default function Wiki() {
   }, [definitions, selectedDefinitionId, updateUrl, getStatusText]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    if ((view === 'activity-logs' || view === 'template-management') && !isAdmin) {
+    if ((view === 'activity-logs' || view === 'template-management' || view === 'approval-queue') && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
         return;
     }
@@ -326,6 +327,8 @@ export default function Wiki() {
         ...newDefinitionData,
         id: newId,
         isPendingApproval: isPending,
+        submittedAt: isPending ? new Date().toISOString() : undefined,
+        submittedBy: isPending ? currentUser.name : undefined,
         isDraft: newDefinitionData.isDraft || isPending,
         revisions: [],
         isArchived: false,
@@ -447,7 +450,13 @@ export default function Wiki() {
     const updateItem = (items: Definition[]): Definition[] => {
       if (!Array.isArray(items)) return [];
       return items.map(def => {
-        if (def.id === id) return { ...def, isPendingApproval: true, lock: undefined };
+        if (def.id === id) return { 
+            ...def, 
+            isPendingApproval: true, 
+            submittedAt: new Date().toISOString(),
+            submittedBy: currentUser.name,
+            lock: undefined 
+        };
         if (def.children) return { ...def, children: updateItem(def.children) };
         return def;
       });
@@ -456,7 +465,7 @@ export default function Wiki() {
     toast({ title: 'Submitted', description: 'Your definition has been submitted for approval. Lock released.' });
   };
 
-  const handleReject = (id: string, requestData?: { content: string; priority?: 'Low' | 'Medium' | 'High'; isRejection?: boolean }) => {
+  const handleReject = (id: string, comment: string, isRejection: boolean = true) => {
     if (!isAdmin) return;
     
     const updateItem = (items: Definition[]): Definition[] => {
@@ -464,16 +473,16 @@ export default function Wiki() {
       return items.map(def => {
         if (def.id === id) {
           const updatedDiscussions = [...(def.discussions || [])];
-          if (requestData) {
+          if (comment) {
             const newMessage: DiscussionMessage = {
               id: Date.now().toString(),
               authorId: currentUser.id,
               author: currentUser.name,
               avatar: currentUser.avatar,
               date: new Date().toISOString(),
-              content: requestData.content,
-              type: requestData.isRejection ? 'rejection' : 'change-request',
-              priority: requestData.priority,
+              content: comment,
+              type: isRejection ? 'rejection' : 'change-request',
+              priority: 'Medium',
               round: 1
             };
             updatedDiscussions.push(newMessage);
@@ -486,7 +495,7 @@ export default function Wiki() {
     };
     setDefinitions(prev => updateItem(prev || []));
     toast({ 
-        title: requestData?.isRejection ? 'Definition Rejected' : 'Changes Requested', 
+        title: isRejection ? 'Definition Rejected' : 'Changes Requested', 
         description: `The definition has been returned to draft status with feedback. Lock released.` 
     });
   };
@@ -752,10 +761,31 @@ export default function Wiki() {
     toast({ title: "Lock Acquired", description: "You now have exclusive editing access for this definition." });
   };
 
+  const allPendingApprovals = useMemo(() => {
+    const flattenToPending = (items: Definition[]): Definition[] => {
+        if (!Array.isArray(items)) return [];
+        return items.reduce((acc: Definition[], item) => {
+            const isPendingLeaf = item.isPendingApproval && (item.description || item.shortDescription);
+            if (isPendingLeaf) acc.push(item);
+            if (item.children) acc = acc.concat(flattenToPending(item.children));
+            return acc;
+        }, []);
+    };
+    return flattenToPending(definitions || []);
+  }, [definitions]);
+
   const renderContent = () => {
     switch (activeView) {
         case 'activity-logs': return <div className="p-6"><ActivityLogs /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
+        case 'approval-queue': return (
+            <ApprovalQueue 
+                pendingDefinitions={allPendingApprovals} 
+                onApprove={handlePublish}
+                onReject={(id, comment) => handleReject(id, comment, true)}
+                onRequestChanges={(id, comment) => handleReject(id, comment, false)}
+            />
+        );
         default: return (
                 <div className="relative">
                   {isEditing && selectedDefinition ? (
@@ -771,7 +801,7 @@ export default function Wiki() {
                           onDelete={handleDelete} 
                           onToggleBookmark={toggleBookmark} 
                           onPublish={handlePublish}
-                          onReject={handleReject}
+                          onReject={(id, data) => handleReject(id, data?.content || '', data?.isRejection)}
                           onSendApproval={handleRequestApproval}
                           activeTab={activeTab} 
                           onTabChange={handleTabChange} 

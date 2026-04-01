@@ -82,6 +82,8 @@ export interface Definition {
   isArchived: boolean;
   isDraft?: boolean;
   isPendingApproval?: boolean;
+  submittedAt?: string;
+  submittedBy?: string;
   revisions: Revision[];
   isBookmarked?: boolean;
   supportingTables: SupportingTableRef[];

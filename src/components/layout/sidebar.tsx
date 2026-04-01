@@ -16,7 +16,8 @@ import {
     History,
     UserCog,
     Settings2,
-    ShieldCheck
+    ShieldCheck,
+    ClipboardCheck
 } from "lucide-react";
 import {
     Collapsible,
@@ -36,7 +37,7 @@ import { cn } from '@/lib/utils';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 
-type View = 'definitions' | 'activity-logs' | 'template-management';
+type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-queue';
 
 type AppSidebarProps = {
     activeView: View;
@@ -64,11 +65,12 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     ];
 
     const adminNavItems = [
+        { id: 'approval-queue', label: 'Approval Queue', icon: ClipboardCheck },
         { id: 'template-management', label: 'Template Management', icon: Settings2 },
     ];
 
     const handleNavigate = (id: string) => {
-        if (id === 'definitions' || id === 'activity-logs' || id === 'template-management') {
+        if (id === 'definitions' || id === 'activity-logs' || id === 'template-management' || id === 'approval-queue') {
             onNavigate(id as View);
         } else {
             console.log(`Navigating to ${id}`);
@@ -132,7 +134,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                 <CollapsibleTrigger asChild>
                                                     <SidebarMenuButton className={cn(
                                                         "h-8 font-semibold text-foreground hover:text-primary transition-colors",
-                                                        (activeView === 'template-management') && "text-primary"
+                                                        (activeView === 'template-management' || activeView === 'approval-queue') && "text-primary"
                                                     )}>
                                                         <UserCog className="h-4 w-4" />
                                                         <span>Admin</span>
