@@ -69,7 +69,8 @@ export interface TemplateSection {
   id: string;
   templateId: string;
   name: string;
-  group?: string;
+  group?: string; // This is the Section_Group name
+  groupSortOrder?: number; // Sorting order for the group itself
   fieldType: FieldType;
   isMulti: boolean;
   maxLength?: number;

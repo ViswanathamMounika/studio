@@ -10,23 +10,36 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Pencil, Trash2, Save, Plus, X, LayoutTemplate, Type, FileType, List, AlignLeft, Hash, Table as TableIcon, Settings2, GripVertical } from 'lucide-react';
+import { Pencil, Trash2, Save, Plus, X, LayoutTemplate, Type, FileType, List, AlignLeft, Hash, Table as TableIcon, Settings2, GripVertical, FolderPlus, Layers } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Template, TemplateSection, TemplateOption, TemplateColumn, FieldType } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 type TemplateManagementProps = {
   templates: Template[];
   onSaveTemplates: (templates: Template[]) => void;
 };
 
+interface GroupForm {
+  name: string;
+  sortOrder: number;
+  sectionIds: string[];
+}
+
 export default function TemplateManagement({ templates, onSaveTemplates }: TemplateManagementProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [currentTemplate, setCurrentTemplate] = useState<Partial<Template>>({});
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Group editing state
+  const [groupForm, setGroupForm] = useState<GroupForm>({ name: '', sortOrder: 1, sectionIds: [] });
+  const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
+
   const { toast } = useToast();
 
   const handleCreateNew = () => {
@@ -114,7 +127,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
           };
           
           if (columnId) {
-            // Add to specific column's options
             return {
               ...s,
               columns: (s.columns || []).map(c => 
@@ -151,12 +163,74 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     });
   };
 
+  // Group Management Logic
+  const existingGroups = useMemo(() => {
+    const groupMap = new Map<string, { name: string, sortOrder: number, sectionIds: string[] }>();
+    (currentTemplate.sections || []).forEach(s => {
+      if (s.group) {
+        if (!groupMap.has(s.group)) {
+          groupMap.set(s.group, { name: s.group, sortOrder: s.groupSortOrder || 1, sectionIds: [] });
+        }
+        groupMap.get(s.group)!.sectionIds.push(s.id);
+      }
+    });
+    return Array.from(groupMap.values()).sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [currentTemplate.sections]);
+
+  const handleOpenGroupModal = (groupToEdit?: string) => {
+    if (groupToEdit) {
+      const g = existingGroups.find(g => g.name === groupToEdit);
+      if (g) {
+        setGroupForm({ ...g });
+        setEditingGroupName(groupToEdit);
+      }
+    } else {
+      setGroupForm({ name: '', sortOrder: (existingGroups.length + 1) * 10, sectionIds: [] });
+      setEditingGroupName(null);
+    }
+    setIsGroupModalOpen(true);
+  };
+
+  const handleSaveGroup = () => {
+    if (!groupForm.name.trim()) return;
+
+    setCurrentTemplate(prev => {
+      const sections = (prev.sections || []).map(s => {
+        // If it was in the group before or is newly added
+        const wasInEditingGroup = editingGroupName ? s.group === editingGroupName : false;
+        const isNowInGroup = groupForm.sectionIds.includes(s.id);
+
+        if (isNowInGroup) {
+          return { ...s, group: groupForm.name, groupSortOrder: groupForm.sortOrder };
+        } else if (wasInEditingGroup) {
+          // If it was removed from the group, clear its group fields
+          return { ...s, group: undefined, groupSortOrder: undefined };
+        }
+        return s;
+      });
+      return { ...prev, sections };
+    });
+
+    setIsGroupModalOpen(false);
+    toast({ title: 'Groups Updated', description: `Group "${groupForm.name}" has been configured.` });
+  };
+
+  const handleRemoveGroup = (groupName: string) => {
+    setCurrentTemplate(prev => ({
+      ...prev,
+      sections: (prev.sections || []).map(s => 
+        s.group === groupName ? { ...s, group: undefined, groupSortOrder: undefined } : s
+      )
+    }));
+    toast({ title: 'Group Deleted', description: `All sections from "${groupName}" have been ungrouped.` });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Template Management</h1>
-          <p className="text-muted-foreground font-medium">Define structured blueprints for MPM documentation based on the SQL schema.</p>
+          <p className="text-muted-foreground font-medium">Define structured blueprints for MPM documentation.</p>
         </div>
         <Button onClick={handleCreateNew} className="rounded-xl">
           <Plus className="mr-2 h-4 w-4" />
@@ -205,6 +279,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         </CardContent>
       </Card>
 
+      {/* Main Template Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden border-none rounded-[24px] shadow-2xl">
           <div className="p-6 border-b bg-white sticky top-0 z-50 flex justify-between items-center shadow-sm">
@@ -274,13 +349,31 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">Schema Sections</h3>
-                    <p className="text-sm text-slate-500">Each section corresponds to a row in <code>wiki.DEF_Template_Section</code></p>
+                    <p className="text-sm text-slate-500">Define the documentation structure below.</p>
                   </div>
-                  <Button variant="outline" onClick={handleAddSection} className="rounded-xl border-slate-200 bg-white hover:bg-slate-50 shadow-sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Section
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => handleOpenGroupModal()} className="rounded-xl border-slate-200 bg-white hover:bg-slate-50 shadow-sm gap-2">
+                      <FolderPlus className="h-4 w-4 text-indigo-600" />
+                      Manage Groups
+                    </Button>
+                    <Button variant="outline" onClick={handleAddSection} className="rounded-xl border-slate-200 bg-white hover:bg-slate-50 shadow-sm gap-2">
+                      <Plus className="h-4 w-4 text-indigo-600" />
+                      Add Section
+                    </Button>
+                  </div>
                 </div>
+
+                {/* Group Summary Visualization */}
+                {existingGroups.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {existingGroups.map(g => (
+                      <Badge key={g.name} variant="outline" className="bg-indigo-50 border-indigo-100 text-indigo-700 h-7 px-3 cursor-pointer hover:bg-indigo-100" onClick={() => handleOpenGroupModal(g.name)}>
+                        <Layers className="h-3 w-3 mr-1.5 opacity-60" />
+                        {g.name} ({g.sectionIds.length})
+                      </Badge>
+                    ))}
+                  </div>
+                )}
 
                 <div className="space-y-6">
                   {currentTemplate.sections?.map((section, sIdx) => (
@@ -290,12 +383,17 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                           <Badge className="bg-indigo-600 text-white h-6 w-6 p-0 rounded-lg flex items-center justify-center font-bold text-[10px]">
                             {sIdx + 1}
                           </Badge>
-                          <Input 
-                            value={section.name} 
-                            onChange={e => updateSection(section.id, { name: e.target.value })}
-                            placeholder="Section Name (e.g. Technical Details)"
-                            className="bg-transparent border-none shadow-none font-bold text-slate-800 p-0 h-auto focus-visible:ring-0 w-64"
-                          />
+                          <div className="flex flex-col">
+                            <Input 
+                              value={section.name} 
+                              onChange={e => updateSection(section.id, { name: e.target.value })}
+                              placeholder="Section Name"
+                              className="bg-transparent border-none shadow-none font-bold text-slate-800 p-0 h-auto focus-visible:ring-0 w-64"
+                            />
+                            {section.group && (
+                              <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mt-0.5">Group: {section.group}</span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Select 
@@ -321,15 +419,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                       <CardContent className="p-6 space-y-6 bg-white">
                         <div className="grid grid-cols-4 gap-6">
                           <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Group Name</Label>
-                            <Input 
-                              value={section.group || ''} 
-                              onChange={e => updateSection(section.id, { group: e.target.value })}
-                              placeholder="Optional Grouping"
-                              className="h-9 rounded-xl border-slate-200"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
                             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Max Length</Label>
                             <Input 
                               type="number"
@@ -348,7 +437,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                           </div>
                         </div>
 
-                        {/* Special UI for Dropdowns (Options) */}
                         {section.fieldType === 'Dropdown' && (
                           <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                             <div className="flex items-center justify-between mb-2">
@@ -363,7 +451,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                   <Input value={opt.label} placeholder="Label" className="h-8 rounded-lg" onChange={e => {
                                     const opts = [...(section.options || [])];
                                     opts[oIdx].label = e.target.value;
-                                    opts[oIdx].value = e.target.value; // Keep simple for prototype
+                                    opts[oIdx].value = e.target.value;
                                     updateSection(section.id, { options: opts });
                                   }} />
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive">
@@ -375,7 +463,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                           </div>
                         )}
 
-                        {/* Special UI for KeyValue (Columns) */}
                         {section.fieldType === 'KeyValue' && (
                           <div className="space-y-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                             <div className="flex items-center justify-between mb-2">
@@ -463,6 +550,99 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
               </div>
             </div>
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Group Dialog */}
+      <Dialog open={isGroupModalOpen} onOpenChange={setIsGroupModalOpen}>
+        <DialogContent className="max-w-md border-none rounded-[20px] p-0 overflow-hidden shadow-2xl">
+          <div className="p-6 border-b bg-white">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                <FolderPlus className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold">{editingGroupName ? 'Edit Group' : 'Create Section Group'}</DialogTitle>
+                <p className="text-xs text-slate-500">Group sections under a shared heading.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 space-y-6 bg-slate-50/30">
+            <div className="space-y-2">
+              <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Group Name</Label>
+              <Input 
+                value={groupForm.name} 
+                onChange={e => setGroupForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Technical Specifications"
+                className="rounded-xl border-slate-200 bg-white h-10 font-medium"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Group Sort Order</Label>
+              <Input 
+                type="number"
+                value={groupForm.sortOrder} 
+                onChange={e => setGroupForm(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 1 }))}
+                className="rounded-xl border-slate-200 bg-white h-10 font-medium"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Assign Sections</Label>
+              <div className="border rounded-xl bg-white overflow-hidden">
+                <ScrollArea className="h-[200px]">
+                  <div className="p-2 space-y-1">
+                    {(currentTemplate.sections || []).length === 0 ? (
+                      <p className="text-center py-8 text-xs text-slate-400 italic">No sections created yet.</p>
+                    ) : (
+                      currentTemplate.sections?.map(s => (
+                        <div 
+                          key={s.id} 
+                          className={cn(
+                            "flex items-center gap-3 p-2.5 rounded-lg transition-colors cursor-pointer",
+                            groupForm.sectionIds.includes(s.id) ? "bg-indigo-50 border-indigo-100" : "hover:bg-slate-50"
+                          )}
+                          onClick={() => {
+                            const ids = [...groupForm.sectionIds];
+                            if (ids.includes(s.id)) {
+                              setGroupForm(prev => ({ ...prev, sectionIds: ids.filter(id => id !== s.id) }));
+                            } else {
+                              setGroupForm(prev => ({ ...prev, sectionIds: [...ids, s.id] }));
+                            }
+                          }}
+                        >
+                          <Checkbox checked={groupForm.sectionIds.includes(s.id)} onCheckedChange={() => {}} />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-slate-700">{s.name || 'Untitled Section'}</span>
+                            {s.group && s.group !== groupForm.name && (
+                              <span className="text-[9px] font-black text-amber-500 uppercase">Currently in: {s.group}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="p-4 bg-white border-t flex gap-2">
+            {editingGroupName && (
+              <Button variant="ghost" className="text-red-600 font-bold" onClick={() => {
+                handleRemoveGroup(editingGroupName);
+                setIsGroupModalOpen(false);
+              }}>
+                Delete Group
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setIsGroupModalOpen(false)} className="rounded-lg">Cancel</Button>
+            <Button onClick={handleSaveGroup} className="rounded-lg bg-indigo-600 hover:bg-indigo-700 font-bold shadow-sm" disabled={!groupForm.name.trim()}>
+              Save Group Configuration
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

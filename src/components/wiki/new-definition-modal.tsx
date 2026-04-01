@@ -95,15 +95,22 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     });
   };
 
-  // Group sections by their `group` field
+  // Group sections by their `group` field and sort by `groupSortOrder`
   const groupedSections = useMemo(() => {
     if (!selectedTemplate) return {};
-    return selectedTemplate.sections.reduce((acc, section) => {
+    
+    // Sort all sections first so they are ordered within their groups if needed
+    const sortedSections = [...selectedTemplate.sections];
+    
+    const groups = sortedSections.reduce((acc, section) => {
       const g = section.group || 'General Documentation';
-      if (!acc[g]) acc[g] = [];
-      acc[g].push(section);
+      if (!acc[g]) acc[g] = { sections: [], order: section.groupSortOrder || 9999 };
+      acc[g].sections.push(section);
       return acc;
-    }, {} as Record<string, TemplateSection[]>);
+    }, {} as Record<string, { sections: TemplateSection[], order: number }>);
+
+    // Return as entries sorted by the group's order
+    return Object.entries(groups).sort((a, b) => a[1].order - b[1].order);
   }, [selectedTemplate]);
 
   return (
@@ -154,8 +161,8 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
               </CardContent>
             </Card>
 
-            {/* Dynamic Template Sections */}
-            {Object.entries(groupedSections).map(([groupName, sections]) => (
+            {/* Dynamic Template Sections grouped by central logic */}
+            {groupedSections.map(([groupName, { sections }]) => (
               <div key={groupName} className="space-y-6">
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-bold text-slate-900">{groupName}</h3>
