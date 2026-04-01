@@ -420,15 +420,17 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                               className="h-9 rounded-xl border-slate-200"
                             />
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Max Length</Label>
-                            <Input 
-                              type="number"
-                              value={section.maxLength || ''} 
-                              onChange={e => updateSection(section.id, { maxLength: parseInt(e.target.value) || undefined })}
-                              className="h-9 rounded-xl border-slate-200"
-                            />
-                          </div>
+                          {section.fieldType !== 'Dropdown' && (
+                            <div className="space-y-1.5">
+                              <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Max Length</Label>
+                              <Input 
+                                type="number"
+                                value={section.maxLength || ''} 
+                                onChange={e => updateSection(section.id, { maxLength: parseInt(e.target.value) || undefined })}
+                                className="h-9 rounded-xl border-slate-200"
+                              />
+                            </div>
+                          )}
                           <div className="flex items-center gap-2 pt-6">
                             <Checkbox id={`req-${section.id}`} checked={section.isRequired} onCheckedChange={v => updateSection(section.id, { isRequired: !!v })} />
                             <Label htmlFor={`req-${section.id}`} className="text-xs font-bold text-slate-600">Mandatory</Label>
@@ -450,13 +452,35 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                             <div className="space-y-2">
                               {section.options?.map((opt, oIdx) => (
                                 <div key={opt.id} className="flex gap-2 items-center">
-                                  <Input value={opt.label} placeholder="Label" className="h-8 rounded-lg" onChange={e => {
-                                    const opts = [...(section.options || [])];
-                                    opts[oIdx].label = e.target.value;
-                                    opts[oIdx].value = e.target.value;
-                                    updateSection(section.id, { options: opts });
-                                  }} />
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive">
+                                  <Input 
+                                    value={opt.label} 
+                                    placeholder="Option Label" 
+                                    className="h-8 rounded-lg flex-1" 
+                                    onChange={e => {
+                                      const opts = [...(section.options || [])];
+                                      opts[oIdx].label = e.target.value;
+                                      updateSection(section.id, { options: opts });
+                                    }} 
+                                  />
+                                  <Input 
+                                    value={opt.value} 
+                                    placeholder="Option Value" 
+                                    className="h-8 rounded-lg flex-1" 
+                                    onChange={e => {
+                                      const opts = [...(section.options || [])];
+                                      opts[oIdx].value = e.target.value;
+                                      updateSection(section.id, { options: opts });
+                                    }} 
+                                  />
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-slate-300 hover:text-destructive shrink-0"
+                                    onClick={() => {
+                                      const opts = (section.options || []).filter(o => o.id !== opt.id);
+                                      updateSection(section.id, { options: opts });
+                                    }}
+                                  >
                                     <X className="h-3.5 w-3.5" />
                                   </Button>
                                 </div>
@@ -521,7 +545,15 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                       }} />
                                     </div>
                                     <div className="col-span-2 flex justify-end pb-1">
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8 text-slate-300 hover:text-destructive"
+                                        onClick={() => {
+                                          const cols = (section.columns || []).filter(c => c.id !== col.id);
+                                          updateSection(section.id, { columns: cols });
+                                        }}
+                                      >
                                         <Trash2 className="h-3.5 w-3.5" />
                                       </Button>
                                     </div>
