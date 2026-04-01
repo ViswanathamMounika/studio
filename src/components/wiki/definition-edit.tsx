@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2, ChevronDown, Check, Info, Hash } from 'lucide-react';
+import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2, ChevronDown, Check, Info, Hash, Trash } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,13 +17,24 @@ import { mpmDatabases, mpmSourceTypes, mpmSourceObjects } from '@/lib/data';
 import DataSourcePreviewDialog from './data-source-preview-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
 type DefinitionEditProps = {
   definition: Definition;
   onSave: (definition: Definition) => void;
-  onCancel: () => void;
+  onDiscard: (id: string) => void;
   isAdmin: boolean;
 };
 
@@ -36,7 +47,7 @@ const defaultSqlDetails: SqlFunctionDetails = {
   outputExample: '',
 };
 
-export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }: DefinitionEditProps) {
+export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
   const [module, setModule] = useState(definition.module);
   const [keywords, setKeywords] = useState<string[]>(definition.keywords || []);
@@ -180,7 +191,7 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
           <Lock className="h-4 w-4 text-primary" />
           <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>
           <AlertDescription className="text-muted-foreground">
-            You are editing a working draft. The original published definition remains live in the MPM Definitions section.
+            You are editing a working draft. Your lock will be extended automatically as you type.
           </AlertDescription>
         </Alert>
         <div className="flex justify-between items-center">
@@ -536,12 +547,34 @@ export default function DefinitionEdit({ definition, onSave, onCancel, isAdmin }
       </div>
 
       <div className="sticky bottom-0 bg-slate-50 border-t p-4 px-6 flex justify-end gap-3 z-30">
-        <Button variant="outline" onClick={onCancel} className="rounded-xl">Cancel</Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" className="rounded-xl text-destructive hover:bg-destructive hover:text-white transition-all font-bold">
+              <Trash className="mr-2 h-4 w-4" />
+              Discard Draft
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will soft-delete your current draft and release your editing lock. Any unsaved changes will be permanently lost.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep Editing</AlertDialogCancel>
+              <AlertDialogAction onClick={() => onDiscard(definition.id)} className="bg-destructive hover:bg-destructive/90">
+                Discard Changes
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <Button 
           variant="outline" 
           onClick={() => handleSaveManual(true)} 
           disabled={!name.trim()} 
-          className="rounded-xl border-primary text-primary hover:bg-primary/10 shadow-sm font-bold"
+          className="rounded-xl border-primary text-primary hover:bg-primary/10 shadow-sm font-bold ml-auto"
         >
             <Save className="mr-2 h-4 w-4" />
             Save Draft

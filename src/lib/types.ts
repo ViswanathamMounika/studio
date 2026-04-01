@@ -62,6 +62,12 @@ export interface SqlFunctionDetails {
   outputExample: string;
 }
 
+export interface LockInfo {
+  userId: string;
+  userName: string;
+  expireAt: string;
+}
+
 export interface Definition {
   id: string;
   name: string;
@@ -90,6 +96,7 @@ export interface Definition {
   dynamicSections?: DynamicSection[];
   sqlFunctionDetails?: SqlFunctionDetails;
   publishedSnapshot?: Partial<Omit<Definition, 'revisions' | 'children' | 'notes' | 'discussions'>>;
+  lock?: LockInfo;
 }
 
 export interface SupportingTable {

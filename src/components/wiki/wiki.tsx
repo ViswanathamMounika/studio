@@ -1,12 +1,12 @@
 
 "use client";
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
-import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send, ShieldCheck, Clock, Settings2, FolderTree } from 'lucide-react';
+import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo } from '@/lib/types';
+import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, Send, ShieldCheck, Clock, Settings2, FolderTree } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -53,6 +53,8 @@ const currentUser = {
     avatar: "https://picsum.photos/seed/dhilip/40/40"
 };
 
+const LOCK_TIMEOUT_MINUTES = 30;
+
 const initialNotifications: NotificationType[] = [
   {
     id: '1',
@@ -72,20 +74,9 @@ const initialNotifications: NotificationType[] = [
   },
 ];
 
-const flattenDefinitions = (items: Definition[]): Definition[] => {
-    let flat: Definition[] = [];
-    if (!Array.isArray(items)) return [];
-    items.forEach(item => {
-        if (!item) return;
-        flat.push(item);
-        if (item.children) flat = [...flat, ...flattenDefinitions(item.children)];
-    });
-    return flat;
-};
-
 export default function Wiki() {
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v13', initialDefinitions);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v13', initialTemplates);
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v14', initialDefinitions);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v14', initialTemplates);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
@@ -98,14 +89,15 @@ export default function Wiki() {
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v13', true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v14', true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('queue');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v13', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v14', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const { toast } = useToast();
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const [editLockId, setEditLockId] = useLocalStorage<string | null>('mpm_edit_lock_v13', null);
+  
+  const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -209,19 +201,39 @@ export default function Wiki() {
     };
   }, [handlePopState]);
 
+  // Heartbeat Mechanism
   useEffect(() => {
-    if (selectedDefinitionId && selectedDefinitionId === editLockId) {
-      setIsEditing(true);
-      setViewingMode('draft');
+    if (isEditing && selectedDefinitionId) {
+      heartbeatInterval.current = setInterval(() => {
+        setDefinitions(prev => {
+          const extendLock = (items: Definition[]): Definition[] => {
+            return items.map(def => {
+              if (def.id === selectedDefinitionId) {
+                const newExpireAt = new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString();
+                return { ...def, lock: { ...def.lock!, expireAt: newExpireAt } };
+              }
+              if (def.children) return { ...def, children: extendLock(def.children) };
+              return def;
+            });
+          };
+          return extendLock(prev || []);
+        });
+      }, 60000); // Every 1 minute
+    } else {
+      if (heartbeatInterval.current) clearInterval(heartbeatInterval.current);
     }
-  }, [selectedDefinitionId, editLockId]);
+    return () => { if (heartbeatInterval.current) clearInterval(heartbeatInterval.current); };
+  }, [isEditing, selectedDefinitionId]);
 
   const handleSave = (updatedDefinition: Definition) => {
     const updateItems = (items: Definition[]): Definition[] => {
       if (!Array.isArray(items)) return [];
       return items.map(def => {
         if (def.id === updatedDefinition.id) {
-            return updatedDefinition;
+            // Keep lock if saving draft, release if publishing
+            const shouldKeepLock = updatedDefinition.isDraft && !updatedDefinition.isPendingApproval;
+            const updatedLock = shouldKeepLock ? updatedDefinition.lock : undefined;
+            return { ...updatedDefinition, lock: updatedLock };
         }
         if (def.children) return { ...def, children: updateItems(def.children) };
         return def;
@@ -235,12 +247,11 @@ export default function Wiki() {
     }
 
     setIsEditing(false);
-    setEditLockId(null);
     setViewingMode(updatedDefinition.isDraft ? 'draft' : 'live');
 
     toast({
         title: "Changes Persisted",
-        description: updatedDefinition.isDraft ? "Definition updated in your drafts." : "Definition has been updated.",
+        description: updatedDefinition.isDraft ? "Definition updated in your drafts. Lock maintained." : "Definition has been updated and lock released.",
     });
 
     if (isBookmarked(updatedDefinition.id)) {
@@ -254,6 +265,36 @@ export default function Wiki() {
         };
         setNotifications((prev: any) => [newNotification, ...(prev || [])]);
     }
+  };
+
+  const handleDiscardDraft = (id: string) => {
+    const def = findDefinition(definitions || [], id);
+    if (!def) return;
+
+    const removeDraftAndLock = (items: Definition[]): Definition[] => {
+      return items.reduce((acc: Definition[], item) => {
+        if (item.id === id) {
+          if (item.publishedSnapshot) {
+            // Restore from snapshot and release lock
+            const restored = { ...item, ...item.publishedSnapshot, isDraft: false, publishedSnapshot: undefined, lock: undefined };
+            acc.push(restored as Definition);
+          } else {
+            // New draft, just remove it
+            return acc;
+          }
+        } else {
+          const children = item.children ? removeDraftAndLock(item.children) : [];
+          acc.push({ ...item, children });
+        }
+        return acc;
+      }, []);
+    };
+
+    setDefinitions(prev => removeDraftAndLock(prev || []));
+    setIsEditing(false);
+    setViewingMode('live');
+    setSelectedDefinitionId(null);
+    toast({ title: "Draft Discarded", description: "Your changes have been discarded and the lock released." });
   };
   
   const handleCreateDefinition = (newDefinitionData: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => {
@@ -271,6 +312,12 @@ export default function Wiki() {
         notes: newDefinitionData.notes || [],
         discussions: [],
         relatedDefinitions: [],
+        // Acquisition of lock for new definitions is automatic if in edit mode
+        lock: {
+          userId: currentUser.id,
+          userName: currentUser.name,
+          expireAt: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString()
+        }
     };
     const addDefinitionToModule = (items: Definition[], moduleName: string, def: Definition): Definition[] => {
         if (!Array.isArray(items)) return [];
@@ -296,6 +343,7 @@ export default function Wiki() {
     setViewingMode('draft');
     setActiveView('definitions');
     setSidebarTab('drafts');
+    setIsEditing(true);
     
     if (isPending) {
       toast({ title: 'Submitted', description: 'Your new definition has been sent for approval.' });
@@ -306,38 +354,24 @@ export default function Wiki() {
     const definitionToDuplicate = findDefinition(definitions || [], id);
     if (!definitionToDuplicate) return;
     
-    const newId = Date.now().toString();
     const baseName = definitionToDuplicate.name.replace(/ \(Copy\d*\)$/, '');
     const flatDefs = flattenDefinitions(definitions || []);
     const copies = flatDefs.filter(d => d.name.startsWith(`${baseName} (Copy`));
     const nextCopyNumber = copies.length + 1;
     const newName = `${baseName} (Copy${nextCopyNumber})`;
 
-    const duplicateNote: Note = {
-      id: `note-dup-${Date.now()}`,
-      authorId: currentUser.id,
-      author: currentUser.name,
-      avatar: currentUser.avatar,
-      date: new Date().toISOString(),
-      content: `This definition is copied from ${definitionToDuplicate.name}`,
-      isShared: false,
-    };
-
     const newDefinition: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
       ...definitionToDuplicate,
-      id: newId,
       name: newName,
       children: [],
       isDraft: true,
       isPendingApproval: false,
-      notes: [duplicateNote],
+      notes: [],
       discussions: [],
       publishedSnapshot: undefined,
     };
     
     handleCreateDefinition(newDefinition);
-    setSidebarTab('drafts');
-    toast({ title: 'Definition Duplicated', description: `A copy has been created as "${newName}" in your Drafts section.` });
   };
 
   const handleArchive = (id: string | string[], archive: boolean) => {
@@ -379,27 +413,27 @@ export default function Wiki() {
     const publishItem = (items: Definition[]): Definition[] => {
       if (!Array.isArray(items)) return [];
       return items.map(def => {
-        if (def.id === id) return { ...def, isDraft: false, isPendingApproval: false, publishedSnapshot: undefined };
+        if (def.id === id) return { ...def, isDraft: false, isPendingApproval: false, publishedSnapshot: undefined, lock: undefined };
         if (def.children) return { ...def, children: publishItem(def.children) };
         return def;
       });
     };
     setDefinitions(prev => publishItem(prev || []));
     setViewingMode('live');
-    toast({ title: 'Definition Published', description: 'The definition is now available in the MPM Wiki.' });
+    toast({ title: 'Definition Published', description: 'The definition is now available in the MPM Wiki. Lock released.' });
   };
 
   const handleRequestApproval = (id: string) => {
     const updateItem = (items: Definition[]): Definition[] => {
       if (!Array.isArray(items)) return [];
       return items.map(def => {
-        if (def.id === id) return { ...def, isPendingApproval: true };
+        if (def.id === id) return { ...def, isPendingApproval: true, lock: undefined };
         if (def.children) return { ...def, children: updateItem(def.children) };
         return def;
       });
     };
     setDefinitions(prev => updateItem(prev || []));
-    toast({ title: 'Submitted', description: 'Your definition has been submitted for approval.' });
+    toast({ title: 'Submitted', description: 'Your definition has been submitted for approval. Lock released.' });
   };
 
   const handleReject = (id: string, requestData?: { content: string; priority?: 'Low' | 'Medium' | 'High'; isRejection?: boolean }) => {
@@ -424,7 +458,7 @@ export default function Wiki() {
             };
             updatedDiscussions.push(newMessage);
           }
-          return { ...def, isPendingApproval: false, discussions: updatedDiscussions };
+          return { ...def, isPendingApproval: false, discussions: updatedDiscussions, lock: undefined };
         }
         if (def.children) return { ...def, children: updateItem(def.children) };
         return def;
@@ -433,7 +467,7 @@ export default function Wiki() {
     setDefinitions(prev => updateItem(prev || []));
     toast({ 
         title: requestData?.isRejection ? 'Definition Rejected' : 'Changes Requested', 
-        description: `The definition has been returned to draft status with feedback.` 
+        description: `The definition has been returned to draft status with feedback. Lock released.` 
     });
   };
 
@@ -569,35 +603,6 @@ export default function Wiki() {
     };
   }, [enrichedDefinitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
-  const toggleSelectionForExport = (id: string, checked: boolean) => {
-    const getChildrenIdsFromTree = (items: Definition[], targetId: string): string[] | null => {
-        if (!Array.isArray(items)) return null;
-        for (const item of items) {
-            if (item.id === targetId) {
-                const gather = (node: Definition): string[] => {
-                    let ids = [node.id];
-                    if (node.children) node.children.forEach(c => ids.push(...gather(c)));
-                    return ids;
-                };
-                return gather(item);
-            }
-            if (item.children) {
-                const found = getChildrenIdsFromTree(item.children, targetId);
-                if (found) return found;
-            }
-        }
-        return null;
-    };
-
-    const idsToToggle = getChildrenIdsFromTree(categorizedDefinitions.published, id);
-    if (!idsToToggle) return;
-
-    setSelectedForExport(prev => {
-        if (checked) return [...new Set([...(prev || []), ...idsToToggle])];
-        return (prev || []).filter(selectedId => !idsToToggle.includes(selectedId));
-    });
-  };
-
   const leafSelectionCount = useMemo(() => {
     const flattenToLeafIds = (items: Definition[]): string[] => {
         if (!Array.isArray(items)) return [];
@@ -699,69 +704,48 @@ export default function Wiki() {
   const handleEditClick = () => {
     if (!selectedDefinitionId) return;
     const def = findDefinition(definitions || [], selectedDefinitionId);
+    if (!def) return;
+
+    // Check if locked by someone else
+    if (def.lock && def.lock.userId !== currentUser.id && new Date(def.lock.expireAt) > new Date()) {
+      toast({ variant: 'destructive', title: "Definition Locked", description: `${def.lock.userName} is currently editing this definition. Try again later.` });
+      return;
+    }
     
-    if (def && !def.isDraft) {
+    // Acquire Lock and Create Draft if needed
+    const newLock: LockInfo = {
+      userId: currentUser.id,
+      userName: currentUser.name,
+      expireAt: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString()
+    };
+
+    let updatedDefinition: Definition;
+    if (!def.isDraft) {
       const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = def;
-      const updatedDefinition: Definition = {
+      updatedDefinition = {
         ...def,
         isDraft: true,
-        publishedSnapshot: snapshot
+        publishedSnapshot: snapshot,
+        lock: newLock
       };
-
-      const updateItems = (items: Definition[]): Definition[] => {
-        if (!Array.isArray(items)) return [];
-        return items.map(d => {
-          if (d.id === updatedDefinition.id) return updatedDefinition;
-          if (d.children) return { ...d, children: updateItems(d.children) };
-          return d;
-        });
-      };
-      
-      setDefinitions(prev => updateItems(prev || []));
-      setSidebarTab('drafts');
-      toast({ 
-        title: "Draft Created", 
-        description: "A working copy has been created in your Drafts section." 
-      });
+    } else {
+      updatedDefinition = { ...def, lock: newLock };
     }
 
+    const updateItems = (items: Definition[]): Definition[] => {
+      if (!Array.isArray(items)) return [];
+      return items.map(d => {
+        if (d.id === updatedDefinition.id) return updatedDefinition;
+        if (d.children) return { ...d, children: updateItems(d.children) };
+        return d;
+      });
+    };
+    
+    setDefinitions(prev => updateItems(prev || []));
+    setSidebarTab('drafts');
     setIsEditing(true);
     setViewingMode('draft');
-    setEditLockId(selectedDefinitionId);
-  };
-  
-  const handleCancelEdit = () => {
-    if (selectedDefinitionId) {
-      const def = findDefinition(definitions || [], selectedDefinitionId);
-      if (def && def.publishedSnapshot) {
-        const restoredDefinition: Definition = {
-          ...def,
-          ...def.publishedSnapshot,
-          isDraft: false,
-          publishedSnapshot: undefined
-        };
-        const updateItems = (items: Definition[]): Definition[] => {
-          if (!Array.isArray(items)) return [];
-          return items.map(d => {
-            if (d.id === restoredDefinition.id) return restoredDefinition;
-            if (d.children) return { ...d, children: updateItems(d.children) };
-            return d;
-          });
-        };
-        setDefinitions(prev => updateItems(prev || []));
-        setViewingMode('live');
-        toast({ 
-          title: "Edit Cancelled", 
-          description: "Reverted to the original published version." 
-        });
-      }
-    }
-    setIsEditing(false);
-    setEditLockId(null);
-  };
-
-  const handleCancelResume = () => {
-    setEditLockId(null);
+    toast({ title: "Lock Acquired", description: "You now have exclusive editing access for this definition." });
   };
 
   const renderContent = () => {
@@ -770,27 +754,11 @@ export default function Wiki() {
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
         default: return (
                 <div className="relative">
-                  {editLockId === selectedDefinitionId && !isEditing && (
-                    <div className="sticky top-0 z-30 bg-background px-6 py-4 border-b shadow-sm">
-                        <Alert className="bg-primary/5 border-primary/20">
-                          <Lock className="h-4 w-4 text-primary" />
-                          <AlertTitle className="text-primary font-bold">Edit Mode Active</AlertTitle>
-                          <AlertDescription className="text-muted-foreground flex items-center justify-between">
-                            <span>This definition is currently being modified. Your session is locked.</span>
-                            <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => { setIsEditing(true); setViewingMode('draft'); }}>Resume Editing</Button>
-                                <Button variant="ghost" size="sm" onClick={handleCancelResume}>Dismiss Lock</Button>
-                            </div>
-                          </AlertDescription>
-                        </Alert>
-                    </div>
-                  )}
-                  
                   {isEditing && selectedDefinition ? (
                       <DefinitionEdit 
                         definition={selectedDefinition} 
                         onSave={handleSave} 
-                        onCancel={handleCancelEdit} 
+                        onDiscard={handleDiscardDraft}
                         isAdmin={isAdmin}
                       />
                   ) : selectedDefinition ? (
@@ -811,6 +779,7 @@ export default function Wiki() {
                           onSave={handleSave} 
                           isAdmin={isAdmin}
                           searchQuery={searchQuery}
+                          currentUser={currentUser}
                         />
                       </div>
                   ) : (
@@ -943,11 +912,11 @@ export default function Wiki() {
                         <div className="pt-2">
                             {sidebarTab === 'queue' ? (
                                 categorizedDefinitions.pending.length > 0 ? (
-                                    <DefinitionTree treeId="queue" definitions={categorizedDefinitions.pending} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={editLockId} />
+                                    <DefinitionTree treeId="queue" definitions={categorizedDefinitions.pending} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" treeIdSuffix="queue" />
                                 ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No items pending review.</p>
                             ) : (
                                 categorizedDefinitions.drafts.length > 0 ? (
-                                    <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={editLockId} />
+                                    <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" treeIdSuffix="drafts" />
                                 ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No saved drafts found.</p>
                             )}
                         </div>
@@ -988,7 +957,7 @@ export default function Wiki() {
 
                           <div className="p-2">
                             {categorizedDefinitions.published.length > 0 ? (
-                                <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'live')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={editLockId} />
+                                <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'live')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} />
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center"><Info className="h-8 w-8 text-muted-foreground/30 mb-2" /><p className="text-xs text-muted-foreground italic">No definitions found for this filter.</p></div>
                             )}

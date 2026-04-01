@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal, MessageSquare, History } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, MapPin, Braces, Terminal, MessageSquare, History, Lock as LockIcon } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
@@ -53,6 +53,7 @@ type DefinitionViewProps = {
   onSave: (definition: Definition) => void;
   isAdmin: boolean;
   searchQuery?: string;
+  currentUser: { id: string; name: string };
 };
 
 const supportingTablesData: Record<string, SupportingTable> = {
@@ -60,12 +61,6 @@ const supportingTablesData: Record<string, SupportingTable> = {
     'cms-compliance': cmsComplianceMatrix,
     'timestamp-changed': timestampChangedTable,
     'vw-authactiontime': vwAuthActionTimeTable,
-};
-
-const currentUser = {
-    id: "user_123",
-    name: "Dhilip Sagadevan",
-    avatar: "https://picsum.photos/seed/dhilip/40/40"
 };
 
 const HighlightedText = ({ text, highlight }: { text: string; highlight: string }) => {
@@ -92,7 +87,7 @@ const highlightHtml = (html: string, query: string) => {
 
 export default function DefinitionView({ 
     definition, allDefinitions, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, onPublish, onReject, onSendApproval,
-    activeTab, onTabChange, onSave, isAdmin, searchQuery = "" 
+    activeTab, onTabChange, onSave, isAdmin, searchQuery = "", currentUser 
 }: DefinitionViewProps) {
     const [selectedTable, setSelectedTable] = useState<SupportingTable | null>(null);
     const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
@@ -111,6 +106,15 @@ export default function DefinitionView({
     const [editingNoteText, setEditingNoteText] = useState('');
 
     const { toast } = useToast();
+
+    const isLockedByOthers = useMemo(() => {
+      return definition.lock && definition.lock.userId !== currentUser.id && new Date(definition.lock.expireAt) > new Date();
+    }, [definition.lock, currentUser.id]);
+
+    const lockMessage = useMemo(() => {
+      if (!definition.lock) return null;
+      return `${definition.lock.userName} is currently editing this definition. Lock expires at ${new Date(definition.lock.expireAt).toLocaleTimeString()}.`;
+    }, [definition.lock]);
 
     // Trigger SQL syntax highlighting reliably
     useEffect(() => {
@@ -168,7 +172,7 @@ export default function DefinitionView({
             id: Date.now().toString(), 
             authorId: currentUser.id, 
             author: currentUser.name, 
-            avatar: currentUser.avatar, 
+            avatar: "https://picsum.photos/seed/dhilip/40/40", 
             date: new Date().toISOString(), 
             content: noteText, 
             isShared: shareNote 
@@ -218,7 +222,7 @@ export default function DefinitionView({
             id: Date.now().toString(),
             authorId: currentUser.id,
             author: currentUser.name,
-            avatar: currentUser.avatar,
+            avatar: "https://picsum.photos/seed/dhilip/40/40",
             date: new Date().toISOString(),
             content,
             type: 'comment',
@@ -408,7 +412,23 @@ export default function DefinitionView({
                     </Tooltip>
                     
                     {isEditable && !definition.isArchived && (
-                        <Button onClick={onEdit}><Pencil className="mr-2 h-4 w-4" />Edit</Button>
+                        <div className="flex items-center gap-2">
+                          {isLockedByOthers ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="h-10 px-4 border-amber-200 bg-amber-50 text-amber-700 gap-2 font-bold cursor-help">
+                                  <LockIcon className="h-4 w-4" />
+                                  Locked
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p>{lockMessage}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Button onClick={onEdit}><Pencil className="mr-2 h-4 w-4" />Edit</Button>
+                          )}
+                        </div>
                     )}
                     
                     <DefinitionActions 
@@ -706,7 +726,7 @@ export default function DefinitionView({
                                                                 variant="ghost" 
                                                                 size="icon" 
                                                                 className="h-8 w-8 hover:bg-destructive hover:text-white text-muted-foreground transition-colors group/note-btn" 
-                                                                onClick={() => handleDeleteNote(note.id)}
+                                                                onClick={() => handleDeleteNote(noteId)}
                                                             >
                                                                 <Trash2 className="h-4 w-4 transition-colors group-hover/note-btn:text-white" />
                                                             </Button>
