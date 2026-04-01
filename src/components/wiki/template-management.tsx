@@ -115,13 +115,14 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     setCurrentTemplate(prev => {
       const sections = (prev.sections || []).map(s => {
         if (s.id === sectionId) {
+          const nextOrder = (s.options?.length || 0) + 1;
           const newOption: TemplateOption = {
             id: `opt-${Date.now()}`,
             templateSectionId: sectionId,
             columnId,
             label: '',
             value: '',
-            sortOrder: (s.options?.length || 0) + 1,
+            sortOrder: nextOrder,
             isDefault: false
           };
           
@@ -448,7 +449,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                     className="h-9 rounded-xl border-slate-200 font-bold"
                                   />
                                 </div>
-                                {section.fieldType !== 'Dropdown' && (
+                                {(section.fieldType === 'PlainText' || section.fieldType === 'RichText') && (
                                   <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Max Length</Label>
                                     <Input 
@@ -463,10 +464,12 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                   <Checkbox id={`req-${section.id}`} checked={section.isRequired} onCheckedChange={v => updateSection(section.id, { isRequired: !!v })} />
                                   <Label htmlFor={`req-${section.id}`} className="text-xs font-bold text-slate-600">Mandatory</Label>
                                 </div>
-                                <div className="flex items-center gap-2 pt-6">
-                                  <Checkbox id={`multi-${section.id}`} checked={section.isMulti} onCheckedChange={v => updateSection(section.id, { isMulti: !!v })} />
-                                  <Label htmlFor={`multi-${section.id}`} className="text-xs font-bold text-slate-600">Allow Multiple</Label>
-                                </div>
+                                {section.fieldType === 'Dropdown' && (
+                                  <div className="flex items-center gap-2 pt-6">
+                                    <Checkbox id={`multi-${section.id}`} checked={section.isMulti} onCheckedChange={v => updateSection(section.id, { isMulti: !!v })} />
+                                    <Label htmlFor={`multi-${section.id}`} className="text-xs font-bold text-slate-600">Allow Multiple</Label>
+                                  </div>
+                                )}
                               </div>
 
                               {section.fieldType === 'Dropdown' && (
