@@ -162,7 +162,13 @@ export default function DefinitionView({
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-6">
                 <TabsList className="w-full bg-transparent border-b rounded-none p-0 h-auto flex justify-between">
                     {['description', 'revisions', 'attachments', 'notes'].map(v => (
-                        <TabsTrigger key={v} value={v} className="flex-1 bg-transparent text-muted-foreground data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none py-3 text-sm font-bold uppercase tracking-widest">{v}</TabsTrigger>
+                        <TabsTrigger 
+                            key={v} 
+                            value={v} 
+                            className="flex-1 bg-transparent text-muted-foreground data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none py-3 text-sm font-bold uppercase tracking-widest"
+                        >
+                            {v}
+                        </TabsTrigger>
                     ))}
                 </TabsList>
 
