@@ -472,6 +472,19 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                       updateSection(section.id, { options: opts });
                                     }} 
                                   />
+                                  <div className="w-24">
+                                    <Input 
+                                      type="number"
+                                      value={opt.sortOrder || ''} 
+                                      placeholder="Sort" 
+                                      className="h-8 rounded-lg" 
+                                      onChange={e => {
+                                        const opts = [...(section.options || [])];
+                                        opts[oIdx].sortOrder = parseInt(e.target.value) || 0;
+                                        updateSection(section.id, { options: opts });
+                                      }} 
+                                    />
+                                  </div>
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
