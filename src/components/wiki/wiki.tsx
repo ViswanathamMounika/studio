@@ -21,11 +21,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Badge } from '../ui/badge';
-import { Switch } from '../ui/switch';
-import { Separator } from '../ui/separator';
 
 // Dynamic imports for heavy components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
@@ -74,18 +69,6 @@ const initialNotifications: NotificationType[] = [
     read: false,
   },
 ];
-
-const flattenDefinitions = (items: Definition[]): Definition[] => {
-    let flat: Definition[] = [];
-    if (!Array.isArray(items)) return [];
-    items.forEach(item => {
-        flat.push(item);
-        if (item.children) {
-            flat = [...flat, ...flattenDefinitions(item.children)];
-        }
-    });
-    return flat;
-};
 
 export default function Wiki() {
   const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v16', initialDefinitions);
@@ -782,8 +765,7 @@ export default function Wiki() {
             <ApprovalQueue 
                 pendingDefinitions={allPendingApprovals} 
                 onApprove={handlePublish}
-                onReject={(id, comment) => handleReject(id, comment, true)}
-                onRequestChanges={(id, comment) => handleReject(id, comment, false)}
+                onReject={(id, comment, isRejection) => handleReject(id, comment, isRejection)}
             />
         );
         default: return (
