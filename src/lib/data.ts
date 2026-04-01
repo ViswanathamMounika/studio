@@ -56,7 +56,8 @@ export const initialTemplates: Template[] = [
         fieldType: 'PlainText',
         isMulti: false,
         maxLength: 500,
-        isRequired: false
+        isRequired: false,
+        order: 2
       },
       {
         id: '2',
@@ -64,7 +65,8 @@ export const initialTemplates: Template[] = [
         name: 'Description',
         fieldType: 'RichText',
         isMulti: false,
-        isRequired: false
+        isRequired: false,
+        order: 3
       },
       {
         id: '3',
@@ -72,7 +74,8 @@ export const initialTemplates: Template[] = [
         name: 'Technical Details',
         fieldType: 'RichText',
         isMulti: false,
-        isRequired: false
+        isRequired: false,
+        order: 4
       },
       {
         id: '4',
@@ -80,62 +83,8 @@ export const initialTemplates: Template[] = [
         name: 'Usage Examples',
         fieldType: 'RichText',
         isMulti: false,
-        isRequired: false
-      },
-      {
-        id: '5',
-        templateId: '1',
-        name: 'Output Type',
-        group: 'SQL Function Specifications',
-        fieldType: 'PlainText',
-        isMulti: false,
-        maxLength: 50,
-        isRequired: false
-      },
-      {
-        id: '6',
-        templateId: '1',
-        name: 'Output Example',
-        group: 'SQL Function Specifications',
-        fieldType: 'PlainText',
-        isMulti: false,
-        maxLength: 2000,
-        isRequired: false
-      },
-      {
-        id: '7',
-        templateId: '1',
-        name: 'Input Parameters',
-        group: 'SQL Function Specifications',
-        fieldType: 'KeyValue',
-        isMulti: false,
         isRequired: false,
-        columns: [
-          {
-            id: 'c1',
-            templateSectionId: '7',
-            name: 'Parameter Name',
-            inputType: 'TextBox',
-            isMulti: false,
-            sortOrder: 1,
-            isRequired: true
-          },
-          {
-            id: 'c2',
-            templateSectionId: '7',
-            name: 'Type',
-            inputType: 'Dropdown',
-            isMulti: false,
-            sortOrder: 2,
-            isRequired: true,
-            options: [
-              { id: 'o1', templateSectionId: '7', columnId: 'c2', label: 'varchar', value: 'varchar', sortOrder: 1, isDefault: true },
-              { id: 'o2', templateSectionId: '7', columnId: 'c2', label: 'int', value: 'int', sortOrder: 2, isDefault: false },
-              { id: 'o3', templateSectionId: '7', columnId: 'c2', label: 'date', value: 'date', sortOrder: 3, isDefault: false },
-              { id: 'o4', templateSectionId: '7', columnId: 'c2', label: 'datetime', value: 'datetime', sortOrder: 4, isDefault: false },
-            ]
-          }
-        ]
+        order: 5
       },
       {
         id: '8',
@@ -144,6 +93,7 @@ export const initialTemplates: Template[] = [
         fieldType: 'Dropdown',
         isMulti: true,
         isRequired: false,
+        order: 1,
         options: [
           { id: 's1', templateSectionId: '8', label: 'EzCAP', value: 'EzCAP', sortOrder: 1, isDefault: false },
           { id: 's2', templateSectionId: '8', label: 'SupportTbls', value: 'SupportTbls', sortOrder: 2, isDefault: false },
@@ -194,6 +144,8 @@ export const initialDefinitions: Definition[] = [
         keywords: ['authorization', 'decision date', 'SLA'],
         description: '<p>The final date of adjudication.</p>',
         shortDescription: 'Final decision date for auths.',
+        sourceType: 'Views',
+        sourceName: 'vw_AuthDecisionDate',
         isArchived: false,
         isDraft: false,
         revisions: [baselineRevision('Auth Decision Date', 'Baseline definition.')],
@@ -212,6 +164,8 @@ export const initialDefinitions: Definition[] = [
         templateId: '1',
         keywords: ['mapping', 'codes'],
         description: '<p>Maps procedure codes to internal types.</p>',
+        sourceType: 'Tables',
+        sourceName: 'tbl_ServiceTypeMap',
         isArchived: false,
         isDraft: false,
         revisions: [baselineRevision('Service Type Mapping', 'Baseline mapping logic.')],
@@ -240,6 +194,8 @@ export const initialDefinitions: Definition[] = [
         keywords: ['claims', 'billing', 'rates'],
         description: '<p>Contracted rate lookup logic.</p>',
         shortDescription: 'Rate calculation rules for providers.',
+        sourceType: 'Stored Procedures',
+        sourceName: 'usp_GetContractedRates',
         isArchived: false,
         isDraft: false,
         revisions: [baselineRevision('Contracted Rates', 'Baseline logic.')],

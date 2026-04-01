@@ -1,15 +1,17 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-sql';
-import type { Definition, Revision, Note } from '@/lib/types';
+import type { Definition, Revision, Note, SectionValue } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Bookmark, Info, Lock as LockIcon, MessageSquare, History } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
@@ -92,23 +94,11 @@ export default function DefinitionView({
                 return prev.filter(r => r.ticketId !== rev.ticketId);
             }
             if (prev.length >= 2) {
-                // If 2 already selected, just return current list. 
-                // User must uncheck to select a different one as per requirement.
                 return prev;
             }
             return [...prev, rev];
         });
     };
-
-    const groupedSections = useMemo(() => {
-      if (!selectedTemplate) return null;
-      return selectedTemplate.sections.reduce((acc, section) => {
-        const g = section.group || 'General Documentation';
-        if (!acc[g]) acc[g] = [];
-        acc[g].push(section);
-        return acc;
-      }, {} as Record<string, typeof selectedTemplate.sections>);
-    }, [selectedTemplate]);
 
     const myNotes = (definition.notes || []).filter(n => n.authorId === currentUser.id);
     const otherNotes = (definition.notes || []).filter(n => n.authorId !== currentUser.id);
@@ -120,6 +110,10 @@ export default function DefinitionView({
         { id: 'notes', label: 'Notes' },
         { id: 'related-definitions', label: 'Related Definitions' },
     ];
+
+    const getSectionValue = (sectionId: string) => {
+        return definition.sectionValues?.find(v => v.sectionId === sectionId);
+    };
 
   return (
     <TooltipProvider>
@@ -141,7 +135,7 @@ export default function DefinitionView({
                 </Alert>
             )}
 
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-start mb-6 px-2">
                 <div>
                     <p className="text-xs font-semibold text-slate-500 mb-1">{definition.module}</p>
                     <div className="flex items-center gap-3">
@@ -177,72 +171,97 @@ export default function DefinitionView({
                     ))}
                 </TabsList>
 
-                <TabsContent value="description" className="mt-8 space-y-8">
-                    {groupedSections ? (
-                      Object.entries(groupedSections).map(([groupName, sections]) => (
-                        <div key={groupName} className="space-y-4">
-                          <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-3">
-                            {groupName}
-                            <div className="h-px bg-slate-100 flex-1" />
-                          </h3>
-                          <div className="space-y-6">
-                            {sections.map(section => {
-                              const value = definition.sectionValues?.find(v => v.sectionId === section.id);
-                              if (!value && !section.isRequired) return null;
+                <TabsContent value="description" className="mt-6">
+                    <Accordion type="multiple" defaultValue={["source-of-truth", "short-description"]} className="space-y-4">
+                        {/* 1. Source of Truth */}
+                        <AccordionItem value="source-of-truth" className="border rounded-xl px-6 bg-white shadow-sm overflow-hidden border-slate-200">
+                            <AccordionTrigger className="hover:no-underline py-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-900 text-sm">Source of Truth</span>
+                                    <Info className="h-3.5 w-3.5 text-slate-400" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-6">
+                                <div className="space-y-4 pt-2">
+                                    <div className="space-y-3">
+                                        <p className="text-sm font-bold text-slate-900">Source of Truth for Objects:</p>
+                                        <div className="space-y-2 pl-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-bold text-slate-900">Source Type:</span>
+                                                <span className="text-sm text-slate-600">{definition.sourceType || 'N/A'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-bold text-slate-900">Source Name:</span>
+                                                <span className="text-sm text-slate-600">{definition.sourceName || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {getSectionValue('8') && (
+                                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-50">
+                                            {getSectionValue('8')?.multiValues?.map(v => (
+                                                <Badge key={v} className="bg-slate-100 text-slate-700 border-slate-200 font-bold">{v}</Badge>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
 
-                              return (
-                                <Card key={section.id} className="rounded-2xl border-slate-200 shadow-sm overflow-hidden bg-white">
-                                    <CardHeader className="py-3 px-6 bg-slate-50/50 border-b flex flex-row items-center gap-2">
-                                        <CardTitle className="text-sm font-bold text-slate-800 m-0">{section.name}</CardTitle>
-                                        <Info className="h-3.5 w-3.5 text-slate-400" />
-                                    </CardHeader>
-                                    <CardContent className="p-6">
-                                        {section.fieldType === 'RichText' && (
-                                            <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: value?.html || '<p class="italic text-slate-400">Not provided</p>' }} />
-                                        )}
-                                        {section.fieldType === 'PlainText' && (
-                                            <p className="text-sm text-slate-700 m-0 leading-relaxed font-medium">{value?.raw || 'Not provided'}</p>
-                                        )}
-                                        {section.fieldType === 'Dropdown' && (
-                                            <div className="flex flex-wrap gap-2">
-                                            {section.isMulti ? (
-                                                value?.multiValues?.map(v => <Badge key={v} className="bg-primary/10 text-primary border-primary/20 font-bold">{v}</Badge>)
-                                            ) : (
-                                                <Badge className="bg-slate-100 text-slate-700 border-slate-200 font-bold">{value?.raw || 'N/A'}</Badge>
-                                            )}
-                                            </div>
-                                        )}
-                                        {section.fieldType === 'KeyValue' && (
-                                            <div className="border rounded-xl overflow-hidden shadow-none">
-                                                <Table>
-                                                    <TableHeader className="bg-slate-50/50">
-                                                        <TableRow className="hover:bg-transparent border-slate-200">
-                                                            {section.columns?.map(col => <TableHead key={col.id} className="h-10 font-bold text-slate-700 text-xs">{col.name}</TableHead>)}
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {value?.structuredRows?.map((row, ri) => (
-                                                            <TableRow key={ri} className="hover:bg-transparent border-slate-100">
-                                                                {section.columns?.map(col => <TableCell key={col.id} className="text-sm py-3">{row[col.id] || '—'}</TableCell>)}
-                                                            </TableRow>
-                                                        ))}
-                                                        {!value?.structuredRows?.length && <TableRow><TableCell colSpan={section.columns?.length} className="text-center italic text-slate-400 py-6 text-sm">No data entries available.</TableCell></TableRow>}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <Card className="rounded-2xl border-slate-200 shadow-sm p-8 bg-white">
-                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: definition.description }} />
-                      </Card>
-                    )}
+                        {/* 2. Short Description */}
+                        <AccordionItem value="short-description" className="border rounded-xl px-6 bg-white shadow-sm overflow-hidden border-slate-200">
+                            <AccordionTrigger className="hover:no-underline py-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-900 text-sm">Short Description</span>
+                                    <Info className="h-3.5 w-3.5 text-slate-400" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-6">
+                                <p className="text-sm text-slate-700 leading-relaxed pt-2">
+                                    {definition.shortDescription || getSectionValue('1')?.raw || 'Not provided'}
+                                </p>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        {/* 3. Description */}
+                        <AccordionItem value="description" className="border rounded-xl px-6 bg-white shadow-sm overflow-hidden border-slate-200">
+                            <AccordionTrigger className="hover:no-underline py-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-900 text-sm">Description</span>
+                                    <Info className="h-3.5 w-3.5 text-slate-400" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-6">
+                                <div className="prose prose-sm max-w-none text-slate-700 pt-2" dangerouslySetInnerHTML={{ __html: getSectionValue('2')?.html || definition.description || '<p class="italic text-slate-400">Not provided</p>' }} />
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        {/* 4. Technical Details */}
+                        <AccordionItem value="technical-details" className="border rounded-xl px-6 bg-white shadow-sm overflow-hidden border-slate-200">
+                            <AccordionTrigger className="hover:no-underline py-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-900 text-sm">Technical Details</span>
+                                    <Info className="h-3.5 w-3.5 text-slate-400" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-6">
+                                <div className="prose prose-sm max-w-none text-slate-700 pt-2" dangerouslySetInnerHTML={{ __html: getSectionValue('3')?.html || definition.technicalDetails || '<p class="italic text-slate-400">Not provided</p>' }} />
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        {/* 5. Usage Examples */}
+                        <AccordionItem value="usage-examples" className="border rounded-xl px-6 bg-white shadow-sm overflow-hidden border-slate-200">
+                            <AccordionTrigger className="hover:no-underline py-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-900 text-sm">Usage Examples</span>
+                                    <Info className="h-3.5 w-3.5 text-slate-400" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-6">
+                                <div className="prose prose-sm max-w-none text-slate-700 pt-2" dangerouslySetInnerHTML={{ __html: getSectionValue('4')?.html || definition.usageExamples || '<p class="italic text-slate-400">Not provided</p>' }} />
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
                 </TabsContent>
 
                 <TabsContent value="revisions" className="mt-8 space-y-6">
@@ -299,7 +318,7 @@ export default function DefinitionView({
                 </TabsContent>
 
                 <TabsContent value="notes" className="mt-8 space-y-6">
-                    <h2 className="text-xl font-bold text-slate-900 mt-0">Notes</h2>
+                    <h2 className="text-xl font-bold text-slate-900 mt-0 px-2">Notes</h2>
                     {!definition.isArchived && (
                       <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl shadow-none">
                         <Label className="text-sm font-bold text-primary mb-2 block">Add a Note</Label>
@@ -315,12 +334,12 @@ export default function DefinitionView({
                     )}
                     
                     <Tabs value={notesTab} onValueChange={setNotesTab} className="w-full">
-                        <TabsList className="bg-slate-100 p-1 rounded-lg h-9 mb-6">
+                        <TabsList className="bg-slate-100 p-1 rounded-lg h-9 mb-6 mx-2">
                             <TabsTrigger value="my-notes" className="text-xs font-bold px-4 data-[state=active]:bg-white data-[state=active]:text-primary">My Notes</TabsTrigger>
                             <TabsTrigger value="others-notes" className="text-xs font-bold px-4 data-[state=active]:bg-white data-[state=active]:text-primary">Others' Notes</TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="my-notes" className="space-y-4 m-0">
+                        <TabsContent value="my-notes" className="space-y-4 m-0 px-2">
                             {myNotes.length > 0 ? (
                                 myNotes.map(note => (
                                     <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
@@ -343,7 +362,7 @@ export default function DefinitionView({
                             )}
                         </TabsContent>
 
-                        <TabsContent value="others-notes" className="space-y-4 m-0">
+                        <TabsContent value="others-notes" className="space-y-4 m-0 px-2">
                             {otherNotes.length > 0 ? (
                                 otherNotes.map(note => (
                                     <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
