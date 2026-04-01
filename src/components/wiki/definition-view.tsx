@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, Lock as LockIcon, MessageSquare, Braces, Table as TableIcon } from 'lucide-react';
+import { Pencil, Bookmark, Trash2, Share2, Info, X, Check, Send, ShieldCheck, Undo2, Lock as LockIcon, MessageSquare, Braces, Table as TableIcon, History, FileClock } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { initialTemplates } from '@/lib/data';
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import RelatedDefinitions from './related-definitions';
@@ -59,7 +61,6 @@ export default function DefinitionView({
     
     const [noteText, setNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
-    const [notesViewTab, setNotesViewTab] = useState<'my' | 'others'>('my');
     
     const { toast } = useToast();
 
@@ -98,6 +99,16 @@ export default function DefinitionView({
         setNoteText('');
         setShareNote(false);
         toast({ title: 'Note Saved', description: 'Your note has been added.' });
+    };
+
+    const handleToggleRevision = (rev: Revision) => {
+        if (definition.isArchived) return;
+        setSelectedRevisions(prev => {
+            const isSelected = prev.some(r => r.ticketId === rev.ticketId);
+            if (isSelected) return prev.filter(r => r.ticketId !== rev.ticketId);
+            if (prev.length >= 2) return [prev[1], rev];
+            return [...prev, rev];
+        });
     };
 
     const groupedSections = useMemo(() => {
@@ -220,13 +231,53 @@ export default function DefinitionView({
                     )}
                 </TabsContent>
 
-                <TabsContent value="revisions" className="mt-6">
-                    <Card><CardContent className="p-6">
+                <TabsContent value="revisions" className="mt-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-bold mt-0">Version History</h2>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            disabled={selectedRevisions.length !== 2 || definition.isArchived}
+                            onClick={() => setShowComparison(true)}
+                            className="rounded-xl font-bold"
+                        >
+                            Compare Selected ({selectedRevisions.length})
+                        </Button>
+                    </div>
+                    <Card className="rounded-2xl border-slate-200 overflow-hidden shadow-sm">
                       <Table>
-                        <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Developer</TableHead><TableHead>Description</TableHead></TableRow></TableHeader>
-                        <TableBody>{definition.revisions.map(r => <TableRow key={r.ticketId}><TableCell className="font-bold">{r.date}</TableCell><TableCell>{r.developer}</TableCell><TableCell className="text-slate-500">{r.description}</TableCell></TableRow>)}</TableBody>
+                        <TableHeader className="bg-slate-50">
+                            <TableRow className="border-slate-200">
+                                <TableHead className="w-12"></TableHead>
+                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Date</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Developer</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Description</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {definition.revisions.length > 0 ? (
+                                definition.revisions.map(r => (
+                                    <TableRow key={r.ticketId} className="border-slate-100 hover:bg-slate-50/50">
+                                        <TableCell>
+                                            <Checkbox 
+                                                checked={selectedRevisions.some(sr => sr.ticketId === r.ticketId)}
+                                                onCheckedChange={() => handleToggleRevision(r)}
+                                                disabled={definition.isArchived}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="font-bold text-slate-900">{r.date}</TableCell>
+                                        <TableCell className="text-slate-600">{r.developer}</TableCell>
+                                        <TableCell className="text-slate-500">{r.description}</TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-32 text-center text-muted-foreground italic">No historical records available.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
                       </Table>
-                    </CardContent></Card>
+                    </Card>
                 </TabsContent>
 
                 <TabsContent value="attachments" className="mt-6">
@@ -236,29 +287,55 @@ export default function DefinitionView({
                 <TabsContent value="notes" className="mt-6 space-y-6">
                     <h2 className="text-2xl font-bold mt-0">Notes</h2>
                     {!definition.isArchived && (
-                      <Card className="p-6 bg-indigo-50/30 border-indigo-100 rounded-2xl">
+                      <Card className="p-6 bg-indigo-50/30 border-indigo-100 rounded-2xl shadow-none">
                         <Label className="text-sm font-bold text-indigo-900 mb-2 block">Add a Note</Label>
-                        <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Personal or shared insights..." className="rounded-xl border-indigo-100 mb-4 h-24" />
+                        <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Personal or shared insights..." className="rounded-xl border-indigo-100 mb-4 h-24 bg-white" />
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2"><Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} /><Label htmlFor="share" className="text-xs font-medium">Share with team</Label></div>
-                          <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="bg-indigo-600 hover:bg-indigo-700">Save Note</Button>
+                          <div className="flex items-center gap-2">
+                            <Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} />
+                            <Label htmlFor="share" className="text-xs font-bold text-indigo-700 cursor-pointer">Share with team</Label>
+                          </div>
+                          <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold">Save Note</Button>
                         </div>
                       </Card>
                     )}
+                    
                     <div className="space-y-4">
-                      {definition.notes?.map(note => (
-                        <Card key={note.id} className="p-4 rounded-xl border-slate-200">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2"><span className="font-bold text-slate-900">{note.author}</span><span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span></div>
-                            {note.isShared && <Badge variant="outline" className="text-[9px] uppercase font-black h-5">Shared</Badge>}
-                          </div>
-                          <p className="text-sm text-slate-600 m-0">{note.content}</p>
-                        </Card>
-                      ))}
+                      <h3 className="text-sm font-black uppercase text-slate-400 tracking-widest mb-4">Saved Notes</h3>
+                      {definition.notes && definition.notes.length > 0 ? (
+                        definition.notes.map(note => (
+                            <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-900">{note.author}</span>
+                                    <span className="text-[10px] text-slate-400 uppercase font-black tracking-tighter">•</span>
+                                    <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
+                                </div>
+                                {note.isShared && <Badge variant="outline" className="text-[9px] uppercase font-black h-5 border-indigo-100 text-indigo-600 bg-indigo-50">Shared</Badge>}
+                            </div>
+                            <p className="text-sm text-slate-600 m-0 leading-relaxed">{note.content}</p>
+                            </Card>
+                        ))
+                      ) : (
+                        <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                            <MessageSquare className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                            <p className="text-sm text-slate-400 italic">No notes found for this definition.</p>
+                        </div>
+                      )}
                     </div>
                 </TabsContent>
             </Tabs>
         </article>
+
+        {showComparison && selectedRevisions.length === 2 && (
+            <RevisionComparisonDialog
+                open={showComparison}
+                onOpenChange={setShowComparison}
+                revision1={selectedRevisions[0]}
+                revision2={selectedRevisions[1]}
+                definition={definition}
+            />
+        )}
     </TooltipProvider>
   );
 }

@@ -1,3 +1,4 @@
+
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
@@ -15,50 +16,7 @@ export const authorizationStatusCodes: SupportingTable = {
     ]
 };
 
-export const cmsComplianceMatrix: SupportingTable = {
-    id: 'cms-compliance',
-    name: 'CMS Compliance Matrix',
-    description: 'Turnaround time requirements for authorizations based on state regulations.',
-    headers: ['State', 'Requirement ID', 'Turnaround Time (Days)', 'Applies To'],
-    rows: [
-        ['CA', 'CA-UM-01', '5', 'Standard (Non-Urgent)'],
-        ['CA', 'CA-UM-02', '72 hours', 'Urgent'],
-        ['NY', 'NY-UM-A', '7', 'Standard (Non-Urgent)'],
-        ['NY', 'NY-UM-B', '3', 'Urgent'],
-        ['TX', 'TX-MCR-112', '14', 'Standard (Non-Urgent)'],
-        ['TX', 'TX-MCR-113', '24 hours', 'Urgent'],
-        ['FL', 'FL-MED-004', '7', 'Standard (Non-Urgent)'],
-        ['FL', 'FL-MED-005', '48 hours', 'Urgent'],
-    ]
-};
-
-export const timestampChangedTable: SupportingTable = {
-    id: 'timestamp-changed',
-    name: 'timestamp_changed table',
-    description: 'Tracks when a specific column was last changed for a given record.',
-    headers: ['timestamp_changed', 'table_name', 'record_id'],
-    rows: [
-        ['2023-10-26 10:00:15.123', 'AUTHORIZATION_MASTER', 'AUTH-55432'],
-        ['2023-10-25 14:32:05.456', 'AUTHORIZATION_EVENTS', 'EVT-98765'],
-        ['2023-10-24 09:15:45.789', 'PROVIDER_MASTER', 'PROV-1001-A'],
-        ['2023-10-23 18:05:12.321', 'MEMBER_MASTER', 'MEM-5005-B'],
-        ['2023-10-22 11:46:30.654', 'CLAIMS_MASTER', 'CLM-9876-C'],
-    ]
-}
-
 const names = ['J. Doe', 'A. Smith', 'T. Johnson', 'S. Lee', 'M. Garcia', 'P. Williams', 'D. Brown', 'K. Nguyen', 'Dhilip Sagadevan'];
-
-const generateRandomDate = () => {
-    const now = new Date();
-    if (Math.random() > 0.3) {
-        const start = new Date();
-        start.setDate(now.getDate() - 30);
-        return new Date(start.getTime() + Math.random() * (now.getTime() - start.getTime())).toISOString();
-    }
-    const start = new Date(now.getFullYear() - 2, 0, 1);
-    const date = new Date(start.getTime() + Math.random() * (now.getTime() - start.getTime()));
-    return date.toISOString();
-}
 
 export const mpmDatabases: DatabaseMetadata[] = [
     { id: 'EzCAp', name: 'EzCAp' },
@@ -257,6 +215,34 @@ export const initialDefinitions: Definition[] = [
         isArchived: false,
         isDraft: false,
         revisions: [baselineRevision('Service Type Mapping', 'Baseline mapping logic.')],
+        supportingTables: [],
+        attachments: []
+      }
+    ]
+  },
+  {
+    id: '2',
+    name: 'Claims',
+    module: 'Claims',
+    keywords: [],
+    description: '',
+    revisions: [],
+    isArchived: false,
+    isDraft: false,
+    supportingTables: [],
+    attachments: [],
+    children: [
+      {
+        id: '2.1.1',
+        name: 'Contracted Rates',
+        module: 'Claims',
+        templateId: '1',
+        keywords: ['claims', 'billing', 'rates'],
+        description: '<p>Contracted rate lookup logic.</p>',
+        shortDescription: 'Rate calculation rules for providers.',
+        isArchived: false,
+        isDraft: false,
+        revisions: [baselineRevision('Contracted Rates', 'Baseline logic.')],
         supportingTables: [],
         attachments: []
       }
