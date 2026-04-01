@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2, ChevronDown, Check, Info, Hash, Trash, Table as TableIcon } from 'lucide-react';
+import { X, Upload, Eye, Save, Send, Lock, Plus, Trash2, ChevronDown, Check, Info, Hash, Trash, Table as TableIcon, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -407,7 +407,7 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
             <Button 
                 onClick={() => handleSaveManual(false)} 
                 disabled={!name.trim()}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-10 shadow-lg shadow-indigo-100 transition-all"
+                className="bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white rounded-xl font-bold px-10 shadow-lg shadow-indigo-100 transition-all"
             >
                 <Send className="mr-2 h-4 w-4" />
                 {isAdmin ? 'Publish Changes' : 'Submit for Approval'}
