@@ -22,7 +22,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import AttachmentList from './attachments';
 import { ScrollArea } from '../ui/scroll-area';
 import { Textarea } from '../ui/textarea';
-import { mpmDatabases, mpmSourceTypes } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
@@ -95,22 +94,21 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     });
   };
 
-  // Group sections by their `group` field and sort by `groupSortOrder`
+  // Group sections by their `group` field and respect their internal sort order
   const groupedSections = useMemo(() => {
-    if (!selectedTemplate) return {};
+    if (!selectedTemplate) return [];
     
-    // Sort all sections first so they are ordered within their groups if needed
-    const sortedSections = [...selectedTemplate.sections];
+    const sortedSections = [...selectedTemplate.sections].sort((a, b) => a.order - b.order);
     
-    const groups = sortedSections.reduce((acc, section) => {
+    const groupsMap = sortedSections.reduce((acc, section) => {
       const g = section.group || 'General Documentation';
-      if (!acc[g]) acc[g] = { sections: [], order: section.groupSortOrder || 9999 };
-      acc[g].sections.push(section);
+      if (!acc[g]) acc[g] = [];
+      acc[g].push(section);
       return acc;
-    }, {} as Record<string, { sections: TemplateSection[], order: number }>);
+    }, {} as Record<string, TemplateSection[]>);
 
-    // Return as entries sorted by the group's order
-    return Object.entries(groups).sort((a, b) => a[1].order - b[1].order);
+    // We keep the groups in the order they first appear based on their first section's document order
+    return Object.entries(groupsMap);
   }, [selectedTemplate]);
 
   return (
@@ -161,8 +159,8 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
               </CardContent>
             </Card>
 
-            {/* Dynamic Template Sections grouped by central logic */}
-            {groupedSections.map(([groupName, { sections }]) => (
+            {/* Dynamic Template Sections grouped and sorted */}
+            {groupedSections.map(([groupName, sections]) => (
               <div key={groupName} className="space-y-6">
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-bold text-slate-900">{groupName}</h3>
@@ -236,7 +234,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                               <Table>
                                 <TableHeader className="bg-slate-50 rounded-lg">
                                   <TableRow className="hover:bg-transparent border-none">
-                                    {section.columns?.map(col => (
+                                    {section.columns?.sort((a,b) => a.sortOrder - b.sortOrder).map(col => (
                                       <TableHead key={col.id} className="font-bold text-slate-700 h-10">{col.name}</TableHead>
                                     ))}
                                     <TableHead className="w-10"></TableHead>
@@ -245,7 +243,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                 <TableBody>
                                   {value?.structuredRows?.map((row, rIdx) => (
                                     <TableRow key={rIdx} className="border-slate-100 hover:bg-transparent">
-                                      {section.columns?.map(col => (
+                                      {section.columns?.sort((a,b) => a.sortOrder - b.sortOrder).map(col => (
                                         <TableCell key={col.id} className="py-2 px-1">
                                           {col.inputType === 'TextBox' ? (
                                             <Input 
