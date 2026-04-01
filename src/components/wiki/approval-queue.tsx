@@ -18,7 +18,8 @@ import {
     ChevronLeft,
     Check,
     FileText,
-    History
+    History,
+    ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -187,8 +188,8 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
             <div className="flex-1 flex flex-col min-w-0">
                 {selectedDef ? (
                     <>
-                        {/* Status Banner */}
-                        <div className="bg-amber-50 border-b border-amber-100 px-8 py-3.5 flex items-center justify-between shrink-0">
+                        {/* Status & Action Banner */}
+                        <div className="bg-amber-50 border-b border-amber-100 px-8 py-3.5 flex items-center justify-between shrink-0 sticky top-0 z-20 shadow-sm">
                             <div className="flex items-center gap-3">
                                 <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
                                     <Clock className="h-4 w-4 text-amber-600" />
@@ -197,12 +198,34 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                     Submitted by <span className="font-bold">{selectedDef.submittedBy || 'J. Doe'}</span> · <span className="text-amber-700 font-bold">Awaiting Action</span>
                                 </p>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <Button variant="ghost" size="sm" className="text-amber-700 hover:bg-amber-100 font-bold h-8">
-                                    <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+                            
+                            {/* Action Buttons moved to top */}
+                            <div className="flex items-center gap-3">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="rounded-xl h-9 border-red-200 text-red-600 hover:bg-red-50 font-bold"
+                                    onClick={() => handleActionClick('reject')}
+                                >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    Reject
                                 </Button>
-                                <Button variant="ghost" size="sm" className="text-amber-700 hover:bg-amber-100 font-bold h-8">
-                                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="rounded-xl h-9 border-amber-200 text-amber-600 hover:bg-amber-50 font-bold"
+                                    onClick={() => handleActionClick('request')}
+                                >
+                                    <RefreshCcw className="h-4 w-4 mr-2" />
+                                    Request Changes
+                                </Button>
+                                <Button 
+                                    size="sm"
+                                    className="rounded-xl h-9 bg-indigo-600 hover:bg-indigo-700 font-bold shadow-sm"
+                                    onClick={handleApprove}
+                                >
+                                    <ShieldCheck className="h-4 w-4 mr-2" />
+                                    Approve & Publish
                                 </Button>
                             </div>
                         </div>
@@ -252,7 +275,7 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                         </div>
 
                                         {/* Sidebar Info */}
-                                        <div className="space-y-6 sticky top-0">
+                                        <div className="space-y-6 sticky top-4">
                                             <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
                                                 <CardHeader className="bg-slate-50/50 border-b p-5">
                                                     <CardTitle className="text-sm font-bold text-slate-800">Submission Info</CardTitle>
@@ -300,33 +323,6 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                     </div>
                                 </div>
                             </ScrollArea>
-
-                            {/* Static Footer Actions */}
-                            <div className="p-6 bg-white border-t flex items-center justify-end gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
-                                <Button 
-                                    variant="outline" 
-                                    className="rounded-xl px-6 h-11 border-red-200 text-red-600 hover:bg-red-50 font-bold"
-                                    onClick={() => handleActionClick('reject')}
-                                >
-                                    <XCircle className="h-4 w-4 mr-2" />
-                                    Reject
-                                </Button>
-                                <Button 
-                                    variant="outline" 
-                                    className="rounded-xl px-6 h-11 border-amber-200 text-amber-600 hover:bg-amber-50 font-bold"
-                                    onClick={() => handleActionClick('request')}
-                                >
-                                    <RefreshCcw className="h-4 w-4 mr-2" />
-                                    Request Changes
-                                </Button>
-                                <Button 
-                                    className="rounded-xl px-10 h-11 bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-200"
-                                    onClick={handleApprove}
-                                >
-                                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                                    Approve & Publish
-                                </Button>
-                            </div>
                         </div>
                     </>
                 ) : (
