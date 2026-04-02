@@ -264,7 +264,7 @@ export default function DefinitionView({
                     <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-slate-400">
                       <Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary text-primary")} />
                     </Button>
-                    {!definition.isArchived && !definition.isPendingApproval && viewingMode === 'draft' && (
+                    {!definition.isArchived && !definition.isPendingApproval && (
                         <Button onClick={onEdit} className="bg-primary hover:bg-primary/90 font-bold px-6 shadow-sm">
                             Edit
                         </Button>
