@@ -181,54 +181,60 @@ export default function DefinitionView({
                               </Button>
                           </TooltipTrigger>
                           <TooltipContent side="right">
-                              <p className="font-bold text-xs">{showFeedbackPane ? 'Hide Feedback' : 'View Approver Comments'}</p>
+                              <p className="font-bold text-xs">{showFeedbackPane ? 'Hide Feedback' : 'View Latest Feedback'}</p>
                           </TooltipContent>
                       </Tooltip>
                   )}
               </div>
             )}
 
-            {/* Inline Feedback Pane */}
-            {viewingMode === 'draft' && showFeedbackPane && feedbackMessages.length > 0 && (
+            {/* Inline Feedback Pane - Only Latest Comment */}
+            {viewingMode === 'draft' && showFeedbackPane && activeFeedback && (
                 <div className="px-2 mb-6 animate-in slide-in-from-top-2 fade-in duration-300">
                     <Card className="border-indigo-100 bg-indigo-50/30 rounded-2xl shadow-sm overflow-hidden">
                         <CardHeader className="py-3 px-4 bg-white/50 border-b border-indigo-100 flex flex-row items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <MessageSquare className="h-4 w-4 text-indigo-600" />
-                                <span className="text-xs font-black uppercase tracking-widest text-indigo-900">Approver Feedback History</span>
+                                <span className="text-xs font-black uppercase tracking-widest text-indigo-900">Latest Approver Feedback</span>
                             </div>
                             <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg text-indigo-400" onClick={() => setShowFeedbackPane(false)}>
                                 <X className="h-3.5 w-3.5" />
                             </Button>
                         </CardHeader>
-                        <CardContent className="p-4 space-y-4 max-h-[300px] overflow-y-auto">
-                            {feedbackMessages.map((msg) => (
-                                <div key={msg.id} className="flex gap-3 animate-in fade-in slide-in-from-left-1">
-                                    <Avatar className="h-7 w-7 shrink-0 border border-white shadow-sm">
-                                        <AvatarImage src={msg.avatar} />
-                                        <AvatarFallback className="bg-indigo-100 text-indigo-600 text-[10px] font-bold">
-                                            {msg.author.charAt(0)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 space-y-1.5">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-bold text-slate-900">{msg.author}</span>
-                                            <span className="text-[10px] text-slate-400 font-medium">
-                                                {formatDistanceToNow(new Date(msg.date), { addSuffix: true })}
-                                            </span>
-                                            <Badge className={cn(
-                                                "ml-auto text-[8px] uppercase font-black px-1.5 h-4",
-                                                msg.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
-                                            )}>
-                                                {msg.type === 'rejection' ? 'Rejected' : 'Change Requested'}
-                                            </Badge>
-                                        </div>
-                                        <div className="p-3 bg-white border border-indigo-100/50 rounded-xl shadow-sm">
-                                            <p className="text-xs text-slate-700 leading-relaxed font-medium m-0 italic">"{msg.content}"</p>
-                                        </div>
+                        <CardContent className="p-4">
+                            <div className="flex gap-3 animate-in fade-in slide-in-from-left-1">
+                                <Avatar className="h-7 w-7 shrink-0 border border-white shadow-sm">
+                                    <AvatarImage src={activeFeedback.avatar} />
+                                    <AvatarFallback className="bg-indigo-100 text-indigo-600 text-[10px] font-bold">
+                                        {activeFeedback.author.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 space-y-1.5">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-slate-900">{activeFeedback.author}</span>
+                                        <span className="text-[10px] text-slate-400 font-medium">
+                                            {formatDistanceToNow(new Date(activeFeedback.date), { addSuffix: true })}
+                                        </span>
+                                        <Badge className={cn(
+                                            "ml-auto text-[8px] uppercase font-black px-1.5 h-4",
+                                            activeFeedback.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                                        )}>
+                                            {activeFeedback.type === 'rejection' ? 'Rejected' : 'Change Requested'}
+                                        </Badge>
+                                    </div>
+                                    <div className="p-3 bg-white border border-indigo-100/50 rounded-xl shadow-sm">
+                                        <p className="text-xs text-slate-700 leading-relaxed font-medium m-0 italic">"{activeFeedback.content}"</p>
+                                    </div>
+                                    <div className="pt-1">
+                                        <button 
+                                            onClick={() => onTabChange('notes')}
+                                            className="text-[10px] font-black uppercase text-indigo-600 hover:underline"
+                                        >
+                                            View Full Review History →
+                                        </button>
                                     </div>
                                 </div>
-                            ))}
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -502,6 +508,7 @@ export default function DefinitionView({
                                 )}
                             </TabsContent>
 
+                            {/* Full Review History - All Feedback & Comments */}
                             <TabsContent value="discussion" className="space-y-4 m-0 px-2">
                                 {definition.discussions && definition.discussions.length > 0 ? (
                                     definition.discussions.map(msg => (
