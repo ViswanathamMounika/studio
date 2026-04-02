@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -173,7 +174,6 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
       
       <ScrollArea className="flex-1">
         <div className="p-8 space-y-10 max-w-[1000px] mx-auto pb-32">
-            {/* Core Info */}
             <Card className="rounded-2xl border-slate-200 shadow-sm">
                 <CardHeader className="bg-slate-50/50 border-b p-6">
                     <CardTitle className="text-sm font-black uppercase text-slate-500 tracking-wider">Identity & Categorization</CardTitle>

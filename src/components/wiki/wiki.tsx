@@ -231,10 +231,15 @@ export default function Wiki() {
     if (updatedDefinition.isDraft || updatedDefinition.isPendingApproval) {
         setDrafts(prev => {
             const exists = prev.some(d => d.id === updatedDefinition.id);
+            const savedDraft = {
+              ...updatedDefinition,
+              submittedBy: isNowPending ? currentUser.name : updatedDefinition.submittedBy,
+              submittedAt: isNowPending ? new Date().toISOString() : updatedDefinition.submittedAt
+            };
             if (exists) {
-                return prev.map(d => d.id === updatedDefinition.id ? updatedDefinition : d);
+                return prev.map(d => d.id === updatedDefinition.id ? savedDraft : d);
             }
-            return [...prev, updatedDefinition];
+            return [...prev, savedDraft];
         });
 
         if (isNowPending) {
@@ -537,8 +542,7 @@ export default function Wiki() {
     return {
         drafts: drafts.filter(d => d.isDraft && !d.isPendingApproval),
         published: filterPublishedTree(definitions),
-        pending: drafts.filter(d => d.isPendingApproval),
-        mySubmissions: drafts.filter(d => d.isPendingApproval)
+        pending: drafts.filter(d => d.isPendingApproval)
     };
   }, [definitions, drafts, showArchived, showBookmarked, isBookmarked]);
 
@@ -626,7 +630,6 @@ export default function Wiki() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto flex flex-col bg-slate-50/20">
-                      {/* Standard User Workflow Tabs */}
                       {!isAdmin ? (
                         <div className="border-b bg-white/50">
                           <Tabs defaultValue="saved" className="w-full">
@@ -642,12 +645,11 @@ export default function Wiki() {
                                <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
                             </TabsContent>
                             <TabsContent value="submitted" className="mt-0 p-3">
-                               <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.mySubmissions} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                               <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.pending} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
                             </TabsContent>
                           </Tabs>
                         </div>
                       ) : (
-                        /* Admin Layout (Vertical Sections) */
                         <>
                           <div className="p-4 space-y-3 border-b bg-white/50">
                               <div className="flex items-center justify-between">
@@ -668,7 +670,6 @@ export default function Wiki() {
                         </>
                       )}
 
-                      {/* Main Library Section */}
                       <div className="flex-1">
                           <div className="p-3">
                             <div className="flex items-center gap-2 px-2 mb-3">
