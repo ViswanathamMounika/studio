@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -524,7 +523,6 @@ export default function Wiki() {
     const filterPublishedTree = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = filterPublishedTree(item.children || []);
-            // Definitions in the main tree are ALWAYS published versions.
             const isMatch = children.length > 0 || (!item.isDraft && !item.isPendingApproval);
             
             if (isMatch) {
@@ -571,6 +569,7 @@ export default function Wiki() {
                         <DefinitionView 
                           definition={selectedDef} 
                           allDefinitions={definitions}
+                          templates={templates}
                           liveVersion={liveDef}
                           onEdit={handleEditClick} 
                           onDuplicate={handleDuplicate} 

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-sql';
-import type { Definition, Revision, Note, SectionValue, DiscussionMessage } from '@/lib/types';
+import type { Definition, Revision, Note, SectionValue, DiscussionMessage, Template, TemplateSection } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +31,7 @@ const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dia
 type DefinitionViewProps = {
   definition: Definition;
   allDefinitions: Definition[];
+  templates?: Template[];
   liveVersion?: Definition | null;
   onEdit: () => void;
   onDuplicate: (id: string) => void;
@@ -67,7 +68,7 @@ const WorkflowStep = ({ label, status, isLast = false }: { label: string, status
 };
 
 export default function DefinitionView({ 
-    definition, allDefinitions, liveVersion, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
+    definition, allDefinitions, templates, liveVersion, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
     activeTab, onTabChange, onSave, onDiscard, isAdmin, currentUser, viewingMode
 }: DefinitionViewProps) {
     const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
@@ -91,6 +92,79 @@ export default function DefinitionView({
         const currentLiveRevId = liveVersion.revisions[0]?.ticketId;
         return currentLiveRevId && definition.baseVersionId !== currentLiveRevId;
     }, [viewingMode, definition.baseVersionId, liveVersion]);
+
+    const groupedSections = useMemo(() => {
+        const selectedTemplate = (templates || initialTemplates).find(t => t.id === definition.templateId) || (templates || initialTemplates)[0];
+        if (!selectedTemplate) return [];
+        const allSections = selectedTemplate.sections || [];
+        
+        const standaloneSections = allSections.filter(s => !s.group);
+        const uniqueGroupNames = Array.from(new Set(allSections.filter(s => s.group).map(s => s.group as string)));
+
+        const units: Array<{ type: 'section' | 'group', order: number, name?: string, sections: TemplateSection[] }> = [];
+
+        standaloneSections.forEach(s => {
+          units.push({ type: 'section', order: s.order, sections: [s] });
+        });
+
+        uniqueGroupNames.forEach(name => {
+          const groupSections = allSections.filter(s => s.group === name);
+          const groupOrder = groupSections[0]?.groupOrder || 0;
+          units.push({ 
+            type: 'group', 
+            name, 
+            order: groupOrder, 
+            sections: groupSections.sort((a, b) => a.order - b.order) 
+          });
+        });
+
+        return units.sort((a, b) => a.order - b.order);
+    }, [definition.templateId, templates]);
+
+    const renderSectionContent = (section: TemplateSection, value?: SectionValue) => {
+        if (!value) {
+            // Fallback for backward compatibility if template mappings haven't migrated
+            if (section.id === '1') return <p className="text-sm text-slate-700">{definition.shortDescription || 'Not provided'}</p>;
+            if (section.id === '2') return <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: definition.description || '<p class="italic text-slate-400">No description provided.</p>' }} />;
+            if (section.id === '3') return <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: definition.technicalDetails || '<p class="italic text-slate-400">Not provided</p>' }} />;
+            if (section.id === '4') return <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: definition.usageExamples || '<p class="italic text-slate-400">Not provided</p>' }} />;
+            
+            return <p className="italic text-slate-400 text-sm">Not provided</p>;
+        }
+
+        switch (section.fieldType) {
+            case 'RichText':
+                return <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: value.html || value.raw || '<p class="italic text-slate-400">No content provided.</p>' }} />;
+            case 'PlainText':
+                return <p className="text-sm text-slate-700 whitespace-pre-wrap">{value.raw || 'Not provided'}</p>;
+            case 'Dropdown':
+                const displayValue = section.isMulti ? (value.multiValues || []).join(', ') : value.raw;
+                return <p className="text-sm text-slate-700">{displayValue || 'Not provided'}</p>;
+            case 'KeyValue':
+                if (!value.structuredRows || value.structuredRows.length === 0) return <p className="italic text-slate-400 text-sm">No records provided</p>;
+                const cols = section.columns?.sort((a,b) => a.sortOrder - b.sortOrder) || [];
+                return (
+                    <div className="border rounded-lg overflow-hidden mt-2">
+                        <Table>
+                            <TableHeader className="bg-slate-50">
+                                <TableRow>
+                                    {cols.map(col => <TableHead key={col.id} className="font-bold text-slate-700 h-10">{col.name}</TableHead>)}
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {value.structuredRows.map((row, rIdx) => (
+                                    <TableRow key={rIdx} className="border-slate-100">
+                                        {cols.map(col => <TableCell key={col.id} className="py-2.5 text-sm">{row[col.id] || '—'}</TableCell>)}
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                );
+            default:
+                return <p className="text-sm text-slate-700">{value.raw}</p>;
+        }
+    };
 
     const handleSaveNote = () => {
         if (!noteText.trim() || definition.isArchived) return;
@@ -164,7 +238,7 @@ export default function DefinitionView({
                 </div>
             )}
 
-            {/* Workflow Ribbon - Only show for drafts or items pending approval */}
+            {/* Workflow Ribbon */}
             {(viewingMode === 'draft' || definition.isPendingApproval) && (
               <div className="flex items-center gap-4 px-2 mb-4">
                   <div className="flex items-center gap-4">
@@ -186,7 +260,7 @@ export default function DefinitionView({
               </div>
             )}
 
-            {/* Inline Feedback Pane - Only show latest */}
+            {/* Inline Feedback Pane */}
             {showFeedbackPane && latestFeedback && (
                 <div className="px-2 mb-6 animate-in slide-in-from-top-2 fade-in">
                     <Card className="border-indigo-100 bg-indigo-50/30 rounded-2xl overflow-hidden shadow-sm">
@@ -257,77 +331,43 @@ export default function DefinitionView({
                     <TabsTrigger value="related-definitions" className="flex-1 font-bold text-sm">Related Definitions</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="description" className="mt-6">
-                    <Accordion type="multiple" defaultValue={["source-of-truth", "short-description", "description", "usage-examples"]} className="space-y-4">
-                        {/* Source of Truth Section */}
-                        <AccordionItem value="source-of-truth" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
-                            <AccordionTrigger className="font-bold py-4 hover:no-underline">
-                                <div className="flex items-center gap-2">
-                                    Source of Truth
-                                    <Info className="h-4 w-4 text-slate-400" />
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-6">
-                                <div className="space-y-2 text-sm">
-                                    <p className="font-bold">Source:</p>
-                                    <p><span className="font-bold">Source Type:</span> <span className="text-slate-600 ml-1">{definition.sourceType || '—'}</span></p>
-                                    <p><span className="font-bold">Source Name:</span> <span className="text-slate-600 ml-1">{definition.sourceName || '—'}</span></p>
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        {/* Short Description Section */}
-                        <AccordionItem value="short-description" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
-                            <AccordionTrigger className="font-bold py-4 hover:no-underline">
-                                <div className="flex items-center gap-2">
-                                    Short Description
-                                    <Info className="h-4 w-4 text-slate-400" />
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-6 text-sm text-slate-700 leading-relaxed">
-                                {definition.shortDescription || 'Not provided'}
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        {/* Description Section */}
-                        <AccordionItem value="description" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
-                            <AccordionTrigger className="font-bold py-4 hover:no-underline">
-                                <div className="flex items-center gap-2">
-                                    Description
-                                    <Info className="h-4 w-4 text-slate-400" />
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-6">
-                                <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: definition.description || '<p class="italic text-slate-400">No description provided.</p>' }} />
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        {/* Technical Details Section */}
-                        <AccordionItem value="technical-details" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
-                            <AccordionTrigger className="font-bold py-4 hover:no-underline">
-                                <div className="flex items-center gap-2">
-                                    Technical Details
-                                    <Info className="h-4 w-4 text-slate-400" />
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-6">
-                                <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: definition.technicalDetails || '<p class="italic text-slate-400">Not provided</p>' }} />
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        {/* Usage Examples Section */}
-                        <AccordionItem value="usage-examples" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
-                            <AccordionTrigger className="font-bold py-4 hover:no-underline">
-                                <div className="flex items-center gap-2">
-                                    Usage Examples
-                                    <Info className="h-4 w-4 text-slate-400" />
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-6">
-                                <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: definition.usageExamples || '<p class="italic text-slate-400">Not provided</p>' }} />
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
+                <TabsContent value="description" className="mt-6 space-y-10">
+                    {groupedSections.length > 0 ? (
+                        groupedSections.map((unit, uIdx) => (
+                            <div key={uIdx} className="space-y-6">
+                                {unit.type === 'group' && (
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="text-lg font-bold text-slate-900">{unit.name}</h3>
+                                        <div className="h-px bg-slate-200 flex-1" />
+                                    </div>
+                                )}
+                                
+                                <Accordion type="multiple" defaultValue={unit.sections.map(s => s.id)} className="space-y-4">
+                                    {unit.sections.map(section => {
+                                        const value = (definition.sectionValues || []).find(v => v.sectionId === section.id);
+                                        return (
+                                            <AccordionItem key={section.id} value={section.id} className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
+                                                <AccordionTrigger className="font-bold py-4 hover:no-underline">
+                                                    <div className="flex items-center gap-2">
+                                                        {section.name}
+                                                        <Info className="h-4 w-4 text-slate-400" />
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="pb-6">
+                                                    {renderSectionContent(section, value)}
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        );
+                                    })}
+                                </Accordion>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-20 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                            <Info className="h-8 w-8 text-slate-300 mb-2" />
+                            <p className="text-sm font-medium text-slate-400 italic">No documentation structure defined for this item.</p>
+                        </div>
+                    )}
                 </TabsContent>
 
                 <TabsContent value="version-history" className="mt-8 space-y-6">
@@ -360,7 +400,6 @@ export default function DefinitionView({
                         <Info className="h-4 w-4 text-slate-400" />
                     </div>
 
-                    {/* Add Note Section */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
                             <h3 className="text-sm font-bold text-slate-900">Add a Note</h3>
@@ -393,7 +432,6 @@ export default function DefinitionView({
                         </div>
                     </div>
 
-                    {/* Saved Notes Tabs */}
                     <div className="pt-4 space-y-6">
                         <div className="flex items-center gap-2 mb-4">
                             <h3 className="text-sm font-bold text-slate-900">Saved Notes</h3>
