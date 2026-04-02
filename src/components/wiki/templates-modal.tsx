@@ -16,31 +16,8 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Plus, LayoutTemplate, Box } from 'lucide-react';
 import type { Definition, Template } from '@/lib/types';
-
-type TemplateOption = {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  data: Partial<Omit<Definition, 'id' | 'revisions' | 'isArchived'>>;
-};
-
-const defaultTemplates: TemplateOption[] = [
-  {
-    id: 'blank',
-    title: 'Standard Template',
-    description: 'Start from a completely empty slate with manual formatting.',
-    icon: Plus,
-    data: {
-      name: 'New Standard Definition',
-      module: 'Core',
-      keywords: [],
-      description: '',
-    },
-  },
-];
 
 type TemplatesModalProps = {
   open: boolean;
@@ -51,8 +28,11 @@ type TemplatesModalProps = {
 
 export default function TemplatesModal({ open, onOpenChange, onUseTemplate, managedTemplates = [] }: TemplatesModalProps) {
 
-  const handleUseTemplateInternal = (templateId: string, templateData: Partial<Definition>) => {
-    onUseTemplate(templateData, templateId);
+  const handleUseTemplateInternal = (templateId: string, templateName: string) => {
+    onUseTemplate({
+      name: `New ${templateName}`,
+      module: 'Core',
+    }, templateId);
   };
 
   const activeManagedTemplates = managedTemplates.filter(t => t.isActive);
@@ -61,54 +41,90 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate, mana
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent 
-          className="max-w-4xl"
+          className="max-w-4xl p-0 overflow-hidden border-none rounded-[24px] shadow-2xl"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
-          <DialogHeader>
-            <DialogTitle>Create from a template</DialogTitle>
-            <DialogDescription>
-              Select a pre-defined blueprint to ensure consistency across the Wiki.
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[70vh] p-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-              {defaultTemplates.map((template) => (
-                <Card 
-                  key={template.id} 
-                  className="flex flex-col border-dashed bg-muted/50 hover:bg-background transition-colors cursor-pointer" 
-                  onClick={() => handleUseTemplateInternal(template.id, template.data)}
-                >
-                  <CardHeader>
-                    <div className="flex items-center gap-3 mb-2">
-                        <template.icon className="h-6 w-6 text-primary" />
-                        <CardTitle className="text-lg">{template.title}</CardTitle>
-                    </div>
-                    <CardDescription className="line-clamp-2">{template.description}</CardDescription>
-                  </CardHeader>
-                </Card>
-              ))}
+          <div className="p-6 border-b bg-white">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <LayoutTemplate className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold tracking-tight">Select Documentation Blueprint</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500">
+                  Choose a pre-defined layout to ensure metadata consistency across the Wiki.
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
 
-              {activeManagedTemplates.map((template) => (
+          <ScrollArea className="max-h-[70vh] bg-slate-50/30">
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Blank / Default Baseline */}
                 <Card 
-                  key={template.id} 
-                  className="flex flex-col hover:border-primary/50 transition-colors cursor-pointer" 
-                  onClick={() => handleUseTemplateInternal(template.id, {
-                    name: `New ${template.name}`,
-                    module: 'Core',
-                  })}
+                  className="group relative flex flex-col border-dashed border-2 border-slate-300 bg-white hover:border-primary hover:bg-primary/5 transition-all cursor-pointer rounded-2xl p-2" 
+                  onClick={() => handleUseTemplateInternal('blank', 'Definition')}
                 >
-                  <CardHeader>
-                    <div className="flex items-center gap-3 mb-2">
-                        <FileText className="h-6 w-6 text-primary" />
-                        <CardTitle className="text-lg">{template.name}</CardTitle>
+                  <CardHeader className="p-4">
+                    <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
+                        <Plus className="h-5 w-5 text-slate-500 group-hover:text-primary" />
                     </div>
-                    <CardDescription className="line-clamp-2">{template.description || "Pre-defined blueprint with boilerplate content."}</CardDescription>
+                    <CardTitle className="text-base font-bold text-slate-900">Standard / Blank</CardTitle>
+                    <CardDescription className="text-xs leading-relaxed text-slate-500 mt-1">
+                      Start with the system default baseline and manual content entry.
+                    </CardDescription>
                   </CardHeader>
                 </Card>
-              ))}
+
+                {/* Dynamic Templates from Template Management */}
+                {activeManagedTemplates.map((template) => (
+                  <Card 
+                    key={template.id} 
+                    className="group relative flex flex-col border-slate-200 bg-white hover:border-primary hover:shadow-lg hover:shadow-primary/5 transition-all cursor-pointer rounded-2xl p-2" 
+                    onClick={() => handleUseTemplateInternal(template.id, template.name)}
+                  >
+                    <CardHeader className="p-4">
+                      <div className="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
+                          <Box className="h-5 w-5 text-[#3F51B5]" />
+                      </div>
+                      <CardTitle className="text-base font-bold text-slate-900">{template.name}</CardTitle>
+                      <CardDescription className="text-xs leading-relaxed text-slate-500 mt-1 line-clamp-2">
+                        {template.description || "Pre-defined blueprint with specific data capturing sections."}
+                      </CardDescription>
+                    </CardHeader>
+                    {template.isDefault && (
+                      <div className="absolute top-4 right-4">
+                        <span className="bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border border-emerald-100">Default</span>
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+
+              {activeManagedTemplates.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
+                  <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center">
+                    <FileText className="h-8 w-8 text-slate-300" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900">No Custom Templates Found</p>
+                    <p className="text-sm text-slate-500">Go to Template Management to define new blueprints.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </ScrollArea>
+          
+          <div className="p-4 bg-white border-t flex justify-end">
+            <button 
+              onClick={() => onOpenChange(false)}
+              className="px-6 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Save, Send, Plus, Trash2, ChevronDown, Check, Info, Hash, Table as TableIcon } from 'lucide-react';
+import { X, Upload, Save, Send, Plus, Trash2, ChevronDown, Check, Info, Hash, Table as TableIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -52,30 +52,35 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedTemplate = useMemo(() => 
-    templates.find(t => t.id === templateId) || templates.find(t => t.isDefault), 
+    templates.find(t => t.id === templateId) || templates.find(t => t.isDefault) || templates[0], 
   [templates, templateId]);
 
   useEffect(() => {
     if (open) {
-      setName('');
-      setModule('Core');
-      setKeywords([]);
-      setAttachments([]);
+      setName(initialData?.name || '');
+      setModule(initialData?.module || 'Core');
+      setKeywords(initialData?.keywords || []);
+      setAttachments(initialData?.attachments || []);
       
-      const tId = initialData?.templateId || templates.find(t => t.isDefault)?.id;
+      const tId = (initialData?.templateId && initialData.templateId !== 'blank') 
+        ? initialData.templateId 
+        : templates.find(t => t.isDefault)?.id || templates[0]?.id;
+      
       setTemplateId(tId);
-      
-      if (selectedTemplate) {
-        setSectionValues(selectedTemplate.sections.map(s => ({
-          sectionId: s.id,
-          raw: '',
-          html: '',
-          multiValues: [],
-          structuredRows: s.fieldType === 'KeyValue' ? [{}] : []
-        })));
-      }
     }
-  }, [open, initialData, templates, selectedTemplate]);
+  }, [open, initialData, templates]);
+
+  useEffect(() => {
+    if (open && selectedTemplate) {
+      setSectionValues(selectedTemplate.sections.map(s => ({
+        sectionId: s.id,
+        raw: '',
+        html: '',
+        multiValues: [],
+        structuredRows: s.fieldType === 'KeyValue' ? [{}] : []
+      })));
+    }
+  }, [open, selectedTemplate]);
 
   const updateSectionValue = (sectionId: string, updates: Partial<SectionValue>) => {
     setSectionValues(prev => prev.map(v => v.sectionId === sectionId ? { ...v, ...updates } : v));
@@ -95,22 +100,54 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     });
   };
 
+  const handleKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && currentKeyword) {
+      e.preventDefault();
+      if (!keywords.includes(currentKeyword.trim())) {
+        setKeywords([...keywords, currentKeyword.trim()]);
+      }
+      setCurrentKeyword('');
+    }
+  };
+
+  const removeKeyword = (keywordToRemove: string) => {
+    setKeywords(keywords.filter(keyword => keyword !== keywordToRemove));
+  };
+
+  const handleAddAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const newAttachment: Attachment = {
+        name: file.name,
+        url: URL.createObjectURL(file),
+        size: `${(file.size / 1024).toFixed(2)} KB`,
+        type: file.type.split('/')[1]?.toUpperCase() || 'FILE',
+      };
+      setAttachments([...attachments, newAttachment]);
+    }
+    if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
+  };
+
   const displayGroups = useMemo(() => {
     if (!selectedTemplate) return [];
     const allSections = selectedTemplate.sections || [];
     
-    // Find unique groups and standalone sections
     const standaloneSections = allSections.filter(s => !s.group);
     const uniqueGroupNames = Array.from(new Set(allSections.filter(s => s.group).map(s => s.group as string)));
 
     const units: Array<{ type: 'section' | 'group', order: number, name?: string, sections: TemplateSection[] }> = [];
 
-    // Add standalone sections
     standaloneSections.forEach(s => {
       units.push({ type: 'section', order: s.order, sections: [s] });
     });
 
-    // Add groups
     uniqueGroupNames.forEach(name => {
       const groupSections = allSections.filter(s => s.group === name);
       const groupOrder = groupSections[0]?.groupOrder || 0;
@@ -122,7 +159,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       });
     });
 
-    // Sort globally by 'order'
     return units.sort((a, b) => a.order - b.order);
   }, [selectedTemplate]);
 
@@ -146,7 +182,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
               <Save className="mr-2 h-4 w-4" />
               Save Draft
             </Button>
-            <Button onClick={() => handleSave(false)} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-8 shadow-lg shadow-indigo-100">
+            <Button onClick={() => handleSave(false)} disabled={!name.trim()} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-8 shadow-lg shadow-indigo-100">
               <Send className="mr-2 h-4 w-4" />
               {isAdmin ? 'Publish' : 'Submit for Approval'}
             </Button>
@@ -173,6 +209,26 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Keywords</Label>
+                    <div className="flex flex-wrap items-center gap-2 p-3 border border-slate-200 rounded-xl bg-white min-h-[44px]">
+                        {keywords.map(k => (
+                            <Badge key={k} className="bg-slate-100 text-slate-700 border-slate-200 rounded-lg gap-1.5 px-2.5 py-1">
+                                {k}
+                                <button onClick={() => removeKeyword(k)} className="hover:text-red-500 transition-colors">
+                                    <X className="h-3 w-3" />
+                                </button>
+                            </Badge>
+                        ))}
+                        <Input
+                            placeholder="Type and press Enter..."
+                            value={currentKeyword}
+                            onChange={e => setCurrentKeyword(e.target.value)}
+                            onKeyDown={handleKeywordKeyDown}
+                            className="flex-1 border-none shadow-none focus-visible:ring-0 p-0 h-auto text-sm"
+                        />
+                    </div>
                 </div>
               </CardContent>
             </Card>
@@ -220,15 +276,12 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                               {section.isMulti ? (
                                 <div className="flex flex-wrap gap-2">
                                   {section.options?.map(opt => (
-                                    <div key={opt.id} className="flex items-center gap-2 p-2 border rounded-xl hover:bg-slate-50 transition-colors">
-                                      <Checkbox 
-                                        checked={value?.multiValues?.includes(opt.value)}
-                                        onCheckedChange={checked => {
-                                          const current = value?.multiValues || [];
-                                          const next = checked ? [...current, opt.value] : current.filter(v => v !== opt.value);
-                                          updateSectionValue(section.id, { multiValues: next, raw: next.join(', ') });
-                                        }}
-                                      />
+                                    <div key={opt.id} className="flex items-center gap-2 p-2 border rounded-xl hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => {
+                                      const current = value?.multiValues || [];
+                                      const next = current.includes(opt.value) ? current.filter(v => v !== opt.value) : [...current, opt.value];
+                                      updateSectionValue(section.id, { multiValues: next, raw: next.join(', ') });
+                                    }}>
+                                      <Checkbox checked={value?.multiValues?.includes(opt.value)} />
                                       <span className="text-sm font-medium">{opt.label}</span>
                                     </div>
                                   ))}
@@ -327,6 +380,20 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                 </div>
               </div>
             ))}
+
+            <Card className="rounded-2xl border-slate-200 shadow-sm">
+                <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center justify-between">
+                    <CardTitle className="text-sm font-black uppercase text-slate-500 tracking-wider">Attachments</CardTitle>
+                    <Button variant="outline" size="sm" onClick={handleAddAttachmentClick} className="rounded-xl font-bold bg-white">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Reference
+                    </Button>
+                    <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
+                </CardHeader>
+                <CardContent className="p-6">
+                    <AttachmentList attachments={attachments} onRemove={(name) => setAttachments(attachments.filter(a => a.name !== name))} isEditing />
+                </CardContent>
+            </Card>
           </div>
         </ScrollArea>
       </DialogContent>
