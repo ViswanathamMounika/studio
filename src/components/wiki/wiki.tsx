@@ -612,9 +612,12 @@ export default function Wiki() {
         return items.reduce((acc: Definition[], item) => {
             if (!item) return acc;
             const children = filterPublishedStrict(item.children || []);
-            // ONLY PUBLISHED: Not a draft AND not pending approval
-            const isStrictlyPublished = !item.isDraft && !item.isPendingApproval;
-            const isMatch = isStrictlyPublished && (item.description || item.shortDescription || children.length > 0);
+            
+            // LOGIC: Show in MPM Definitions if it is currently published 
+            // OR if it is being edited/pending but has a previously published version (snapshot)
+            const hasPublishedVersion = (!item.isDraft && !item.isPendingApproval) || !!item.publishedSnapshot;
+            
+            const isMatch = hasPublishedVersion && (item.description || item.shortDescription || children.length > 0);
             if (isMatch) {
                 acc.push({ ...item, children } as Definition);
             }
@@ -785,6 +788,7 @@ export default function Wiki() {
     const def = findDefinition(definitions || [], selectedDefinitionId);
     if (!def) return null;
     
+    // If viewing strictly the published tree while a draft exists, show the snapshot
     if (viewingMode === 'live' && def.publishedSnapshot && !isEditing) {
         return { ...def, ...def.publishedSnapshot, isBookmarked: isBookmarked(def.id) } as Definition;
     }
@@ -866,7 +870,7 @@ export default function Wiki() {
                           definition={selectedDefinition} 
                           allDefinitions={definitions}
                           onEdit={handleEditClick} 
-                          onDuplicate={() => handleDuplicate(selectedDefinitionId!)} 
+                          onDuplicate={(id) => handleDuplicate(id)} 
                           onArchive={handleArchive} 
                           onDelete={handleDelete} 
                           onToggleBookmark={toggleBookmark} 
@@ -981,7 +985,7 @@ export default function Wiki() {
                                 value="pending" 
                                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-slate-500"
                               >
-                                Pending
+                                Submitted
                                 {totalPendingCount > 0 && <span className="ml-1.5 bg-indigo-100 text-indigo-700 h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalPendingCount}</span>}
                               </TabsTrigger>
                             </TabsList>
