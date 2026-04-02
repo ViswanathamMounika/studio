@@ -22,7 +22,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import RelatedDefinitions from './related-definitions';
-import { Alert, AlertDescription, AlertTitle } from '@/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
@@ -183,7 +182,14 @@ export default function DefinitionView({
                             Edit
                         </Button>
                     )}
-                    <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={handleDuplicate} onArchive={onArchive} onToggleBookmark={onToggleBookmark} isAdmin={isAdmin} />
+                    <DefinitionActions 
+                        definition={definition} 
+                        onEdit={onEdit} 
+                        onDuplicate={() => onDuplicate(definition.id)} 
+                        onArchive={onArchive} 
+                        onToggleBookmark={onToggleBookmark} 
+                        isAdmin={isAdmin} 
+                    />
                 </div>
             </div>
 
