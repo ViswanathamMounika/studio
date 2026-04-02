@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -122,16 +123,19 @@ export default function DefinitionView({
       return (definition.discussions || []).filter(d => d.type === 'change-request' || d.type === 'rejection');
     }, [definition.discussions]);
 
-    const activeFeedback = feedbackMessages[feedbackMessages.length - 1];
+    const latestFeedback = feedbackMessages[feedbackMessages.length - 1];
 
     const getWorkflowStatus = () => {
         if (definition.isPendingApproval) return { draft: 'completed', submitted: 'active', requested: 'pending' };
-        if (activeFeedback) return { draft: 'completed', submitted: 'completed', requested: 'active' };
+        if (latestFeedback) return { draft: 'completed', submitted: 'completed', requested: 'active' };
         if (definition.isDraft) return { draft: 'active', submitted: 'pending', requested: 'pending' };
         return { draft: 'completed', submitted: 'completed', requested: 'completed' };
     };
 
     const status = getWorkflowStatus();
+
+    const myNotes = useMemo(() => (definition.notes || []).filter(n => n.authorId === currentUser.id), [definition.notes, currentUser.id]);
+    const othersNotes = useMemo(() => (definition.notes || []).filter(n => n.authorId !== currentUser.id), [definition.notes, currentUser.id]);
 
   return (
     <TooltipProvider>
@@ -145,7 +149,7 @@ export default function DefinitionView({
                             <div>
                                 <AlertTitle className="text-red-900 font-bold">Version Conflict Detected</AlertTitle>
                                 <AlertDescription className="text-red-700 text-xs font-medium">
-                                    The published version has changed since you started this draft. Your draft is based on an older version. Review differences before submitting.
+                                    The published version has changed since you started this draft. Review differences before submitting.
                                 </AlertDescription>
                             </div>
                             <div className="flex gap-2">
@@ -161,7 +165,7 @@ export default function DefinitionView({
                 </div>
             )}
 
-            {/* Workflow Ribbon */}
+            {/* Workflow Ribbon - Only show for drafts or items pending approval */}
             {(viewingMode === 'draft' || definition.isPendingApproval) && (
               <div className="flex items-center gap-4 px-2 mb-4">
                   <div className="flex items-center gap-4">
@@ -170,7 +174,7 @@ export default function DefinitionView({
                       <WorkflowStep label="Requested" status={status.requested as any} isLast />
                   </div>
 
-                  {activeFeedback && (
+                  {latestFeedback && (
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -183,8 +187,8 @@ export default function DefinitionView({
               </div>
             )}
 
-            {/* Inline Feedback Pane */}
-            {showFeedbackPane && activeFeedback && (
+            {/* Inline Feedback Pane - Only show latest */}
+            {showFeedbackPane && latestFeedback && (
                 <div className="px-2 mb-6 animate-in slide-in-from-top-2 fade-in">
                     <Card className="border-indigo-100 bg-indigo-50/30 rounded-2xl overflow-hidden shadow-sm">
                         <CardHeader className="py-2.5 px-4 bg-white/50 border-b border-indigo-100 flex flex-row items-center justify-between">
@@ -195,13 +199,13 @@ export default function DefinitionView({
                         </CardHeader>
                         <CardContent className="p-4">
                             <div className="flex gap-3">
-                                <Avatar className="h-7 w-7"><AvatarImage src={activeFeedback.avatar}/><AvatarFallback>{activeFeedback.author.charAt(0)}</AvatarFallback></Avatar>
+                                <Avatar className="h-7 w-7"><AvatarImage src={latestFeedback.avatar}/><AvatarFallback>{latestFeedback.author.charAt(0)}</AvatarFallback></Avatar>
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-xs font-bold text-slate-900">{activeFeedback.author}</span>
-                                        <span className="text-[10px] text-slate-400">{formatDistanceToNow(new Date(activeFeedback.date), { addSuffix: true })}</span>
+                                        <span className="text-xs font-bold text-slate-900">{latestFeedback.author}</span>
+                                        <span className="text-[10px] text-slate-400">{formatDistanceToNow(new Date(latestFeedback.date), { addSuffix: true })}</span>
                                     </div>
-                                    <p className="text-xs text-slate-700 italic m-0">"{activeFeedback.content}"</p>
+                                    <p className="text-xs text-slate-700 italic m-0">"{latestFeedback.content}"</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -236,10 +240,10 @@ export default function DefinitionView({
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
                 <TabsList className="w-full bg-slate-100 rounded-lg p-1 h-12">
                     <TabsTrigger value="description" className="flex-1 font-bold text-sm">Description</TabsTrigger>
-                    <TabsTrigger value="revisions" className="flex-1 font-bold text-sm">History</TabsTrigger>
+                    <TabsTrigger value="revisions" className="flex-1 font-bold text-sm">Version History</TabsTrigger>
                     <TabsTrigger value="attachments" className="flex-1 font-bold text-sm">Attachments</TabsTrigger>
                     <TabsTrigger value="notes" className="flex-1 font-bold text-sm">Notes</TabsTrigger>
-                    <TabsTrigger value="related-definitions" className="flex-1 font-bold text-sm">Links</TabsTrigger>
+                    <TabsTrigger value="related-definitions" className="flex-1 font-bold text-sm">Related Definitions</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="description" className="mt-6">
@@ -267,7 +271,7 @@ export default function DefinitionView({
 
                 <TabsContent value="revisions" className="mt-8 space-y-6">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-slate-900">Version History</h2>
+                        <h2 className="text-xl font-bold text-slate-900">Archive Revisions</h2>
                         <Button variant="outline" size="sm" disabled={selectedRevisions.length !== 2} onClick={() => setShowComparison(true)} className="rounded-xl font-bold">Compare Revisions</Button>
                     </div>
                     <Card className="rounded-2xl border-slate-200 overflow-hidden shadow-sm">
@@ -289,24 +293,23 @@ export default function DefinitionView({
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="notes" className="mt-8 space-y-6">
-                    <Tabs defaultValue="user-notes" className="w-full">
-                        <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 mb-6">
-                            <TabsTrigger value="user-notes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-2 font-bold text-sm">Insights & Notes</TabsTrigger>
-                            <TabsTrigger value="review-history" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-2 font-bold text-sm">Review History</TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="user-notes" className="space-y-6">
-                            <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl">
-                                <Label className="text-sm font-bold text-primary mb-2 block">Add Insight</Label>
-                                <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Share internal context or caveats..." className="rounded-xl mb-4 h-24 bg-white border-primary/20" />
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2"><Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} /><Label htmlFor="share" className="text-xs font-bold text-primary">Visible to team</Label></div>
-                                    <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="rounded-xl font-bold bg-primary px-6">Save Note</Button>
-                                </div>
-                            </Card>
+                <TabsContent value="notes" className="mt-8 space-y-8">
+                    {/* Add Note Section (Top) */}
+                    <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl">
+                        <Label className="text-sm font-bold text-primary mb-2 block">Share Internal Insight</Label>
+                        <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Share context, logic nuances, or regulatory caveats..." className="rounded-xl mb-4 h-24 bg-white border-primary/20" />
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2"><Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} /><Label htmlFor="share" className="text-xs font-bold text-primary">Visible to team</Label></div>
+                            <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="rounded-xl font-bold bg-primary px-6">Save Insight</Button>
+                        </div>
+                    </Card>
+
+                    {/* My Notes */}
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest px-2">My Saved Notes</h3>
+                        {myNotes.length > 0 ? (
                             <div className="space-y-4">
-                                {(definition.notes || []).map(note => (
+                                {myNotes.map(note => (
                                     <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
                                         <div className="flex items-center justify-between mb-2">
                                             <div className="flex items-center gap-2">
@@ -319,47 +322,74 @@ export default function DefinitionView({
                                     </Card>
                                 ))}
                             </div>
-                        </TabsContent>
+                        ) : (
+                            <p className="text-xs text-slate-400 italic px-2">You haven't added any personal notes yet.</p>
+                        )}
+                    </div>
 
-                        <TabsContent value="review-history" className="space-y-4">
-                            {definition.discussions && definition.discussions.length > 0 ? (
-                                <div className="space-y-4">
-                                    {definition.discussions.map((msg) => (
-                                        <Card key={msg.id} className={cn(
-                                            "p-4 rounded-xl border-slate-200 shadow-sm",
-                                            msg.type === 'change-request' ? "bg-amber-50/30 border-amber-100" :
-                                            msg.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-white"
-                                        )}>
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <Avatar className="h-6 w-6">
-                                                    <AvatarImage src={msg.avatar} />
-                                                    <AvatarFallback><User2 className="h-3 w-3" /></AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-slate-900 text-xs">{msg.author}</span>
-                                                    <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(msg.date).toLocaleDateString()}</span>
-                                                </div>
-                                                {msg.type !== 'comment' && (
-                                                  <Badge className={cn(
-                                                    "ml-auto text-[9px] uppercase font-black",
-                                                    msg.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
-                                                  )}>
-                                                    {msg.type === 'rejection' ? 'Rejected' : 'Changes Requested'}
-                                                  </Badge>
-                                                )}
+                    {/* Others Notes */}
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest px-2">Team Insights</h3>
+                        {othersNotes.length > 0 ? (
+                            <div className="space-y-4">
+                                {othersNotes.map(note => (
+                                    <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-6 w-6"><AvatarImage src={note.avatar}/><AvatarFallback>{note.author.charAt(0)}</AvatarFallback></Avatar>
+                                                <span className="font-bold text-slate-900 text-xs">{note.author}</span>
+                                                <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
                                             </div>
-                                            <p className="text-sm text-slate-700 m-0 leading-relaxed font-medium pl-9">"{msg.content}"</p>
-                                        </Card>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-20 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-                                    <ClipboardList className="h-10 w-10 text-slate-300 mb-2" />
-                                    <p className="text-sm font-medium text-slate-400">No governance history recorded for this definition.</p>
-                                </div>
-                            )}
-                        </TabsContent>
-                    </Tabs>
+                                        </div>
+                                        <p className="text-sm text-slate-600 leading-relaxed font-medium pl-8">{note.content}</p>
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-400 italic px-2">No notes shared by other team members.</p>
+                        )}
+                    </div>
+
+                    {/* Review History / Audit Trail (Bottom) */}
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest px-2">Review & Feedback History</h3>
+                        {definition.discussions && definition.discussions.length > 0 ? (
+                            <div className="space-y-4">
+                                {definition.discussions.map((msg) => (
+                                    <Card key={msg.id} className={cn(
+                                        "p-4 rounded-xl border-slate-200 shadow-sm",
+                                        msg.type === 'change-request' ? "bg-amber-50/30 border-amber-100" :
+                                        msg.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-white"
+                                    )}>
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <Avatar className="h-6 w-6">
+                                                <AvatarImage src={msg.avatar} />
+                                                <AvatarFallback><User2 className="h-3 w-3" /></AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-slate-900 text-xs">{msg.author}</span>
+                                                <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(msg.date).toLocaleDateString()}</span>
+                                            </div>
+                                            {msg.type !== 'comment' && (
+                                              <Badge className={cn(
+                                                "ml-auto text-[9px] uppercase font-black",
+                                                msg.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                                              )}>
+                                                {msg.type === 'rejection' ? 'Rejected' : 'Changes Requested'}
+                                              </Badge>
+                                            )}
+                                        </div>
+                                        <p className="text-sm text-slate-700 m-0 leading-relaxed font-medium pl-9">"{msg.content}"</p>
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                                <ClipboardList className="h-8 w-8 text-slate-300 mb-2" />
+                                <p className="text-xs font-medium text-slate-400">No governance history recorded.</p>
+                            </div>
+                        )}
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="attachments" className="mt-8">
@@ -377,7 +407,9 @@ export default function DefinitionView({
                     <RelatedDefinitions 
                         currentDefinition={definition} 
                         allDefinitions={allDefinitions} 
-                        onDefinitionClick={(id) => onTabChange('description')} 
+                        onDefinitionClick={(id) => {
+                            onTabChange('description');
+                        }} 
                         onSave={onSave} 
                         isAdmin={isAdmin} 
                     />

@@ -136,7 +136,6 @@ export default function Wiki() {
   }, [selectedDefinitionId, updateUrl]);
 
   const handleSelectDefinition = useCallback((id: string, sectionId?: string, mode: ViewingMode = 'live', shouldUpdateUrl = true) => {
-    const isSameDefinition = id === selectedDefinitionId && mode === viewingMode;
     setActiveView('definitions');
     setViewingMode(mode);
     setSelectedDefinitionId(id);
@@ -144,7 +143,7 @@ export default function Wiki() {
     
     const sourceList = mode === 'draft' ? drafts : definitions;
     const def = findDefinition(sourceList, id);
-    if (def && !isSameDefinition) {
+    if (def) {
         const status = getStatusText(def);
         trackView(id, def.name, def.module, status);
     }
@@ -152,7 +151,7 @@ export default function Wiki() {
     const targetSection = sectionId || 'description';
     setActiveTab(targetSection);
     if (shouldUpdateUrl) updateUrl(id, targetSection);
-  }, [definitions, drafts, selectedDefinitionId, viewingMode, updateUrl, getStatusText]);
+  }, [definitions, drafts, getStatusText, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
     if ((view === 'activity-logs' || view === 'template-management' || view === 'approval-queue' || view === 'approval-history') && !isAdmin) {
@@ -644,8 +643,8 @@ export default function Wiki() {
                           </div>
                       </div>
 
-                      {/* My Submissions Section (for Non-Admins or specifically requested) */}
-                      {!isAdmin && categorizedDefinitions.mySubmissions.length > 0 && (
+                      {/* My Submissions Section (for Non-Admins or standard users who have submitted) */}
+                      {categorizedDefinitions.mySubmissions.length > 0 && (
                         <div className="p-4 space-y-3 border-b bg-white/50">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
