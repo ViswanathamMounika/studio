@@ -55,12 +55,16 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate, mana
     onUseTemplate(templateData, templateId);
   };
 
-  const activeManagedTemplates = managedTemplates.filter(t => t.status === 'Active');
+  const activeManagedTemplates = managedTemplates.filter(t => t.isActive);
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent 
+          className="max-w-4xl"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Create from a template</DialogTitle>
             <DialogDescription>

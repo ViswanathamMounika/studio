@@ -319,7 +319,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       </Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden border-none rounded-[24px] shadow-2xl">
+        <DialogContent 
+          className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden border-none rounded-[24px] shadow-2xl"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <div className="p-6 border-b bg-white sticky top-0 z-50 flex justify-between items-center shadow-sm">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -619,7 +623,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                               </div>
                                             )}
                                             <div className={cn("flex justify-end pb-1", col.inputType === 'Dropdown' ? "col-span-2" : "col-span-4")}>
-                                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive" onClick={() => {
+                                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive rounded-lg" onClick={() => {
                                                 const cols = (section.columns || []).filter(c => c.id !== col.id);
                                                 updateSection(section.id, { columns: cols });
                                               }}>
@@ -715,7 +719,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       </Dialog>
 
       <Dialog open={isGroupModalOpen} onOpenChange={setIsGroupModalOpen}>
-        <DialogContent className="max-w-2xl border-none rounded-[24px] p-0 overflow-hidden shadow-2xl">
+        <DialogContent 
+          className="max-w-2xl border-none rounded-[24px] p-0 overflow-hidden shadow-2xl"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <div className="p-6 border-b bg-white">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center">

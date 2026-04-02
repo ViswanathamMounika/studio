@@ -59,7 +59,11 @@ export default function DraftFromSqlModal({ open, onOpenChange, onDraft }: Draft
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent 
+        className="max-w-3xl"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Draft Definition from SQL</DialogTitle>
           <DialogDescription>

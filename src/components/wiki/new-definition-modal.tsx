@@ -128,7 +128,11 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[1000px] w-full h-[90vh] flex flex-col p-0 overflow-hidden border-none rounded-[24px]">
+      <DialogContent 
+        className="max-w-[1000px] w-full h-[90vh] flex flex-col p-0 overflow-hidden border-none rounded-[24px]"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <div className="p-6 border-b bg-white sticky top-0 z-30 flex justify-between items-center shadow-sm">
           <DialogHeader className="p-0">
             <DialogTitle className="text-2xl font-bold tracking-tight">Create Definition</DialogTitle>

@@ -235,13 +235,34 @@ export default function Wiki() {
   };
 
   const handleSave = (updatedDefinition: Definition) => {
+    // Ensure submitted metadata is set if moving to pending status
+    const existingDef = findDefinition(definitions || [], updatedDefinition.id);
+    const isNowPending = updatedDefinition.isPendingApproval && !existingDef?.isPendingApproval;
+    
+    const finalDefinition = {
+        ...updatedDefinition,
+        submittedAt: isNowPending ? new Date().toISOString() : updatedDefinition.submittedAt,
+        submittedBy: isNowPending ? currentUser.name : updatedDefinition.submittedBy
+    };
+
+    if (isNowPending) {
+        setApprovalHistory(prev => [{
+            id: Date.now().toString(),
+            definitionId: finalDefinition.id,
+            definitionName: finalDefinition.name,
+            action: 'Submitted',
+            userName: currentUser.name,
+            date: new Date().toISOString()
+        }, ...(prev || [])]);
+    }
+
     const updateItems = (items: Definition[]): Definition[] => {
       if (!Array.isArray(items)) return [];
       return items.map(def => {
-        if (def.id === updatedDefinition.id) {
-            const shouldKeepLock = updatedDefinition.isDraft && !updatedDefinition.isPendingApproval;
-            const updatedLock = shouldKeepLock ? updatedDefinition.lock : undefined;
-            return { ...updatedDefinition, lock: updatedLock };
+        if (def.id === finalDefinition.id) {
+            const shouldKeepLock = finalDefinition.isDraft && !finalDefinition.isPendingApproval;
+            const updatedLock = shouldKeepLock ? finalDefinition.lock : undefined;
+            return { ...finalDefinition, lock: updatedLock };
         }
         if (def.children) return { ...def, children: updateItems(def.children) };
         return def;
@@ -250,18 +271,18 @@ export default function Wiki() {
     
     setDefinitions(prev => updateItems(prev || []));
     setIsEditing(false);
-    setViewingMode(updatedDefinition.isDraft ? 'draft' : 'live');
+    setViewingMode(finalDefinition.isDraft ? 'draft' : 'live');
 
     toast({
         title: "Changes Persisted",
-        description: updatedDefinition.isDraft ? "Definition updated in your drafts. Lock maintained." : "Definition has been updated and lock released.",
+        description: finalDefinition.isDraft && !finalDefinition.isPendingApproval ? "Definition updated in your drafts. Lock maintained." : "Definition has been updated and lock released.",
     });
 
-    if (isBookmarked(updatedDefinition.id)) {
+    if (isBookmarked(finalDefinition.id)) {
         const newNotification: NotificationType = {
             id: Date.now().toString(),
-            definitionId: updatedDefinition.id,
-            definitionName: updatedDefinition.name,
+            definitionId: finalDefinition.id,
+            definitionName: finalDefinition.name,
             message: `Definition updated by ${currentUser.name}.`,
             date: new Date().toISOString(),
             read: false,
@@ -313,7 +334,7 @@ export default function Wiki() {
         notes: newDefinitionData.notes || [],
         discussions: [],
         relatedDefinitions: [],
-        lock: {
+        lock: isPending ? undefined : {
           userId: currentUser.id,
           userName: currentUser.name,
           expireAt: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString()
