@@ -1,3 +1,4 @@
+
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
@@ -220,6 +221,7 @@ export const initialDefinitions: Definition[] = [
 export const initialDrafts: Definition[] = [
   {
     id: 'draft_101',
+    originalId: '3', // Links to Provider module or item
     name: 'Provider Master Verification',
     module: 'Provider',
     templateId: '1',
@@ -252,6 +254,7 @@ export const initialDrafts: Definition[] = [
   },
   {
     id: 'draft_102',
+    originalId: '1.1.1',
     name: 'Urgent Care TAT Rules',
     module: 'Authorizations',
     templateId: '1',

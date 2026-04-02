@@ -284,7 +284,7 @@ export default function Wiki() {
     setIsEditing(false);
     toast({
         title: "Changes Persisted",
-        description: updatedDefinition.isDraft ? "Draft updated. Lock maintained." : "Changes published successfully.",
+        description: updatedDefinition.isDraft ? "Draft updated. Lock maintained." : "Changes submitted for approval.",
     });
   };
 
@@ -524,9 +524,8 @@ export default function Wiki() {
     const filterPublishedTree = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = filterPublishedTree(item.children || []);
-            const hasPublishedContent = !item.isDraft && !item.isPendingApproval;
-            const hasLegacySnapshot = !!item.publishedSnapshot;
-            const isMatch = children.length > 0 || (hasPublishedContent || hasLegacySnapshot);
+            // Definitions in the main tree are ALWAYS published versions.
+            const isMatch = children.length > 0 || (!item.isDraft && !item.isPendingApproval);
             
             if (isMatch) {
                 let filteredItem = { ...item, children };
