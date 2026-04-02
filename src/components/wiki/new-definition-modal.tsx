@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Save, Send, Plus, Trash2, ChevronDown, Check, Info, Hash, Table as TableIcon } from 'lucide-react';
+import { X, Upload, Save, Send, Plus, Trash2, ChevronDown, Check, Info, Hash, Table as TableIcon, ListChecks } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -25,6 +25,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Textarea } from '../ui/textarea';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -165,7 +166,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="max-w-[1000px] w-full h-[90vh] flex flex-col p-0 overflow-hidden border-none rounded-[24px]"
+        className="max-w-[1000px] w-full h-[90vh] flex flex-col p-0 overflow-hidden border-none rounded-[24px] shadow-2xl"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
@@ -275,16 +276,34 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {section.isMulti ? (
                                 <div className="flex flex-wrap gap-2">
-                                  {section.options?.map(opt => (
-                                    <div key={opt.id} className="flex items-center gap-2 p-2 border rounded-xl hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => {
-                                      const current = value?.multiValues || [];
-                                      const next = current.includes(opt.value) ? current.filter(v => v !== opt.value) : [...current, opt.value];
-                                      updateSectionValue(section.id, { multiValues: next, raw: next.join(', ') });
-                                    }}>
-                                      <Checkbox checked={value?.multiValues?.includes(opt.value)} />
-                                      <span className="text-sm font-medium">{opt.label}</span>
-                                    </div>
-                                  ))}
+                                  {section.options?.map(opt => {
+                                    const isSelected = value?.multiValues?.includes(opt.value);
+                                    return (
+                                      <button
+                                        key={opt.id}
+                                        type="button"
+                                        className={cn(
+                                          "flex items-center gap-2 px-4 py-2 border rounded-xl transition-all font-medium text-sm",
+                                          isSelected 
+                                            ? "bg-primary/10 border-primary text-primary" 
+                                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                                        )}
+                                        onClick={() => {
+                                          const current = value?.multiValues || [];
+                                          const next = isSelected ? current.filter(v => v !== opt.value) : [...current, opt.value];
+                                          updateSectionValue(section.id, { multiValues: next, raw: next.join(', ') });
+                                        }}
+                                      >
+                                        <div className={cn(
+                                          "h-4 w-4 rounded-md border flex items-center justify-center transition-colors",
+                                          isSelected ? "bg-primary border-primary" : "border-slate-300"
+                                        )}>
+                                          {isSelected && <Check className="h-3 w-3 text-white" />}
+                                        </div>
+                                        {opt.label}
+                                      </button>
+                                    );
+                                  })}
                                 </div>
                               ) : (
                                 <Select value={value?.raw} onValueChange={v => updateSectionValue(section.id, { raw: v })}>
@@ -325,21 +344,59 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                               className="h-9 rounded-lg border-slate-200"
                                             />
                                           ) : (
-                                            <Select 
-                                              value={row[col.id]} 
-                                              onValueChange={v => {
-                                                const rows = [...(value.structuredRows || [])];
-                                                rows[rIdx] = { ...rows[rIdx], [col.id]: v };
-                                                updateSectionValue(section.id, { structuredRows: rows });
-                                              }}
-                                            >
-                                              <SelectTrigger className="h-9 rounded-lg border-slate-200 bg-white">
-                                                <SelectValue />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                {col.options?.map(o => <SelectItem key={o.id} value={o.value}>{o.label}</SelectItem>)}
-                                              </SelectContent>
-                                            </Select>
+                                            col.isMulti ? (
+                                              <Popover>
+                                                <PopoverTrigger asChild>
+                                                  <Button variant="outline" size="sm" className="h-9 w-full justify-between rounded-lg border-slate-200 font-normal">
+                                                    <span className="truncate">
+                                                      {row[col.id] || "Select items..."}
+                                                    </span>
+                                                    <ChevronDown className="h-3 w-3 opacity-50" />
+                                                  </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-64 p-2 rounded-xl" align="start">
+                                                  <div className="space-y-1">
+                                                    {col.options?.map(opt => {
+                                                      const currentValues = row[col.id] ? row[col.id].split(', ') : [];
+                                                      const isSelected = currentValues.includes(opt.value);
+                                                      return (
+                                                        <div 
+                                                          key={opt.id} 
+                                                          className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer"
+                                                          onClick={() => {
+                                                            const next = isSelected 
+                                                              ? currentValues.filter(v => v !== opt.value) 
+                                                              : [...currentValues, opt.value];
+                                                            const rows = [...(value.structuredRows || [])];
+                                                            rows[rIdx] = { ...rows[rIdx], [col.id]: next.join(', ') };
+                                                            updateSectionValue(section.id, { structuredRows: rows });
+                                                          }}
+                                                        >
+                                                          <Checkbox checked={isSelected} />
+                                                          <span className="text-sm font-medium">{opt.label}</span>
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </PopoverContent>
+                                              </Popover>
+                                            ) : (
+                                              <Select 
+                                                value={row[col.id]} 
+                                                onValueChange={v => {
+                                                  const rows = [...(value.structuredRows || [])];
+                                                  rows[rIdx] = { ...rows[rIdx], [col.id]: v };
+                                                  updateSectionValue(section.id, { structuredRows: rows });
+                                                }}
+                                              >
+                                                <SelectTrigger className="h-9 rounded-lg border-slate-200 bg-white">
+                                                  <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {col.options?.map(o => <SelectItem key={o.id} value={o.value}>{o.label}</SelectItem>)}
+                                                </SelectContent>
+                                              </Select>
+                                            )
                                           )}
                                         </TableCell>
                                       ))}
