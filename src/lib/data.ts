@@ -193,6 +193,25 @@ export const initialDefinitions: Definition[] = [
         },
         supportingTables: [],
         attachments: []
+      },
+      {
+        id: '1.1.4',
+        name: 'Inpatient Turnaround Time',
+        module: 'Authorizations',
+        templateId: '1',
+        keywords: ['inpatient', 'TAT', 'UM'],
+        description: '<p>Work in progress for inpatient-specific TAT logic. Needs alignment with new state regulations.</p>',
+        shortDescription: 'Inpatient specific turnaround time rules.',
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: false,
+        revisions: [],
+        supportingTables: [],
+        attachments: [],
+        sectionValues: [
+          { sectionId: '1', raw: 'Inpatient specific turnaround time rules.' },
+          { sectionId: '2', raw: '<p>Work in progress for inpatient-specific TAT logic. Needs alignment with new state regulations.</p>', html: '<p>Work in progress for inpatient-specific TAT logic. Needs alignment with new state regulations.</p>' }
+        ]
       }
     ]
   },
@@ -230,7 +249,7 @@ export const initialDefinitions: Definition[] = [
         module: 'Claims',
         templateId: '1',
         keywords: ['denials', 'codes', 'mapping'],
-        description: '<p>This definition maps HIPAA standard reason codes to internal MedPoint operational denial categories.</p>',
+        description: '<p>This definition maps HIPAA standard reason codes to internal MedPoint operational denial categories. UPDATED with HIPAA Code 45 logic.</p>',
         shortDescription: 'Denial code crosswalk documentation.',
         isArchived: false,
         isDraft: true,
@@ -243,6 +262,85 @@ export const initialDefinitions: Definition[] = [
             description: '<p>Mapping of reason codes to internal categories.</p>',
             shortDescription: 'Internal denial code mapping.'
         },
+        discussions: [
+          {
+            id: 'd1',
+            authorId: 'admin_1',
+            author: 'Administrator',
+            avatar: 'https://picsum.photos/seed/admin/40/40',
+            date: new Date(Date.now() - 3600000 * 5).toISOString(),
+            content: 'Please add the technical mapping for standard HIPAA code 45.',
+            type: 'change-request',
+            priority: 'High'
+          }
+        ],
+        supportingTables: [],
+        attachments: []
+      },
+      {
+        id: '2.1.3',
+        name: 'Professional Claim Taxonomy',
+        module: 'Claims',
+        templateId: '1',
+        keywords: ['taxonomy', 'billing', 'HCFA'],
+        description: '<p>New mapping for professional claim taxonomy codes based on billing specialty.</p>',
+        shortDescription: 'Taxonomy code mapping for professional claims.',
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: true,
+        submittedBy: 'Dhilip Sagadevan',
+        submittedAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+        revisions: [],
+        supportingTables: [],
+        attachments: []
+      }
+    ]
+  },
+  {
+    id: '3',
+    name: 'Provider',
+    module: 'Provider',
+    keywords: [],
+    description: '',
+    revisions: [],
+    isArchived: false,
+    isDraft: false,
+    supportingTables: [],
+    attachments: [],
+    children: [
+      {
+        id: '3.1.1',
+        name: 'Provider Credentialing Status',
+        module: 'Provider',
+        templateId: '1',
+        keywords: ['credentialing', 'provider', 'status'],
+        description: '<p>Drafting documentation for various credentialing statuses (e.g., Initial, Re-cred, Provisional).</p>',
+        shortDescription: 'Internal credentialing status codes.',
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: false,
+        revisions: [],
+        supportingTables: [],
+        attachments: [],
+        sectionValues: [
+          { sectionId: '1', raw: 'Internal credentialing status codes.' },
+          { sectionId: '2', raw: '<p>Drafting documentation for various credentialing statuses (e.g., Initial, Re-cred, Provisional).</p>', html: '<p>Drafting documentation for various credentialing statuses (e.g., Initial, Re-cred, Provisional).</p>' }
+        ]
+      },
+      {
+        id: '3.1.2',
+        name: 'Network Participation Rules',
+        module: 'Provider',
+        templateId: '1',
+        keywords: ['network', 'participation', 'IPA'],
+        description: '<p>Guidelines for determining network participation levels across different IPAs.</p>',
+        shortDescription: 'Rules for network tiering and participation.',
+        isArchived: false,
+        isDraft: true,
+        isPendingApproval: true,
+        submittedBy: 'Dhilip Sagadevan',
+        submittedAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+        revisions: [],
         supportingTables: [],
         attachments: []
       }
@@ -307,6 +405,22 @@ export const initialApprovalHistory: ApprovalHistoryEntry[] = [
     userName: 'Administrator',
     date: new Date(Date.now() - 3600000 * 2).toISOString(),
     comment: 'Please add the technical mapping for standard HIPAA code 45.'
+  },
+  {
+    id: 'h4',
+    definitionId: '2.1.3',
+    definitionName: 'Professional Claim Taxonomy',
+    action: 'Submitted',
+    userName: 'Dhilip Sagadevan',
+    date: new Date(Date.now() - 3600000 * 12).toISOString(),
+  },
+  {
+    id: 'h5',
+    definitionId: '3.1.2',
+    definitionName: 'Network Participation Rules',
+    action: 'Submitted',
+    userName: 'Dhilip Sagadevan',
+    date: new Date(Date.now() - 3600000 * 48).toISOString(),
   }
 ];
 
