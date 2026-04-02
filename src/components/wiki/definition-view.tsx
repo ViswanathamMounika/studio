@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -44,6 +45,7 @@ type DefinitionViewProps = {
   searchQuery?: string;
   currentUser: { id: string; name: string };
   onOpenFeedback?: () => void;
+  viewingMode: 'live' | 'draft';
 };
 
 const WorkflowStep = ({ label, status, isLast = false }: { label: string, status: 'completed' | 'active' | 'pending', isLast?: boolean }) => {
@@ -65,7 +67,7 @@ const WorkflowStep = ({ label, status, isLast = false }: { label: string, status
 
 export default function DefinitionView({ 
     definition, allDefinitions, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
-    activeTab, onTabChange, onSave, isAdmin, currentUser, onOpenFeedback 
+    activeTab, onTabChange, onSave, isAdmin, currentUser, onOpenFeedback, viewingMode
 }: DefinitionViewProps) {
     const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
     const [showComparison, setShowComparison] = useState(false);
@@ -156,11 +158,13 @@ export default function DefinitionView({
                         <h1 className="text-2xl font-bold text-slate-900 m-0">{definition.name}</h1>
                         <Badge variant="outline" className={cn(
                           "h-6 rounded-full font-bold text-[10px] uppercase",
+                          viewingMode === 'live' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
                           definition.isPendingApproval ? "bg-amber-50 text-amber-700 border-amber-200" :
                           activeFeedback ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
                           "bg-slate-50"
                         )}>
                             {definition.isArchived ? 'Archived' : 
+                             viewingMode === 'live' ? 'Published' :
                              definition.isPendingApproval ? 'Pending Approval' :
                              activeFeedback ? 'Update Required' :
                              definition.isDraft ? 'Draft' : 'Published'}
@@ -168,7 +172,7 @@ export default function DefinitionView({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {definition.discussions && definition.discussions.length > 0 && (
+                    {definition.discussions && definition.discussions.length > 0 && viewingMode === 'draft' && (
                       <Button variant="outline" size="sm" onClick={onOpenFeedback} className="rounded-xl border-slate-200 font-bold gap-2">
                         <MessageSquare className="h-4 w-4" />
                         Feedback History
@@ -177,7 +181,7 @@ export default function DefinitionView({
                     <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-slate-400">
                       <Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary text-primary")} />
                     </Button>
-                    {!definition.isArchived && !definition.isPendingApproval && (
+                    {!definition.isArchived && !definition.isPendingApproval && viewingMode === 'draft' && (
                         <Button onClick={onEdit} className="bg-primary hover:bg-primary/90 font-bold px-6 shadow-sm">
                             Edit
                         </Button>
@@ -193,9 +197,9 @@ export default function DefinitionView({
                 </div>
             </div>
 
-            {/* Workflow Strip - HIDDEN FOR ADMINS */}
-            {!isAdmin && (
-              <div className="flex flex-col gap-3 px-2 mb-8">
+            {/* Workflow Strip - HIDDEN FOR ADMINS AND LIVE VIEW */}
+            {!isAdmin && viewingMode === 'draft' && (
+              <div className="flex flex-col gap-3 px-2 mb-8 animate-in fade-in slide-in-from-top-1">
                   <div className="flex items-center gap-4">
                       <WorkflowStep label="Draft Completed" status={status.draft as any} />
                       <WorkflowStep label="Submitted" status={status.submitted as any} />
@@ -203,7 +207,7 @@ export default function DefinitionView({
                   </div>
 
                   {activeFeedback && (
-                      <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 animate-in fade-in slide-in-from-top-1">
+                      <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4">
                           <div className="flex items-center gap-2 mb-2">
                               <MessageSquare className="h-3.5 w-3.5 text-indigo-600" />
                               <span className="text-[11px] font-black uppercase text-indigo-600 tracking-wider">Latest Admin Comment</span>

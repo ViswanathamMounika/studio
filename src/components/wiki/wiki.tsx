@@ -791,7 +791,13 @@ export default function Wiki() {
     
     // If viewing strictly the published tree while a draft exists, show the snapshot
     if (viewingMode === 'live' && def.publishedSnapshot && !isEditing) {
-        return { ...def, ...def.publishedSnapshot, isBookmarked: isBookmarked(def.id) } as Definition;
+        return { 
+          ...def, 
+          ...def.publishedSnapshot, 
+          isDraft: false, 
+          isPendingApproval: false, 
+          isBookmarked: isBookmarked(def.id) 
+        } as Definition;
     }
 
     return { ...def, isBookmarked: isBookmarked(def.id) };
@@ -885,6 +891,7 @@ export default function Wiki() {
                           searchQuery={searchQuery}
                           currentUser={currentUser}
                           onOpenFeedback={() => setIsDiscussionsOpen(true)}
+                          viewingMode={viewingMode}
                         />
                       </div>
                   ) : (
@@ -977,14 +984,14 @@ export default function Wiki() {
                             <TabsList className="w-full grid grid-cols-2 rounded-none bg-transparent h-10 p-0 border-b">
                               <TabsTrigger 
                                 value="saved" 
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-primary"
+                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full"
                               >
                                 My Saved
                                 {totalDraftCount > 0 && <span className="ml-1.5 bg-primary/10 text-primary h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalDraftCount}</span>}
                               </TabsTrigger>
                               <TabsTrigger 
                                 value="pending" 
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-primary"
+                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full"
                               >
                                 Submitted
                                 {totalPendingCount > 0 && <span className="ml-1.5 bg-indigo-100 text-indigo-700 h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalPendingCount}</span>}
