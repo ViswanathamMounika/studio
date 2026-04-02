@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -290,7 +289,7 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                             <ChevronRight className="h-3 w-3" />
                                             <span className="text-primary">{selectedDef.module}</span>
                                         </div>
-                                        <h1 className="text-4xl font-bold tracking-tight text-slate-900">Side-by-Side Comparison</h1>
+                                        <h1 className="text-4xl font-bold tracking-tight text-slate-900">{selectedDef.name}</h1>
                                         <div className="flex items-center gap-3">
                                             <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 h-6 gap-1.5 px-2.5 font-bold">
                                                 <AlertCircle className="h-3 w-3" />
