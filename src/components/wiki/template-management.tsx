@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -176,9 +177,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
   const handleOpenGroupModal = (groupToEdit?: string) => {
     const allSections = currentTemplate.sections || [];
-    
-    // REQUIREMENT: Once grouped, we shouldn't show sections in the selection if they belong to another group.
-    // We only show sections that are ungrouped OR sections that already belong to the group we are currently editing.
     const availableSections = allSections.filter(s => 
       groupToEdit ? (s.group === groupToEdit || !s.group) : !s.group
     );
@@ -212,15 +210,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         const config = groupForm.sectionConfigs.find(c => c.sectionId === s.id);
         const wasInEditingGroup = editingGroupName ? s.group === editingGroupName : false;
 
-        // If the section was in the modal's list and is checked 'included'
         if (config?.included) {
           return { ...s, group: groupForm.name, groupOrder: groupForm.order, order: config.order };
-        } 
-        // If it was in the group being edited but is now UNCHECKED (or not in available list)
-        else if (wasInEditingGroup) {
+        } else if (wasInEditingGroup) {
           return { ...s, group: undefined, groupOrder: undefined };
         }
-        // Otherwise, leave section group status as is (stays in its existing group or ungrouped)
         return s;
       });
       return { ...prev, sections };
@@ -243,33 +237,31 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   const displayGroups = useMemo(() => {
     const allSections = currentTemplate.sections || [];
     
-    // 1. Ungrouped sections (must always be at the top)
-    const ungrouped = allSections
-      .filter(s => !s.group)
-      .sort((a, b) => a.order - b.order)
-      .map(s => ({ sections: [s] }));
+    // Find unique groups and standalone sections
+    const standaloneSections = allSections.filter(s => !s.group);
+    const uniqueGroupNames = Array.from(new Set(allSections.filter(s => s.group).map(s => s.group as string)));
 
-    // 2. Map grouped sections to their groups
-    const groupsMap = allSections.reduce((acc, s) => {
-      if (s.group) {
-        if (!acc[s.group]) acc[s.group] = [];
-        acc[s.group].push(s);
-      }
-      return acc;
-    }, {} as Record<string, TemplateSection[]>);
+    const units: Array<{ type: 'section' | 'group', order: number, name?: string, sections: TemplateSection[] }> = [];
 
-    // 3. Sort groups by groupOrder and sections within them by order
-    const sortedGroups = Object.entries(groupsMap)
-      .map(([name, sections]) => ({
-        groupName: name,
-        sections: sections.sort((a, b) => a.order - b.order),
-        groupOrder: sections[0].groupOrder || 0
-      }))
-      .sort((a, b) => a.groupOrder - b.groupOrder)
-      .map(({ groupName, sections }) => ({ groupName, sections }));
+    // Add standalone sections
+    standaloneSections.forEach(s => {
+      units.push({ type: 'section', order: s.order, sections: [s] });
+    });
 
-    // 4. Combine: ungrouped first, then sorted groups
-    return [...ungrouped, ...sortedGroups];
+    // Add groups
+    uniqueGroupNames.forEach(name => {
+      const groupSections = allSections.filter(s => s.group === name);
+      const groupOrder = groupSections[0]?.groupOrder || 0;
+      units.push({ 
+        type: 'group', 
+        name, 
+        order: groupOrder, 
+        sections: groupSections.sort((a, b) => a.order - b.order) 
+      });
+    });
+
+    // Sort globally by 'order'
+    return units.sort((a, b) => a.order - b.order);
   }, [currentTemplate.sections]);
 
   return (
@@ -406,28 +398,34 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 </div>
 
                 <div className="space-y-8">
-                  {displayGroups.map((group, gIdx) => (
-                    <div key={gIdx} className={cn(group.groupName ? "bg-slate-100/50 p-6 rounded-[28px] border border-slate-200/60 shadow-inner" : "space-y-6")}>
-                      {group.groupName && (
+                  {displayGroups.map((unit, uIdx) => (
+                    <div key={uIdx} className={cn(unit.type === 'group' ? "bg-slate-100/50 p-6 rounded-[28px] border border-slate-200/60 shadow-inner" : "space-y-6")}>
+                      {unit.type === 'group' && (
                         <div className="flex items-center justify-between mb-6 px-2">
                           <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-lg bg-[#3F51B5]/10 flex items-center justify-center">
                               <FolderTree className="h-4 w-4 text-[#3F51B5]" />
                             </div>
-                            <h4 className="text-base font-black text-slate-800 uppercase tracking-widest">{group.groupName}</h4>
+                            <div className="flex flex-col">
+                              <h4 className="text-base font-black text-slate-800 uppercase tracking-widest">{unit.name}</h4>
+                              <span className="text-[10px] font-bold text-slate-400">Global Group Order: {unit.order}</span>
+                            </div>
                           </div>
-                          <Button variant="ghost" size="sm" onClick={() => handleOpenGroupModal(group.groupName)} className="h-8 rounded-lg text-slate-500 font-bold hover:bg-white">
+                          <Button variant="ghost" size="sm" onClick={() => handleOpenGroupModal(unit.name)} className="h-8 rounded-lg text-slate-500 font-bold hover:bg-white">
                             <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Edit Group
                           </Button>
                         </div>
                       )}
 
                       <div className="space-y-6">
-                        {group.sections.map((section) => (
-                          <Card key={section.id} className="rounded-2xl border-slate-200 shadow-sm overflow-hidden group/section border-l-4 border-l-[#3F51B5] bg-white">
+                        {unit.sections.map((section) => (
+                          <Card key={section.id} className={cn(
+                            "rounded-2xl border-slate-200 shadow-sm overflow-hidden group/section bg-white",
+                            unit.type === 'group' ? "border-l-4 border-l-[#3F51B5]" : "border-l-4 border-l-slate-200"
+                          )}>
                             <div className="p-4 bg-slate-50/50 border-b flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                <Badge className="bg-[#3F51B5] text-white h-6 w-6 p-0 rounded-lg flex items-center justify-center font-bold text-[10px]">
+                                <Badge className={cn("text-white h-6 w-6 p-0 rounded-lg flex items-center justify-center font-bold text-[10px]", unit.type === 'group' ? "bg-[#3F51B5]" : "bg-slate-400")}>
                                   {section.order}
                                 </Badge>
                                 <Input 
@@ -630,7 +628,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                             </div>
                                           </div>
 
-                                          {/* Options for Dropdown columns */}
                                           {col.inputType === 'Dropdown' && (
                                             <div className="ml-4 pl-4 border-l-2 border-slate-100 space-y-3">
                                               <div className="flex items-center justify-between">

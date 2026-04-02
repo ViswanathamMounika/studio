@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
@@ -123,35 +124,32 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
 
   const groupedSections = useMemo(() => {
     if (!selectedTemplate) return [];
-    
     const allSections = selectedTemplate.sections || [];
     
-    // 1. Separate ungrouped sections (always at the top)
-    const ungrouped = allSections
-      .filter(s => !s.group)
-      .sort((a, b) => a.order - b.order)
-      .map(s => [undefined as unknown as string, [s]] as [string, TemplateSection[]]);
+    const standaloneSections = allSections.filter(s => !s.group);
+    const uniqueGroupNames = Array.from(new Set(allSections.filter(s => s.group).map(s => s.group as string)));
 
-    // 2. Separate grouped sections
-    const groupsMap = allSections.reduce((acc, section) => {
-      if (section.group) {
-        if (!acc[section.group]) acc[section.group] = [];
-        acc[section.group].push(section);
-      }
-      return acc;
-    }, {} as Record<string, TemplateSection[]>);
+    const units: Array<{ type: 'section' | 'group', order: number, name?: string, sections: TemplateSection[] }> = [];
 
-    // 3. Sort groups by groupOrder and their internal sections by order
-    const sortedGroups = Object.entries(groupsMap)
-      .map(([name, sections]) => ({
-        name,
-        sections: sections.sort((a, b) => a.order - b.order),
-        groupOrder: sections[0].groupOrder || 0
-      }))
-      .sort((a, b) => a.groupOrder - b.groupOrder)
-      .map(g => [g.name, g.sections] as [string, TemplateSection[]]);
+    // Add standalone sections
+    standaloneSections.forEach(s => {
+      units.push({ type: 'section', order: s.order, sections: [s] });
+    });
 
-    return [...ungrouped, ...sortedGroups];
+    // Add groups
+    uniqueGroupNames.forEach(name => {
+      const groupSections = allSections.filter(s => s.group === name);
+      const groupOrder = groupSections[0]?.groupOrder || 0;
+      units.push({ 
+        type: 'group', 
+        name, 
+        order: groupOrder, 
+        sections: groupSections.sort((a, b) => a.order - b.order) 
+      });
+    });
+
+    // Sort globally by 'order'
+    return units.sort((a, b) => a.order - b.order);
   }, [selectedTemplate]);
 
   return (
@@ -224,18 +222,17 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
                 </CardContent>
             </Card>
 
-            {/* Dynamic Content */}
-            {groupedSections.map(([groupName, sections], gIdx) => (
-                <div key={groupName || `standalone-${gIdx}`} className="space-y-6">
-                    {groupName && (
+            {groupedSections.map((unit, idx) => (
+                <div key={idx} className="space-y-6">
+                    {unit.type === 'group' && unit.name && (
                       <div className="flex items-center gap-3">
-                          <h3 className="text-lg font-bold text-slate-900">{groupName}</h3>
+                          <h3 className="text-lg font-bold text-slate-900">{unit.name}</h3>
                           <div className="h-px bg-slate-200 flex-1" />
                       </div>
                     )}
                     
                     <div className="space-y-6">
-                        {sections.map(section => {
+                        {unit.sections.map(section => {
                             const value = sectionValues.find(v => v.sectionId === section.id);
                             
                             return (
