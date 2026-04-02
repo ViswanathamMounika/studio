@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -5,7 +6,7 @@ import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree } from 'lucide-react';
+import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -36,6 +37,7 @@ const NewDefinitionModal = dynamic(() => import('@/components/wiki/new-definitio
 const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal'), { ssr: false });
 const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
 const ApprovalQueue = dynamic(() => import('@/components/wiki/approval-queue'), { ssr: false });
+const DiscussionsPanel = dynamic(() => import('@/components/wiki/discussions-panel'), { ssr: false });
 
 type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-queue';
 type ViewingMode = 'live' | 'draft';
@@ -82,6 +84,7 @@ export default function Wiki() {
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
+  const [isDiscussionsOpen, setIsDiscussionsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v16', true);
   const [activeView, setActiveView] = useState<View>('definitions');
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v16', initialNotifications);
@@ -483,6 +486,31 @@ export default function Wiki() {
     });
   };
 
+  const handleAddReply = (content: string) => {
+    if (!selectedDefinitionId) return;
+    const newMessage: DiscussionMessage = {
+      id: Date.now().toString(),
+      authorId: currentUser.id,
+      author: currentUser.name,
+      avatar: currentUser.avatar,
+      date: new Date().toISOString(),
+      content,
+      type: 'comment'
+    };
+
+    const updateItem = (items: Definition[]): Definition[] => {
+      if (!Array.isArray(items)) return [];
+      return items.map(def => {
+        if (def.id === selectedDefinitionId) {
+          return { ...def, discussions: [...(def.discussions || []), newMessage] };
+        }
+        if (def.children) return { ...def, children: updateItem(def.children) };
+        return def;
+      });
+    };
+    setDefinitions(prev => updateItem(prev || []));
+  };
+
   const enrichedDefinitions = useMemo(() => {
     const enrich = (items: Definition[]): Definition[] => {
       if (!Array.isArray(items)) return [];
@@ -516,7 +544,7 @@ export default function Wiki() {
     const itemsForWorkflow = enrichedDefinitions;
 
     if (!Array.isArray(itemsForPublished) || !Array.isArray(itemsForWorkflow)) {
-        return { drafts: [], published: [], pending: [] };
+        return { drafts: [], published: [], pending: [], mySubmissions: [] };
     }
 
     const filterByDraft = (items: Definition[], isDraft: boolean): Definition[] => {
@@ -558,6 +586,18 @@ export default function Wiki() {
             return acc;
         }, []);
     }
+
+    const filterMySubmissions = (items: Definition[]): Definition[] => {
+        if (!Array.isArray(items)) return [];
+        return items.reduce((acc: Definition[], item) => {
+            const children = filterMySubmissions(item.children || []);
+            const isMyPending = item.isPendingApproval === true && item.submittedBy === currentUser.name;
+            if (isMyPending || children.length > 0) {
+                acc.push({ ...item, children });
+            }
+            return acc;
+        }, []);
+    };
 
     const filterBookmarkedRecursive = (items: Definition[]): Definition[] => {
         if (!Array.isArray(items)) return [];
@@ -602,7 +642,8 @@ export default function Wiki() {
     return {
         drafts: filterByDraft(itemsForWorkflow, true),
         published: filterPublishedWithSnapshots(processedPublished),
-        pending: filterPending(itemsForWorkflow)
+        pending: filterPending(itemsForWorkflow),
+        mySubmissions: filterMySubmissions(itemsForWorkflow)
     };
   }, [enrichedDefinitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
 
@@ -790,6 +831,7 @@ export default function Wiki() {
                           isAdmin={isAdmin}
                           searchQuery={searchQuery}
                           currentUser={currentUser}
+                          onOpenFeedback={() => setIsDiscussionsOpen(true)}
                         />
                       </div>
                   ) : (
@@ -820,14 +862,16 @@ export default function Wiki() {
       setIsTemplatesModalOpen(false);
   };
 
-  const countLeafDrafts = (items: Definition[]): number => {
+  const countLeafItems = (items: Definition[], filterFn: (item: Definition) => boolean): number => {
     if (!Array.isArray(items)) return 0;
     return items.reduce((acc, item) => {
-      const isDraftLeaf = item.isDraft && !item.isPendingApproval && (item.description || item.shortDescription);
-      return acc + (isDraftLeaf ? 1 : 0) + (item.children ? countLeafDrafts(item.children) : 0);
+      const isLeaf = (item.description || item.shortDescription);
+      return acc + (isLeaf && filterFn(item) ? 1 : 0) + (item.children ? countLeafItems(item.children, filterFn) : 0);
     }, 0);
   };
-  const totalDraftCount = countLeafDrafts(categorizedDefinitions.drafts);
+
+  const totalDraftCount = countLeafItems(categorizedDefinitions.drafts, (i) => i.isDraft === true && !i.isPendingApproval);
+  const totalPendingCount = countLeafItems(categorizedDefinitions.mySubmissions, (i) => i.isPendingApproval === true);
 
   if (!isMounted) return null;
 
@@ -861,6 +905,7 @@ export default function Wiki() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto">
+                      {/* SAVED DRAFTS SECTION */}
                       <div className="p-4 space-y-3 bg-muted/10 border-b">
                         <div className="flex items-center justify-between">
                             <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">My Saved Definitions</h2>
@@ -872,6 +917,19 @@ export default function Wiki() {
                             ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No saved drafts found.</p>}
                         </div>
                       </div>
+
+                      {/* MY SUBMISSIONS SECTION (STANDARD USER ONLY) */}
+                      {!isAdmin && categorizedDefinitions.mySubmissions.length > 0 && (
+                        <div className="p-4 space-y-3 bg-indigo-50/20 border-b">
+                          <div className="flex items-center justify-between">
+                              <h2 className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">My Submissions</h2>
+                              {totalPendingCount > 0 && <span className="bg-indigo-100 text-indigo-700 h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold">{totalPendingCount}</span>}
+                          </div>
+                          <div className="pt-2">
+                              <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.mySubmissions} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                          </div>
+                        </div>
+                      )}
 
                       <div className="flex flex-col flex-1 min-h-0">
                           <div className="px-4 py-3 bg-muted/5 border-b flex items-center justify-between">
@@ -926,6 +984,16 @@ export default function Wiki() {
       <RecentViewsModal open={isRecentModalOpen} onOpenChange={setIsRecentModalOpen} onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')} />
       <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={templates} isAdmin={isAdmin} />
       <TemplatesModal open={isTemplatesModalOpen} onOpenChange={setIsTemplatesModalOpen} onUseTemplate={handleUseTemplate} managedTemplates={templates} />
+      
+      {selectedDefinition && (
+        <DiscussionsPanel 
+          open={isDiscussionsOpen} 
+          onOpenChange={setIsDiscussionsOpen} 
+          discussions={selectedDefinition.discussions || []}
+          definitionName={selectedDefinition.name}
+          onAddReply={handleAddReply}
+        />
+      )}
     </SidebarProvider>
   );
 }

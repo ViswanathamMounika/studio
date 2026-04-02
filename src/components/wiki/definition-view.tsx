@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, Lock as LockIcon, MessageSquare, History } from 'lucide-react';
+import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -44,11 +44,12 @@ type DefinitionViewProps = {
   isAdmin: boolean;
   searchQuery?: string;
   currentUser: { id: string; name: string };
+  onOpenFeedback?: () => void;
 };
 
 export default function DefinitionView({ 
     definition, allDefinitions, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
-    activeTab, onTabChange, onSave, isAdmin, currentUser 
+    activeTab, onTabChange, onSave, isAdmin, currentUser, onOpenFeedback 
 }: DefinitionViewProps) {
     const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
     const [showComparison, setShowComparison] = useState(false);
@@ -103,6 +104,10 @@ export default function DefinitionView({
     const myNotes = (definition.notes || []).filter(n => n.authorId === currentUser.id);
     const otherNotes = (definition.notes || []).filter(n => n.authorId !== currentUser.id);
 
+    const hasActiveFeedback = useMemo(() => {
+      return (definition.discussions || []).some(d => d.type === 'change-request' || d.type === 'rejection');
+    }, [definition.discussions]);
+
     const tabs = [
         { id: 'description', label: 'Description' },
         { id: 'revisions', label: 'Version History' },
@@ -118,7 +123,39 @@ export default function DefinitionView({
   return (
     <TooltipProvider>
         <article className="max-w-none">
-            {definition.isDraft && (
+            {definition.isPendingApproval ? (
+                <Alert className="mb-6 bg-amber-50 border-amber-100 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                            <Clock className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <div className="flex-1">
+                            <AlertTitle className="text-amber-900 font-bold text-lg mb-0.5">Awaiting Approval</AlertTitle>
+                            <AlertDescription className="text-amber-700 font-medium">
+                                This version was submitted by <strong>{definition.submittedBy}</strong> and is currently in the review queue.
+                            </AlertDescription>
+                        </div>
+                    </div>
+                </Alert>
+            ) : definition.isDraft && hasActiveFeedback ? (
+                <Alert className="mb-6 bg-indigo-50 border-indigo-100 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                            <RefreshCw className="h-5 w-5 text-indigo-600" />
+                        </div>
+                        <div className="flex-1">
+                            <AlertTitle className="text-indigo-900 font-bold text-lg mb-0.5">Revision Requested</AlertTitle>
+                            <AlertDescription className="text-indigo-700 font-medium">
+                                An administrator has requested improvements. Please review the feedback and update the definition.
+                            </AlertDescription>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={onOpenFeedback} className="rounded-xl border-indigo-200 bg-white font-bold text-indigo-600 hover:bg-indigo-50">
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            View Feedback
+                        </Button>
+                    </div>
+                </Alert>
+            ) : definition.isDraft && (
                 <Alert className="mb-6 bg-primary/5 border-primary/10 rounded-2xl shadow-sm">
                     <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -140,16 +177,30 @@ export default function DefinitionView({
                     <p className="text-xs font-semibold text-slate-500 mb-1">{definition.module}</p>
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl font-bold text-slate-900 m-0">{definition.name}</h1>
-                        <Badge variant="outline" className="h-6 rounded-full font-bold text-[10px] uppercase bg-slate-50">
-                            {definition.isArchived ? 'Archived' : (definition.isDraft ? 'Draft' : 'Published')}
+                        <Badge variant="outline" className={cn(
+                          "h-6 rounded-full font-bold text-[10px] uppercase",
+                          definition.isPendingApproval ? "bg-amber-50 text-amber-700 border-amber-200" :
+                          hasActiveFeedback ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
+                          "bg-slate-50"
+                        )}>
+                            {definition.isArchived ? 'Archived' : 
+                             definition.isPendingApproval ? 'Pending Approval' :
+                             hasActiveFeedback ? 'Update Required' :
+                             definition.isDraft ? 'Draft' : 'Published'}
                         </Badge>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {hasActiveFeedback && (
+                      <Button variant="outline" size="sm" onClick={onOpenFeedback} className="rounded-xl border-slate-200 font-bold gap-2">
+                        <MessageSquare className="h-4 w-4" />
+                        Feedback
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-slate-400">
                       <Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary text-primary")} />
                     </Button>
-                    {!definition.isArchived && (
+                    {!definition.isArchived && !definition.isPendingApproval && (
                         <Button onClick={onEdit} className="bg-primary hover:bg-primary/90 font-bold px-6 shadow-sm">
                             Edit
                         </Button>

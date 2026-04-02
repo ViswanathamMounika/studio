@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -126,6 +126,10 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
     e.stopPropagation();
   };
 
+  const hasFeedback = useMemo(() => {
+    return (node.discussions || []).some(d => d.type === 'change-request' || d.type === 'rejection');
+  }, [node.discussions]);
+
   return (
     <Collapsible open={isNodeExpanded} onOpenChange={setIsNodeExpanded}>
         <div 
@@ -202,6 +206,18 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                                 </TooltipTrigger>
                                 <TooltipContent>
                                     <p>Pending Approval</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                    {hasFeedback && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <MessageSquare className="h-3 w-3 text-indigo-600 fill-indigo-100" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Feedback Received</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
