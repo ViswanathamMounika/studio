@@ -184,7 +184,7 @@ export const initialDefinitions: Definition[] = [
         isDraft: true,
         isPendingApproval: true,
         submittedBy: 'Alex Smith',
-        submittedAt: new Date(Date.now() - 3600000 * 24).toISOString(), // 1 day ago
+        submittedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
         revisions: [baselineRevision('Auth Timeliness SLA', 'Initial SLA guidelines.')],
         publishedSnapshot: {
             name: 'Authorization Timeliness SLA',
@@ -237,7 +237,7 @@ export const initialDefinitions: Definition[] = [
         isDraft: true,
         isPendingApproval: true,
         submittedBy: 'Dhilip Sagadevan',
-        submittedAt: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago
+        submittedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
         revisions: [baselineRevision('Claim Denial Mapping', 'Initial crosswalk.')],
         publishedSnapshot: {
             name: 'Claim Denial Codes Mapping',
@@ -249,6 +249,96 @@ export const initialDefinitions: Definition[] = [
       }
     ]
   }
+];
+
+export const initialActivityLogs: ActivityLog[] = [
+  {
+    id: '1',
+    userName: 'Dhilip Sagadevan',
+    definitionName: 'Auth Decision Date',
+    activityType: 'Definition Updated',
+    occurredDate: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+  {
+    id: '2',
+    userName: 'Jane Smith',
+    definitionName: 'Contracted Rates',
+    activityType: 'Definition Viewed',
+    occurredDate: new Date(Date.now() - 3600000 * 24).toISOString(),
+  },
+  {
+    id: '3',
+    userName: 'Authorized User',
+    definitionName: 'Auth Decision Date',
+    activityType: 'Definition Viewed',
+    occurredDate: new Date(Date.now() - 3600000 * 48).toISOString(),
+  },
+  {
+    id: '4',
+    userName: 'Dhilip Sagadevan',
+    definitionName: 'Authorization Timeliness SLA',
+    activityType: 'Definition Created',
+    occurredDate: new Date(Date.now() - 3600000 * 72).toISOString(),
+  }
+];
+
+export const defDataTable = {
+    headers: ['ID', 'OBJECT_TYPE', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION', 'CREATEDBY', 'CREATEDDATE', 'LASTCHANGEDBY', 'LASTCHANGEDDATE'],
+    rows: [
+        {
+            ID: 1,
+            OBJECT_TYPE: 1,
+            SERVER_NAME: 'MPM_PROD_SQL',
+            DATABASE_NAME: 'DW_Reporting',
+            QUERY: 'SELECT * FROM vw_AuthDecisionDate',
+            NAME: 'Auth Decision Date View',
+            DESCRIPTION: 'Main view for authorization decision dates.',
+            CREATEDBY: 'Dhilip Sagadevan',
+            CREATEDDATE: '2023-01-01T09:00:00Z',
+            LASTCHANGEDBY: 'Dhilip Sagadevan',
+            LASTCHANGEDDATE: '2023-10-15T14:30:00Z'
+        },
+        {
+            ID: 2,
+            OBJECT_TYPE: 2,
+            SERVER_NAME: 'MPM_PROD_SQL',
+            DATABASE_NAME: 'EzCAp',
+            QUERY: 'SELECT * FROM tbl_ServiceTypeMap',
+            NAME: 'Service Type Map Table',
+            DESCRIPTION: 'Mapping table for service categories.',
+            CREATEDBY: 'Admin',
+            CREATEDDATE: '2023-02-15T10:00:00Z',
+            LASTCHANGEDBY: 'Jane Smith',
+            LASTCHANGEDDATE: '2023-11-01T11:20:00Z'
+        }
+    ]
+};
+
+export const allDataTables: SupportingTable[] = [
+    {
+        id: 'table-1',
+        name: 'vw_AuthDecisionDate',
+        description: 'Preview of Auth Decision Date',
+        headers: ['AuthID', 'DecisionDate', 'Status'],
+        rows: [
+            ['A100', '2023-10-01', 'Approved'],
+            ['A101', '2023-10-02', 'Denied'],
+            ['A102', '2023-10-03', 'Approved'],
+            ['A103', '2023-10-04', 'Canceled'],
+            ['A104', '2023-10-05', 'Pending'],
+        ]
+    },
+    {
+        id: 'table-2',
+        name: 'tbl_ServiceTypeMap',
+        description: 'Preview of Service Type Mapping',
+        headers: ['Code', 'ServiceType', 'IsActive'],
+        rows: [
+            ['99213', 'Office Visit', 1],
+            ['99214', 'Office Visit', 1],
+            ['00100', 'Anesthesia', 1],
+        ]
+    }
 ];
 
 export function findDefinition(definitions: Definition[], id: string): Definition | null {

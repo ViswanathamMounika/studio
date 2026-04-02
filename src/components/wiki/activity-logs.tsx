@@ -47,7 +47,7 @@ const activityTypes: ActivityType[] = [
 const ITEMS_PER_PAGE = 10;
 
 export default function ActivityLogs() {
-    const [logs] = useState<ActivityLog[]>(initialActivityLogs);
+    const [logs] = useState<ActivityLog[]>(initialActivityLogs || []);
     
     // UI Filter States (Pending Application)
     const [activityTypeFilter, setActivityTypeFilter] = useState<string>('all');
@@ -88,6 +88,7 @@ export default function ActivityLogs() {
 
     // Extract unique definition names for auto-population
     const uniqueDefinitions = useMemo(() => {
+        if (!Array.isArray(logs)) return [];
         const names = Array.from(new Set(logs.map(log => log.definitionName)));
         return names.sort((a, b) => a.localeCompare(b));
     }, [logs]);
@@ -111,7 +112,7 @@ export default function ActivityLogs() {
     };
 
     const filteredAndSortedLogs = useMemo(() => {
-        if (!appliedFilters) return [];
+        if (!appliedFilters || !Array.isArray(logs)) return [];
 
         return logs.filter(log => {
             // Updated logic to include 'Definition Viewed' if toggled, alongside selected type
