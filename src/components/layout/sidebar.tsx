@@ -17,7 +17,8 @@ import {
     UserCog,
     Settings2,
     ShieldCheck,
-    ClipboardCheck
+    ClipboardCheck,
+    Fingerprint
 } from "lucide-react";
 import {
     Collapsible,
@@ -36,6 +37,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
+import { Separator } from '../ui/separator';
 
 type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-queue';
 
@@ -53,7 +55,7 @@ const topNavItems = [
 
 export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAdmin }: AppSidebarProps) {
     const [isWikiOpen, setIsWikiOpen] = useState(true);
-    const [isAdminOpen, setIsAdminOpen] = useState(false);
+    const [isAdminOpen, setIsAdminOpen] = useState(true);
 
     const wikiNavItems = [
         { id: 'definitions', label: 'MPM Definitions', icon: KeyRound },
@@ -192,7 +194,24 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                     </Collapsible>
                 </SidebarMenu>
             </SidebarContent>
-            <SidebarFooter>
+            <SidebarFooter className="p-4 bg-slate-50/50 border-t">
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2 px-2">
+                        <Fingerprint className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Role Settings</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-200 shadow-sm">
+                        <div className="space-y-0.5">
+                            <p className="text-[11px] font-bold text-slate-900">Admin Mode</p>
+                            <p className="text-[9px] font-medium text-slate-500 uppercase tracking-tighter">Toggle Permissions</p>
+                        </div>
+                        <Switch 
+                            checked={isAdmin} 
+                            onCheckedChange={onToggleAdmin}
+                            className="scale-75"
+                        />
+                    </div>
+                </div>
             </SidebarFooter>
         </Sidebar>
     );
