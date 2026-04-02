@@ -1,4 +1,3 @@
-
 export interface Revision {
   ticketId: string;
   date: string;
@@ -85,7 +84,7 @@ export interface Template {
   id: string;
   name: string;
   description: string;
-  moduleId?: string;
+  module: string; // Added mandatory module string
   isDefault: boolean;
   isActive: boolean;
   sections: TemplateSection[];

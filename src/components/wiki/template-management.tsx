@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -29,6 +28,14 @@ interface GroupForm {
   sectionConfigs: { sectionId: string; order: number; included: boolean }[];
 }
 
+const MODULE_OPTIONS = [
+  'Authorization',
+  'Claims',
+  'Member',
+  'Provider',
+  'Other'
+];
+
 export default function TemplateManagement({ templates, onSaveTemplates }: TemplateManagementProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -45,6 +52,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     setCurrentTemplate({
       id: `t-${Date.now()}`,
       name: '',
+      module: '',
       description: '',
       isDefault: false,
       isActive: true,
@@ -62,6 +70,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   const handleSaveTemplate = () => {
     if (!currentTemplate.name?.trim()) {
       toast({ variant: 'destructive', title: 'Error', description: 'Template Name is required.' });
+      return;
+    }
+
+    if (!currentTemplate.module) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Module is required.' });
       return;
     }
 
@@ -283,6 +296,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
             <TableHeader>
               <TableRow className="bg-slate-100 dark:bg-slate-900 border-none">
                 <TableHead className="py-4 px-6 font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Template Name</TableHead>
+                <TableHead className="font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Module</TableHead>
                 <TableHead className="font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Default</TableHead>
                 <TableHead className="font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Status</TableHead>
                 <TableHead className="text-right px-6 font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Actions</TableHead>
@@ -294,6 +308,9 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                   <TableCell className="px-6 py-4">
                     <p className="font-bold text-slate-900">{template.name}</p>
                     <p className="text-xs text-slate-500 line-clamp-1">{template.description}</p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-bold border-slate-200 bg-slate-50 text-slate-600">{template.module}</Badge>
                   </TableCell>
                   <TableCell>
                     {template.isDefault && <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100 font-bold">Default</Badge>}
@@ -349,15 +366,29 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
           <ScrollArea className="flex-1 bg-slate-50/30">
             <div className="p-8 space-y-10 pb-32">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="md:col-span-2 space-y-2">
-                  <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Template Name</Label>
+                  <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Template Name <span className="text-red-500">*</span></Label>
                   <Input 
                     value={currentTemplate.name} 
                     onChange={e => setCurrentTemplate(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g., Standard Clinical Definition"
                     className="rounded-xl border-slate-200 h-11 text-base font-bold focus-visible:ring-primary/20"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Module <span className="text-red-500">*</span></Label>
+                  <Select 
+                    value={currentTemplate.module} 
+                    onValueChange={v => setCurrentTemplate(prev => ({ ...prev, module: v }))}
+                  >
+                    <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white">
+                      <SelectValue placeholder="Select Module" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MODULE_OPTIONS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Default Status</Label>
@@ -372,7 +403,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                     </div>
                   </div>
                 </div>
-                <div className="md:col-span-3 space-y-2">
+                <div className="md:col-span-4 space-y-2">
                   <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Description</Label>
                   <Textarea 
                     value={currentTemplate.description} 
