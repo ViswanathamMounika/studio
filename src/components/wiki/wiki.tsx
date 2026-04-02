@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
-import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory } from '@/lib/data';
+import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry } from '@/lib/types';
 import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -72,7 +72,7 @@ const initialNotifications: NotificationType[] = [
 
 export default function Wiki() {
   const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v18', initialDefinitions);
-  const [drafts, setDrafts] = useLocalStorage<Definition[]>('mpm_user_drafts_v18', []);
+  const [drafts, setDrafts] = useLocalStorage<Definition[]>('mpm_user_drafts_v18', initialDrafts);
   const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v18', initialTemplates);
   const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v18', initialApprovalHistory);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
@@ -538,7 +538,7 @@ export default function Wiki() {
         drafts: drafts.filter(d => d.isDraft && !d.isPendingApproval),
         published: filterPublishedTree(definitions),
         pending: drafts.filter(d => d.isPendingApproval),
-        mySubmissions: drafts.filter(d => d.isPendingApproval && d.submittedBy === currentUser.name)
+        mySubmissions: drafts.filter(d => d.isPendingApproval)
     };
   }, [definitions, drafts, showArchived, showBookmarked, isBookmarked]);
 
@@ -631,10 +631,10 @@ export default function Wiki() {
                         <div className="border-b bg-white/50">
                           <Tabs defaultValue="saved" className="w-full">
                             <TabsList className="w-full grid grid-cols-2 h-10 bg-transparent rounded-none border-b p-0">
-                              <TabsTrigger value="saved" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none font-bold text-[10px] uppercase tracking-wider">
+                              <TabsTrigger value="saved" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none font-bold text-[10px] text-slate-500 uppercase tracking-wider transition-all">
                                 My Saved
                               </TabsTrigger>
-                              <TabsTrigger value="submitted" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none font-bold text-[10px] uppercase tracking-wider">
+                              <TabsTrigger value="submitted" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none font-bold text-[10px] text-slate-500 uppercase tracking-wider transition-all">
                                 Submitted
                               </TabsTrigger>
                             </TabsList>

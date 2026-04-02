@@ -169,49 +169,6 @@ export const initialDefinitions: Definition[] = [
         revisions: [baselineRevision('Service Type Mapping', 'Baseline mapping logic.')],
         supportingTables: [],
         attachments: []
-      },
-      {
-        id: '1.1.3',
-        name: 'Authorization Timeliness SLA',
-        module: 'Authorizations',
-        templateId: '1',
-        keywords: ['SLA', 'timeliness', 'regulatory'],
-        description: '<p>Updated regulatory requirements for turnaround time. Now includes Saturday as a business day for urgent requests.</p>',
-        shortDescription: 'Regulatory SLA requirements for turnaround times.',
-        technicalDetails: '<h3>Calculation Logic</h3><ul><li>Urgent: 72 hours</li><li>Standard: 5 business days</li></ul>',
-        isArchived: false,
-        isDraft: true,
-        isPendingApproval: true,
-        submittedBy: 'Alex Smith',
-        submittedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-        revisions: [baselineRevision('Auth Timeliness SLA', 'Initial SLA guidelines.')],
-        publishedSnapshot: {
-            name: 'Authorization Timeliness SLA',
-            description: '<p>Regulatory requirements for turnaround time. Business days are Mon-Fri.</p>',
-            shortDescription: 'SLA requirements for turnaround times.',
-            technicalDetails: '<h3>Calculation Logic</h3><ul><li>Urgent: 72 hours</li><li>Standard: 14 days</li></ul>'
-        },
-        supportingTables: [],
-        attachments: []
-      },
-      {
-        id: '1.1.4',
-        name: 'Inpatient Turnaround Time',
-        module: 'Authorizations',
-        templateId: '1',
-        keywords: ['inpatient', 'TAT', 'UM'],
-        description: '<p>Work in progress for inpatient-specific TAT logic. Needs alignment with new state regulations.</p>',
-        shortDescription: 'Inpatient specific turnaround time rules.',
-        isArchived: false,
-        isDraft: true,
-        isPendingApproval: false,
-        revisions: [],
-        supportingTables: [],
-        attachments: [],
-        sectionValues: [
-          { sectionId: '1', raw: 'Inpatient specific turnaround time rules.' },
-          { sectionId: '2', raw: '<p>Work in progress for inpatient-specific TAT logic. Needs alignment with new state regulations.</p>', html: '<p>Work in progress for inpatient-specific TAT logic. Needs alignment with new state regulations.</p>' }
-        ]
       }
     ]
   },
@@ -242,57 +199,6 @@ export const initialDefinitions: Definition[] = [
         revisions: [baselineRevision('Contracted Rates', 'Baseline logic.')],
         supportingTables: [],
         attachments: []
-      },
-      {
-        id: '2.1.2',
-        name: 'Claim Denial Codes Mapping',
-        module: 'Claims',
-        templateId: '1',
-        keywords: ['denials', 'codes', 'mapping'],
-        description: '<p>This definition maps HIPAA standard reason codes to internal MedPoint operational denial categories. UPDATED with HIPAA Code 45 logic.</p>',
-        shortDescription: 'Denial code crosswalk documentation.',
-        isArchived: false,
-        isDraft: true,
-        isPendingApproval: true,
-        submittedBy: 'Dhilip Sagadevan',
-        submittedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-        revisions: [baselineRevision('Claim Denial Mapping', 'Initial crosswalk.')],
-        publishedSnapshot: {
-            name: 'Claim Denial Codes Mapping',
-            description: '<p>Mapping of reason codes to internal categories.</p>',
-            shortDescription: 'Internal denial code mapping.'
-        },
-        discussions: [
-          {
-            id: 'd1',
-            authorId: 'admin_1',
-            author: 'Administrator',
-            avatar: 'https://picsum.photos/seed/admin/40/40',
-            date: new Date(Date.now() - 3600000 * 5).toISOString(),
-            content: 'Please add the technical mapping for standard HIPAA code 45.',
-            type: 'change-request',
-            priority: 'High'
-          }
-        ],
-        supportingTables: [],
-        attachments: []
-      },
-      {
-        id: '2.1.3',
-        name: 'Professional Claim Taxonomy',
-        module: 'Claims',
-        templateId: '1',
-        keywords: ['taxonomy', 'billing', 'HCFA'],
-        description: '<p>New mapping for professional claim taxonomy codes based on billing specialty.</p>',
-        shortDescription: 'Taxonomy code mapping for professional claims.',
-        isArchived: false,
-        isDraft: true,
-        isPendingApproval: true,
-        submittedBy: 'Dhilip Sagadevan',
-        submittedAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-        revisions: [],
-        supportingTables: [],
-        attachments: []
       }
     ]
   },
@@ -307,43 +213,93 @@ export const initialDefinitions: Definition[] = [
     isDraft: false,
     supportingTables: [],
     attachments: [],
-    children: [
+    children: []
+  }
+];
+
+export const initialDrafts: Definition[] = [
+  {
+    id: 'draft_101',
+    name: 'Provider Master Verification',
+    module: 'Provider',
+    templateId: '1',
+    keywords: ['master', 'verification', 'credentialing'],
+    description: '<p>Standard operating procedure for verifying provider master data against the CAQH portal.</p>',
+    shortDescription: 'SOP for provider data verification.',
+    isArchived: false,
+    isDraft: true,
+    isPendingApproval: true,
+    submittedBy: 'Dhilip Sagadevan',
+    submittedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    revisions: [],
+    discussions: [
       {
-        id: '3.1.1',
-        name: 'Provider Credentialing Status',
-        module: 'Provider',
-        templateId: '1',
-        keywords: ['credentialing', 'provider', 'status'],
-        description: '<p>Drafting documentation for various credentialing statuses (e.g., Initial, Re-cred, Provisional).</p>',
-        shortDescription: 'Internal credentialing status codes.',
-        isArchived: false,
-        isDraft: true,
-        isPendingApproval: false,
-        revisions: [],
-        supportingTables: [],
-        attachments: [],
-        sectionValues: [
-          { sectionId: '1', raw: 'Internal credentialing status codes.' },
-          { sectionId: '2', raw: '<p>Drafting documentation for various credentialing statuses (e.g., Initial, Re-cred, Provisional).</p>', html: '<p>Drafting documentation for various credentialing statuses (e.g., Initial, Re-cred, Provisional).</p>' }
-        ]
-      },
-      {
-        id: '3.1.2',
-        name: 'Network Participation Rules',
-        module: 'Provider',
-        templateId: '1',
-        keywords: ['network', 'participation', 'IPA'],
-        description: '<p>Guidelines for determining network participation levels across different IPAs.</p>',
-        shortDescription: 'Rules for network tiering and participation.',
-        isArchived: false,
-        isDraft: true,
-        isPendingApproval: true,
-        submittedBy: 'Dhilip Sagadevan',
-        submittedAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-        revisions: [],
-        supportingTables: [],
-        attachments: []
+        id: 'd101',
+        authorId: 'admin_1',
+        author: 'Governance Admin',
+        avatar: 'https://picsum.photos/seed/admin/40/40',
+        date: new Date(Date.now() - 3600000 * 2).toISOString(),
+        content: 'Please ensure the step-by-step screenshots are updated to the 2024 UI version.',
+        type: 'comment'
       }
+    ],
+    supportingTables: [],
+    attachments: [],
+    sectionValues: [
+      { sectionId: '1', raw: 'SOP for provider data verification.' },
+      { sectionId: '2', raw: '<p>Standard operating procedure for verifying provider master data against the CAQH portal.</p>', html: '<p>Standard operating procedure for verifying provider master data against the CAQH portal.</p>' }
+    ]
+  },
+  {
+    id: 'draft_102',
+    name: 'Urgent Care TAT Rules',
+    module: 'Authorizations',
+    templateId: '1',
+    keywords: ['TAT', 'urgent', 'SLA'],
+    description: '<p>Updated turnaround time rules for Urgent Care centers in the Southern California region.</p>',
+    shortDescription: 'Regional TAT rules for Urgent Care.',
+    isArchived: false,
+    isDraft: true,
+    isPendingApproval: true,
+    submittedBy: 'Dhilip Sagadevan',
+    submittedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+    revisions: [],
+    discussions: [
+      {
+        id: 'd102',
+        authorId: 'admin_1',
+        author: 'Compliance Lead',
+        avatar: 'https://picsum.photos/seed/lead/40/40',
+        date: new Date(Date.now() - 3600000 * 12).toISOString(),
+        content: 'Does this include the new Saturday provision for San Diego clinics?',
+        type: 'change-request',
+        priority: 'High'
+      }
+    ],
+    supportingTables: [],
+    attachments: [],
+    sectionValues: [
+      { sectionId: '1', raw: 'Regional TAT rules for Urgent Care.' },
+      { sectionId: '2', raw: '<p>Updated turnaround time rules for Urgent Care centers in the Southern California region.</p>', html: '<p>Updated turnaround time rules for Urgent Care centers in the Southern California region.</p>' }
+    ]
+  },
+  {
+    id: 'draft_103',
+    name: 'Claims Adjudication Logic v2',
+    module: 'Claims',
+    templateId: '1',
+    keywords: ['adjudication', 'v2', 'logic'],
+    description: '<p>Work-in-progress update for the adjudication engine logic. Focus on professional claims.</p>',
+    shortDescription: 'V2 update for claim adjudication.',
+    isArchived: false,
+    isDraft: true,
+    isPendingApproval: false,
+    revisions: [],
+    supportingTables: [],
+    attachments: [],
+    sectionValues: [
+      { sectionId: '1', raw: 'V2 update for claim adjudication.' },
+      { sectionId: '2', raw: '<p>Work-in-progress update for the adjudication engine logic. Focus on professional claims.</p>', html: '<p>Work-in-progress update for the adjudication engine logic. Focus on professional claims.</p>' }
     ]
   }
 ];
@@ -362,20 +318,6 @@ export const initialActivityLogs: ActivityLog[] = [
     definitionName: 'Contracted Rates',
     activityType: 'Definition Viewed',
     occurredDate: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-  {
-    id: '3',
-    userName: 'Authorized User',
-    definitionName: 'Auth Decision Date',
-    activityType: 'Definition Viewed',
-    occurredDate: new Date(Date.now() - 3600000 * 48).toISOString(),
-  },
-  {
-    id: '4',
-    userName: 'Dhilip Sagadevan',
-    definitionName: 'Authorization Timeliness SLA',
-    activityType: 'Definition Created',
-    occurredDate: new Date(Date.now() - 3600000 * 72).toISOString(),
   }
 ];
 
@@ -388,39 +330,6 @@ export const initialApprovalHistory: ApprovalHistoryEntry[] = [
     userName: 'Dhilip Sagadevan',
     date: new Date(Date.now() - 3600000 * 24 * 5).toISOString(),
     comment: 'All metadata verified against EzCAP production schema.'
-  },
-  {
-    id: 'h2',
-    definitionId: '1.1.3',
-    definitionName: 'Authorization Timeliness SLA',
-    action: 'Submitted',
-    userName: 'Alex Smith',
-    date: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-  {
-    id: 'h3',
-    definitionId: '2.1.2',
-    definitionName: 'Claim Denial Codes Mapping',
-    action: 'Changes Requested',
-    userName: 'Administrator',
-    date: new Date(Date.now() - 3600000 * 2).toISOString(),
-    comment: 'Please add the technical mapping for standard HIPAA code 45.'
-  },
-  {
-    id: 'h4',
-    definitionId: '2.1.3',
-    definitionName: 'Professional Claim Taxonomy',
-    action: 'Submitted',
-    userName: 'Dhilip Sagadevan',
-    date: new Date(Date.now() - 3600000 * 12).toISOString(),
-  },
-  {
-    id: 'h5',
-    definitionId: '3.1.2',
-    definitionName: 'Network Participation Rules',
-    action: 'Submitted',
-    userName: 'Dhilip Sagadevan',
-    date: new Date(Date.now() - 3600000 * 48).toISOString(),
   }
 ];
 
@@ -468,17 +377,6 @@ export const allDataTables: SupportingTable[] = [
             ['A102', '2023-10-03', 'Approved'],
             ['A103', '2023-10-04', 'Canceled'],
             ['A104', '2023-10-05', 'Pending'],
-        ]
-    },
-    {
-        id: 'table-2',
-        name: 'tbl_ServiceTypeMap',
-        description: 'Preview of Service Type Mapping',
-        headers: ['Code', 'ServiceType', 'IsActive'],
-        rows: [
-            ['99213', 'Office Visit', 1],
-            ['99214', 'Office Visit', 1],
-            ['00100', 'Anesthesia', 1],
         ]
     }
 ];
