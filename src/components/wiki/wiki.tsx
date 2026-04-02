@@ -6,7 +6,7 @@ import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock } from 'lucide-react';
+import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -20,7 +20,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from '@/components/ui/badge';
 
 // Dynamic imports for heavy components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
@@ -91,7 +91,6 @@ export default function Wiki() {
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v18', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<'saved' | 'pending'>('saved');
   const { toast } = useToast();
   
   const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
@@ -141,7 +140,7 @@ export default function Wiki() {
     setActiveView('definitions');
     setViewingMode(mode);
     setSelectedDefinitionId(id);
-    setIsEditing(false); // Reset editing mode when switching definitions
+    setIsEditing(false);
     
     const sourceList = mode === 'draft' ? drafts : definitions;
     const def = findDefinition(sourceList, id);
@@ -459,18 +458,15 @@ export default function Wiki() {
   const handleEditClick = () => {
     if (!selectedDefinitionId) return;
     
-    // Always start from the live version if we're not currently in draft mode
     const sourceList = viewingMode === 'draft' ? drafts : definitions;
     const def = findDefinition(sourceList, selectedDefinitionId);
     if (!def) return;
 
-    // If we're already looking at a draft, just enter edit mode
     if (viewingMode === 'draft') {
         setIsEditing(true);
         return;
     }
 
-    // Check if a draft already exists for this definition
     const existingDraft = drafts.find(d => d.originalId === def.id);
     if (existingDraft) {
         handleSelectDefinition(existingDraft.id, undefined, 'draft');
@@ -478,7 +474,6 @@ export default function Wiki() {
         return;
     }
 
-    // Create a new draft from the published version
     const newLock: LockInfo = {
       userId: currentUser.id,
       userName: currentUser.name,
@@ -524,11 +519,8 @@ export default function Wiki() {
     const filterPublishedTree = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = filterPublishedTree(item.children || []);
-            
-            // Only include items that are NOT drafts/pending OR have a published snapshot
             const hasPublishedContent = !item.isDraft && !item.isPendingApproval;
             const hasLegacySnapshot = !!item.publishedSnapshot;
-            
             const isMatch = children.length > 0 || (hasPublishedContent || hasLegacySnapshot);
             
             if (isMatch) {
@@ -634,10 +626,13 @@ export default function Wiki() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto flex flex-col bg-slate-50/20">
-                      {isAdmin ? (
-                        <div className="p-4 space-y-3 border-b bg-white/50">
+                      {/* My Saved Definitions Section */}
+                      <div className="p-4 space-y-3 border-b bg-white/50">
                           <div className="flex items-center justify-between">
-                              <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Saved Definitions</h2>
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-3.5 w-3.5 text-slate-400" />
+                                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Saved Definitions</h2>
+                              </div>
                               {categorizedDefinitions.drafts.length > 0 && (
                                 <Badge className="bg-primary/10 text-primary h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black">
                                     {categorizedDefinitions.drafts.length}
@@ -647,24 +642,27 @@ export default function Wiki() {
                           <div className="pt-1">
                               <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
                           </div>
-                        </div>
-                      ) : (
-                        <div className="bg-white border-b">
-                          <Tabs value={sidebarTab} onValueChange={(v) => setSidebarTab(v as any)} className="w-full">
-                            <TabsList className="w-full grid grid-cols-2 rounded-none bg-transparent h-10 p-0 border-b">
-                              <TabsTrigger value="saved" className="text-[10px] font-black uppercase tracking-wider data-[state=active]:text-primary data-[state=active]:bg-primary/5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary">My Saved</TabsTrigger>
-                              <TabsTrigger value="pending" className="text-[10px] font-black uppercase tracking-wider data-[state=active]:text-primary data-[state=active]:bg-primary/5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary">Submitted</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="saved" className="p-3 m-0">
-                                <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                            </TabsContent>
-                            <TabsContent value="pending" className="p-3 m-0">
+                      </div>
+
+                      {/* My Submissions Section (for Non-Admins or specifically requested) */}
+                      {!isAdmin && categorizedDefinitions.mySubmissions.length > 0 && (
+                        <div className="p-4 space-y-3 border-b bg-white/50">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <ClipboardList className="h-3.5 w-3.5 text-slate-400" />
+                                  <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Submissions</h2>
+                                </div>
+                                <Badge className="bg-amber-500/10 text-amber-600 h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black">
+                                    {categorizedDefinitions.mySubmissions.length}
+                                </Badge>
+                            </div>
+                            <div className="pt-1">
                                 <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.mySubmissions} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                            </TabsContent>
-                          </Tabs>
+                            </div>
                         </div>
                       )}
 
+                      {/* Main Library Section */}
                       <div className="flex-1">
                           <div className="p-3">
                             <div className="flex items-center gap-2 px-2 mb-3">

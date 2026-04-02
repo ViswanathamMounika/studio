@@ -46,7 +46,7 @@ type DefinitionViewProps = {
   onTabChange: (tab: string) => void;
   onSave: (definition: Definition) => void;
   isAdmin: boolean;
-  currentUser: { id: string; name: string };
+  currentUser: { id: string; name: string; avatar?: string };
   viewingMode: 'live' | 'draft';
 };
 
@@ -76,7 +76,6 @@ export default function DefinitionView({
     const [showConflictDiff, setShowConflictDiff] = useState(false);
     const [noteText, setNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
-    const [notesTab, setNotesTab] = useState('my-notes');
     const [showFeedbackPane, setShowFeedbackPane] = useState(false);
     
     const { toast } = useToast();
@@ -100,7 +99,7 @@ export default function DefinitionView({
             id: Date.now().toString(), 
             authorId: currentUser.id, 
             author: currentUser.name, 
-            avatar: currentUser.avatar, 
+            avatar: currentUser.avatar || '', 
             date: new Date().toISOString(), 
             content: noteText, 
             isShared: shareNote 
@@ -163,12 +162,13 @@ export default function DefinitionView({
                 </div>
             )}
 
-            {viewingMode === 'draft' && (
+            {/* Workflow Ribbon */}
+            {(viewingMode === 'draft' || definition.isPendingApproval) && (
               <div className="flex items-center gap-4 px-2 mb-4">
                   <div className="flex items-center gap-4">
                       <WorkflowStep label="Draft" status={status.draft as any} />
                       <WorkflowStep label="Submitted" status={status.submitted as any} />
-                      <WorkflowStep label="Feedback" status={status.requested as any} isLast />
+                      <WorkflowStep label="Requested" status={status.requested as any} isLast />
                   </div>
 
                   {activeFeedback && (
@@ -184,11 +184,12 @@ export default function DefinitionView({
               </div>
             )}
 
-            {viewingMode === 'draft' && showFeedbackPane && activeFeedback && (
+            {/* Inline Feedback Pane */}
+            {showFeedbackPane && activeFeedback && (
                 <div className="px-2 mb-6 animate-in slide-in-from-top-2 fade-in">
                     <Card className="border-indigo-100 bg-indigo-50/30 rounded-2xl overflow-hidden shadow-sm">
                         <CardHeader className="py-2.5 px-4 bg-white/50 border-b border-indigo-100 flex flex-row items-center justify-between">
-                            <span className="text-[10px] font-black uppercase text-indigo-900 tracking-widest">Latest Feedback</span>
+                            <span className="text-[10px] font-black uppercase text-indigo-900 tracking-widest">Latest Approver Feedback</span>
                             <Button variant="ghost" size="icon" className="h-6 w-6 text-indigo-400" onClick={() => setShowFeedbackPane(false)}>
                                 <X className="h-3.5 w-3.5" />
                             </Button>
@@ -290,27 +291,97 @@ export default function DefinitionView({
                 </TabsContent>
 
                 <TabsContent value="notes" className="mt-8 space-y-6">
-                    <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl">
-                        <Label className="text-sm font-bold text-primary mb-2 block">Add Insight</Label>
-                        <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Share internal context or caveats..." className="rounded-xl mb-4 h-24 bg-white" />
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2"><Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} /><Label htmlFor="share" className="text-xs font-bold text-primary">Visible to team</Label></div>
-                            <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="rounded-xl font-bold">Save Note</Button>
-                        </div>
-                    </Card>
-                    <div className="space-y-4">
-                        {(definition.notes || []).map(note => (
-                            <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-slate-900">{note.author}</span>
-                                        <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
-                                    </div>
+                    <Tabs defaultValue="user-notes" className="w-full">
+                        <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 mb-6">
+                            <TabsTrigger value="user-notes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-2 font-bold text-sm">Insights & Notes</TabsTrigger>
+                            <TabsTrigger value="review-history" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-2 font-bold text-sm">Review History</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="user-notes" className="space-y-6">
+                            <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl">
+                                <Label className="text-sm font-bold text-primary mb-2 block">Add Insight</Label>
+                                <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Share internal context or caveats..." className="rounded-xl mb-4 h-24 bg-white border-primary/20" />
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2"><Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} /><Label htmlFor="share" className="text-xs font-bold text-primary">Visible to team</Label></div>
+                                    <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="rounded-xl font-bold bg-primary px-6">Save Note</Button>
                                 </div>
-                                <p className="text-sm text-slate-600 leading-relaxed font-medium">{note.content}</p>
                             </Card>
-                        ))}
-                    </div>
+                            <div className="space-y-4">
+                                {(definition.notes || []).map(note => (
+                                    <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-6 w-6"><AvatarImage src={note.avatar}/><AvatarFallback>{note.author.charAt(0)}</AvatarFallback></Avatar>
+                                                <span className="font-bold text-slate-900 text-xs">{note.author}</span>
+                                                <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-slate-600 leading-relaxed font-medium pl-8">{note.content}</p>
+                                    </Card>
+                                ))}
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="review-history" className="space-y-4">
+                            {definition.discussions && definition.discussions.length > 0 ? (
+                                <div className="space-y-4">
+                                    {definition.discussions.map((msg) => (
+                                        <Card key={msg.id} className={cn(
+                                            "p-4 rounded-xl border-slate-200 shadow-sm",
+                                            msg.type === 'change-request' ? "bg-amber-50/30 border-amber-100" :
+                                            msg.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-white"
+                                        )}>
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarImage src={msg.avatar} />
+                                                    <AvatarFallback><User2 className="h-3 w-3" /></AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-slate-900 text-xs">{msg.author}</span>
+                                                    <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(msg.date).toLocaleDateString()}</span>
+                                                </div>
+                                                {msg.type !== 'comment' && (
+                                                  <Badge className={cn(
+                                                    "ml-auto text-[9px] uppercase font-black",
+                                                    msg.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                                                  )}>
+                                                    {msg.type === 'rejection' ? 'Rejected' : 'Changes Requested'}
+                                                  </Badge>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-slate-700 m-0 leading-relaxed font-medium pl-9">"{msg.content}"</p>
+                                        </Card>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-20 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                                    <ClipboardList className="h-10 w-10 text-slate-300 mb-2" />
+                                    <p className="text-sm font-medium text-slate-400">No governance history recorded for this definition.</p>
+                                </div>
+                            )}
+                        </TabsContent>
+                    </Tabs>
+                </TabsContent>
+
+                <TabsContent value="attachments" className="mt-8">
+                    <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
+                        <CardHeader className="bg-slate-50/50 border-b px-6 py-4">
+                            <CardTitle className="text-lg font-bold">Reference Attachments</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <AttachmentList attachments={definition.attachments} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="related-definitions" className="mt-8">
+                    <RelatedDefinitions 
+                        currentDefinition={definition} 
+                        allDefinitions={allDefinitions} 
+                        onDefinitionClick={(id) => onTabChange('description')} 
+                        onSave={onSave} 
+                        isAdmin={isAdmin} 
+                    />
                 </TabsContent>
             </Tabs>
         </article>
