@@ -1,3 +1,4 @@
+
 export interface Revision {
   ticketId: string;
   date: string;
@@ -107,6 +108,8 @@ export interface LockInfo {
 
 export interface Definition {
   id: string;
+  originalId?: string; // Links draft to live version
+  baseVersionId?: string; // The revision ID this draft was branched from
   name: string;
   module: string;
   templateId?: string;

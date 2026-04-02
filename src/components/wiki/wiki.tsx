@@ -71,9 +71,10 @@ const initialNotifications: NotificationType[] = [
 ];
 
 export default function Wiki() {
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v17', initialDefinitions);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v17', initialTemplates);
-  const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v17', initialApprovalHistory);
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v18', initialDefinitions);
+  const [drafts, setDrafts] = useLocalStorage<Definition[]>('mpm_user_drafts_v18', []);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v18', initialTemplates);
+  const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v18', initialApprovalHistory);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
@@ -87,9 +88,9 @@ export default function Wiki() {
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isDiscussionsOpen, setIsDiscussionsOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v17', true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v18', true);
   const [activeView, setActiveView] = useState<View>('definitions');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v17', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v18', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'saved' | 'pending'>('saved');
@@ -139,24 +140,23 @@ export default function Wiki() {
   }, [selectedDefinitionId, updateUrl]);
 
   const handleSelectDefinition = useCallback((id: string, sectionId?: string, mode: ViewingMode = 'live', shouldUpdateUrl = true) => {
-    const def = findDefinition(definitions || [], id);
-    if (def && !def.description && !def.shortDescription && def.children && def.children.length > 0) {
-        return;
-    }
-
-    const isSameDefinition = id === selectedDefinitionId;
+    const isSameDefinition = id === selectedDefinitionId && mode === viewingMode;
     setActiveView('definitions');
     setViewingMode(mode);
     setSelectedDefinitionId(id);
     
-    if (!isSameDefinition && def) {
-        const status = getStatusText(def);
-        trackView(id, def.name, def.module, status);
+    if (!isSameDefinition) {
+        const sourceList = mode === 'draft' ? drafts : definitions;
+        const def = findDefinition(sourceList, id);
+        if (def) {
+            const status = getStatusText(def);
+            trackView(id, def.name, def.module, status);
+        }
     }
     const targetSection = sectionId || 'description';
     setActiveTab(targetSection);
     if (shouldUpdateUrl) updateUrl(id, targetSection);
-  }, [definitions, selectedDefinitionId, updateUrl, getStatusText]);
+  }, [definitions, drafts, selectedDefinitionId, viewingMode, updateUrl, getStatusText]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
     if ((view === 'activity-logs' || view === 'template-management' || view === 'approval-queue' || view === 'approval-history') && !isAdmin) {
@@ -184,7 +184,9 @@ export default function Wiki() {
     if (viewFromUrl && viewFromUrl !== 'definitions') {
         handleNavigate(viewFromUrl, false);
     } else if (definitionIdFromUrl) {
-        handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, 'live', false);
+        // Decide mode based on ID prefix or check both lists
+        const isDraftId = definitionIdFromUrl.startsWith('draft_');
+        handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, isDraftId ? 'draft' : 'live', false);
     } else {
         setActiveView('definitions');
         handleSelectDefinition('1.1.1', undefined, 'live', false);
@@ -201,28 +203,23 @@ export default function Wiki() {
 
   // Heartbeat Mechanism
   useEffect(() => {
-    if (isEditing && selectedDefinitionId) {
+    if (isEditing && selectedDefinitionId && viewingMode === 'draft') {
       heartbeatInterval.current = setInterval(() => {
-        setDefinitions(prev => {
-          const extendLock = (items: Definition[]): Definition[] => {
-            if (!Array.isArray(items)) return [];
-            return items.map(def => {
-              if (def.id === selectedDefinitionId) {
-                const newExpireAt = new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString();
-                return { ...def, lock: def.lock ? { ...def.lock, expireAt: newExpireAt } : undefined };
-              }
-              if (def.children) return { ...def, children: extendLock(def.children) };
-              return def;
-            });
-          };
-          return extendLock(prev || []);
+        setDrafts(prev => {
+          return prev.map(def => {
+            if (def.id === selectedDefinitionId) {
+              const newExpireAt = new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString();
+              return { ...def, lock: def.lock ? { ...def.lock, expireAt: newExpireAt } : undefined };
+            }
+            return def;
+          });
         });
       }, 60000); 
     } else {
       if (heartbeatInterval.current) clearInterval(heartbeatInterval.current);
     }
     return () => { if (heartbeatInterval.current) clearInterval(heartbeatInterval.current); };
-  }, [isEditing, selectedDefinitionId, setDefinitions]);
+  }, [isEditing, selectedDefinitionId, viewingMode, setDrafts]);
 
   const toggleSelectionForExport = (id: string, checked: boolean) => {
     setSelectedForExport(prev => {
@@ -235,175 +232,110 @@ export default function Wiki() {
   };
 
   const handleSave = (updatedDefinition: Definition) => {
-    // Ensure submitted metadata is set if moving to pending status
-    const existingDef = findDefinition(definitions || [], updatedDefinition.id);
-    const isNowPending = updatedDefinition.isPendingApproval && !existingDef?.isPendingApproval;
+    const isNowPending = updatedDefinition.isPendingApproval && !updatedDefinition.isDraft;
     
-    const finalDefinition = {
-        ...updatedDefinition,
-        submittedAt: isNowPending ? new Date().toISOString() : updatedDefinition.submittedAt,
-        submittedBy: isNowPending ? currentUser.name : updatedDefinition.submittedBy
-    };
+    if (updatedDefinition.isDraft || updatedDefinition.isPendingApproval) {
+        // Update the draft list
+        setDrafts(prev => {
+            const exists = prev.some(d => d.id === updatedDefinition.id);
+            if (exists) {
+                return prev.map(d => d.id === updatedDefinition.id ? updatedDefinition : d);
+            }
+            return [...prev, updatedDefinition];
+        });
 
-    if (isNowPending) {
-        setApprovalHistory(prev => [{
-            id: Date.now().toString(),
-            definitionId: finalDefinition.id,
-            definitionName: finalDefinition.name,
-            action: 'Submitted',
-            userName: currentUser.name,
-            date: new Date().toISOString()
-        }, ...(prev || [])]);
+        if (isNowPending) {
+            setApprovalHistory(prev => [{
+                id: Date.now().toString(),
+                definitionId: updatedDefinition.originalId || updatedDefinition.id,
+                definitionName: updatedDefinition.name,
+                action: 'Submitted',
+                userName: currentUser.name,
+                date: new Date().toISOString()
+            }, ...(prev || [])]);
+        }
+        setViewingMode('draft');
+    } else {
+        // Publishing directly (Admin only)
+        const newRevision: Revision = {
+            ticketId: `MPM-REV-${Date.now()}`,
+            date: new Date().toISOString().split('T')[0],
+            developer: currentUser.name,
+            description: 'Major content update and publish.',
+            snapshot: { ...updatedDefinition, revisions: [] }
+        };
+
+        const finalDef = {
+            ...updatedDefinition,
+            revisions: [newRevision, ...updatedDefinition.revisions]
+        };
+
+        const updateDefinitions = (items: Definition[]): Definition[] => {
+            return items.map(item => {
+                if (item.id === (updatedDefinition.originalId || updatedDefinition.id)) return finalDef;
+                if (item.children) return { ...item, children: updateDefinitions(item.children) };
+                return item;
+            });
+        };
+
+        setDefinitions(prev => updateDefinitions(prev || []));
+        // Remove from drafts if it existed
+        setDrafts(prev => prev.filter(d => d.id !== updatedDefinition.id && d.originalId !== updatedDefinition.id));
+        setViewingMode('live');
+        setSelectedDefinitionId(updatedDefinition.originalId || updatedDefinition.id);
     }
 
-    const updateItems = (items: Definition[]): Definition[] => {
-      if (!Array.isArray(items)) return [];
-      return items.map(def => {
-        if (def.id === finalDefinition.id) {
-            const shouldKeepLock = finalDefinition.isDraft && !finalDefinition.isPendingApproval;
-            const updatedLock = shouldKeepLock ? finalDefinition.lock : undefined;
-            return { ...finalDefinition, lock: updatedLock };
-        }
-        if (def.children) return { ...def, children: updateItems(def.children) };
-        return def;
-      });
-    };
-    
-    setDefinitions(prev => updateItems(prev || []));
     setIsEditing(false);
-    setViewingMode(finalDefinition.isDraft ? 'draft' : 'live');
-
     toast({
         title: "Changes Persisted",
-        description: finalDefinition.isDraft && !finalDefinition.isPendingApproval ? "Definition updated in your drafts. Lock maintained." : "Definition has been updated and lock released.",
+        description: updatedDefinition.isDraft ? "Draft updated. Lock maintained." : "Changes published successfully.",
     });
-
-    if (isBookmarked(finalDefinition.id)) {
-        const newNotification: NotificationType = {
-            id: Date.now().toString(),
-            definitionId: finalDefinition.id,
-            definitionName: finalDefinition.name,
-            message: `Definition updated by ${currentUser.name}.`,
-            date: new Date().toISOString(),
-            read: false,
-        };
-        setNotifications((prev: any) => [newNotification, ...(prev || [])]);
-    }
   };
 
   const handleDiscardDraft = (id: string) => {
-    const removeDraftAndLock = (items: Definition[]): Definition[] => {
-      if (!Array.isArray(items)) return [];
-      return items.reduce((acc: Definition[], item) => {
-        if (item.id === id) {
-          if (item.publishedSnapshot) {
-            const restored = { ...item, ...item.publishedSnapshot, isDraft: false, publishedSnapshot: undefined, lock: undefined };
-            acc.push(restored as Definition);
-          } else {
-            return acc;
-          }
-        } else {
-          const children = item.children ? removeDraftAndLock(item.children) : [];
-          acc.push({ ...item, children });
-        }
-        return acc;
-      }, []);
-    };
-
-    setDefinitions(prev => removeDraftAndLock(prev || []));
+    setDrafts(prev => prev.filter(d => d.id !== id));
     setIsEditing(false);
     setViewingMode('live');
     setSelectedDefinitionId(null);
-    toast({ title: "Draft Discarded", description: "Your draft has been deleted and the lock released." });
+    toast({ title: "Draft Discarded", description: "Your working copy has been deleted." });
   };
   
   const handleCreateDefinition = (newDefinitionData: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => {
-    const newId = Date.now().toString();
-    const isPending = !newDefinitionData.isDraft && !isAdmin;
-    
+    const tempId = `draft_new_${Date.now()}`;
     const newDefinition: Definition = {
         ...newDefinitionData,
-        id: newId,
-        isPendingApproval: isPending,
-        submittedAt: isPending ? new Date().toISOString() : undefined,
-        submittedBy: isPending ? currentUser.name : undefined,
-        isDraft: newDefinitionData.isDraft || isPending,
+        id: tempId,
+        isDraft: true,
+        isPendingApproval: false,
         revisions: [],
         isArchived: false,
         children: [],
-        notes: newDefinitionData.notes || [],
+        notes: [],
         discussions: [],
         relatedDefinitions: [],
-        lock: isPending ? undefined : {
+        lock: {
           userId: currentUser.id,
           userName: currentUser.name,
           expireAt: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString()
         }
     };
 
-    if (isPending) {
-      setApprovalHistory(prev => [{
-        id: Date.now().toString(),
-        definitionId: newId,
-        definitionName: newDefinition.name,
-        action: 'Submitted',
-        userName: currentUser.name,
-        date: new Date().toISOString()
-      }, ...(prev || [])]);
-    }
-
-    const addDefinitionToModule = (items: Definition[], moduleName: string, def: Definition): Definition[] => {
-        if (!Array.isArray(items)) return [];
-        return items.map(item => {
-            if (item.name === moduleName && item.children) return { ...item, children: [def, ...item.children] };
-            if (item.children) return { ...item, children: addDefinitionToModule(item.children, moduleName, def) };
-            return item;
-        });
-    };
-    setDefinitions(prev => {
-        const moduleExists = (prev || []).some(m => m.name === newDefinition.module);
-        if (moduleExists) return addDefinitionToModule(prev || [], newDefinition.module, newDefinition);
-        const newModule: Definition = {
-            id: `mod-${Date.now()}`, name: newDefinition.module, module: newDefinition.module,
-            keywords: [], description: '', revisions: [], isArchived: false, supportingTables: [], attachments: [], notes: [], discussions: [],
-            children: [newDefinition]
-        };
-        return [...(prev || []), newModule];
-    });
+    setDrafts(prev => [...prev, newDefinition]);
     setIsNewDefinitionModalOpen(false);
     setIsTemplatesModalOpen(false);
-    setSelectedDefinitionId(newId);
+    setSelectedDefinitionId(tempId);
     setViewingMode('draft');
-    setActiveView('definitions');
     setIsEditing(true);
-    
-    if (isPending) {
-      toast({ title: 'Submitted', description: 'Your new definition has been sent for approval.' });
-    }
   };
 
   const handleDuplicate = (id: string) => {
-    const definitionToDuplicate = findDefinition(definitions || [], id);
+    const sourceList = viewingMode === 'draft' ? drafts : definitions;
+    const definitionToDuplicate = findDefinition(sourceList, id);
     if (!definitionToDuplicate) return;
     
-    const baseName = definitionToDuplicate.name.replace(/ \(Copy\d*\)$/, '');
-    const flatten = (items: Definition[]): Definition[] => {
-        if (!Array.isArray(items)) return [];
-        let flat: Definition[] = [];
-        items.forEach(item => {
-            flat.push(item);
-            if (item.children) flat = [...flat, ...flatten(item.children)];
-        });
-        return flat;
-    };
-    const flatDefs = flatten(definitions || []);
-    const copies = flatDefs.filter(d => d.name.startsWith(`${baseName} (Copy`));
-    const nextCopyNumber = copies.length + 1;
-    const newName = `${baseName} (Copy${nextCopyNumber})`;
-
     const newDefinition: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
       ...definitionToDuplicate,
-      name: newName,
+      name: `${definitionToDuplicate.name} (Copy)`,
       children: [],
       isDraft: true,
       isPendingApproval: false,
@@ -418,11 +350,8 @@ export default function Wiki() {
   const handleArchive = (id: string | string[], archive: boolean) => {
      const ids = Array.isArray(id) ? id : [id];
      const updateArchiveStatus = (items: Definition[]): Definition[] => {
-      if (!Array.isArray(items)) return [];
       return items.map(def => {
-        if (ids.includes(def.id)) {
-          return { ...def, isArchived: archive };
-        }
+        if (ids.includes(def.id)) return { ...def, isArchived: archive };
         if (def.children) return { ...def, children: updateArchiveStatus(def.children) };
         return def;
       });
@@ -430,451 +359,174 @@ export default function Wiki() {
     setDefinitions(prev => updateArchiveStatus(prev || []));
     toast({ 
       title: archive ? 'Definition Archived' : 'Definition Unarchived', 
-      description: archive ? 'The definition has been moved to Archive.' : 'The definition has been removed from Archive.' 
+      description: archive ? 'Moved to Archive.' : 'Restored to Library.' 
     });
   };
 
   const handleDelete = (id: string) => {
-    const remove = (items: Definition[], idToDelete: string): Definition[] => {
-      if (!Array.isArray(items)) return [];
-      return items.filter(def => def.id !== idToDelete).map(def => {
-          if (def.children) def.children = remove(def.children, idToDelete);
+    const remove = (items: Definition[]): Definition[] => {
+      return items.filter(def => def.id !== id).map(def => {
+          if (def.children) return { ...def, children: remove(def.children) };
           return def;
         });
     };
-    setDefinitions(prev => remove(prev || [], id));
+    setDefinitions(prev => remove(prev || []));
+    setDrafts(prev => prev.filter(d => d.id !== id));
     if (selectedDefinitionId === id) setSelectedDefinitionId(null);
   };
 
-  const handlePublish = (id: string) => {
-    if (!isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can publish definitions.' });
-        return;
-    }
-    const target = findDefinition(definitions || [], id);
-    if (target) {
-      setApprovalHistory(prev => [{
+  const handlePublish = (draftId: string) => {
+    if (!isAdmin) return;
+    const draft = drafts.find(d => d.id === draftId);
+    if (!draft) return;
+
+    const newRevision: Revision = {
+        ticketId: `MPM-REV-${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+        developer: draft.submittedBy || currentUser.name,
+        description: 'Approved and Published.',
+        snapshot: { ...draft, revisions: [], isDraft: false, isPendingApproval: false }
+    };
+
+    const finalPublishedDef = {
+        ...draft,
+        id: draft.originalId || `pub_${Date.now()}`,
+        isDraft: false,
+        isPendingApproval: false,
+        revisions: [newRevision, ...draft.revisions],
+        lock: undefined,
+        publishedSnapshot: undefined
+    };
+
+    setApprovalHistory(prev => [{
         id: Date.now().toString(),
-        definitionId: id,
-        definitionName: target.name,
+        definitionId: finalPublishedDef.id,
+        definitionName: finalPublishedDef.name,
         action: 'Approved',
         userName: currentUser.name,
         date: new Date().toISOString()
-      }, ...(prev || [])]);
-    }
+    }, ...(prev || [])]);
 
-    const publishItem = (items: Definition[]): Definition[] => {
-      if (!Array.isArray(items)) return [];
-      return items.map(def => {
-        if (def.id === id) return { ...def, isDraft: false, isPendingApproval: false, publishedSnapshot: undefined, lock: undefined };
-        if (def.children) return { ...def, children: publishItem(def.children) };
-        return def;
-      });
+    const updateDefinitions = (items: Definition[]): Definition[] => {
+        const existingIdx = items.findIndex(item => item.id === finalPublishedDef.id);
+        if (existingIdx !== -1) {
+            return items.map(item => item.id === finalPublishedDef.id ? finalPublishedDef : item);
+        }
+        // If not found at top level, check children OR add to module
+        const moduleExists = items.find(m => m.name === draft.module);
+        if (moduleExists) {
+            return items.map(m => m.name === draft.module ? { ...m, children: [finalPublishedDef, ...(m.children || [])] } : m);
+        }
+        return [...items, { id: `mod-${Date.now()}`, name: draft.module, module: draft.module, revisions: [], isArchived: false, children: [finalPublishedDef], attachments: [], keywords: [], description: '', supportingTables: [] }];
     };
-    setDefinitions(prev => publishItem(prev || []));
+
+    setDefinitions(prev => updateDefinitions(prev || []));
+    setDrafts(prev => prev.filter(d => d.id !== draftId));
     setViewingMode('live');
-    toast({ title: 'Definition Published', description: 'The definition is now available in the MPM Wiki. Lock released.' });
+    setSelectedDefinitionId(finalPublishedDef.id);
+    toast({ title: 'Published', description: 'Changes are now live.' });
   };
 
-  const handleRequestApproval = (id: string) => {
-    const target = findDefinition(definitions || [], id);
-    if (target) {
-      setApprovalHistory(prev => [{
-        id: Date.now().toString(),
-        definitionId: id,
-        definitionName: target.name,
-        action: 'Submitted',
-        userName: currentUser.name,
-        date: new Date().toISOString()
-      }, ...(prev || [])]);
-    }
-
-    const updateItem = (items: Definition[]): Definition[] => {
-      if (!Array.isArray(items)) return [];
-      return items.map(def => {
-        if (def.id === id) return { 
-            ...def, 
-            isPendingApproval: true, 
-            submittedAt: new Date().toISOString(),
-            submittedBy: currentUser.name,
-            lock: undefined 
-        };
-        if (def.children) return { ...def, children: updateItem(def.children) };
-        return def;
-      });
-    };
-    setDefinitions(prev => updateItem(prev || []));
-    toast({ title: 'Submitted', description: 'Your definition has been submitted for approval. Lock released.' });
-  };
-
-  const handleReject = (id: string, comment: string, isRejection: boolean = true) => {
+  const handleReject = (draftId: string, comment: string, isRejection: boolean = true) => {
     if (!isAdmin) return;
-    
-    const target = findDefinition(definitions || [], id);
-    if (target) {
-      setApprovalHistory(prev => [{
+    const draft = drafts.find(d => d.id === draftId);
+    if (!draft) return;
+
+    const newMessage: DiscussionMessage = {
         id: Date.now().toString(),
-        definitionId: id,
-        definitionName: target.name,
+        authorId: currentUser.id,
+        author: currentUser.name,
+        avatar: currentUser.avatar,
+        date: new Date().toISOString(),
+        content: comment,
+        type: isRejection ? 'rejection' : 'change-request',
+        priority: 'Medium'
+    };
+
+    const updatedDraft = {
+        ...draft,
+        isPendingApproval: false,
+        isDraft: true,
+        discussions: [...(draft.discussions || []), newMessage],
+        lock: undefined
+    };
+
+    setDrafts(prev => prev.map(d => d.id === draftId ? updatedDraft : d));
+    setApprovalHistory(prev => [{
+        id: Date.now().toString(),
+        definitionId: draft.originalId || draft.id,
+        definitionName: draft.name,
         action: isRejection ? 'Rejected' : 'Changes Requested',
         userName: currentUser.name,
         date: new Date().toISOString(),
-        comment: comment
-      }, ...(prev || [])]);
-    }
+        comment
+    }, ...(prev || [])]);
 
-    const updateItem = (items: Definition[]): Definition[] => {
-      if (!Array.isArray(items)) return [];
-      return items.map(def => {
-        if (def.id === id) {
-          const updatedDiscussions = [...(def.discussions || [])];
-          if (comment) {
-            const newMessage: DiscussionMessage = {
-              id: Date.now().toString(),
-              authorId: currentUser.id,
-              author: currentUser.name,
-              avatar: currentUser.avatar,
-              date: new Date().toISOString(),
-              content: comment,
-              type: isRejection ? 'rejection' : 'change-request',
-              priority: 'Medium',
-              round: 1
-            };
-            updatedDiscussions.push(newMessage);
-          }
-          return { ...def, isPendingApproval: false, isDraft: true, discussions: updatedDiscussions, lock: undefined };
-        }
-        if (def.children) return { ...def, children: updateItem(def.children) };
-        return def;
-      });
-    };
-    setDefinitions(prev => updateItem(prev || []));
-    toast({ 
-        title: isRejection ? 'Definition Rejected' : 'Changes Requested', 
-        description: `The definition has been returned to draft status with feedback. Lock released.` 
-    });
+    toast({ title: isRejection ? 'Rejected' : 'Changes Requested' });
   };
-
-  const handleAddReply = (content: string) => {
-    if (!selectedDefinitionId) return;
-    const newMessage: DiscussionMessage = {
-      id: Date.now().toString(),
-      authorId: currentUser.id,
-      author: currentUser.name,
-      avatar: currentUser.avatar,
-      date: new Date().toISOString(),
-      content,
-      type: 'comment'
-    };
-
-    const updateItem = (items: Definition[]): Definition[] => {
-      if (!Array.isArray(items)) return [];
-      return items.map(def => {
-        if (def.id === selectedDefinitionId) {
-          return { ...def, discussions: [...(def.discussions || []), newMessage] };
-        }
-        if (def.children) return { ...def, children: updateItem(def.children) };
-        return def;
-      });
-    };
-    setDefinitions(prev => updateItem(prev || []));
-  };
-
-  const enrichedDefinitions = useMemo(() => {
-    const enrich = (items: Definition[]): Definition[] => {
-      if (!Array.isArray(items)) return [];
-      return items.map(item => ({
-        ...item,
-        isBookmarked: isBookmarked(item.id),
-        children: item.children ? enrich(item.children) : []
-      }));
-    };
-    return enrich(definitions || []);
-  }, [definitions, bookmarks, isBookmarked]);
-
-  const filteredDefinitions = useMemo(() => {
-    const filterItems = (items: Definition[], query: string): Definition[] => {
-        if (!Array.isArray(items)) return [];
-        if (!query) return items;
-        const lowerCaseQuery = query.toLowerCase();
-        return items.reduce((acc: Definition[], item) => {
-            const children = item.children ? filterItems(item.children, query) : [];
-            const nameMatch = (item.name || '').toLowerCase().includes(lowerCaseQuery);
-            const keywordsMatch = (item.keywords || []).some(k => k.toLowerCase().includes(lowerCaseQuery));
-            if (nameMatch || keywordsMatch || children.length > 0) acc.push({ ...item, children });
-            return acc;
-        }, []);
-    };
-    return filterItems(enrichedDefinitions, searchQuery);
-  }, [enrichedDefinitions, searchQuery]);
-
-  const categorizedDefinitions = useMemo(() => {
-    const itemsForPublished = searchQuery ? filteredDefinitions : enrichedDefinitions;
-    const itemsForWorkflow = enrichedDefinitions;
-
-    if (!Array.isArray(itemsForPublished) || !Array.isArray(itemsForWorkflow)) {
-        return { drafts: [], published: [], pending: [], mySubmissions: [] };
-    }
-
-    const filterByDraft = (items: Definition[], isDraft: boolean): Definition[] => {
-        if (!Array.isArray(items)) return [];
-        return items.reduce((acc: Definition[], item) => {
-            const children = filterByDraft(item.children || [], isDraft);
-            const isMatch = isDraft ? (item.isDraft === true && !item.isPendingApproval) : (item.isDraft === false || item.isDraft === undefined);
-            if (children.length > 0 || (isMatch && (item.description || item.shortDescription))) {
-                acc.push({ ...item, children });
-            }
-            return acc;
-        }, []);
-    };
-
-    const filterPublishedStrict = (items: Definition[]): Definition[] => {
-        if (!Array.isArray(items)) return [];
-        return items.reduce((acc: Definition[], item) => {
-            if (!item) return acc;
-            const children = filterPublishedStrict(item.children || []);
-            
-            // Logic: Include only if strictly published OR has a previously published version
-            const hasPublishedVersion = (!item.isDraft && !item.isPendingApproval) || !!item.publishedSnapshot;
-            
-            const isModule = children.length > 0;
-            const isMatch = isModule || (hasPublishedVersion && (item.description || item.shortDescription));
-            
-            if (isMatch) {
-                acc.push({ ...item, children } as Definition);
-            }
-            return acc;
-        }, []);
-    };
-
-    const filterPending = (items: Definition[]): Definition[] => {
-        if (!Array.isArray(items)) return [];
-        return items.reduce((acc: Definition[], item) => {
-            const children = filterPending(item.children || []);
-            const isSelfPending = item.isPendingApproval === true;
-            if (isSelfPending || children.length > 0) {
-                acc.push({ ...item, children });
-            }
-            return acc;
-        }, []);
-    }
-
-    const filterMySubmissions = (items: Definition[]): Definition[] => {
-        if (!Array.isArray(items)) return [];
-        return items.reduce((acc: Definition[], item) => {
-            const children = filterMySubmissions(item.children || []);
-            const isMyPending = item.isPendingApproval === true && item.submittedBy === currentUser.name;
-            if (isMyPending || children.length > 0) {
-                acc.push({ ...item, children });
-            }
-            return acc;
-        }, []);
-    };
-
-    const filterBookmarkedRecursive = (items: Definition[]): Definition[] => {
-        if (!Array.isArray(items)) return [];
-        return items.reduce((acc: Definition[], item) => {
-            const children = filterBookmarkedRecursive(item.children || []);
-            const isSelfBookmarked = isBookmarked(item.id);
-            if (isSelfBookmarked || children.length > 0) {
-                acc.push({ ...item, children });
-            }
-            return acc;
-        }, []);
-    };
-
-    let processedPublished = filterPublishedStrict(itemsForPublished);
-    if (showArchived) {
-        const getOnlyArchived = (items: Definition[]): Definition[] => {
-            if (!Array.isArray(items)) return [];
-            return items.reduce((acc: Definition[], item) => {
-                const children = getOnlyArchived(item.children || []);
-                if (item.isArchived || children.length > 0) acc.push({ ...item, children });
-                return acc;
-            }, []);
-        };
-        processedPublished = getOnlyArchived(processedPublished);
-    } else {
-        const getHideArchived = (items: Definition[]): Definition[] => {
-            if (!Array.isArray(items)) return [];
-            return items.reduce((acc: Definition[], item) => {
-                if (item.isArchived) return acc;
-                const children = getHideArchived(item.children || []);
-                acc.push({ ...item, children });
-                return acc;
-            }, []);
-        };
-        processedPublished = getHideArchived(processedPublished);
-    }
-
-    if (showBookmarked) {
-        processedPublished = filterBookmarkedRecursive(processedPublished);
-    }
-
-    return {
-        drafts: filterByDraft(itemsForWorkflow, true),
-        published: processedPublished,
-        pending: filterPending(itemsForWorkflow),
-        mySubmissions: filterMySubmissions(itemsForWorkflow)
-    };
-  }, [enrichedDefinitions, filteredDefinitions, showArchived, showBookmarked, searchQuery, isBookmarked]);
-
-  const leafSelectionCount = useMemo(() => {
-    const flattenToLeafIds = (items: Definition[]): string[] => {
-        if (!Array.isArray(items)) return [];
-        let ids: string[] = [];
-        items.forEach(item => {
-            if (item.description || item.shortDescription) ids.push(item.id);
-            if (item.children) ids = [...ids, ...flattenToLeafIds(item.children)];
-        });
-        return ids;
-    };
-    const allPublishedLeafIds = new Set(flattenToLeafIds(categorizedDefinitions.published));
-    return (selectedForExport || []).filter(id => allPublishedLeafIds.has(id)).length;
-  }, [selectedForExport, categorizedDefinitions.published]);
-
-  const handleExport = async (formatType: 'pdf' | 'json' | 'xlsx' | 'html') => {
-    const flatten = (items: Definition[]): Definition[] => {
-        if (!Array.isArray(items)) return [];
-        let flat: Definition[] = [];
-        items.forEach(item => {
-            flat.push(item);
-            if (item.children) flat = [...flat, ...flatten(item.children)];
-        });
-        return flat;
-    };
-    const definitionsToExport = flatten(definitions || []).filter(d => (selectedForExport || []).includes(d.id) && (d.description || d.shortDescription));
-    if (definitionsToExport.length === 0) return;
-
-    if (formatType === 'json') {
-        const exportData = { exportDate: new Date().toISOString(), definitions: definitionsToExport };
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `bulk-export-${Date.now()}.json`);
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-        toast({ title: 'Export Success', description: 'Definitions exported to JSON.' });
-    } else if (formatType === 'pdf') {
-        const { default: jsPDF } = await import('jspdf');
-        const doc = new jsPDF();
-        let y = 20;
-        definitionsToExport.forEach((def, index) => {
-          if (index > 0) { doc.addPage(); y = 20; }
-          doc.setFont('helvetica', 'bold');
-          doc.text(def.name, 20, y);
-          y += 10;
-          doc.setFont('helvetica', 'normal');
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = def.description;
-          const text = doc.splitTextToSize(tempDiv.innerText, 170);
-          doc.text(text, 20, y);
-          y += text.length * 5 + 10;
-        });
-        doc.save(`bulk-export-${Date.now()}.pdf`);
-        toast({ title: 'Export Success', description: 'Definitions exported to PDF.' });
-    } else if (formatType === 'xlsx') {
-        const XLSX = await import('xlsx');
-        const data = definitionsToExport.map(def => ({
-            ID: def.id, Name: def.name, Module: def.module, Keywords: def.keywords.join(', '),
-            Description: def.description.replace(/<[^>]+>/g, ''), Archived: def.isArchived,
-        }));
-        const worksheet = XLSX.utils.json_to_sheet(data);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Definitions');
-        XLSX.writeFile(workbook, `bulk-export-${Date.now()}.xlsx`);
-        toast({ title: 'Export Success', description: 'Definitions exported to Excel.' });
-    } else if (formatType === 'html') {
-        let htmlContent = `<html><head><title>Bulk Export</title><style>body { font-family: sans-serif; line-height: 1.6; padding: 2rem; } h1 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; } .def-block { margin-bottom: 4rem; } .keywords { font-style: italic; color: #777; }</style></head><body>`;
-        definitionsToExport.forEach(def => {
-            htmlContent += `<div class="def-block"><h1>${def.name}</h1><p><strong>Module:</strong> ${def.module}</p><div class="keywords"><strong>Keywords:</strong> ${def.keywords.join(', ')}</div><hr/>${def.description}${def.technicalDetails ? `<h3>Technical Details</h3>${def.technicalDetails}` : ''}${def.usageExamples ? `<h3>Usage Examples</h3>${def.usageExamples}` : ''}</div>`;
-        });
-        htmlContent += `</body></html>`;
-        const dataStr = "data:text/html;charset=utf-8," + encodeURIComponent(htmlContent);
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `bulk-export-${Date.now()}.html`);
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-        toast({ title: 'Export Success', description: 'Definitions exported to HTML.' });
-    }
-
-    setSelectedForExport([]);
-    setIsSelectMode(false);
-  };
-
-  const selectedDefinition = useMemo(() => {
-    if (!selectedDefinitionId) return null;
-    const def = findDefinition(definitions || [], selectedDefinitionId);
-    if (!def) return null;
-    
-    // If viewing strictly the published tree while a draft exists, show the snapshot
-    if (viewingMode === 'live' && def.publishedSnapshot && !isEditing) {
-        return { 
-          ...def, 
-          ...def.publishedSnapshot, 
-          isDraft: false, 
-          isPendingApproval: false, 
-          isBookmarked: isBookmarked(def.id) 
-        } as Definition;
-    }
-
-    return { ...def, isBookmarked: isBookmarked(def.id) };
-  }, [definitions, selectedDefinitionId, isBookmarked, viewingMode, isEditing]);
 
   const handleEditClick = () => {
     if (!selectedDefinitionId) return;
-    const def = findDefinition(definitions || [], selectedDefinitionId);
+    const def = findDefinition(definitions, selectedDefinitionId);
     if (!def) return;
 
-    if (def.lock && def.lock.userId !== currentUser.id && new Date(def.lock.expireAt) > new Date()) {
-      toast({ variant: 'destructive', title: "Definition Locked", description: `${def.lock.userName} is currently editing this definition. Try again later.` });
-      return;
+    // Check if a draft already exists for this user/definition
+    const existingDraft = drafts.find(d => d.originalId === def.id);
+    if (existingDraft) {
+        handleSelectDefinition(existingDraft.id, undefined, 'draft');
+        setIsEditing(true);
+        return;
     }
-    
+
     const newLock: LockInfo = {
       userId: currentUser.id,
       userName: currentUser.name,
       expireAt: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString()
     };
 
-    let updatedDefinition: Definition;
-    if (!def.isDraft) {
-      const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = def;
-      updatedDefinition = { ...def, isDraft: true, publishedSnapshot: snapshot, lock: newLock };
-    } else {
-      updatedDefinition = { ...def, lock: newLock };
-    }
-
-    const updateItems = (items: Definition[]): Definition[] => {
-      if (!Array.isArray(items)) return [];
-      return items.map(d => {
-        if (d.id === updatedDefinition.id) return updatedDefinition;
-        if (d.children) return { ...d, children: updateItems(d.children) };
-        return d;
-      });
+    const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = def;
+    const draftId = `draft_${def.id}_${currentUser.id}`;
+    const newDraft: Definition = { 
+        ...def, 
+        id: draftId,
+        originalId: def.id,
+        isDraft: true, 
+        isPendingApproval: false,
+        publishedSnapshot: snapshot, 
+        lock: newLock,
+        baseVersionId: def.revisions[0]?.ticketId 
     };
-    
-    setDefinitions(prev => updateItems(prev || []));
+
+    setDrafts(prev => [...prev, newDraft]);
     setIsEditing(true);
     setViewingMode('draft');
-    toast({ title: "Lock Acquired", description: "You now have exclusive editing access for this definition." });
+    setSelectedDefinitionId(draftId);
+    toast({ title: "Draft Created", description: "Exclusive lock acquired." });
   };
 
-  const allPendingApprovals = useMemo(() => {
-    const flattenToPending = (items: Definition[]): Definition[] => {
-        if (!Array.isArray(items)) return [];
+  const categorizedDefinitions = useMemo(() => {
+    const filterPublishedTree = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
-            const isPendingLeaf = item.isPendingApproval && (item.description || item.shortDescription);
-            if (isPendingLeaf) acc.push(item);
-            if (item.children) acc = acc.concat(flattenToPending(item.children));
+            const children = filterPublishedTree(item.children || []);
+            const isMatch = children.length > 0 || (!item.isDraft && !item.isPendingApproval && (item.description || item.shortDescription));
+            if (isMatch) {
+                let filteredItem = { ...item, children };
+                if (showArchived && !item.isArchived && children.length === 0) return acc;
+                if (!showArchived && item.isArchived) return acc;
+                if (showBookmarked && !isBookmarked(item.id) && children.length === 0) return acc;
+                acc.push(filteredItem);
+            }
             return acc;
         }, []);
     };
-    return flattenToPending(definitions || []);
-  }, [definitions]);
+
+    return {
+        drafts: drafts.filter(d => d.isDraft && !d.isPendingApproval),
+        published: filterPublishedTree(definitions),
+        pending: drafts.filter(d => d.isPendingApproval),
+        mySubmissions: drafts.filter(d => d.isPendingApproval && d.submittedBy === currentUser.name)
+    };
+  }, [definitions, drafts, showArchived, showBookmarked, isBookmarked]);
 
   const renderContent = () => {
     switch (activeView) {
@@ -882,36 +534,40 @@ export default function Wiki() {
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
         case 'approval-queue': return (
             <ApprovalQueue 
-                pendingDefinitions={allPendingApprovals} 
+                pendingDefinitions={categorizedDefinitions.pending} 
                 onApprove={handlePublish}
                 onReject={(id, comment, isRejection) => handleReject(id, comment, isRejection)}
             />
         );
         case 'approval-history': return <div className="p-6"><ApprovalHistory history={approvalHistory} /></div>;
-        default: return (
+        default: {
+            const defSource = viewingMode === 'draft' ? drafts : definitions;
+            const selectedDef = findDefinition(defSource, selectedDefinitionId || '');
+            const liveDef = selectedDef?.originalId ? findDefinition(definitions, selectedDef.originalId) : null;
+
+            return (
                 <div className="relative">
-                  {isEditing && selectedDefinition ? (
-                      <DefinitionEdit definition={selectedDefinition} onSave={handleSave} onDiscard={handleDiscardDraft} isAdmin={isAdmin} />
-                  ) : selectedDefinition ? (
+                  {isEditing && selectedDef ? (
+                      <DefinitionEdit definition={selectedDef} onSave={handleSave} onDiscard={handleDiscardDraft} isAdmin={isAdmin} />
+                  ) : selectedDef ? (
                       <div className="p-6">
                         <DefinitionView 
-                          definition={selectedDefinition} 
+                          definition={selectedDef} 
                           allDefinitions={definitions}
+                          liveVersion={liveDef}
                           onEdit={handleEditClick} 
-                          onDuplicate={(id) => handleDuplicate(id)} 
+                          onDuplicate={handleDuplicate} 
                           onArchive={handleArchive} 
                           onDelete={handleDelete} 
                           onToggleBookmark={toggleBookmark} 
                           onPublish={handlePublish}
                           onReject={(id, data) => handleReject(id, data?.content || '', data?.isRejection)}
-                          onSendApproval={handleRequestApproval}
                           activeTab={activeTab} 
                           onTabChange={handleTabChange} 
                           onSave={handleSave} 
+                          onDiscard={handleDiscardDraft}
                           isAdmin={isAdmin}
-                          searchQuery={searchQuery}
                           currentUser={currentUser}
-                          onOpenFeedback={() => setIsDiscussionsOpen(true)}
                           viewingMode={viewingMode}
                         />
                       </div>
@@ -920,39 +576,9 @@ export default function Wiki() {
                   )}
                 </div>
             );
+        }
     }
   }
-
-  const handleNewDefinitionClick = (type: 'template' | 'blank') => {
-    if (type === 'template') {
-      setIsTemplatesModalOpen(true);
-    } else {
-      setDraftedDefinitionData({ name: 'New Standard Definition', module: 'Core', keywords: [], description: '' });
-      setIsNewDefinitionModalOpen(true);
-    }
-  };
-  
-  const handleUseTemplate = (templateData: Partial<Definition>, templateId?: string) => {
-      const template = (templates || []).find(t => t.id === templateId);
-      if (template) {
-        setDraftedDefinitionData({ ...templateData, templateId: template.id, attachments: template.defaultAttachments || [] });
-      } else {
-        setDraftedDefinitionData(templateData);
-      }
-      setIsNewDefinitionModalOpen(true);
-      setIsTemplatesModalOpen(false);
-  };
-
-  const countLeafItems = (items: Definition[], filterFn: (item: Definition) => boolean): number => {
-    if (!Array.isArray(items)) return 0;
-    return items.reduce((acc, item) => {
-      const isLeaf = (item.description || item.shortDescription);
-      return acc + (isLeaf && filterFn(item) ? 1 : 0) + (item.children ? countLeafItems(item.children, filterFn) : 0);
-    }, 0);
-  };
-
-  const totalDraftCount = countLeafItems(categorizedDefinitions.drafts, (i) => i.isDraft === true && !i.isPendingApproval);
-  const totalPendingCount = countLeafItems(categorizedDefinitions.mySubmissions, (i) => i.isPendingApproval === true);
 
   if (!isMounted) return null;
 
@@ -986,97 +612,42 @@ export default function Wiki() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto flex flex-col">
-                      {/* ADMIN VIEW OR TABS FOR STANDARD USER */}
                       {isAdmin ? (
                         <div className="p-4 space-y-3 bg-muted/10 border-b">
                           <div className="flex items-center justify-between">
-                              <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">My Saved Definitions</h2>
-                              {totalDraftCount > 0 && <span className="bg-primary/10 text-primary h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold">{totalDraftCount}</span>}
+                              <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Personal Work</h2>
+                              {categorizedDefinitions.drafts.length > 0 && <span className="bg-primary/10 text-primary h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold">{categorizedDefinitions.drafts.length}</span>}
                           </div>
                           <div className="pt-2">
-                              {categorizedDefinitions.drafts.length > 0 ? (
-                                  <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                              ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No saved drafts found.</p>}
+                              <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
                           </div>
                         </div>
                       ) : (
                         <div className="bg-muted/5 border-b">
                           <Tabs value={sidebarTab} onValueChange={(v) => setSidebarTab(v as any)} className="w-full">
                             <TabsList className="w-full grid grid-cols-2 rounded-none bg-transparent h-10 p-0 border-b">
-                              <TabsTrigger 
-                                value="saved" 
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-slate-600"
-                              >
-                                My Saved
-                                {totalDraftCount > 0 && <span className="ml-1.5 bg-primary/10 text-primary h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalDraftCount}</span>}
-                              </TabsTrigger>
-                              <TabsTrigger 
-                                value="pending" 
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-slate-600"
-                              >
-                                Submitted
-                                {totalPendingCount > 0 && <span className="ml-1.5 bg-indigo-100 text-indigo-700 h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalPendingCount}</span>}
-                              </TabsTrigger>
+                              <TabsTrigger value="saved" className="text-[10px] font-bold uppercase tracking-wider">My Saved</TabsTrigger>
+                              <TabsTrigger value="pending" className="text-[10px] font-bold uppercase tracking-wider">Submitted</TabsTrigger>
                             </TabsList>
                             <TabsContent value="saved" className="p-4 m-0">
-                                {categorizedDefinitions.drafts.length > 0 ? (
-                                    <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                                ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No saved drafts found.</p>}
+                                <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
                             </TabsContent>
                             <TabsContent value="pending" className="p-4 m-0">
-                                {categorizedDefinitions.mySubmissions.length > 0 ? (
-                                    <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.mySubmissions} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                                ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No pending requests.</p>}
+                                <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.mySubmissions} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
                             </TabsContent>
                           </Tabs>
                         </div>
                       )}
 
-                      <div className="flex flex-col flex-1 min-h-0">
-                          <div className="px-4 py-3 bg-muted/5 border-b flex items-center justify-between">
-                              <div className="flex items-center gap-2"><FolderTree className="h-4 w-4 text-primary/70" /><h2 className="text-xs font-bold tracking-tight uppercase">MPM Definitions</h2></div>
-                              <DropdownMenu>
-                                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 rounded-full"><ListFilter className="h-4 w-4 text-muted-foreground" /></Button></DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-48">
-                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2"><Checkbox id="sidebar-show-archived" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} /><Label htmlFor="sidebar-show-archived" className="text-xs cursor-pointer">Show Archived</Label></DropdownMenuItem>
-                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2"><Checkbox id="sidebar-show-bookmarked" checked={showBookmarked} onCheckedChange={() => setShowBookmarked(!showBookmarked)} /><Label htmlFor="sidebar-show-bookmarked" className="text-xs cursor-pointer">Show Bookmarked</Label></DropdownMenuItem>
-                                  </DropdownMenuContent>
-                              </DropdownMenu>
-                          </div>
-                          
-                          {isSelectMode && leafSelectionCount > 0 && (
-                              <div className="mx-4 my-2 p-3 bg-primary/5 border rounded-lg flex flex-col gap-3 sticky top-2 z-20 shadow-sm">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2"><div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center"><Check className="h-3 w-3 text-primary-foreground" /></div><span className="text-sm font-bold">{leafSelectionCount} selected</span></div>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setIsSelectMode(false); setSelectedForExport([]); }}><X className="h-4 w-4" /></Button>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="h-9 text-xs" disabled={leafSelectionCount === 0}><Download className="mr-2 h-4 w-4" />Export</Button></DropdownMenuTrigger>
-                                        <DropdownMenuContent align="start">
-                                            <DropdownMenuItem onClick={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />PDF</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleExport('xlsx')}><FileSpreadsheet className="mr-2 h-4 w-4" />Excel (XLSX)</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleExport('html')}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { handleArchive(selectedForExport, true); setIsSelectMode(false); setSelectedForExport([]); }} disabled={leafSelectionCount === 0}><Archive className="mr-2 h-4 w-4" />Archive</Button>
-                                  </div>
-                              </div>
-                          )}
-
+                      <div className="flex-1">
                           <div className="p-2">
-                            {categorizedDefinitions.published.length > 0 ? (
-                                <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'live')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={null} />
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-12 px-4 text-center"><Info className="h-8 w-8 text-muted-foreground/30 mb-2" /><p className="text-xs text-muted-foreground italic">No published definitions found.</p></div>
-                            )}
+                            <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'live')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={null} />
                           </div>
                       </div>
                   </div>
               </div>
              )}
-              <div className="flex-1 w-full overflow-y-auto" id="definition-content">
+              <div className="flex-1 w-full overflow-y-auto">
                   {renderContent()}
               </div>
           </main>
@@ -1085,16 +656,6 @@ export default function Wiki() {
       <RecentViewsModal open={isRecentModalOpen} onOpenChange={setIsRecentModalOpen} onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')} />
       <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={templates} isAdmin={isAdmin} />
       <TemplatesModal open={isTemplatesModalOpen} onOpenChange={setIsTemplatesModalOpen} onUseTemplate={handleUseTemplate} managedTemplates={templates} />
-      
-      {selectedDefinition && (
-        <DiscussionsPanel 
-          open={isDiscussionsOpen} 
-          onOpenChange={setIsDiscussionsOpen} 
-          discussions={selectedDefinition.discussions || []}
-          definitionName={selectedDefinition.name}
-          onAddReply={handleAddReply}
-        />
-      )}
     </SidebarProvider>
   );
 }

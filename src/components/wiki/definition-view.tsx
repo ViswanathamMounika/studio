@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send } from 'lucide-react';
+import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send, AlertTriangle, Trash2 } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -25,12 +25,14 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/comp
 import RelatedDefinitions from './related-definitions';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
 
 type DefinitionViewProps = {
   definition: Definition;
   allDefinitions: Definition[];
+  liveVersion?: Definition | null;
   onEdit: () => void;
   onDuplicate: (id: string) => void;
   onArchive: (id: string, archive: boolean) => void;
@@ -39,13 +41,12 @@ type DefinitionViewProps = {
   onPublish?: (id: string) => void;
   onReject?: (id: string, requestData?: { content: string; priority?: 'Low' | 'Medium' | 'High'; isRejection?: boolean }) => void;
   onSendApproval?: (id: string) => void;
+  onDiscard?: (id: string) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
   onSave: (definition: Definition) => void;
   isAdmin: boolean;
-  searchQuery?: string;
   currentUser: { id: string; name: string };
-  onOpenFeedback?: () => void;
   viewingMode: 'live' | 'draft';
 };
 
@@ -67,21 +68,18 @@ const WorkflowStep = ({ label, status, isLast = false }: { label: string, status
 };
 
 export default function DefinitionView({ 
-    definition, allDefinitions, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
-    activeTab, onTabChange, onSave, isAdmin, currentUser, onOpenFeedback, viewingMode
+    definition, allDefinitions, liveVersion, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
+    activeTab, onTabChange, onSave, onDiscard, isAdmin, currentUser, viewingMode
 }: DefinitionViewProps) {
     const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
     const [showComparison, setShowComparison] = useState(false);
+    const [showConflictDiff, setShowConflictDiff] = useState(false);
     const [noteText, setNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
     const [notesTab, setNotesTab] = useState('my-notes');
     const [showFeedbackPane, setShowFeedbackPane] = useState(false);
     
     const { toast } = useToast();
-
-    const selectedTemplate = useMemo(() => 
-      initialTemplates.find(t => t.id === definition.templateId), 
-    [definition.templateId]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -90,13 +88,19 @@ export default function DefinitionView({
         return () => clearTimeout(timer);
     }, [definition, activeTab]);
 
+    const isOutdated = useMemo(() => {
+        if (viewingMode !== 'draft' || !definition.baseVersionId || !liveVersion) return false;
+        const currentLiveRevId = liveVersion.revisions[0]?.ticketId;
+        return currentLiveRevId && definition.baseVersionId !== currentLiveRevId;
+    }, [viewingMode, definition.baseVersionId, liveVersion]);
+
     const handleSaveNote = () => {
         if (!noteText.trim() || definition.isArchived) return;
         const newNote: Note = { 
             id: Date.now().toString(), 
             authorId: currentUser.id, 
             author: currentUser.name, 
-            avatar: "https://picsum.photos/seed/dhilip/40/40", 
+            avatar: currentUser.avatar, 
             date: new Date().toISOString(), 
             content: noteText, 
             isShared: shareNote 
@@ -104,25 +108,17 @@ export default function DefinitionView({
         onSave({ ...definition, notes: [...(definition.notes || []), newNote] });
         setNoteText('');
         setShareNote(false);
-        toast({ title: 'Note Saved', description: 'Your note has been added.' });
+        toast({ title: 'Note Saved' });
     };
 
     const handleToggleRevision = (rev: Revision) => {
-        if (definition.isArchived) return;
         setSelectedRevisions(prev => {
             const isSelected = prev.some(r => r.ticketId === rev.ticketId);
-            if (isSelected) {
-                return prev.filter(r => r.ticketId !== rev.ticketId);
-            }
-            if (prev.length >= 2) {
-                return prev;
-            }
+            if (isSelected) return prev.filter(r => r.ticketId !== rev.ticketId);
+            if (prev.length >= 2) return prev;
             return [...prev, rev];
         });
     };
-
-    const myNotes = (definition.notes || []).filter(n => n.authorId === currentUser.id);
-    const otherNotes = (definition.notes || []).filter(n => n.authorId !== currentUser.id);
 
     const feedbackMessages = useMemo(() => {
       return (definition.discussions || []).filter(d => d.type === 'change-request' || d.type === 'rejection');
@@ -130,23 +126,11 @@ export default function DefinitionView({
 
     const activeFeedback = feedbackMessages[feedbackMessages.length - 1];
 
-    const tabs = [
-        { id: 'description', label: 'Description' },
-        { id: 'revisions', label: 'Version History' },
-        { id: 'attachments', label: 'Attachments' },
-        { id: 'notes', label: 'Notes' },
-        { id: 'related-definitions', label: 'Related Definitions' },
-    ];
-
-    const getSectionValue = (sectionId: string) => {
-        return definition.sectionValues?.find(v => v.sectionId === sectionId);
-    };
-
     const getWorkflowStatus = () => {
         if (definition.isPendingApproval) return { draft: 'completed', submitted: 'active', requested: 'pending' };
         if (activeFeedback) return { draft: 'completed', submitted: 'completed', requested: 'active' };
         if (definition.isDraft) return { draft: 'active', submitted: 'pending', requested: 'pending' };
-        return { draft: 'completed', submitted: 'completed', requested: 'completed' }; // Published
+        return { draft: 'completed', submitted: 'completed', requested: 'completed' };
     };
 
     const status = getWorkflowStatus();
@@ -154,85 +138,70 @@ export default function DefinitionView({
   return (
     <TooltipProvider>
         <article className="max-w-none">
-            {/* Workflow Strip - Visible for both Admin and Standard User in Draft Mode */}
+            {/* Version Conflict Warning */}
+            {isOutdated && (
+                <div className="px-2 mb-6">
+                    <Alert variant="destructive" className="bg-red-50 border-red-200 rounded-2xl shadow-sm">
+                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                        <div className="flex-1 ml-3 flex items-center justify-between">
+                            <div>
+                                <AlertTitle className="text-red-900 font-bold">Version Conflict Detected</AlertTitle>
+                                <AlertDescription className="text-red-700 text-xs font-medium">
+                                    The published version has changed since you started this draft. Your draft is based on an older version. Review differences before submitting.
+                                </AlertDescription>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" className="bg-white border-red-200 text-red-700 hover:bg-red-100 font-bold rounded-xl h-8" onClick={() => setShowConflictDiff(true)}>
+                                    <History className="h-3.5 w-3.5 mr-1.5" /> View Diff
+                                </Button>
+                                <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-100 font-bold rounded-xl h-8" onClick={() => onDiscard?.(definition.id)}>
+                                    <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Discard Draft
+                                </Button>
+                            </div>
+                        </div>
+                    </Alert>
+                </div>
+            )}
+
             {viewingMode === 'draft' && (
-              <div className="flex items-center gap-4 px-2 mb-4 animate-in fade-in slide-in-from-top-1">
+              <div className="flex items-center gap-4 px-2 mb-4">
                   <div className="flex items-center gap-4">
-                      <WorkflowStep label="Draft Completed" status={status.draft as any} />
+                      <WorkflowStep label="Draft" status={status.draft as any} />
                       <WorkflowStep label="Submitted" status={status.submitted as any} />
-                      <WorkflowStep label="Requested Changes" status={status.requested as any} isLast />
+                      <WorkflowStep label="Feedback" status={status.requested as any} isLast />
                   </div>
 
                   {activeFeedback && (
-                      <Tooltip>
-                          <TooltipTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => setShowFeedbackPane(!showFeedbackPane)}
-                                className={cn(
-                                    "h-8 w-8 rounded-xl transition-all border",
-                                    showFeedbackPane 
-                                        ? "bg-indigo-600 text-white border-indigo-600 shadow-md" 
-                                        : "bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100"
-                                )}
-                              >
-                                  <MessageSquare className="h-4 w-4" />
-                              </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="right">
-                              <p className="font-bold text-xs">{showFeedbackPane ? 'Hide Feedback' : 'View Latest Feedback'}</p>
-                          </TooltipContent>
-                      </Tooltip>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => setShowFeedbackPane(!showFeedbackPane)}
+                        className={cn("h-8 w-8 rounded-xl border transition-all", showFeedbackPane ? "bg-primary text-white border-primary" : "bg-indigo-50 text-indigo-600 border-indigo-100")}
+                      >
+                          <MessageSquare className="h-4 w-4" />
+                      </Button>
                   )}
               </div>
             )}
 
-            {/* Inline Feedback Pane - Only Latest Comment */}
             {viewingMode === 'draft' && showFeedbackPane && activeFeedback && (
-                <div className="px-2 mb-6 animate-in slide-in-from-top-2 fade-in duration-300">
-                    <Card className="border-indigo-100 bg-indigo-50/30 rounded-2xl shadow-sm overflow-hidden">
-                        <CardHeader className="py-3 px-4 bg-white/50 border-b border-indigo-100 flex flex-row items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <MessageSquare className="h-4 w-4 text-indigo-600" />
-                                <span className="text-xs font-black uppercase tracking-widest text-indigo-900">Latest Approver Feedback</span>
-                            </div>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg text-indigo-400" onClick={() => setShowFeedbackPane(false)}>
+                <div className="px-2 mb-6 animate-in slide-in-from-top-2 fade-in">
+                    <Card className="border-indigo-100 bg-indigo-50/30 rounded-2xl overflow-hidden shadow-sm">
+                        <CardHeader className="py-2.5 px-4 bg-white/50 border-b border-indigo-100 flex flex-row items-center justify-between">
+                            <span className="text-[10px] font-black uppercase text-indigo-900 tracking-widest">Latest Feedback</span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-indigo-400" onClick={() => setShowFeedbackPane(false)}>
                                 <X className="h-3.5 w-3.5" />
                             </Button>
                         </CardHeader>
                         <CardContent className="p-4">
-                            <div className="flex gap-3 animate-in fade-in slide-in-from-left-1">
-                                <Avatar className="h-7 w-7 shrink-0 border border-white shadow-sm">
-                                    <AvatarImage src={activeFeedback.avatar} />
-                                    <AvatarFallback className="bg-indigo-100 text-indigo-600 text-[10px] font-bold">
-                                        {activeFeedback.author.charAt(0)}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 space-y-1.5">
-                                    <div className="flex items-center gap-2">
+                            <div className="flex gap-3">
+                                <Avatar className="h-7 w-7"><AvatarImage src={activeFeedback.avatar}/><AvatarFallback>{activeFeedback.author.charAt(0)}</AvatarFallback></Avatar>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
                                         <span className="text-xs font-bold text-slate-900">{activeFeedback.author}</span>
-                                        <span className="text-[10px] text-slate-400 font-medium">
-                                            {formatDistanceToNow(new Date(activeFeedback.date), { addSuffix: true })}
-                                        </span>
-                                        <Badge className={cn(
-                                            "ml-auto text-[8px] uppercase font-black px-1.5 h-4",
-                                            activeFeedback.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
-                                        )}>
-                                            {activeFeedback.type === 'rejection' ? 'Rejected' : 'Change Requested'}
-                                        </Badge>
+                                        <span className="text-[10px] text-slate-400">{formatDistanceToNow(new Date(activeFeedback.date), { addSuffix: true })}</span>
                                     </div>
-                                    <div className="p-3 bg-white border border-indigo-100/50 rounded-xl shadow-sm">
-                                        <p className="text-xs text-slate-700 leading-relaxed font-medium m-0 italic">"{activeFeedback.content}"</p>
-                                    </div>
-                                    <div className="pt-1">
-                                        <button 
-                                            onClick={() => onTabChange('notes')}
-                                            className="text-[10px] font-black uppercase text-indigo-600 hover:underline"
-                                        >
-                                            View Full Review History →
-                                        </button>
-                                    </div>
+                                    <p className="text-xs text-slate-700 italic m-0">"{activeFeedback.content}"</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -247,16 +216,9 @@ export default function DefinitionView({
                         <h1 className="text-2xl font-bold text-slate-900 m-0">{definition.name}</h1>
                         <Badge variant="outline" className={cn(
                           "h-6 rounded-full font-bold text-[10px] uppercase",
-                          viewingMode === 'live' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                          definition.isPendingApproval ? "bg-amber-50 text-amber-700 border-amber-200" :
-                          activeFeedback ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
-                          "bg-slate-50"
+                          viewingMode === 'live' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"
                         )}>
-                            {definition.isArchived ? 'Archived' : 
-                             viewingMode === 'live' ? 'Published' :
-                             definition.isPendingApproval ? 'Pending Approval' :
-                             activeFeedback ? 'Update Required' :
-                             definition.isDraft ? 'Draft' : 'Published'}
+                            {definition.isArchived ? 'Archived' : viewingMode === 'live' ? 'Published' : 'Draft'}
                         </Badge>
                     </div>
                 </div>
@@ -264,301 +226,93 @@ export default function DefinitionView({
                     <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-slate-400">
                       <Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary text-primary")} />
                     </Button>
-                    {!definition.isArchived && !definition.isPendingApproval && (
-                        <Button onClick={onEdit} className="bg-primary hover:bg-primary/90 font-bold px-6 shadow-sm">
-                            Edit
-                        </Button>
+                    {!definition.isArchived && (
+                        <Button onClick={onEdit} className="bg-primary hover:bg-primary/90 font-bold px-6">Edit</Button>
                     )}
-                    <DefinitionActions 
-                        definition={definition} 
-                        onEdit={onEdit} 
-                        onDuplicate={() => onDuplicate(definition.id)} 
-                        onArchive={onArchive} 
-                        onToggleBookmark={onToggleBookmark} 
-                        isAdmin={isAdmin} 
-                    />
+                    <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={() => onDuplicate(definition.id)} onArchive={onArchive} onToggleBookmark={onToggleBookmark} isAdmin={isAdmin} />
                 </div>
             </div>
 
-            <div className="mb-8">
-                <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-                    <TabsList className="w-full bg-slate-100/80 border-b-0 rounded-lg p-1 h-12 flex justify-between gap-1 overflow-hidden">
-                        {tabs.map(tab => (
-                            <TabsTrigger 
-                                key={tab.id} 
-                                value={tab.id} 
-                                className="flex-1 rounded-md text-slate-500 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-primary py-2.5 text-sm font-bold transition-all"
-                            >
-                                {tab.label}
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
+            <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+                <TabsList className="w-full bg-slate-100 rounded-lg p-1 h-12">
+                    <TabsTrigger value="description" className="flex-1 font-bold text-sm">Description</TabsTrigger>
+                    <TabsTrigger value="revisions" className="flex-1 font-bold text-sm">History</TabsTrigger>
+                    <TabsTrigger value="attachments" className="flex-1 font-bold text-sm">Attachments</TabsTrigger>
+                    <TabsTrigger value="notes" className="flex-1 font-bold text-sm">Notes</TabsTrigger>
+                    <TabsTrigger value="related-definitions" className="flex-1 font-bold text-sm">Links</TabsTrigger>
+                </TabsList>
 
-                    <TabsContent value="description" className="mt-6">
-                        <Accordion type="multiple" defaultValue={["source-of-truth", "short-description"]} className="space-y-4">
-                            {/* 1. Source of Truth */}
-                            <AccordionItem value="source-of-truth" className="border rounded-xl px-6 bg-white shadow-sm overflow-hidden border-slate-200">
-                                <AccordionTrigger className="hover:no-underline py-4">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-slate-900 text-sm">Source of Truth</span>
-                                        <Info className="h-3.5 w-3.5 text-slate-400" />
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pb-6">
-                                    <div className="space-y-4 pt-2">
-                                        <div className="space-y-3">
-                                            <p className="text-sm font-bold text-slate-900">Source of Truth for Objects:</p>
-                                            <div className="space-y-2 pl-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-bold text-slate-900">Source Type:</span>
-                                                    <span className="text-sm text-slate-600">{definition.sourceType || 'N/A'}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-bold text-slate-900">Source Name:</span>
-                                                    <span className="text-sm text-slate-600">{definition.sourceName || 'N/A'}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        {getSectionValue('8') && (
-                                            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-50">
-                                                {getSectionValue('8')?.multiValues?.map(v => (
-                                                    <Badge key={v} className="bg-slate-100 text-slate-700 border-slate-200 font-bold">{v}</Badge>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </AccordionContent>
-                            </AccordionItem>
+                <TabsContent value="description" className="mt-6">
+                    <Accordion type="multiple" defaultValue={["short-description", "description"]} className="space-y-4">
+                        <AccordionItem value="short-description" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
+                            <AccordionTrigger className="font-bold py-4">Short Description</AccordionTrigger>
+                            <AccordionContent className="pb-6 text-sm text-slate-700 leading-relaxed">
+                                {definition.shortDescription || 'Not provided'}
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="description" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
+                            <AccordionTrigger className="font-bold py-4">Description</AccordionTrigger>
+                            <AccordionContent className="pb-6">
+                                <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: definition.description || '<p class="italic text-slate-400">No description provided.</p>' }} />
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="technical-details" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
+                            <AccordionTrigger className="font-bold py-4">Technical Details</AccordionTrigger>
+                            <AccordionContent className="pb-6">
+                                <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: definition.technicalDetails || '<p class="italic text-slate-400">Not provided</p>' }} />
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                </TabsContent>
 
-                            {/* 2. Short Description */}
-                            <AccordionItem value="short-description" className="border rounded-xl px-6 bg-white shadow-sm overflow-hidden border-slate-200">
-                                <AccordionTrigger className="hover:no-underline py-4">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-slate-900 text-sm">Short Description</span>
-                                        <Info className="h-3.5 w-3.5 text-slate-400" />
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pb-6">
-                                    <p className="text-sm text-slate-700 leading-relaxed pt-2">
-                                        {definition.shortDescription || getSectionValue('1')?.raw || 'Not provided'}
-                                    </p>
-                                </AccordionContent>
-                            </AccordionItem>
-
-                            {/* 3. Description */}
-                            <AccordionItem value="description" className="border rounded-xl px-6 bg-white shadow-sm overflow-hidden border-slate-200">
-                                <AccordionTrigger className="hover:no-underline py-4">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-slate-900 text-sm">Description</span>
-                                        <Info className="h-3.5 w-3.5 text-slate-400" />
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pb-6">
-                                    <div className="prose prose-sm max-w-none text-slate-700 pt-2" dangerouslySetInnerHTML={{ __html: getSectionValue('2')?.html || definition.description || '<p class="italic text-slate-400">Not provided</p>' }} />
-                                </AccordionContent>
-                            </AccordionItem>
-
-                            {/* 4. Technical Details */}
-                            <AccordionItem value="technical-details" className="border rounded-xl px-6 bg-white shadow-sm overflow-hidden border-slate-200">
-                                <AccordionTrigger className="hover:no-underline py-4">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-slate-900 text-sm">Technical Details</span>
-                                        <Info className="h-3.5 w-3.5 text-slate-400" />
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pb-6">
-                                    <div className="prose prose-sm max-w-none text-slate-700 pt-2" dangerouslySetInnerHTML={{ __html: getSectionValue('3')?.html || definition.technicalDetails || '<p class="italic text-slate-400">Not provided</p>' }} />
-                                </AccordionContent>
-                            </AccordionItem>
-
-                            {/* 5. Usage Examples */}
-                            <AccordionItem value="usage-examples" className="border rounded-xl px-6 bg-white shadow-sm overflow-hidden border-slate-200">
-                                <AccordionTrigger className="hover:no-underline py-4">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-slate-900 text-sm">Usage Examples</span>
-                                        <Info className="h-3.5 w-3.5 text-slate-400" />
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pb-6">
-                                    <div className="prose prose-sm max-w-none text-slate-700 pt-2" dangerouslySetInnerHTML={{ __html: getSectionValue('4')?.html || definition.usageExamples || '<p class="italic text-slate-400">Not provided</p>' }} />
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
-                    </TabsContent>
-
-                    <TabsContent value="revisions" className="mt-8 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-slate-900 mt-0">Version History</h2>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                disabled={selectedRevisions.length !== 2 || definition.isArchived}
-                                onClick={() => setShowComparison(true)}
-                                className="rounded-xl font-bold border-slate-200"
-                            >
-                                Compare Revision ({selectedRevisions.length})
-                            </Button>
-                        </div>
-                        <Card className="rounded-2xl border-slate-200 overflow-hidden shadow-sm bg-white">
-                          <Table>
-                            <TableHeader className="bg-slate-50/50">
-                                <TableRow className="border-slate-200">
-                                    <TableHead className="w-12"></TableHead>
-                                    <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Date</TableHead>
-                                    <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Developer</TableHead>
-                                    <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Description</TableHead>
+                <TabsContent value="revisions" className="mt-8 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold text-slate-900">Version History</h2>
+                        <Button variant="outline" size="sm" disabled={selectedRevisions.length !== 2} onClick={() => setShowComparison(true)} className="rounded-xl font-bold">Compare Revisions</Button>
+                    </div>
+                    <Card className="rounded-2xl border-slate-200 overflow-hidden shadow-sm">
+                      <Table>
+                        <TableHeader className="bg-slate-50">
+                            <TableRow><TableHead className="w-12"/><TableHead className="text-[10px] font-black uppercase">Date</TableHead><TableHead className="text-[10px] font-black uppercase">User</TableHead><TableHead className="text-[10px] font-black uppercase">Summary</TableHead></TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {definition.revisions.map(r => (
+                                <TableRow key={r.ticketId} className="hover:bg-slate-50">
+                                    <TableCell><Checkbox checked={selectedRevisions.some(sr => sr.ticketId === r.ticketId)} onCheckedChange={() => handleToggleRevision(r)}/></TableCell>
+                                    <TableCell className="font-bold text-slate-900">{r.date}</TableCell>
+                                    <TableCell className="text-slate-600 font-medium">{r.developer}</TableCell>
+                                    <TableCell className="text-slate-500">{r.description}</TableCell>
                                 </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {definition.revisions.length > 0 ? (
-                                    definition.revisions.map(r => (
-                                        <TableRow key={r.ticketId} className="border-slate-100 hover:bg-slate-50/50">
-                                            <TableCell>
-                                                <Checkbox 
-                                                    checked={selectedRevisions.some(sr => sr.ticketId === r.ticketId)}
-                                                    onCheckedChange={() => handleToggleRevision(r)}
-                                                    disabled={definition.isArchived}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="font-bold text-slate-900">{r.date}</TableCell>
-                                            <TableCell className="text-slate-600 font-medium">{r.developer}</TableCell>
-                                            <TableCell className="text-slate-500">{r.description}</TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="h-32 text-center text-muted-foreground italic">No historical records available.</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                          </Table>
-                        </Card>
-                    </TabsContent>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </Card>
+                </TabsContent>
 
-                    <TabsContent value="attachments" className="mt-8">
-                        <AttachmentList attachments={definition.attachments} />
-                    </TabsContent>
-
-                    <TabsContent value="notes" className="mt-8 space-y-6">
-                        <h2 className="text-xl font-bold text-slate-900 mt-0 px-2">Notes & Discussion History</h2>
-                        {!definition.isArchived && (
-                          <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl shadow-none">
-                            <Label className="text-sm font-bold text-primary mb-2 block">Add a Note</Label>
-                            <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Personal or shared insights..." className="rounded-xl border-primary/10 mb-4 h-24 bg-white focus-visible:ring-primary/20" />
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} />
-                                <Label htmlFor="share" className="text-xs font-bold text-primary cursor-pointer">Share with team</Label>
-                              </div>
-                              <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="bg-primary hover:bg-primary/90 rounded-xl font-bold shadow-sm">Save Note</Button>
-                            </div>
-                          </Card>
-                        )}
-                        
-                        <Tabs value={notesTab} onValueChange={setNotesTab} className="w-full">
-                            <TabsList className="bg-slate-100 p-1 rounded-lg h-9 mb-6 mx-2">
-                                <TabsTrigger value="my-notes" className="text-xs font-bold px-4 data-[state=active]:bg-white data-[state=active]:text-primary">My Notes</TabsTrigger>
-                                <TabsTrigger value="others-notes" className="text-xs font-bold px-4 data-[state=active]:bg-white data-[state=active]:text-primary">Team Notes</TabsTrigger>
-                                <TabsTrigger value="discussion" className="text-xs font-bold px-4 data-[state=active]:bg-white data-[state=active]:text-primary">Review History</TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="my-notes" className="space-y-4 m-0 px-2">
-                                {myNotes.length > 0 ? (
-                                    myNotes.map(note => (
-                                        <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-slate-900">{note.author}</span>
-                                                    <span className="text-[10px] text-slate-400 uppercase font-black tracking-tighter">•</span>
-                                                    <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
-                                                </div>
-                                                {note.isShared && <Badge variant="outline" className="text-[9px] uppercase font-black h-5 border-primary/10 text-primary bg-primary/5">Shared</Badge>}
-                                            </div>
-                                            <p className="text-sm text-slate-600 m-0 leading-relaxed font-medium">{note.content}</p>
-                                        </Card>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                                        <MessageSquare className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                                        <p className="text-sm text-slate-400 italic">No personal notes found.</p>
+                <TabsContent value="notes" className="mt-8 space-y-6">
+                    <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl">
+                        <Label className="text-sm font-bold text-primary mb-2 block">Add Insight</Label>
+                        <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Share internal context or caveats..." className="rounded-xl mb-4 h-24 bg-white" />
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2"><Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} /><Label htmlFor="share" className="text-xs font-bold text-primary">Visible to team</Label></div>
+                            <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="rounded-xl font-bold">Save Note</Button>
+                        </div>
+                    </Card>
+                    <div className="space-y-4">
+                        {(definition.notes || []).map(note => (
+                            <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-slate-900">{note.author}</span>
+                                        <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
                                     </div>
-                                )}
-                            </TabsContent>
-
-                            <TabsContent value="others-notes" className="space-y-4 m-0 px-2">
-                                {otherNotes.length > 0 ? (
-                                    otherNotes.map(note => (
-                                        <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-slate-900">{note.author}</span>
-                                                    <span className="text-[10px] text-slate-400 uppercase font-black tracking-tighter">•</span>
-                                                    <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-slate-600 m-0 leading-relaxed font-medium">{note.content}</p>
-                                        </Card>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                                        <MessageSquare className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                                        <p className="text-sm text-slate-400 italic">No team notes found.</p>
-                                    </div>
-                                )}
-                            </TabsContent>
-
-                            {/* Full Review History - All Feedback & Comments */}
-                            <TabsContent value="discussion" className="space-y-4 m-0 px-2">
-                                {definition.discussions && definition.discussions.length > 0 ? (
-                                    definition.discussions.map(msg => (
-                                        <Card key={msg.id} className={cn(
-                                          "p-4 rounded-xl border-slate-200 shadow-sm",
-                                          msg.type === 'change-request' ? "bg-amber-50/30 border-amber-100" :
-                                          msg.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-white"
-                                        )}>
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <Avatar className="h-6 w-6">
-                                                    <AvatarImage src={msg.avatar} />
-                                                    <AvatarFallback><User2 className="h-3 w-3" /></AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-slate-900 text-xs">{msg.author}</span>
-                                                    <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(msg.date).toLocaleDateString()}</span>
-                                                </div>
-                                                {msg.type !== 'comment' && (
-                                                  <Badge className={cn(
-                                                    "ml-auto text-[9px] uppercase font-black",
-                                                    msg.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
-                                                  )}>
-                                                    {msg.type === 'rejection' ? 'Rejected' : 'Changes Requested'}
-                                                  </Badge>
-                                                )}
-                                            </div>
-                                            <p className="text-sm text-slate-700 m-0 leading-relaxed font-medium">{msg.content}</p>
-                                        </Card>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                                        <History className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                                        <p className="text-sm text-slate-400 italic">No workflow history found.</p>
-                                    </div>
-                                )}
-                            </TabsContent>
-                        </Tabs>
-                    </TabsContent>
-
-                    <TabsContent value="related-definitions" className="mt-8">
-                        <RelatedDefinitions 
-                            currentDefinition={definition} 
-                            allDefinitions={allDefinitions} 
-                            onDefinitionClick={(id) => onTabChange('description')} 
-                            onSave={onSave} 
-                            isAdmin={isAdmin} 
-                        />
-                    </TabsContent>
-                </Tabs>
-            </div>
+                                </div>
+                                <p className="text-sm text-slate-600 leading-relaxed font-medium">{note.content}</p>
+                            </Card>
+                        ))}
+                    </div>
+                </TabsContent>
+            </Tabs>
         </article>
 
         {showComparison && selectedRevisions.length === 2 && (
@@ -567,6 +321,28 @@ export default function DefinitionView({
                 onOpenChange={setShowComparison}
                 revision1={selectedRevisions[0]}
                 revision2={selectedRevisions[1]}
+                definition={definition}
+            />
+        )}
+
+        {showConflictDiff && liveVersion && (
+            <RevisionComparisonDialog
+                open={showConflictDiff}
+                onOpenChange={setShowConflictDiff}
+                revision1={{
+                    ticketId: 'DRAFT',
+                    date: 'Current',
+                    developer: 'You',
+                    description: 'Your Personal Draft',
+                    snapshot: definition
+                }}
+                revision2={{
+                    ticketId: 'LIVE',
+                    date: liveVersion.revisions[0]?.date || 'Now',
+                    developer: liveVersion.revisions[0]?.developer || 'System',
+                    description: 'Current Published Version',
+                    snapshot: liveVersion
+                }}
                 definition={definition}
             />
         )}
