@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -12,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send, AlertTriangle, Trash2 } from 'lucide-react';
+import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send, AlertTriangle, Trash2, ClipboardList } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
