@@ -176,7 +176,14 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
   const handleOpenGroupModal = (groupToEdit?: string) => {
     const allSections = currentTemplate.sections || [];
-    const configs = allSections.map(s => ({
+    
+    // REQUIREMENT: Once grouped, we shouldn't show sections in the selection if they belong to another group.
+    // We only show sections that are ungrouped OR sections that already belong to the group we are currently editing.
+    const availableSections = allSections.filter(s => 
+      groupToEdit ? (s.group === groupToEdit || !s.group) : !s.group
+    );
+
+    const configs = availableSections.map(s => ({
       sectionId: s.id,
       order: s.order || 1,
       included: s.group === groupToEdit
@@ -200,11 +207,15 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         const config = groupForm.sectionConfigs.find(c => c.sectionId === s.id);
         const wasInEditingGroup = editingGroupName ? s.group === editingGroupName : false;
 
+        // If the section was in the modal's list and is checked 'included'
         if (config?.included) {
           return { ...s, group: groupForm.name, order: config.order };
-        } else if (wasInEditingGroup) {
+        } 
+        // If it was in the group being edited but is now UNCHECKED (or not in available list)
+        else if (wasInEditingGroup) {
           return { ...s, group: undefined };
         }
+        // Otherwise, leave section group status as is (stays in its existing group or ungrouped)
         return s;
       });
       return { ...prev, sections };
