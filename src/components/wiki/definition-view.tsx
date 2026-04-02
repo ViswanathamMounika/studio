@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/checkbox";
 import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import RelatedDefinitions from './related-definitions';
@@ -294,101 +294,141 @@ export default function DefinitionView({
                 </TabsContent>
 
                 <TabsContent value="notes" className="mt-8 space-y-8">
-                    {/* Add Note Section (Top) */}
-                    <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl">
-                        <Label className="text-sm font-bold text-primary mb-2 block">Share Internal Insight</Label>
-                        <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Share context, logic nuances, or regulatory caveats..." className="rounded-xl mb-4 h-24 bg-white border-primary/20" />
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2"><Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} /><Label htmlFor="share" className="text-xs font-bold text-primary">Visible to team</Label></div>
-                            <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="rounded-xl font-bold bg-primary px-6">Save Insight</Button>
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-bold text-slate-900">Notes</h2>
+                        <Info className="h-4 w-4 text-slate-400" />
+                    </div>
+
+                    {/* Add Note Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-bold text-slate-900">Add a Note</h3>
+                            <Info className="h-3.5 w-3.5 text-slate-400" />
                         </div>
-                    </Card>
-
-                    {/* My Notes */}
-                    <div className="space-y-4">
-                        <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest px-2">My Saved Notes</h3>
-                        {myNotes.length > 0 ? (
-                            <div className="space-y-4">
-                                {myNotes.map(note => (
-                                    <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <Avatar className="h-6 w-6"><AvatarImage src={note.avatar}/><AvatarFallback>{note.author.charAt(0)}</AvatarFallback></Avatar>
-                                                <span className="font-bold text-slate-900 text-xs">{note.author}</span>
-                                                <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm text-slate-600 leading-relaxed font-medium pl-8">{note.content}</p>
-                                    </Card>
-                                ))}
+                        <div className="relative border border-slate-200 rounded-lg p-1 bg-white focus-within:ring-1 focus-within:ring-primary/20">
+                            <Textarea 
+                                value={noteText} 
+                                onChange={e => setNoteText(e.target.value)} 
+                                placeholder="Add a personal or shared note..." 
+                                className="border-none shadow-none focus-visible:ring-0 min-h-[100px] resize-none text-sm placeholder:text-slate-400" 
+                                maxLength={5000}
+                            />
+                            <div className="absolute bottom-2 right-3 text-[10px] font-medium text-slate-400">
+                                {noteText.length}/5000
                             </div>
-                        ) : (
-                            <p className="text-xs text-slate-400 italic px-2">You haven't added any personal notes yet.</p>
-                        )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} />
+                                <Label htmlFor="share" className="text-xs font-medium text-slate-500 cursor-pointer">Share with everyone</Label>
+                            </div>
+                            <Button 
+                                onClick={handleSaveNote} 
+                                disabled={!noteText.trim()} 
+                                className="rounded-md bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-6 h-9 transition-all"
+                            >
+                                Save
+                            </Button>
+                        </div>
                     </div>
 
-                    {/* Others Notes */}
-                    <div className="space-y-4">
-                        <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest px-2">Team Insights</h3>
-                        {othersNotes.length > 0 ? (
-                            <div className="space-y-4">
-                                {othersNotes.map(note => (
-                                    <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <Avatar className="h-6 w-6"><AvatarImage src={note.avatar}/><AvatarFallback>{note.author.charAt(0)}</AvatarFallback></Avatar>
-                                                <span className="font-bold text-slate-900 text-xs">{note.author}</span>
-                                                <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm text-slate-600 leading-relaxed font-medium pl-8">{note.content}</p>
-                                    </Card>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-xs text-slate-400 italic px-2">No notes shared by other team members.</p>
-                        )}
-                    </div>
+                    {/* Saved Notes Tabs */}
+                    <div className="pt-4 space-y-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <h3 className="text-sm font-bold text-slate-900">Saved Notes</h3>
+                            <Info className="h-3.5 w-3.5 text-slate-400" />
+                        </div>
 
-                    {/* Review History / Audit Trail (Bottom) */}
-                    <div className="space-y-4">
-                        <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest px-2">Review & Feedback History</h3>
-                        {definition.discussions && definition.discussions.length > 0 ? (
-                            <div className="space-y-4">
-                                {definition.discussions.map((msg) => (
-                                    <Card key={msg.id} className={cn(
-                                        "p-4 rounded-xl border-slate-200 shadow-sm",
-                                        msg.type === 'change-request' ? "bg-amber-50/30 border-amber-100" :
-                                        msg.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-white"
-                                    )}>
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <Avatar className="h-6 w-6">
-                                                <AvatarImage src={msg.avatar} />
-                                                <AvatarFallback><User2 className="h-3 w-3" /></AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-bold text-slate-900 text-xs">{msg.author}</span>
-                                                <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(msg.date).toLocaleDateString()}</span>
+                        <Tabs defaultValue="my-notes" className="w-full">
+                            <TabsList className="bg-transparent border-b rounded-none h-auto p-0 gap-8">
+                                <TabsTrigger value="my-notes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none px-0 pb-2 text-sm font-bold text-slate-500 data-[state=active]:text-primary">
+                                    My Notes
+                                </TabsTrigger>
+                                <TabsTrigger value="others-notes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none px-0 pb-2 text-sm font-bold text-slate-500 data-[state=active]:text-primary">
+                                    Other's Notes
+                                </TabsTrigger>
+                                <TabsTrigger value="review-history" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none px-0 pb-2 text-sm font-bold text-slate-500 data-[state=active]:text-primary">
+                                    Review History
+                                </TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="my-notes" className="mt-6 space-y-4">
+                                {myNotes.length > 0 ? (
+                                    myNotes.map(note => (
+                                        <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="h-6 w-6"><AvatarImage src={note.avatar}/><AvatarFallback>{note.author.charAt(0)}</AvatarFallback></Avatar>
+                                                    <span className="font-bold text-slate-900 text-xs">{note.author}</span>
+                                                    <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
+                                                </div>
                                             </div>
-                                            {msg.type !== 'comment' && (
-                                              <Badge className={cn(
-                                                "ml-auto text-[9px] uppercase font-black",
-                                                msg.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
-                                              )}>
-                                                {msg.type === 'rejection' ? 'Rejected' : 'Changes Requested'}
-                                              </Badge>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-slate-700 m-0 leading-relaxed font-medium pl-9">"{msg.content}"</p>
-                                    </Card>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-                                <ClipboardList className="h-8 w-8 text-slate-300 mb-2" />
-                                <p className="text-xs font-medium text-slate-400">No governance history recorded.</p>
-                            </div>
-                        )}
+                                            <p className="text-sm text-slate-600 leading-relaxed font-medium pl-8">{note.content}</p>
+                                        </Card>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-slate-400 italic px-2">You haven't added any personal notes yet.</p>
+                                )}
+                            </TabsContent>
+
+                            <TabsContent value="others-notes" className="mt-6 space-y-4">
+                                {othersNotes.length > 0 ? (
+                                    othersNotes.map(note => (
+                                        <Card key={note.id} className="p-4 rounded-xl border-slate-200 shadow-sm bg-white">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="h-6 w-6"><AvatarImage src={note.avatar}/><AvatarFallback>{note.author.charAt(0)}</AvatarFallback></Avatar>
+                                                    <span className="font-bold text-slate-900 text-xs">{note.author}</span>
+                                                    <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(note.date).toLocaleDateString()}</span>
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-slate-600 leading-relaxed font-medium pl-8">{note.content}</p>
+                                        </Card>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-slate-400 italic px-2">No notes shared by other team members.</p>
+                                )}
+                            </TabsContent>
+
+                            <TabsContent value="review-history" className="mt-6 space-y-4">
+                                {definition.discussions && definition.discussions.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {definition.discussions.map((msg) => (
+                                            <Card key={msg.id} className={cn(
+                                                "p-4 rounded-xl border-slate-200 shadow-sm",
+                                                msg.type === 'change-request' ? "bg-amber-50/30 border-amber-100" :
+                                                msg.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-white"
+                                            )}>
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <Avatar className="h-6 w-6">
+                                                        <AvatarImage src={msg.avatar} />
+                                                        <AvatarFallback><User2 className="h-3 w-3" /></AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-slate-900 text-xs">{msg.author}</span>
+                                                        <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(msg.date).toLocaleDateString()}</span>
+                                                    </div>
+                                                    {msg.type !== 'comment' && (
+                                                      <Badge className={cn(
+                                                        "ml-auto text-[9px] uppercase font-black",
+                                                        msg.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                                                      )}>
+                                                        {msg.type === 'rejection' ? 'Rejected' : 'Changes Requested'}
+                                                      </Badge>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-slate-700 m-0 leading-relaxed font-medium pl-9">"{msg.content}"</p>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                                        <ClipboardList className="h-8 w-8 text-slate-300 mb-2" />
+                                        <p className="text-xs font-medium text-slate-400">No governance history recorded.</p>
+                                    </div>
+                                )}
+                            </TabsContent>
+                        </Tabs>
                     </div>
                 </TabsContent>
 

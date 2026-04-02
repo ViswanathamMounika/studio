@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 // Dynamic imports for heavy components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
@@ -625,40 +626,46 @@ export default function Wiki() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto flex flex-col bg-slate-50/20">
-                      {/* My Saved Definitions Section */}
-                      <div className="p-4 space-y-3 border-b bg-white/50">
-                          <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-3.5 w-3.5 text-slate-400" />
-                                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Saved Definitions</h2>
-                              </div>
-                              {categorizedDefinitions.drafts.length > 0 && (
-                                <Badge className="bg-primary/10 text-primary h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black">
-                                    {categorizedDefinitions.drafts.length}
-                                </Badge>
-                              )}
-                          </div>
-                          <div className="pt-1">
-                              <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                          </div>
-                      </div>
-
-                      {/* My Submissions Section (for Non-Admins or standard users who have submitted) */}
-                      {categorizedDefinitions.mySubmissions.length > 0 && (
-                        <div className="p-4 space-y-3 border-b bg-white/50">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <ClipboardList className="h-3.5 w-3.5 text-slate-400" />
-                                  <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Submissions</h2>
-                                </div>
-                                <Badge className="bg-amber-500/10 text-amber-600 h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black">
-                                    {categorizedDefinitions.mySubmissions.length}
-                                </Badge>
-                            </div>
-                            <div className="pt-1">
-                                <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.mySubmissions} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                            </div>
+                      {/* Standard User Workflow Tabs */}
+                      {!isAdmin ? (
+                        <div className="border-b bg-white/50">
+                          <Tabs defaultValue="saved" className="w-full">
+                            <TabsList className="w-full grid grid-cols-2 h-10 bg-transparent rounded-none border-b p-0">
+                              <TabsTrigger value="saved" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none font-bold text-[10px] uppercase tracking-wider">
+                                My Saved
+                              </TabsTrigger>
+                              <TabsTrigger value="submitted" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none font-bold text-[10px] uppercase tracking-wider">
+                                Submitted
+                              </TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="saved" className="mt-0 p-3">
+                               <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                            </TabsContent>
+                            <TabsContent value="submitted" className="mt-0 p-3">
+                               <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.mySubmissions} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                            </TabsContent>
+                          </Tabs>
                         </div>
+                      ) : (
+                        /* Admin Layout (Vertical Sections) */
+                        <>
+                          <div className="p-4 space-y-3 border-b bg-white/50">
+                              <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-3.5 w-3.5 text-slate-400" />
+                                    <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Saved Definitions</h2>
+                                  </div>
+                                  {categorizedDefinitions.drafts.length > 0 && (
+                                    <Badge className="bg-primary/10 text-primary h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black">
+                                        {categorizedDefinitions.drafts.length}
+                                    </Badge>
+                                  )}
+                              </div>
+                              <div className="pt-1">
+                                  <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                              </div>
+                          </div>
+                        </>
                       )}
 
                       {/* Main Library Section */}
