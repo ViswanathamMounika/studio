@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -541,7 +542,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                       <Card key={col.id} className="p-3 border-slate-200 shadow-none bg-white rounded-xl">
                                         <div className="space-y-4">
                                           <div className="grid grid-cols-12 gap-4 items-end">
-                                            <div className="col-span-4 space-y-1.5">
+                                            <div className="col-span-3 space-y-1.5">
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Name</Label>
                                               <Input value={col.name} onChange={e => {
                                                 const cols = [...(section.columns || [])];
@@ -549,7 +550,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                                 updateSection(section.id, { columns: cols });
                                               }} className="h-8 rounded-lg font-bold" />
                                             </div>
-                                            <div className="col-span-2 space-y-1.5">
+                                            <div className="col-span-1 space-y-1.5">
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Order</Label>
                                               <Input type="number" value={col.sortOrder} onChange={e => {
                                                 const cols = [...(section.columns || [])];
@@ -557,7 +558,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                                 updateSection(section.id, { columns: cols });
                                               }} className="h-8 rounded-lg" />
                                             </div>
-                                            <div className="col-span-3 space-y-1.5">
+                                            <div className="col-span-2 space-y-1.5">
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Input Type</Label>
                                               <Select value={col.inputType} onValueChange={v => {
                                                 const cols = [...(section.columns || [])];
@@ -573,7 +574,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                                 </SelectContent>
                                               </Select>
                                             </div>
-                                            <div className="col-span-1 pb-2 flex items-center gap-2">
+                                            <div className="col-span-2 pb-2 flex items-center gap-2">
                                               <Checkbox checked={col.isRequired} onCheckedChange={v => {
                                                 const cols = [...(section.columns || [])];
                                                 cols[cIdx].isRequired = !!v;
@@ -581,7 +582,17 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                               }} />
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Required</Label>
                                             </div>
-                                            <div className="col-span-2 flex justify-end pb-1">
+                                            {col.inputType === 'Dropdown' && (
+                                              <div className="col-span-2 pb-2 flex items-center gap-2 animate-in fade-in slide-in-from-left-1">
+                                                <Checkbox checked={col.isMulti} onCheckedChange={v => {
+                                                  const cols = [...(section.columns || [])];
+                                                  cols[cIdx].isMulti = !!v;
+                                                  updateSection(section.id, { columns: cols });
+                                                }} />
+                                                <Label className="text-[9px] font-black uppercase text-slate-400">Allow Multiple</Label>
+                                              </div>
+                                            )}
+                                            <div className={cn("flex justify-end pb-1", col.inputType === 'Dropdown' ? "col-span-2" : "col-span-4")}>
                                               <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive" onClick={() => {
                                                 const cols = (section.columns || []).filter(c => c.id !== col.id);
                                                 updateSection(section.id, { columns: cols });
