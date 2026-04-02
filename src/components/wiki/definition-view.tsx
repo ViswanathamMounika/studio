@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -19,7 +18,7 @@ import { cn } from '@/lib/utils';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from "@/components/checkbox";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import RelatedDefinitions from './related-definitions';
