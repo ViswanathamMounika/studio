@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -12,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2 } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -23,7 +22,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import RelatedDefinitions from './related-definitions';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
 
@@ -169,7 +169,7 @@ export default function DefinitionView({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {activeFeedback && (
+                    {definition.discussions && definition.discussions.length > 0 && (
                       <Button variant="outline" size="sm" onClick={onOpenFeedback} className="rounded-xl border-slate-200 font-bold gap-2">
                         <MessageSquare className="h-4 w-4" />
                         Feedback History
@@ -183,35 +183,37 @@ export default function DefinitionView({
                             Edit
                         </Button>
                     )}
-                    <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onToggleBookmark={onToggleBookmark} isAdmin={isAdmin} />
+                    <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={handleDuplicate} onArchive={onArchive} onToggleBookmark={onToggleBookmark} isAdmin={isAdmin} />
                 </div>
             </div>
 
-            {/* Workflow Strip */}
-            <div className="flex flex-col gap-3 px-2 mb-8">
-                <div className="flex items-center gap-4">
-                    <WorkflowStep label="Draft Completed" status={status.draft as any} />
-                    <WorkflowStep label="Submitted" status={status.submitted as any} />
-                    <WorkflowStep label="Requested Changes" status={status.requested as any} isLast />
-                </div>
+            {/* Workflow Strip - HIDDEN FOR ADMINS */}
+            {!isAdmin && (
+              <div className="flex flex-col gap-3 px-2 mb-8">
+                  <div className="flex items-center gap-4">
+                      <WorkflowStep label="Draft Completed" status={status.draft as any} />
+                      <WorkflowStep label="Submitted" status={status.submitted as any} />
+                      <WorkflowStep label="Requested Changes" status={status.requested as any} isLast />
+                  </div>
 
-                {activeFeedback && (
-                    <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 animate-in fade-in slide-in-from-top-1">
-                        <div className="flex items-center gap-2 mb-2">
-                            <MessageSquare className="h-3.5 w-3.5 text-indigo-600" />
-                            <span className="text-[11px] font-black uppercase text-indigo-600 tracking-wider">Latest Admin Comment</span>
-                        </div>
-                        <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                            "{activeFeedback.content}"
-                        </p>
-                        <div className="mt-3 flex items-center gap-3">
-                            <span className="text-[10px] text-slate-400 font-bold">Author: {activeFeedback.author}</span>
-                            <span className="text-slate-200">•</span>
-                            <span className="text-[10px] text-slate-400 font-bold">{new Date(activeFeedback.date).toLocaleDateString()}</span>
-                        </div>
-                    </div>
-                )}
-            </div>
+                  {activeFeedback && (
+                      <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 animate-in fade-in slide-in-from-top-1">
+                          <div className="flex items-center gap-2 mb-2">
+                              <MessageSquare className="h-3.5 w-3.5 text-indigo-600" />
+                              <span className="text-[11px] font-black uppercase text-indigo-600 tracking-wider">Latest Admin Comment</span>
+                          </div>
+                          <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                              "{activeFeedback.content}"
+                          </p>
+                          <div className="mt-3 flex items-center gap-3">
+                              <span className="text-[10px] text-slate-400 font-bold">Author: {activeFeedback.author}</span>
+                              <span className="text-slate-200">•</span>
+                              <span className="text-[10px] text-slate-400 font-bold">{new Date(activeFeedback.date).toLocaleDateString()}</span>
+                          </div>
+                      </div>
+                  )}
+              </div>
+            )}
 
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
                 <TabsList className="w-full bg-slate-100/80 border-b-0 rounded-lg p-1 h-12 flex justify-between gap-1 overflow-hidden">
@@ -373,7 +375,7 @@ export default function DefinitionView({
                 </TabsContent>
 
                 <TabsContent value="notes" className="mt-8 space-y-6">
-                    <h2 className="text-xl font-bold text-slate-900 mt-0 px-2">Notes</h2>
+                    <h2 className="text-xl font-bold text-slate-900 mt-0 px-2">Notes & Discussion History</h2>
                     {!definition.isArchived && (
                       <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl shadow-none">
                         <Label className="text-sm font-bold text-primary mb-2 block">Add a Note</Label>
@@ -391,7 +393,8 @@ export default function DefinitionView({
                     <Tabs value={notesTab} onValueChange={setNotesTab} className="w-full">
                         <TabsList className="bg-slate-100 p-1 rounded-lg h-9 mb-6 mx-2">
                             <TabsTrigger value="my-notes" className="text-xs font-bold px-4 data-[state=active]:bg-white data-[state=active]:text-primary">My Notes</TabsTrigger>
-                            <TabsTrigger value="others-notes" className="text-xs font-bold px-4 data-[state=active]:bg-white data-[state=active]:text-primary">Others' Notes</TabsTrigger>
+                            <TabsTrigger value="others-notes" className="text-xs font-bold px-4 data-[state=active]:bg-white data-[state=active]:text-primary">Team Notes</TabsTrigger>
+                            <TabsTrigger value="discussion" className="text-xs font-bold px-4 data-[state=active]:bg-white data-[state=active]:text-primary">Review History</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="my-notes" className="space-y-4 m-0 px-2">
@@ -412,7 +415,7 @@ export default function DefinitionView({
                             ) : (
                                 <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
                                     <MessageSquare className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                                    <p className="text-sm text-slate-400 italic">No notes found from you.</p>
+                                    <p className="text-sm text-slate-400 italic">No personal notes found.</p>
                                 </div>
                             )}
                         </TabsContent>
@@ -434,7 +437,44 @@ export default function DefinitionView({
                             ) : (
                                 <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
                                     <MessageSquare className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                                    <p className="text-sm text-slate-400 italic">No team notes found for this definition.</p>
+                                    <p className="text-sm text-slate-400 italic">No team notes found.</p>
+                                </div>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="discussion" className="space-y-4 m-0 px-2">
+                            {definition.discussions && definition.discussions.length > 0 ? (
+                                definition.discussions.map(msg => (
+                                    <Card key={msg.id} className={cn(
+                                      "p-4 rounded-xl border-slate-200 shadow-sm",
+                                      msg.type === 'change-request' ? "bg-amber-50/30 border-amber-100" :
+                                      msg.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-white"
+                                    )}>
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <Avatar className="h-6 w-6">
+                                                <AvatarImage src={msg.avatar} />
+                                                <AvatarFallback><User2 className="h-3 w-3" /></AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-slate-900 text-xs">{msg.author}</span>
+                                                <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(msg.date).toLocaleDateString()}</span>
+                                            </div>
+                                            {msg.type !== 'comment' && (
+                                              <Badge className={cn(
+                                                "ml-auto text-[9px] uppercase font-black",
+                                                msg.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                                              )}>
+                                                {msg.type === 'rejection' ? 'Rejected' : 'Changes Requested'}
+                                              </Badge>
+                                            )}
+                                        </div>
+                                        <p className="text-sm text-slate-700 m-0 leading-relaxed font-medium">{msg.content}</p>
+                                    </Card>
+                                ))
+                            ) : (
+                                <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                                    <History className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                                    <p className="text-sm text-slate-400 italic">No workflow history found.</p>
                                 </div>
                             )}
                         </TabsContent>

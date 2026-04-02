@@ -1,11 +1,10 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
-import { initialDefinitions, initialTemplates, findDefinition } from '@/lib/data';
-import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo } from '@/lib/types';
+import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory } from '@/lib/data';
+import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry } from '@/lib/types';
 import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,7 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-// Dynamic imports for heavy components
+// Dynamic imports
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
   ssr: false,
   loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
@@ -38,9 +37,9 @@ const NewDefinitionModal = dynamic(() => import('@/components/wiki/new-definitio
 const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal'), { ssr: false });
 const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
 const ApprovalQueue = dynamic(() => import('@/components/wiki/approval-queue'), { ssr: false });
+const ApprovalHistory = dynamic(() => import('@/components/wiki/approval-history'), { ssr: false });
 const DiscussionsPanel = dynamic(() => import('@/components/wiki/discussions-panel'), { ssr: false });
 
-type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-queue';
 type ViewingMode = 'live' | 'draft';
 
 const currentUser = {
@@ -71,8 +70,9 @@ const initialNotifications: NotificationType[] = [
 ];
 
 export default function Wiki() {
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v16', initialDefinitions);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v16', initialTemplates);
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v17', initialDefinitions);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v17', initialTemplates);
+  const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v17', initialApprovalHistory);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
@@ -86,9 +86,9 @@ export default function Wiki() {
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isDiscussionsOpen, setIsDiscussionsOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v16', true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v17', true);
   const [activeView, setActiveView] = useState<View>('definitions');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v16', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v17', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'saved' | 'pending'>('saved');
@@ -158,7 +158,7 @@ export default function Wiki() {
   }, [definitions, selectedDefinitionId, updateUrl, getStatusText]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    if ((view === 'activity-logs' || view === 'template-management' || view === 'approval-queue') && !isAdmin) {
+    if ((view === 'activity-logs' || view === 'template-management' || view === 'approval-queue' || view === 'approval-history') && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
         return;
     }
@@ -248,7 +248,6 @@ export default function Wiki() {
     };
     
     setDefinitions(prev => updateItems(prev || []));
-    
     setIsEditing(false);
     setViewingMode(updatedDefinition.isDraft ? 'draft' : 'live');
 
@@ -271,9 +270,6 @@ export default function Wiki() {
   };
 
   const handleDiscardDraft = (id: string) => {
-    const def = findDefinition(definitions || [], id);
-    if (!def) return;
-
     const removeDraftAndLock = (items: Definition[]): Definition[] => {
       if (!Array.isArray(items)) return [];
       return items.reduce((acc: Definition[], item) => {
@@ -322,6 +318,18 @@ export default function Wiki() {
           expireAt: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString()
         }
     };
+
+    if (isPending) {
+      setApprovalHistory(prev => [{
+        id: Date.now().toString(),
+        definitionId: newId,
+        definitionName: newDefinition.name,
+        action: 'Submitted',
+        userName: currentUser.name,
+        date: new Date().toISOString()
+      }, ...(prev || [])]);
+    }
+
     const addDefinitionToModule = (items: Definition[], moduleName: string, def: Definition): Definition[] => {
         if (!Array.isArray(items)) return [];
         return items.map(item => {
@@ -421,6 +429,18 @@ export default function Wiki() {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Only administrators can publish definitions.' });
         return;
     }
+    const target = findDefinition(definitions || [], id);
+    if (target) {
+      setApprovalHistory(prev => [{
+        id: Date.now().toString(),
+        definitionId: id,
+        definitionName: target.name,
+        action: 'Approved',
+        userName: currentUser.name,
+        date: new Date().toISOString()
+      }, ...(prev || [])]);
+    }
+
     const publishItem = (items: Definition[]): Definition[] => {
       if (!Array.isArray(items)) return [];
       return items.map(def => {
@@ -435,6 +455,18 @@ export default function Wiki() {
   };
 
   const handleRequestApproval = (id: string) => {
+    const target = findDefinition(definitions || [], id);
+    if (target) {
+      setApprovalHistory(prev => [{
+        id: Date.now().toString(),
+        definitionId: id,
+        definitionName: target.name,
+        action: 'Submitted',
+        userName: currentUser.name,
+        date: new Date().toISOString()
+      }, ...(prev || [])]);
+    }
+
     const updateItem = (items: Definition[]): Definition[] => {
       if (!Array.isArray(items)) return [];
       return items.map(def => {
@@ -456,6 +488,19 @@ export default function Wiki() {
   const handleReject = (id: string, comment: string, isRejection: boolean = true) => {
     if (!isAdmin) return;
     
+    const target = findDefinition(definitions || [], id);
+    if (target) {
+      setApprovalHistory(prev => [{
+        id: Date.now().toString(),
+        definitionId: id,
+        definitionName: target.name,
+        action: isRejection ? 'Rejected' : 'Changes Requested',
+        userName: currentUser.name,
+        date: new Date().toISOString(),
+        comment: comment
+      }, ...(prev || [])]);
+    }
+
     const updateItem = (items: Definition[]): Definition[] => {
       if (!Array.isArray(items)) return [];
       return items.map(def => {
@@ -810,6 +855,7 @@ export default function Wiki() {
                 onReject={(id, comment, isRejection) => handleReject(id, comment, isRejection)}
             />
         );
+        case 'approval-history': return <div className="p-6"><ApprovalHistory history={approvalHistory} /></div>;
         default: return (
                 <div className="relative">
                   {isEditing && selectedDefinition ? (
@@ -924,11 +970,11 @@ export default function Wiki() {
                         <div className="bg-muted/5 border-b">
                           <Tabs value={sidebarTab} onValueChange={(v) => setSidebarTab(v as any)} className="w-full">
                             <TabsList className="w-full grid grid-cols-2 rounded-none bg-transparent h-10 p-0 border-b">
-                              <TabsTrigger value="saved" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white text-[10px] font-bold uppercase tracking-wider h-full">
+                              <TabsTrigger value="saved" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-slate-500">
                                 My Saved
                                 {totalDraftCount > 0 && <span className="ml-1.5 bg-primary/10 text-primary h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalDraftCount}</span>}
                               </TabsTrigger>
-                              <TabsTrigger value="pending" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white text-[10px] font-bold uppercase tracking-wider h-full">
+                              <TabsTrigger value="pending" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-slate-500">
                                 Pending
                                 {totalPendingCount > 0 && <span className="ml-1.5 bg-indigo-100 text-indigo-700 h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalPendingCount}</span>}
                               </TabsTrigger>

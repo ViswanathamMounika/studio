@@ -33,7 +33,7 @@ type AppHeaderProps = {
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
     onDefinitionClick: (id: string) => void;
-    activeView: 'definitions' | 'activity-logs' | 'template-management';
+    activeView: 'definitions' | 'activity-logs' | 'template-management' | 'approval-queue' | 'approval-history';
 }
 
 export default function AppHeader({ 
@@ -57,6 +57,10 @@ export default function AppHeader({
         return 'Activity Logs';
       case 'template-management':
         return 'Template Management';
+      case 'approval-queue':
+        return 'Approval Queue';
+      case 'approval-history':
+        return 'Approval History';
       default:
         return 'MedPoint Wiki';
     }

@@ -154,6 +154,8 @@ export interface Notification {
     read: boolean;
 }
 
+export type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-queue' | 'approval-history';
+
 export type ActivityType = 
   | 'Definition Created'
   | 'Definition Updated'
@@ -179,6 +181,16 @@ export interface ActivityLog {
     activityType: ActivityType;
     occurredDate: string;
     details?: string;
+}
+
+export interface ApprovalHistoryEntry {
+  id: string;
+  definitionId: string;
+  definitionName: string;
+  action: 'Submitted' | 'Approved' | 'Rejected' | 'Changes Requested';
+  userName: string;
+  date: string;
+  comment?: string;
 }
 
 export interface DatabaseMetadata {

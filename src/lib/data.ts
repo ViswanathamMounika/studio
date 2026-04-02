@@ -1,5 +1,4 @@
-
-import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection } from './types';
+import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
     id: 'auth-status-codes',
@@ -279,6 +278,35 @@ export const initialActivityLogs: ActivityLog[] = [
     definitionName: 'Authorization Timeliness SLA',
     activityType: 'Definition Created',
     occurredDate: new Date(Date.now() - 3600000 * 72).toISOString(),
+  }
+];
+
+export const initialApprovalHistory: ApprovalHistoryEntry[] = [
+  {
+    id: 'h1',
+    definitionId: '1.1.1',
+    definitionName: 'Auth Decision Date',
+    action: 'Approved',
+    userName: 'Dhilip Sagadevan',
+    date: new Date(Date.now() - 3600000 * 24 * 5).toISOString(),
+    comment: 'All metadata verified against EzCAP production schema.'
+  },
+  {
+    id: 'h2',
+    definitionId: '1.1.3',
+    definitionName: 'Authorization Timeliness SLA',
+    action: 'Submitted',
+    userName: 'Alex Smith',
+    date: new Date(Date.now() - 3600000 * 24).toISOString(),
+  },
+  {
+    id: 'h3',
+    definitionId: '2.1.2',
+    definitionName: 'Claim Denial Codes Mapping',
+    action: 'Changes Requested',
+    userName: 'Administrator',
+    date: new Date(Date.now() - 3600000 * 2).toISOString(),
+    comment: 'Please add the technical mapping for standard HIPAA code 45.'
   }
 ];
 
