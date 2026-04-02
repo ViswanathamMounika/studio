@@ -3,11 +3,10 @@
 
 import React, { useState, useMemo } from 'react';
 import type { Definition } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Label } from '@/components/ui/label';
 import { 
     Clock, 
     CheckCircle2, 
@@ -15,16 +14,16 @@ import {
     RefreshCcw, 
     User, 
     ChevronRight,
-    ChevronLeft,
-    Check,
-    FileText,
-    History,
     ShieldCheck,
-    AlertCircle
+    AlertCircle,
+    History
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import ChangeRequestModal from './change-request-modal';
+import diff_match_patch, { type Diff } from 'diff-match-patch';
+
+const dmp = new diff_match_patch();
 
 type ApprovalQueueProps = {
     pendingDefinitions: Definition[];
@@ -34,8 +33,8 @@ type ApprovalQueueProps = {
 
 const ComparisonSection = ({ 
     title, 
-    published, 
-    submitted, 
+    published = '', 
+    submitted = '', 
     isHtml = false 
 }: { 
     title: string; 
@@ -43,8 +42,34 @@ const ComparisonSection = ({
     submitted?: string; 
     isHtml?: boolean 
 }) => {
-    // Basic comparison logic - in a real app, use diffing library
     const isModified = (published || '').trim() !== (submitted || '').trim();
+
+    // Prepare diffs
+    // If it's HTML, we treat it as text for the diff logic to ensure tags don't break
+    const diffs = dmp.diff_main(published || '', submitted || '');
+    dmp.diff_cleanupSemantic(diffs);
+
+    const renderDiff = (type: 'deletion' | 'insertion') => {
+        let html = '';
+        for (const [op, text] of diffs) {
+            switch (op) {
+                case 0: // Unchanged
+                    html += text;
+                    break;
+                case -1: // Deletion
+                    if (type === 'deletion') {
+                        html += `<del class="bg-red-100 text-red-900 border-b border-red-200 no-underline">${text}</del>`;
+                    }
+                    break;
+                case 1: // Insertion
+                    if (type === 'insertion') {
+                        html += `<ins class="bg-green-100 text-green-900 border-b border-green-200 no-underline font-bold">${text}</ins>`;
+                    }
+                    break;
+            }
+        }
+        return html;
+    };
 
     return (
         <Card className="overflow-hidden border-slate-200 shadow-sm">
@@ -62,24 +87,38 @@ const ComparisonSection = ({
                 )}
             </div>
             <CardContent className="p-0">
-                <div className="grid grid-cols-2 divide-x border-slate-100">
-                    <div className="p-4 bg-slate-50/30">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Original Version</p>
-                        <div className="text-sm text-slate-600 leading-relaxed">
+                <div className="grid grid-cols-2 divide-x border-slate-100 min-h-[100px]">
+                    {/* Left Side: Original Version (Deletions Highlighted) */}
+                    <div className="p-6 bg-slate-50/30">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Original Version</p>
+                        <div className="text-sm text-slate-600 leading-relaxed font-medium">
                             {isHtml ? (
-                                <div className="prose prose-sm max-w-none opacity-60" dangerouslySetInnerHTML={{ __html: published || '<p class="italic">No content provided.</p>' }} />
+                                <div 
+                                    className="prose prose-sm max-w-none opacity-80" 
+                                    dangerouslySetInnerHTML={{ __html: renderDiff('deletion') || '<p class="italic">No content provided.</p>' }} 
+                                />
                             ) : (
-                                <p className="opacity-60">{published || "No content provided."}</p>
+                                <div 
+                                    className="whitespace-pre-wrap opacity-80" 
+                                    dangerouslySetInnerHTML={{ __html: renderDiff('deletion') || 'No content provided.' }} 
+                                />
                             )}
                         </div>
                     </div>
-                    <div className={cn("p-4 transition-colors", isModified ? "bg-green-50/20" : "bg-slate-50/10")}>
-                        <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-3">Submitted Changes</p>
+                    {/* Right Side: Submitted Version (Insertions Highlighted) */}
+                    <div className={cn("p-6 transition-colors", isModified ? "bg-green-50/10" : "bg-slate-50/10")}>
+                        <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-4">Submitted Changes</p>
                         <div className="text-sm text-slate-800 leading-relaxed font-medium">
                             {isHtml ? (
-                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: submitted || '<p class="italic">No content provided.</p>' }} />
+                                <div 
+                                    className="prose prose-sm max-w-none" 
+                                    dangerouslySetInnerHTML={{ __html: renderDiff('insertion') || '<p class="italic">No content provided.</p>' }} 
+                                />
                             ) : (
-                                <p>{submitted || "No content provided."}</p>
+                                <div 
+                                    className="whitespace-pre-wrap" 
+                                    dangerouslySetInnerHTML={{ __html: renderDiff('insertion') || 'No content provided.' }} 
+                                />
                             )}
                         </div>
                     </div>
@@ -139,7 +178,7 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
     return (
         <div className="flex h-full overflow-hidden bg-slate-50/30">
             {/* Sidebar List */}
-            <div className="w-80 border-r bg-white flex flex-col shrink-0">
+            <div className="w-80 border-r bg-white flex flex-col shrink-0 shadow-sm z-10">
                 <div className="p-6 border-b bg-slate-50/50">
                     <div className="flex items-center justify-between mb-1">
                         <h2 className="text-lg font-bold tracking-tight text-slate-900">Approval Queue</h2>
@@ -194,17 +233,17 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                 {selectedDef ? (
                     <>
                         {/* Status & Action Banner */}
-                        <div className="bg-amber-50 border-b border-amber-100 px-8 py-3.5 flex items-center justify-between shrink-0 sticky top-0 z-20 shadow-sm">
-                            <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                                    <Clock className="h-4 w-4 text-amber-600" />
+                        <div className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shrink-0 sticky top-0 z-20 shadow-sm">
+                            <div className="flex items-center gap-4">
+                                <div className="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center border border-amber-100">
+                                    <Clock className="h-5 w-5 text-amber-600" />
                                 </div>
                                 <div className="flex flex-col">
-                                    <p className="text-sm font-medium text-amber-900">
-                                        Submitted by <span className="font-bold">{selectedDef.submittedBy || 'J. Doe'}</span>
+                                    <p className="text-sm font-bold text-slate-900">
+                                        Reviewing <span className="text-primary">{selectedDef.name}</span>
                                     </p>
-                                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">
-                                        {selectedDef.submittedAt ? `Pending for ${formatDistanceToNow(new Date(selectedDef.submittedAt))}` : 'Awaiting Action'}
+                                    <p className="text-[11px] font-medium text-slate-500">
+                                        Submitted by <span className="font-bold">{selectedDef.submittedBy}</span> • {selectedDef.submittedAt ? formatDistanceToNow(new Date(selectedDef.submittedAt), { addSuffix: true }) : 'Recently'}
                                     </p>
                                 </div>
                             </div>
@@ -230,7 +269,7 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                 </Button>
                                 <Button 
                                     size="sm"
-                                    className="rounded-xl h-9 bg-primary hover:bg-primary/90 font-bold shadow-sm px-6"
+                                    className="rounded-xl h-9 bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white font-bold shadow-sm px-6"
                                     onClick={handleApprove}
                                 >
                                     <ShieldCheck className="h-4 w-4 mr-2" />
@@ -241,105 +280,57 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
 
                         <div className="flex-1 overflow-hidden flex flex-col">
                             <ScrollArea className="flex-1">
-                                <div className="p-8 max-w-6xl mx-auto space-y-8">
+                                <div className="p-8 max-w-7xl mx-auto space-y-10 pb-32">
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                                            <span>Approval Review</span>
+                                            <span>Governance Review</span>
                                             <ChevronRight className="h-3 w-3" />
                                             <span className="text-primary">{selectedDef.module}</span>
                                         </div>
-                                        <h1 className="text-4xl font-bold tracking-tight text-slate-900">{selectedDef.name}</h1>
+                                        <h1 className="text-4xl font-bold tracking-tight text-slate-900">Side-by-Side Comparison</h1>
                                         <div className="flex items-center gap-3">
-                                            <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 h-6 gap-1.5 px-2.5">
+                                            <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 h-6 gap-1.5 px-2.5 font-bold">
                                                 <AlertCircle className="h-3 w-3" />
-                                                Reviewing Version Comparison
+                                                Reviewing visual differences between versions
                                             </Badge>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start pb-24">
-                                        {/* Comparison List */}
-                                        <div className="lg:col-span-2 space-y-6">
-                                            <div className="flex items-center gap-3">
-                                                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
-                                                    Visual Diff Analysis
-                                                </h3>
-                                                <div className="h-px bg-slate-200 flex-1" />
-                                            </div>
-                                            
-                                            <ComparisonSection 
-                                                title="Short Description" 
-                                                published={selectedDef.publishedSnapshot?.shortDescription}
-                                                submitted={selectedDef.shortDescription}
-                                            />
-
-                                            <ComparisonSection 
-                                                title="Primary Description" 
-                                                published={selectedDef.publishedSnapshot?.description}
-                                                submitted={selectedDef.description}
-                                                isHtml
-                                            />
-
-                                            <ComparisonSection 
-                                                title="Technical Details" 
-                                                published={selectedDef.publishedSnapshot?.technicalDetails}
-                                                submitted={selectedDef.technicalDetails}
-                                                isHtml
-                                            />
+                                    {/* Full Width Comparison List */}
+                                    <div className="space-y-8">
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                                Visual Field Analysis
+                                            </h3>
+                                            <div className="h-px bg-slate-200 flex-1" />
                                         </div>
+                                        
+                                        <ComparisonSection 
+                                            title="Short Description" 
+                                            published={selectedDef.publishedSnapshot?.shortDescription}
+                                            submitted={selectedDef.shortDescription}
+                                        />
 
-                                        {/* Sidebar Info */}
-                                        <div className="space-y-6 sticky top-4">
-                                            <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
-                                                <CardHeader className="bg-slate-50/50 border-b p-5">
-                                                    <CardTitle className="text-sm font-bold text-slate-800">Submission Details</CardTitle>
-                                                </CardHeader>
-                                                <CardContent className="p-5 space-y-4">
-                                                    <div className="flex justify-between items-center text-sm">
-                                                        <span className="text-slate-500 font-medium">Author</span>
-                                                        <span className="text-slate-900 font-bold">{selectedDef.submittedBy || 'J. Doe'}</span>
-                                                    </div>
-                                                    <div className="flex justify-between items-center text-sm">
-                                                        <span className="text-slate-500 font-medium">Submitted</span>
-                                                        <span className="text-slate-900 font-bold">{selectedDef.submittedAt ? format(new Date(selectedDef.submittedAt), 'MMM dd, HH:mm') : 'Recently'}</span>
-                                                    </div>
-                                                    <div className="pt-2">
-                                                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
-                                                            <p className="text-sm font-bold text-amber-600">Pending Review</p>
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
+                                        <ComparisonSection 
+                                            title="Primary Description" 
+                                            published={selectedDef.publishedSnapshot?.description}
+                                            submitted={selectedDef.description}
+                                            isHtml
+                                        />
 
-                                            <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
-                                                <CardHeader className="bg-slate-50/50 border-b p-5">
-                                                    <CardTitle className="text-sm font-bold text-slate-800">Workflow Progress</CardTitle>
-                                                </CardHeader>
-                                                <CardContent className="p-5">
-                                                    <div className="relative space-y-8 pl-6 border-l-2 border-slate-100 ml-2 py-2">
-                                                        <div className="relative">
-                                                            <div className="absolute -left-[31px] top-0 h-6 w-6 rounded-full bg-white border-2 border-emerald-500 flex items-center justify-center">
-                                                                <Check className="h-3 w-3 text-emerald-500" />
-                                                            </div>
-                                                            <div className="space-y-0.5">
-                                                                <p className="text-sm font-bold text-slate-800">Draft Completed</p>
-                                                                <p className="text-xs text-slate-500">{selectedDef.submittedBy || 'Author'}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="relative">
-                                                            <div className="absolute -left-[31px] top-0 h-6 w-6 rounded-full bg-white border-2 border-amber-600 flex items-center justify-center">
-                                                                <div className="h-1.5 w-1.5 rounded-full bg-amber-600" />
-                                                            </div>
-                                                            <div className="space-y-0.5">
-                                                                <p className="text-sm font-bold text-amber-700">Awaiting Approval</p>
-                                                                <p className="text-xs text-slate-500 font-medium">Ready for decision</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
+                                        <ComparisonSection 
+                                            title="Technical Details" 
+                                            published={selectedDef.publishedSnapshot?.technicalDetails}
+                                            submitted={selectedDef.technicalDetails}
+                                            isHtml
+                                        />
+
+                                        <ComparisonSection 
+                                            title="Usage Examples" 
+                                            published={selectedDef.publishedSnapshot?.usageExamples}
+                                            submitted={selectedDef.usageExamples}
+                                            isHtml
+                                        />
                                     </div>
                                 </div>
                             </ScrollArea>
