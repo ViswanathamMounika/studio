@@ -20,6 +20,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 // Dynamic imports for heavy components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
@@ -90,6 +91,7 @@ export default function Wiki() {
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v16', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'saved' | 'pending'>('saved');
   const { toast } = useToast();
   
   const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
@@ -473,7 +475,7 @@ export default function Wiki() {
             };
             updatedDiscussions.push(newMessage);
           }
-          return { ...def, isPendingApproval: false, discussions: updatedDiscussions, lock: undefined };
+          return { ...def, isPendingApproval: false, isDraft: true, discussions: updatedDiscussions, lock: undefined };
         }
         if (def.children) return { ...def, children: updateItem(def.children) };
         return def;
@@ -904,30 +906,44 @@ export default function Wiki() {
                     </Button>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto">
-                      {/* SAVED DRAFTS SECTION */}
-                      <div className="p-4 space-y-3 bg-muted/10 border-b">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">My Saved Definitions</h2>
-                            {totalDraftCount > 0 && <span className="bg-primary/10 text-primary h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold">{totalDraftCount}</span>}
-                        </div>
-                        <div className="pt-2">
-                            {categorizedDefinitions.drafts.length > 0 ? (
-                                <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                            ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No saved drafts found.</p>}
-                        </div>
-                      </div>
-
-                      {/* MY SUBMISSIONS SECTION (STANDARD USER ONLY) */}
-                      {!isAdmin && categorizedDefinitions.mySubmissions.length > 0 && (
-                        <div className="p-4 space-y-3 bg-indigo-50/20 border-b">
+                  <div className="flex-1 overflow-y-auto flex flex-col">
+                      {/* ADMIN VIEW OR TABS FOR STANDARD USER */}
+                      {isAdmin ? (
+                        <div className="p-4 space-y-3 bg-muted/10 border-b">
                           <div className="flex items-center justify-between">
-                              <h2 className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">My Submissions</h2>
-                              {totalPendingCount > 0 && <span className="bg-indigo-100 text-indigo-700 h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold">{totalPendingCount}</span>}
+                              <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">My Saved Definitions</h2>
+                              {totalDraftCount > 0 && <span className="bg-primary/10 text-primary h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold">{totalDraftCount}</span>}
                           </div>
                           <div className="pt-2">
-                              <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.mySubmissions} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                              {categorizedDefinitions.drafts.length > 0 ? (
+                                  <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                              ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No saved drafts found.</p>}
                           </div>
+                        </div>
+                      ) : (
+                        <div className="bg-muted/5 border-b">
+                          <Tabs value={sidebarTab} onValueChange={(v) => setSidebarTab(v as any)} className="w-full">
+                            <TabsList className="w-full grid grid-cols-2 rounded-none bg-transparent h-10 p-0 border-b">
+                              <TabsTrigger value="saved" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white text-[10px] font-bold uppercase tracking-wider h-full">
+                                My Saved
+                                {totalDraftCount > 0 && <span className="ml-1.5 bg-primary/10 text-primary h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalDraftCount}</span>}
+                              </TabsTrigger>
+                              <TabsTrigger value="pending" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white text-[10px] font-bold uppercase tracking-wider h-full">
+                                Pending
+                                {totalPendingCount > 0 && <span className="ml-1.5 bg-indigo-100 text-indigo-700 h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalPendingCount}</span>}
+                              </TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="saved" className="p-4 m-0">
+                                {categorizedDefinitions.drafts.length > 0 ? (
+                                    <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                                ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No saved drafts found.</p>}
+                            </TabsContent>
+                            <TabsContent value="pending" className="p-4 m-0">
+                                {categorizedDefinitions.mySubmissions.length > 0 ? (
+                                    <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.mySubmissions} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                                ) : <p className="py-4 text-[11px] text-muted-foreground text-center italic">No pending requests.</p>}
+                            </TabsContent>
+                          </Tabs>
                         </div>
                       )}
 

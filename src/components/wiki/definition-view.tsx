@@ -5,14 +5,14 @@ import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-sql';
-import type { Definition, Revision, Note, SectionValue } from '@/lib/types';
+import type { Definition, Revision, Note, SectionValue, DiscussionMessage } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock } from 'lucide-react';
+import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -45,6 +45,23 @@ type DefinitionViewProps = {
   searchQuery?: string;
   currentUser: { id: string; name: string };
   onOpenFeedback?: () => void;
+};
+
+const WorkflowStep = ({ label, status, isLast = false }: { label: string, status: 'completed' | 'active' | 'pending', isLast?: boolean }) => {
+    return (
+        <div className="flex items-center gap-2">
+            <div className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all",
+                status === 'completed' ? "bg-emerald-50 text-emerald-600" : 
+                status === 'active' ? "bg-primary text-white shadow-sm" : 
+                "bg-slate-100 text-slate-400"
+            )}>
+                {status === 'completed' ? <CheckCircle2 className="h-3 w-3" /> : null}
+                {label}
+            </div>
+            {!isLast && <ChevronRight className="h-3 w-3 text-slate-300" />}
+        </div>
+    );
 };
 
 export default function DefinitionView({ 
@@ -104,8 +121,9 @@ export default function DefinitionView({
     const myNotes = (definition.notes || []).filter(n => n.authorId === currentUser.id);
     const otherNotes = (definition.notes || []).filter(n => n.authorId !== currentUser.id);
 
-    const hasActiveFeedback = useMemo(() => {
-      return (definition.discussions || []).some(d => d.type === 'change-request' || d.type === 'rejection');
+    const activeFeedback = useMemo(() => {
+      const messages = definition.discussions || [];
+      return messages.filter(d => d.type === 'change-request' || d.type === 'rejection').slice(-1)[0];
     }, [definition.discussions]);
 
     const tabs = [
@@ -120,81 +138,41 @@ export default function DefinitionView({
         return definition.sectionValues?.find(v => v.sectionId === sectionId);
     };
 
+    const getWorkflowStatus = () => {
+        if (definition.isPendingApproval) return { draft: 'completed', submitted: 'active', requested: 'pending' };
+        if (activeFeedback) return { draft: 'completed', submitted: 'completed', requested: 'active' };
+        if (definition.isDraft) return { draft: 'active', submitted: 'pending', requested: 'pending' };
+        return { draft: 'completed', submitted: 'completed', requested: 'completed' }; // Published
+    };
+
+    const status = getWorkflowStatus();
+
   return (
     <TooltipProvider>
         <article className="max-w-none">
-            {definition.isPendingApproval ? (
-                <Alert className="mb-6 bg-amber-50 border-amber-100 rounded-2xl shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                            <Clock className="h-5 w-5 text-amber-600" />
-                        </div>
-                        <div className="flex-1">
-                            <AlertTitle className="text-amber-900 font-bold text-lg mb-0.5">Awaiting Approval</AlertTitle>
-                            <AlertDescription className="text-amber-700 font-medium">
-                                This version was submitted by <strong>{definition.submittedBy}</strong> and is currently in the review queue.
-                            </AlertDescription>
-                        </div>
-                    </div>
-                </Alert>
-            ) : definition.isDraft && hasActiveFeedback ? (
-                <Alert className="mb-6 bg-indigo-50 border-indigo-100 rounded-2xl shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-                            <RefreshCw className="h-5 w-5 text-indigo-600" />
-                        </div>
-                        <div className="flex-1">
-                            <AlertTitle className="text-indigo-900 font-bold text-lg mb-0.5">Revision Requested</AlertTitle>
-                            <AlertDescription className="text-indigo-700 font-medium">
-                                An administrator has requested improvements. Please review the feedback and update the definition.
-                            </AlertDescription>
-                        </div>
-                        <Button variant="outline" size="sm" onClick={onOpenFeedback} className="rounded-xl border-indigo-200 bg-white font-bold text-indigo-600 hover:bg-indigo-50">
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            View Feedback
-                        </Button>
-                    </div>
-                </Alert>
-            ) : definition.isDraft && (
-                <Alert className="mb-6 bg-primary/5 border-primary/10 rounded-2xl shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <LockIcon className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                            <AlertTitle className="text-primary font-bold text-lg mb-0.5">Working Draft Workspace</AlertTitle>
-                            <AlertDescription className="text-slate-700 font-medium">
-                                You are viewing a private working copy.
-                                {definition.lock && <span className="ml-2 opacity-70">Locked by {definition.lock.userName}</span>}
-                            </AlertDescription>
-                        </div>
-                    </div>
-                </Alert>
-            )}
-
-            <div className="flex justify-between items-start mb-6 px-2">
-                <div>
-                    <p className="text-xs font-semibold text-slate-500 mb-1">{definition.module}</p>
+            <div className="flex justify-between items-start mb-2 px-2">
+                <div className="space-y-1">
+                    <p className="text-xs font-semibold text-slate-500">{definition.module}</p>
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl font-bold text-slate-900 m-0">{definition.name}</h1>
                         <Badge variant="outline" className={cn(
                           "h-6 rounded-full font-bold text-[10px] uppercase",
                           definition.isPendingApproval ? "bg-amber-50 text-amber-700 border-amber-200" :
-                          hasActiveFeedback ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
+                          activeFeedback ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
                           "bg-slate-50"
                         )}>
                             {definition.isArchived ? 'Archived' : 
                              definition.isPendingApproval ? 'Pending Approval' :
-                             hasActiveFeedback ? 'Update Required' :
+                             activeFeedback ? 'Update Required' :
                              definition.isDraft ? 'Draft' : 'Published'}
                         </Badge>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {hasActiveFeedback && (
+                    {activeFeedback && (
                       <Button variant="outline" size="sm" onClick={onOpenFeedback} className="rounded-xl border-slate-200 font-bold gap-2">
                         <MessageSquare className="h-4 w-4" />
-                        Feedback
+                        Feedback History
                       </Button>
                     )}
                     <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-slate-400">
@@ -207,6 +185,32 @@ export default function DefinitionView({
                     )}
                     <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={onDuplicate} onArchive={onArchive} onToggleBookmark={onToggleBookmark} isAdmin={isAdmin} />
                 </div>
+            </div>
+
+            {/* Workflow Strip */}
+            <div className="flex flex-col gap-3 px-2 mb-8">
+                <div className="flex items-center gap-4">
+                    <WorkflowStep label="Draft Completed" status={status.draft as any} />
+                    <WorkflowStep label="Submitted" status={status.submitted as any} />
+                    <WorkflowStep label="Requested Changes" status={status.requested as any} isLast />
+                </div>
+
+                {activeFeedback && (
+                    <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 animate-in fade-in slide-in-from-top-1">
+                        <div className="flex items-center gap-2 mb-2">
+                            <MessageSquare className="h-3.5 w-3.5 text-indigo-600" />
+                            <span className="text-[11px] font-black uppercase text-indigo-600 tracking-wider">Latest Admin Comment</span>
+                        </div>
+                        <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                            "{activeFeedback.content}"
+                        </p>
+                        <div className="mt-3 flex items-center gap-3">
+                            <span className="text-[10px] text-slate-400 font-bold">Author: {activeFeedback.author}</span>
+                            <span className="text-slate-200">•</span>
+                            <span className="text-[10px] text-slate-400 font-bold">{new Date(activeFeedback.date).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
