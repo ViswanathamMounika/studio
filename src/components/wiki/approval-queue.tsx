@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import type { Definition } from '@/lib/types';
+import type { Definition, DiscussionMessage } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,12 +16,15 @@ import {
     ChevronRight,
     ShieldCheck,
     AlertCircle,
-    History
+    History,
+    MessageSquare,
+    RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import ChangeRequestModal from './change-request-modal';
 import diff_match_patch, { type Diff } from 'diff-match-patch';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const dmp = new diff_match_patch();
 
@@ -295,6 +298,47 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                                             </Badge>
                                         </div>
                                     </div>
+
+                                    {/* Review History Audit Trail */}
+                                    {selectedDef.discussions && selectedDef.discussions.length > 0 && (
+                                        <div className="space-y-6">
+                                            <div className="flex items-center gap-3">
+                                                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                                    Review History
+                                                </h3>
+                                                <div className="h-px bg-slate-200 flex-1" />
+                                            </div>
+                                            <div className="space-y-4">
+                                                {selectedDef.discussions.map((msg) => (
+                                                    <Card key={msg.id} className={cn(
+                                                        "p-4 rounded-xl border-slate-200 shadow-sm",
+                                                        msg.type === 'change-request' ? "bg-amber-50/30 border-amber-100" :
+                                                        msg.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-white"
+                                                    )}>
+                                                        <div className="flex items-center gap-3 mb-3">
+                                                            <Avatar className="h-6 w-6">
+                                                                <AvatarImage src={msg.avatar} />
+                                                                <AvatarFallback><User className="h-3 w-3" /></AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-slate-900 text-xs">{msg.author}</span>
+                                                                <span className="text-[10px] text-slate-400 uppercase font-black">{new Date(msg.date).toLocaleDateString()}</span>
+                                                            </div>
+                                                            {msg.type !== 'comment' && (
+                                                              <Badge className={cn(
+                                                                "ml-auto text-[9px] uppercase font-black",
+                                                                msg.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                                                              )}>
+                                                                {msg.type === 'rejection' ? 'Rejected' : 'Changes Requested'}
+                                                              </Badge>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-slate-700 m-0 leading-relaxed font-medium">"{msg.content}"</p>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Full Width Comparison List */}
                                     <div className="space-y-8">
