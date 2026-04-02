@@ -70,6 +70,7 @@ export interface TemplateSection {
   templateId: string;
   name: string;
   group?: string; // This is the Section_Group name
+  groupOrder?: number; // Sorting order for the group itself
   order: number; // Sorting order within the document/group
   fieldType: FieldType;
   isMulti: boolean;

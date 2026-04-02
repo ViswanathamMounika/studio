@@ -1,8 +1,7 @@
-
 "use client";
 import React, { useState, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Attachment, LockInfo, Template, SectionValue } from '@/lib/types';
+import type { Definition, Attachment, LockInfo, Template, SectionValue, TemplateSection } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -123,13 +122,36 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
   };
 
   const groupedSections = useMemo(() => {
-    if (!selectedTemplate) return {};
-    return selectedTemplate.sections.reduce((acc, section) => {
-      const g = section.group || 'General Documentation';
-      if (!acc[g]) acc[g] = [];
-      acc[g].push(section);
+    if (!selectedTemplate) return [];
+    
+    const allSections = selectedTemplate.sections || [];
+    
+    // 1. Separate ungrouped sections (always at the top)
+    const ungrouped = allSections
+      .filter(s => !s.group)
+      .sort((a, b) => a.order - b.order)
+      .map(s => [undefined as unknown as string, [s]] as [string, TemplateSection[]]);
+
+    // 2. Separate grouped sections
+    const groupsMap = allSections.reduce((acc, section) => {
+      if (section.group) {
+        if (!acc[section.group]) acc[section.group] = [];
+        acc[section.group].push(section);
+      }
       return acc;
-    }, {} as Record<string, typeof selectedTemplate.sections>);
+    }, {} as Record<string, TemplateSection[]>);
+
+    // 3. Sort groups by groupOrder and their internal sections by order
+    const sortedGroups = Object.entries(groupsMap)
+      .map(([name, sections]) => ({
+        name,
+        sections: sections.sort((a, b) => a.order - b.order),
+        groupOrder: sections[0].groupOrder || 0
+      }))
+      .sort((a, b) => a.groupOrder - b.groupOrder)
+      .map(g => [g.name, g.sections] as [string, TemplateSection[]]);
+
+    return [...ungrouped, ...sortedGroups];
   }, [selectedTemplate]);
 
   return (
@@ -155,7 +177,7 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
       </div>
       
       <ScrollArea className="flex-1">
-        <div className="p-8 space-y-10 max-w-6xl mx-auto pb-32">
+        <div className="p-8 space-y-10 max-w-[1000px] mx-auto pb-32">
             {/* Core Info */}
             <Card className="rounded-2xl border-slate-200 shadow-sm">
                 <CardHeader className="bg-slate-50/50 border-b p-6">
@@ -164,11 +186,11 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
                 <CardContent className="p-6 space-y-6">
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Definition Name (DEF_NAME)</Label>
+                            <Label className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Definition Name</Label>
                             <Input value={name} onChange={e => setName(e.target.value)} className="rounded-xl h-11 border-slate-200 font-bold text-slate-900" />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Module (EZ_Module)</Label>
+                            <Label className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Module</Label>
                             <Select value={module} onValueChange={setModule}>
                                 <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white">
                                     <SelectValue />
@@ -180,7 +202,7 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Keywords (DEF_KEYWORDS)</Label>
+                        <Label className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Keywords</Label>
                         <div className="flex flex-wrap items-center gap-2 p-3 border border-slate-200 rounded-xl bg-white min-h-[44px]">
                             {keywords.map(k => (
                                 <Badge key={k} className="bg-slate-100 text-slate-700 border-slate-200 rounded-lg gap-1.5 px-2.5 py-1">
@@ -203,12 +225,14 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
             </Card>
 
             {/* Dynamic Content */}
-            {Object.entries(groupedSections).map(([groupName, sections]) => (
-                <div key={groupName} className="space-y-6">
-                    <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-bold text-slate-900">{groupName}</h3>
-                        <div className="h-px bg-slate-200 flex-1" />
-                    </div>
+            {groupedSections.map(([groupName, sections], gIdx) => (
+                <div key={groupName || `standalone-${gIdx}`} className="space-y-6">
+                    {groupName && (
+                      <div className="flex items-center gap-3">
+                          <h3 className="text-lg font-bold text-slate-900">{groupName}</h3>
+                          <div className="h-px bg-slate-200 flex-1" />
+                      </div>
+                    )}
                     
                     <div className="space-y-6">
                         {sections.map(section => {
@@ -272,7 +296,7 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
                                                 <Table>
                                                     <TableHeader className="bg-slate-50 rounded-lg">
                                                         <TableRow className="hover:bg-transparent border-none">
-                                                            {section.columns?.map(col => (
+                                                            {section.columns?.sort((a,b) => a.sortOrder - b.sortOrder).map(col => (
                                                                 <TableHead key={col.id} className="font-bold text-slate-700 h-10">{col.name}</TableHead>
                                                             ))}
                                                             <TableHead className="w-10"></TableHead>
@@ -281,7 +305,7 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
                                                     <TableBody>
                                                         {value?.structuredRows?.map((row, rIdx) => (
                                                             <TableRow key={rIdx} className="border-slate-100 hover:bg-transparent">
-                                                                {section.columns?.map(col => (
+                                                                {section.columns?.sort((a,b) => a.sortOrder - b.sortOrder).map(col => (
                                                                     <TableCell key={col.id} className="py-2 px-1">
                                                                         {col.inputType === 'TextBox' ? (
                                                                             <Input 

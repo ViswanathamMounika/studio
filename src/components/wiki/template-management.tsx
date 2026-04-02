@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -25,6 +24,7 @@ type TemplateManagementProps = {
 
 interface GroupForm {
   name: string;
+  order: number;
   sectionConfigs: { sectionId: string; order: number; included: boolean }[];
 }
 
@@ -34,7 +34,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   const [currentTemplate, setCurrentTemplate] = useState<Partial<Template>>({});
   const [isEditing, setIsEditing] = useState(false);
   
-  const [groupForm, setGroupForm] = useState<GroupForm>({ name: '', sectionConfigs: [] });
+  const [groupForm, setGroupForm] = useState<GroupForm>({ name: '', order: 1, sectionConfigs: [] });
   const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
 
   const { toast } = useToast();
@@ -190,10 +190,15 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     }));
 
     if (groupToEdit) {
-      setGroupForm({ name: groupToEdit, sectionConfigs: configs });
+      const firstSection = allSections.find(s => s.group === groupToEdit);
+      setGroupForm({ 
+        name: groupToEdit, 
+        order: firstSection?.groupOrder || 1,
+        sectionConfigs: configs 
+      });
       setEditingGroupName(groupToEdit);
     } else {
-      setGroupForm({ name: '', sectionConfigs: configs });
+      setGroupForm({ name: '', order: 1, sectionConfigs: configs });
       setEditingGroupName(null);
     }
     setIsGroupModalOpen(true);
@@ -209,11 +214,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
         // If the section was in the modal's list and is checked 'included'
         if (config?.included) {
-          return { ...s, group: groupForm.name, order: config.order };
+          return { ...s, group: groupForm.name, groupOrder: groupForm.order, order: config.order };
         } 
         // If it was in the group being edited but is now UNCHECKED (or not in available list)
         else if (wasInEditingGroup) {
-          return { ...s, group: undefined };
+          return { ...s, group: undefined, groupOrder: undefined };
         }
         // Otherwise, leave section group status as is (stays in its existing group or ungrouped)
         return s;
@@ -229,30 +234,42 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     setCurrentTemplate(prev => ({
       ...prev,
       sections: (prev.sections || []).map(s => 
-        s.group === groupName ? { ...s, group: undefined } : s
+        s.group === groupName ? { ...s, group: undefined, groupOrder: undefined } : s
       )
     }));
     toast({ title: 'Group Deleted', description: `All sections from "${groupName}" have been ungrouped.` });
   };
 
   const displayGroups = useMemo(() => {
-    const sections = [...(currentTemplate.sections || [])].sort((a, b) => a.order - b.order);
-    const result: { groupName?: string; sections: TemplateSection[] }[] = [];
-    let activeGroup: { groupName?: string; sections: TemplateSection[] } | null = null;
+    const allSections = currentTemplate.sections || [];
+    
+    // 1. Ungrouped sections (must always be at the top)
+    const ungrouped = allSections
+      .filter(s => !s.group)
+      .sort((a, b) => a.order - b.order)
+      .map(s => ({ sections: [s] }));
 
-    sections.forEach(s => {
-      if (!s.group) {
-        result.push({ sections: [s] });
-        activeGroup = null;
-      } else if (activeGroup && activeGroup.groupName === s.group) {
-        activeGroup.sections.push(s);
-      } else {
-        activeGroup = { groupName: s.group, sections: [s] };
-        result.push(activeGroup);
+    // 2. Map grouped sections to their groups
+    const groupsMap = allSections.reduce((acc, s) => {
+      if (s.group) {
+        if (!acc[s.group]) acc[s.group] = [];
+        acc[s.group].push(s);
       }
-    });
+      return acc;
+    }, {} as Record<string, TemplateSection[]>);
 
-    return result;
+    // 3. Sort groups by groupOrder and sections within them by order
+    const sortedGroups = Object.entries(groupsMap)
+      .map(([name, sections]) => ({
+        groupName: name,
+        sections: sections.sort((a, b) => a.order - b.order),
+        groupOrder: sections[0].groupOrder || 0
+      }))
+      .sort((a, b) => a.groupOrder - b.groupOrder)
+      .map(({ groupName, sections }) => ({ groupName, sections }));
+
+    // 4. Combine: ungrouped first, then sorted groups
+    return [...ungrouped, ...sortedGroups];
   }, [currentTemplate.sections]);
 
   return (
@@ -715,14 +732,25 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
           </div>
           
           <div className="p-6 space-y-6 bg-slate-50/30">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Group Name</Label>
-              <Input 
-                value={groupForm.name} 
-                onChange={e => setGroupForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Clinical Parameters"
-                className="rounded-xl border-slate-200 bg-white h-10 font-bold"
-              />
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2 space-y-2">
+                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Group Name</Label>
+                <Input 
+                  value={groupForm.name} 
+                  onChange={e => setGroupForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Clinical Parameters"
+                  className="rounded-xl border-slate-200 bg-white h-10 font-bold"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Group Sort Order</Label>
+                <Input 
+                  type="number"
+                  value={groupForm.order} 
+                  onChange={e => setGroupForm(prev => ({ ...prev, order: parseInt(e.target.value) || 1 }))}
+                  className="rounded-xl border-slate-200 bg-white h-10 font-bold text-center"
+                />
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -739,7 +767,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                     </TableHeader>
                     <TableBody>
                       {groupForm.sectionConfigs.map((config, idx) => {
-                        const section = currentTemplate.sections?.find(s => s.id === config.sectionId);
+                        const section = (currentTemplate.sections || []).find(s => s.id === config.sectionId);
                         return (
                           <TableRow key={config.sectionId} className={cn(config.included ? "bg-indigo-50/20" : "")}>
                             <TableCell className="text-center">

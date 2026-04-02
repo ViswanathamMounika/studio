@@ -94,26 +94,42 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     });
   };
 
-  // Group sections by their `group` field and respect their internal sort order
   const groupedSections = useMemo(() => {
     if (!selectedTemplate) return [];
     
-    const sortedSections = [...selectedTemplate.sections].sort((a, b) => a.order - b.order);
+    const allSections = selectedTemplate.sections || [];
     
-    const groupsMap = sortedSections.reduce((acc, section) => {
-      const g = section.group || 'General Documentation';
-      if (!acc[g]) acc[g] = [];
-      acc[g].push(section);
+    // 1. Separate ungrouped sections (always at the top)
+    const ungrouped = allSections
+      .filter(s => !s.group)
+      .sort((a, b) => a.order - b.order)
+      .map(s => [undefined as unknown as string, [s]] as [string, TemplateSection[]]);
+
+    // 2. Separate grouped sections
+    const groupsMap = allSections.reduce((acc, section) => {
+      if (section.group) {
+        if (!acc[section.group]) acc[section.group] = [];
+        acc[section.group].push(section);
+      }
       return acc;
     }, {} as Record<string, TemplateSection[]>);
 
-    // We keep the groups in the order they first appear based on their first section's document order
-    return Object.entries(groupsMap);
+    // 3. Sort groups by groupOrder and their internal sections by order
+    const sortedGroups = Object.entries(groupsMap)
+      .map(([name, sections]) => ({
+        name,
+        sections: sections.sort((a, b) => a.order - b.order),
+        groupOrder: sections[0].groupOrder || 0
+      }))
+      .sort((a, b) => a.groupOrder - b.groupOrder)
+      .map(g => [g.name, g.sections] as [string, TemplateSection[]]);
+
+    return [...ungrouped, ...sortedGroups];
   }, [selectedTemplate]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-full h-[90vh] flex flex-col p-0 overflow-hidden border-none rounded-[24px]">
+      <DialogContent className="max-w-[1000px] w-full h-[90vh] flex flex-col p-0 overflow-hidden border-none rounded-[24px]">
         <div className="p-6 border-b bg-white sticky top-0 z-30 flex justify-between items-center shadow-sm">
           <DialogHeader className="p-0">
             <DialogTitle className="text-2xl font-bold tracking-tight">Create Definition</DialogTitle>
@@ -136,7 +152,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
 
         <ScrollArea className="flex-1 bg-slate-50/30">
           <div className="p-8 space-y-10 pb-24">
-            {/* Core Info */}
             <Card className="rounded-2xl border-slate-200 shadow-sm">
               <CardContent className="p-6 space-y-6">
                 <div className="grid grid-cols-2 gap-6">
@@ -159,27 +174,25 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
               </CardContent>
             </Card>
 
-            {/* Dynamic Template Sections grouped and sorted */}
-            {groupedSections.map(([groupName, sections]) => (
-              <div key={groupName} className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-bold text-slate-900">{groupName}</h3>
-                  <div className="h-px bg-slate-200 flex-1" />
-                </div>
+            {groupedSections.map(([groupName, sections], idx) => (
+              <div key={groupName || `standalone-${idx}`} className="space-y-6">
+                {groupName && (
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-bold text-slate-900">{groupName}</h3>
+                    <div className="h-px bg-slate-200 flex-1" />
+                  </div>
+                )}
                 
                 <div className="space-y-6">
                   {sections.map(section => {
                     const value = sectionValues.find(v => v.sectionId === section.id);
-                    
                     return (
                       <Card key={section.id} className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
                         <CardHeader className="py-3 bg-white border-b px-6 flex flex-row items-center justify-between">
-                          <div className="flex flex-col">
-                            <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
-                              {section.name}
-                              {section.isRequired && <span className="text-red-500 font-bold">*</span>}
-                            </CardTitle>
-                          </div>
+                          <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
+                            {section.name}
+                            {section.isRequired && <span className="text-red-500 font-bold">*</span>}
+                          </CardTitle>
                           <Badge variant="ghost" className="text-[9px] font-black uppercase text-slate-400 bg-slate-50 border-slate-100">
                             {section.fieldType}
                           </Badge>
