@@ -89,7 +89,10 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate, mana
                       <div className="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
                           <Box className="h-5 w-5 text-[#3F51B5]" />
                       </div>
-                      <CardTitle className="text-base font-bold text-slate-900">{template.name}</CardTitle>
+                      <CardTitle className="text-base font-bold text-slate-900 flex flex-col">
+                        <span>{template.name}</span>
+                        <span className="text-[10px] font-black uppercase text-primary tracking-widest mt-0.5">{template.module}</span>
+                      </CardTitle>
                       <CardDescription className="text-xs leading-relaxed text-slate-500 mt-1 line-clamp-2">
                         {template.description || "Pre-defined blueprint with specific data capturing sections."}
                       </CardDescription>
