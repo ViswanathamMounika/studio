@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2 } from 'lucide-react';
+import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import RelatedDefinitions from './related-definitions';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { formatDistanceToNow } from 'date-fns';
 
 const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
 
@@ -74,6 +75,7 @@ export default function DefinitionView({
     const [noteText, setNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
     const [notesTab, setNotesTab] = useState('my-notes');
+    const [showFeedbackPane, setShowFeedbackPane] = useState(false);
     
     const { toast } = useToast();
 
@@ -122,10 +124,11 @@ export default function DefinitionView({
     const myNotes = (definition.notes || []).filter(n => n.authorId === currentUser.id);
     const otherNotes = (definition.notes || []).filter(n => n.authorId !== currentUser.id);
 
-    const activeFeedback = useMemo(() => {
-      const messages = definition.discussions || [];
-      return messages.filter(d => d.type === 'change-request' || d.type === 'rejection').slice(-1)[0];
+    const feedbackMessages = useMemo(() => {
+      return (definition.discussions || []).filter(d => d.type === 'change-request' || d.type === 'rejection');
     }, [definition.discussions]);
+
+    const activeFeedback = feedbackMessages[feedbackMessages.length - 1];
 
     const tabs = [
         { id: 'description', label: 'Description' },
@@ -151,9 +154,9 @@ export default function DefinitionView({
   return (
     <TooltipProvider>
         <article className="max-w-none">
-            {/* Workflow Strip - ON TOP OF DEFINITION NAME */}
-            {!isAdmin && viewingMode === 'draft' && (
-              <div className="flex items-center gap-4 px-2 mb-6 animate-in fade-in slide-in-from-top-1">
+            {/* Workflow Strip - Visible for both Admin and Standard User in Draft Mode */}
+            {viewingMode === 'draft' && (
+              <div className="flex items-center gap-4 px-2 mb-4 animate-in fade-in slide-in-from-top-1">
                   <div className="flex items-center gap-4">
                       <WorkflowStep label="Draft Completed" status={status.draft as any} />
                       <WorkflowStep label="Submitted" status={status.submitted as any} />
@@ -166,18 +169,69 @@ export default function DefinitionView({
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                onClick={onOpenFeedback}
-                                className="h-8 w-8 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors border border-indigo-100"
+                                onClick={() => setShowFeedbackPane(!showFeedbackPane)}
+                                className={cn(
+                                    "h-8 w-8 rounded-xl transition-all border",
+                                    showFeedbackPane 
+                                        ? "bg-indigo-600 text-white border-indigo-600 shadow-md" 
+                                        : "bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100"
+                                )}
                               >
                                   <MessageSquare className="h-4 w-4" />
                               </Button>
                           </TooltipTrigger>
                           <TooltipContent side="right">
-                              <p className="font-bold text-xs">View Admin Comments</p>
+                              <p className="font-bold text-xs">{showFeedbackPane ? 'Hide Feedback' : 'View Approver Comments'}</p>
                           </TooltipContent>
                       </Tooltip>
                   )}
               </div>
+            )}
+
+            {/* Inline Feedback Pane */}
+            {viewingMode === 'draft' && showFeedbackPane && feedbackMessages.length > 0 && (
+                <div className="px-2 mb-6 animate-in slide-in-from-top-2 fade-in duration-300">
+                    <Card className="border-indigo-100 bg-indigo-50/30 rounded-2xl shadow-sm overflow-hidden">
+                        <CardHeader className="py-3 px-4 bg-white/50 border-b border-indigo-100 flex flex-row items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <MessageSquare className="h-4 w-4 text-indigo-600" />
+                                <span className="text-xs font-black uppercase tracking-widest text-indigo-900">Approver Feedback History</span>
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg text-indigo-400" onClick={() => setShowFeedbackPane(false)}>
+                                <X className="h-3.5 w-3.5" />
+                            </Button>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-4 max-h-[300px] overflow-y-auto">
+                            {feedbackMessages.map((msg) => (
+                                <div key={msg.id} className="flex gap-3 animate-in fade-in slide-in-from-left-1">
+                                    <Avatar className="h-7 w-7 shrink-0 border border-white shadow-sm">
+                                        <AvatarImage src={msg.avatar} />
+                                        <AvatarFallback className="bg-indigo-100 text-indigo-600 text-[10px] font-bold">
+                                            {msg.author.charAt(0)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 space-y-1.5">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-slate-900">{msg.author}</span>
+                                            <span className="text-[10px] text-slate-400 font-medium">
+                                                {formatDistanceToNow(new Date(msg.date), { addSuffix: true })}
+                                            </span>
+                                            <Badge className={cn(
+                                                "ml-auto text-[8px] uppercase font-black px-1.5 h-4",
+                                                msg.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                                            )}>
+                                                {msg.type === 'rejection' ? 'Rejected' : 'Change Requested'}
+                                            </Badge>
+                                        </div>
+                                        <div className="p-3 bg-white border border-indigo-100/50 rounded-xl shadow-sm">
+                                            <p className="text-xs text-slate-700 leading-relaxed font-medium m-0 italic">"{msg.content}"</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
             )}
 
             <div className="flex justify-between items-start mb-2 px-2">
