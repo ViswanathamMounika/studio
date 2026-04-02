@@ -184,7 +184,6 @@ export default function Wiki() {
     if (viewFromUrl && viewFromUrl !== 'definitions') {
         handleNavigate(viewFromUrl, false);
     } else if (definitionIdFromUrl) {
-        // Decide mode based on ID prefix or check both lists
         const isDraftId = definitionIdFromUrl.startsWith('draft_');
         handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, isDraftId ? 'draft' : 'live', false);
     } else {
@@ -201,7 +200,6 @@ export default function Wiki() {
     };
   }, [handlePopState]);
 
-  // Heartbeat Mechanism
   useEffect(() => {
     if (isEditing && selectedDefinitionId && viewingMode === 'draft') {
       heartbeatInterval.current = setInterval(() => {
@@ -235,7 +233,6 @@ export default function Wiki() {
     const isNowPending = updatedDefinition.isPendingApproval && !updatedDefinition.isDraft;
     
     if (updatedDefinition.isDraft || updatedDefinition.isPendingApproval) {
-        // Update the draft list
         setDrafts(prev => {
             const exists = prev.some(d => d.id === updatedDefinition.id);
             if (exists) {
@@ -256,7 +253,6 @@ export default function Wiki() {
         }
         setViewingMode('draft');
     } else {
-        // Publishing directly (Admin only)
         const newRevision: Revision = {
             ticketId: `MPM-REV-${Date.now()}`,
             date: new Date().toISOString().split('T')[0],
@@ -279,7 +275,6 @@ export default function Wiki() {
         };
 
         setDefinitions(prev => updateDefinitions(prev || []));
-        // Remove from drafts if it existed
         setDrafts(prev => prev.filter(d => d.id !== updatedDefinition.id && d.originalId !== updatedDefinition.id));
         setViewingMode('live');
         setSelectedDefinitionId(updatedDefinition.originalId || updatedDefinition.id);
@@ -412,7 +407,6 @@ export default function Wiki() {
         if (existingIdx !== -1) {
             return items.map(item => item.id === finalPublishedDef.id ? finalPublishedDef : item);
         }
-        // If not found at top level, check children OR add to module
         const moduleExists = items.find(m => m.name === draft.module);
         if (moduleExists) {
             return items.map(m => m.name === draft.module ? { ...m, children: [finalPublishedDef, ...(m.children || [])] } : m);
@@ -470,7 +464,6 @@ export default function Wiki() {
     const def = findDefinition(definitions, selectedDefinitionId);
     if (!def) return;
 
-    // Check if a draft already exists for this user/definition
     const existingDraft = drafts.find(d => d.originalId === def.id);
     if (existingDraft) {
         handleSelectDefinition(existingDraft.id, undefined, 'draft');
@@ -502,6 +495,21 @@ export default function Wiki() {
     setViewingMode('draft');
     setSelectedDefinitionId(draftId);
     toast({ title: "Draft Created", description: "Exclusive lock acquired." });
+  };
+
+  const handleNewDefinitionClick = (type: 'template' | 'blank') => {
+    if (type === 'template') {
+      setIsTemplatesModalOpen(true);
+    } else {
+      setDraftedDefinitionData(null);
+      setIsNewDefinitionModalOpen(true);
+    }
+  };
+
+  const handleUseTemplate = (templateData: Partial<Definition>, templateId: string) => {
+    setDraftedDefinitionData({ ...templateData, templateId });
+    setIsTemplatesModalOpen(false);
+    setIsNewDefinitionModalOpen(true);
   };
 
   const categorizedDefinitions = useMemo(() => {
