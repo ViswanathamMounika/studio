@@ -35,6 +35,7 @@ export default function DefinitionTree({ definitions, selectedId, onSelect, onTo
           activeSection={activeSection}
           searchQuery={searchQuery}
           editLockId={editLockId}
+          treeId={treeId}
         />
       ))}
     </div>

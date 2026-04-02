@@ -84,7 +84,7 @@ const DefinitionSubItems = ({ definition, onSelect, activeSection, level }: { de
 };
 
 
-export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isSelectMode, selectedForExport, activeSection, searchQuery, editLockId }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isSelectMode: boolean, selectedForExport: string[], activeSection: string, searchQuery: string, editLockId: string | null }) {
+export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isSelectMode, selectedForExport, activeSection, searchQuery, editLockId, treeId }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isSelectMode: boolean, selectedForExport: string[], activeSection: string, searchQuery: string, editLockId: string | null, treeId?: string }) {
   const isModule = !node.description && !node.shortDescription && node.children && node.children.length > 0;
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId !== null && node.id === selectedId;
@@ -110,6 +110,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
         if (isModule) {
             setIsNodeExpanded(!isNodeExpanded);
         } else {
+            // Logic for mode: if treeId is 'mpm', we select 'live' mode
             onSelect(node.id);
         }
     }
@@ -129,6 +130,9 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
   const hasFeedback = useMemo(() => {
     return (node.discussions || []).some(d => d.type === 'change-request' || d.type === 'rejection');
   }, [node.discussions]);
+
+  // Workflow badges should only show in workflow trees (drafts, pending), not in the primary library (mpm)
+  const showWorkflowBadges = treeId !== 'mpm';
 
   return (
     <Collapsible open={isNodeExpanded} onOpenChange={setIsNodeExpanded}>
@@ -186,7 +190,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                 </TooltipProvider>
 
                 <div className="ml-auto flex items-center gap-1.5 opacity-60 group-hover/item:opacity-100 transition-opacity pr-1">
-                    {isLocked && (
+                    {showWorkflowBadges && isLocked && (
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -198,7 +202,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                             </Tooltip>
                         </TooltipProvider>
                     )}
-                    {node.isPendingApproval && (
+                    {showWorkflowBadges && node.isPendingApproval && (
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -210,7 +214,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                             </Tooltip>
                         </TooltipProvider>
                     )}
-                    {hasFeedback && (
+                    {showWorkflowBadges && hasFeedback && (
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -267,6 +271,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                         activeSection={activeSection}
                         searchQuery={searchQuery}
                         editLockId={editLockId}
+                        treeId={treeId}
                     />
                     ))}
                 </div>

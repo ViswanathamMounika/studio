@@ -613,11 +613,12 @@ export default function Wiki() {
             if (!item) return acc;
             const children = filterPublishedStrict(item.children || []);
             
-            // LOGIC: Show in MPM Definitions if it is currently published 
-            // OR if it is being edited/pending but has a previously published version (snapshot)
+            // Logic: Include only if strictly published OR has a previously published version
             const hasPublishedVersion = (!item.isDraft && !item.isPendingApproval) || !!item.publishedSnapshot;
             
-            const isMatch = hasPublishedVersion && (item.description || item.shortDescription || children.length > 0);
+            const isModule = children.length > 0;
+            const isMatch = isModule || (hasPublishedVersion && (item.description || item.shortDescription));
+            
             if (isMatch) {
                 acc.push({ ...item, children } as Definition);
             }
@@ -976,14 +977,14 @@ export default function Wiki() {
                             <TabsList className="w-full grid grid-cols-2 rounded-none bg-transparent h-10 p-0 border-b">
                               <TabsTrigger 
                                 value="saved" 
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-slate-500"
+                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-primary"
                               >
                                 My Saved
                                 {totalDraftCount > 0 && <span className="ml-1.5 bg-primary/10 text-primary h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalDraftCount}</span>}
                               </TabsTrigger>
                               <TabsTrigger 
                                 value="pending" 
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-slate-500"
+                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-primary"
                               >
                                 Submitted
                                 {totalPendingCount > 0 && <span className="ml-1.5 bg-indigo-100 text-indigo-700 h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalPendingCount}</span>}
