@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send, AlertTriangle, Trash2, ClipboardList } from 'lucide-react';
+import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send, AlertTriangle, Trash2, ClipboardList, Share2 } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -224,51 +224,113 @@ export default function DefinitionView({
                             {definition.isArchived ? 'Archived' : viewingMode === 'live' ? 'Published' : 'Draft'}
                         </Badge>
                     </div>
+                    {definition.keywords && definition.keywords.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {definition.keywords.map(k => (
+                                <Badge key={k} variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-bold px-3">
+                                    {k}
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-slate-400">
-                      <Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary text-primary")} />
+                    <Button variant="ghost" size="icon" className="text-primary">
+                        <Share2 className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-primary">
+                      <Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary")} />
                     </Button>
                     {!definition.isArchived && (
-                        <Button onClick={onEdit} className="bg-primary hover:bg-primary/90 font-bold px-6">Edit</Button>
+                        <Button onClick={onEdit} className="bg-primary hover:bg-primary/90 font-bold px-6 h-9 rounded-lg">Edit</Button>
                     )}
                     <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={() => onDuplicate(definition.id)} onArchive={onArchive} onToggleBookmark={onToggleBookmark} isAdmin={isAdmin} />
                 </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+            <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-4">
                 <TabsList className="w-full bg-slate-100 rounded-lg p-1 h-12">
                     <TabsTrigger value="description" className="flex-1 font-bold text-sm">Description</TabsTrigger>
-                    <TabsTrigger value="revisions" className="flex-1 font-bold text-sm">Version History</TabsTrigger>
+                    <TabsTrigger value="version-history" className="flex-1 font-bold text-sm">Version History</TabsTrigger>
                     <TabsTrigger value="attachments" className="flex-1 font-bold text-sm">Attachments</TabsTrigger>
                     <TabsTrigger value="notes" className="flex-1 font-bold text-sm">Notes</TabsTrigger>
                     <TabsTrigger value="related-definitions" className="flex-1 font-bold text-sm">Related Definitions</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="description" className="mt-6">
-                    <Accordion type="multiple" defaultValue={["short-description", "description"]} className="space-y-4">
+                    <Accordion type="multiple" defaultValue={["source-of-truth", "short-description", "description", "usage-examples"]} className="space-y-4">
+                        {/* Source of Truth Section */}
+                        <AccordionItem value="source-of-truth" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
+                            <AccordionTrigger className="font-bold py-4 hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                    Source of Truth
+                                    <Info className="h-4 w-4 text-slate-400" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-6">
+                                <div className="space-y-2 text-sm">
+                                    <p className="font-bold">Source:</p>
+                                    <p><span className="font-bold">Source Type:</span> <span className="text-slate-600 ml-1">{definition.sourceType || '—'}</span></p>
+                                    <p><span className="font-bold">Source Name:</span> <span className="text-slate-600 ml-1">{definition.sourceName || '—'}</span></p>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        {/* Short Description Section */}
                         <AccordionItem value="short-description" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
-                            <AccordionTrigger className="font-bold py-4">Short Description</AccordionTrigger>
+                            <AccordionTrigger className="font-bold py-4 hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                    Short Description
+                                    <Info className="h-4 w-4 text-slate-400" />
+                                </div>
+                            </AccordionTrigger>
                             <AccordionContent className="pb-6 text-sm text-slate-700 leading-relaxed">
                                 {definition.shortDescription || 'Not provided'}
                             </AccordionContent>
                         </AccordionItem>
+
+                        {/* Description Section */}
                         <AccordionItem value="description" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
-                            <AccordionTrigger className="font-bold py-4">Description</AccordionTrigger>
+                            <AccordionTrigger className="font-bold py-4 hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                    Description
+                                    <Info className="h-4 w-4 text-slate-400" />
+                                </div>
+                            </AccordionTrigger>
                             <AccordionContent className="pb-6">
                                 <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: definition.description || '<p class="italic text-slate-400">No description provided.</p>' }} />
                             </AccordionContent>
                         </AccordionItem>
+
+                        {/* Technical Details Section */}
                         <AccordionItem value="technical-details" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
-                            <AccordionTrigger className="font-bold py-4">Technical Details</AccordionTrigger>
+                            <AccordionTrigger className="font-bold py-4 hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                    Technical Details
+                                    <Info className="h-4 w-4 text-slate-400" />
+                                </div>
+                            </AccordionTrigger>
                             <AccordionContent className="pb-6">
                                 <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: definition.technicalDetails || '<p class="italic text-slate-400">Not provided</p>' }} />
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        {/* Usage Examples Section */}
+                        <AccordionItem value="usage-examples" className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
+                            <AccordionTrigger className="font-bold py-4 hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                    Usage Examples
+                                    <Info className="h-4 w-4 text-slate-400" />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-6">
+                                <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: definition.usageExamples || '<p class="italic text-slate-400">Not provided</p>' }} />
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>
                 </TabsContent>
 
-                <TabsContent value="revisions" className="mt-8 space-y-6">
+                <TabsContent value="version-history" className="mt-8 space-y-6">
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-bold text-slate-900">Archive Revisions</h2>
                         <Button variant="outline" size="sm" disabled={selectedRevisions.length !== 2} onClick={() => setShowComparison(true)} className="rounded-xl font-bold">Compare Revisions</Button>
