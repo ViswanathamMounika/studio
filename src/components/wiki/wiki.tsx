@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -606,17 +607,16 @@ export default function Wiki() {
         }, []);
     };
 
-    const filterPublishedWithSnapshots = (items: Definition[]): Definition[] => {
+    const filterPublishedStrict = (items: Definition[]): Definition[] => {
         if (!Array.isArray(items)) return [];
         return items.reduce((acc: Definition[], item) => {
             if (!item) return acc;
-            const children = filterPublishedWithSnapshots(item.children || []);
-            const isCurrentlyPublished = item.isDraft !== true;
-            const hasPublishedVersion = !!item.publishedSnapshot;
-            const isMatch = (isCurrentlyPublished || hasPublishedVersion) && (item.description || item.shortDescription || children.length > 0);
+            const children = filterPublishedStrict(item.children || []);
+            // ONLY PUBLISHED: Not a draft AND not pending approval
+            const isStrictlyPublished = !item.isDraft && !item.isPendingApproval;
+            const isMatch = isStrictlyPublished && (item.description || item.shortDescription || children.length > 0);
             if (isMatch) {
-                const displayItem = (item.isDraft && item.publishedSnapshot) ? { ...item, ...item.publishedSnapshot, isDraft: false, children } : { ...item, children };
-                acc.push(displayItem as Definition);
+                acc.push({ ...item, children } as Definition);
             }
             return acc;
         }, []);
@@ -658,7 +658,7 @@ export default function Wiki() {
         }, []);
     };
 
-    let processedPublished = itemsForPublished;
+    let processedPublished = filterPublishedStrict(itemsForPublished);
     if (showArchived) {
         const getOnlyArchived = (items: Definition[]): Definition[] => {
             if (!Array.isArray(items)) return [];
@@ -688,7 +688,7 @@ export default function Wiki() {
 
     return {
         drafts: filterByDraft(itemsForWorkflow, true),
-        published: filterPublishedWithSnapshots(processedPublished),
+        published: processedPublished,
         pending: filterPending(itemsForWorkflow),
         mySubmissions: filterMySubmissions(itemsForWorkflow)
     };
@@ -866,7 +866,7 @@ export default function Wiki() {
                           definition={selectedDefinition} 
                           allDefinitions={definitions}
                           onEdit={handleEditClick} 
-                          onDuplicate={handleDuplicate} 
+                          onDuplicate={() => handleDuplicate(selectedDefinitionId!)} 
                           onArchive={handleArchive} 
                           onDelete={handleDelete} 
                           onToggleBookmark={toggleBookmark} 
@@ -970,11 +970,17 @@ export default function Wiki() {
                         <div className="bg-muted/5 border-b">
                           <Tabs value={sidebarTab} onValueChange={(v) => setSidebarTab(v as any)} className="w-full">
                             <TabsList className="w-full grid grid-cols-2 rounded-none bg-transparent h-10 p-0 border-b">
-                              <TabsTrigger value="saved" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary !data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-slate-500">
+                              <TabsTrigger 
+                                value="saved" 
+                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-slate-500"
+                              >
                                 My Saved
                                 {totalDraftCount > 0 && <span className="ml-1.5 bg-primary/10 text-primary h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalDraftCount}</span>}
                               </TabsTrigger>
-                              <TabsTrigger value="pending" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary !data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-slate-500">
+                              <TabsTrigger 
+                                value="pending" 
+                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-white data-[state=active]:text-primary text-[10px] font-bold uppercase tracking-wider h-full text-slate-500"
+                              >
                                 Pending
                                 {totalPendingCount > 0 && <span className="ml-1.5 bg-indigo-100 text-indigo-700 h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center text-[8px]">{totalPendingCount}</span>}
                               </TabsTrigger>
@@ -1030,7 +1036,7 @@ export default function Wiki() {
                             {categorizedDefinitions.published.length > 0 ? (
                                 <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'live')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={null} />
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-12 px-4 text-center"><Info className="h-8 w-8 text-muted-foreground/30 mb-2" /><p className="text-xs text-muted-foreground italic">No definitions found for this filter.</p></div>
+                                <div className="flex flex-col items-center justify-center py-12 px-4 text-center"><Info className="h-8 w-8 text-muted-foreground/30 mb-2" /><p className="text-xs text-muted-foreground italic">No published definitions found.</p></div>
                             )}
                           </div>
                       </div>
