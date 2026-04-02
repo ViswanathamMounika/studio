@@ -637,7 +637,7 @@ export default function Wiki() {
                       {isAdmin ? (
                         <div className="p-4 space-y-3 border-b bg-white/50">
                           <div className="flex items-center justify-between">
-                              <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Personal Work</h2>
+                              <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Saved Definitions</h2>
                               {categorizedDefinitions.drafts.length > 0 && (
                                 <Badge className="bg-primary/10 text-primary h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black">
                                     {categorizedDefinitions.drafts.length}
