@@ -10,6 +10,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Pencil, Trash2, Save, Plus, X, LayoutTemplate, Type, FileType, List, AlignLeft, Hash, Table as TableIcon, Settings2, FolderPlus, FolderTree } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Template, TemplateSection, TemplateOption, TemplateColumn } from '@/lib/types';
@@ -67,6 +79,15 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
     setIsModalOpen(true);
   };
 
+  const handleDeleteTemplate = (id: string) => {
+    const updatedTemplates = templates.filter(t => t.id !== id);
+    onSaveTemplates(updatedTemplates);
+    toast({
+      title: "Template Deleted",
+      description: "The blueprint has been removed from the system.",
+    });
+  };
+
   const handleSaveTemplate = () => {
     if (!currentTemplate.name?.trim()) {
       toast({ variant: 'destructive', title: 'Error', description: 'Template Name is required.' });
@@ -85,6 +106,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       updatedTemplates = templates.map(t => t.id === templateToSave.id ? templateToSave : t);
     } else {
       updatedTemplates = [...templates, templateToSave];
+    }
+
+    // If setting as default, unset others
+    if (templateToSave.isDefault) {
+      updatedTemplates = updatedTemplates.map(t => t.id === templateToSave.id ? t : { ...t, isDefault: false });
     }
 
     onSaveTemplates(updatedTemplates);
@@ -250,18 +276,15 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   const displayGroups = useMemo(() => {
     const allSections = currentTemplate.sections || [];
     
-    // Find unique groups and standalone sections
     const standaloneSections = allSections.filter(s => !s.group);
     const uniqueGroupNames = Array.from(new Set(allSections.filter(s => s.group).map(s => s.group as string)));
 
     const units: Array<{ type: 'section' | 'group', order: number, name?: string, sections: TemplateSection[] }> = [];
 
-    // Add standalone sections
     standaloneSections.forEach(s => {
       units.push({ type: 'section', order: s.order, sections: [s] });
     });
 
-    // Add groups
     uniqueGroupNames.forEach(name => {
       const groupSections = allSections.filter(s => s.group === name);
       const groupOrder = groupSections[0]?.groupOrder || 0;
@@ -273,7 +296,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       });
     });
 
-    // Sort globally by 'order'
     return units.sort((a, b) => a.order - b.order);
   }, [currentTemplate.sections]);
 
@@ -323,9 +345,25 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary rounded-lg" onClick={() => handleEdit(template)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive rounded-lg">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive rounded-lg">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-2xl border-none p-8">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-2xl font-bold">Delete Template?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-slate-500 text-sm">
+                              This action will remove the blueprint <strong>{template.name}</strong> from the management list. Existing documentation using this template will remain intact, but it cannot be used for new definitions.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="mt-8 gap-3">
+                            <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteTemplate(template.id)} className="rounded-xl bg-red-600 hover:bg-red-700 font-bold">Delete Blueprint</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -391,15 +429,24 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Default Status</Label>
-                  <div className="flex items-center gap-4 h-11">
+                  <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Configuration</Label>
+                  <div className="flex flex-col gap-3 pt-1">
                     <div className="flex items-center gap-2">
                       <Checkbox 
                         id="is-default" 
                         checked={currentTemplate.isDefault} 
                         onCheckedChange={v => setCurrentTemplate(prev => ({ ...prev, isDefault: !!v }))}
                       />
-                      <Label htmlFor="is-default" className="text-sm font-bold text-slate-700 cursor-pointer">Set as System Default</Label>
+                      <Label htmlFor="is-default" className="text-sm font-bold text-slate-700 cursor-pointer">System Default</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch 
+                        id="is-active" 
+                        checked={currentTemplate.isActive} 
+                        onCheckedChange={v => setCurrentTemplate(prev => ({ ...prev, isActive: v }))}
+                        className="scale-75 origin-left"
+                      />
+                      <Label htmlFor="is-active" className="text-sm font-bold text-slate-700 cursor-pointer">Active Status</Label>
                     </div>
                   </div>
                 </div>
