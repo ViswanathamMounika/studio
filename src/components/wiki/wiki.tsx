@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -25,7 +24,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 // Dynamic imports for heavy components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
   ssr: false,
-  loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
+  loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
 });
 const DefinitionView = dynamic(() => import('@/components/wiki/definition-view'), { 
   ssr: false,
@@ -137,7 +136,8 @@ export default function Wiki() {
   }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    if ((view === 'activity-logs' || view === 'template-management' || view === 'approval-workflow') && !isAdmin) {
+    // Activity logs are now available to everyone
+    if ((view === 'template-management' || view === 'approval-workflow') && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
         return;
     }
@@ -498,7 +498,7 @@ export default function Wiki() {
 
   const renderContent = () => {
     switch (activeView) {
-        case 'activity-logs': return <div className="p-6"><ActivityLogs /></div>;
+        case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
         case 'approval-workflow': return (
             <Tabs defaultValue="queue" className="h-full flex flex-col">

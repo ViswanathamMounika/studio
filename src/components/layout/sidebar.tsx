@@ -163,18 +163,19 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                                 Templates
                                                             </SidebarMenuSubButton>
                                                         </SidebarMenuSubItem>
-                                                        <SidebarMenuSubItem>
-                                                            <SidebarMenuSubButton 
-                                                                isActive={activeView === 'activity-logs'}
-                                                                onClick={() => handleNavigate('activity-logs')}
-                                                                className="h-7 text-[12px]"
-                                                            >
-                                                                <History className="h-3.5 w-3.5 mr-1" />
-                                                                Activity Logs
-                                                            </SidebarMenuSubButton>
-                                                        </SidebarMenuSubItem>
                                                     </>
                                                 )}
+
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton 
+                                                        isActive={activeView === 'activity-logs'}
+                                                        onClick={() => handleNavigate('activity-logs')}
+                                                        className="h-7 text-[12px]"
+                                                    >
+                                                        <History className="h-3.5 w-3.5 mr-1" />
+                                                        Activity Logs
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
                                             </SidebarMenuSub>
                                         </CollapsibleContent>
                                     </SidebarMenuItem>

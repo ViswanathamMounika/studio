@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -46,7 +45,11 @@ const activityTypes: ActivityType[] = [
 
 const ITEMS_PER_PAGE = 10;
 
-export default function ActivityLogs() {
+type ActivityLogsProps = {
+    isAdmin: boolean;
+};
+
+export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
     const [logs] = useState<ActivityLog[]>(initialActivityLogs || []);
     
     // UI Filter States (Pending Application)
@@ -322,16 +325,18 @@ export default function ActivityLogs() {
             <Card>
                 <CardHeader className="py-3 bg-muted/5 border-b flex flex-row items-center justify-between">
                     <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Search Filters</CardTitle>
-                    <div className="flex items-center space-x-2">
-                        <Switch 
-                            id="viewed-only" 
-                            checked={isViewedOnly}
-                            onCheckedChange={setIsViewedOnly}
-                        />
-                        <Label htmlFor="viewed-only" className="text-xs font-bold text-slate-600 flex items-center gap-1">
-                            viewed by
-                        </Label>
-                    </div>
+                    {isAdmin && (
+                        <div className="flex items-center space-x-2">
+                            <Switch 
+                                id="viewed-only" 
+                                checked={isViewedOnly}
+                                onCheckedChange={setIsViewedOnly}
+                            />
+                            <Label htmlFor="viewed-only" className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                                viewed by
+                            </Label>
+                        </div>
+                    )}
                 </CardHeader>
                 <CardContent className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
