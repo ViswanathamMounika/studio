@@ -37,7 +37,6 @@ const NewDefinitionModal = dynamic(() => import('@/components/wiki/new-definitio
 const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal'), { ssr: false });
 const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
 const ApprovalQueue = dynamic(() => import('@/components/wiki/approval-queue'), { ssr: false });
-const ApprovalHistory = dynamic(() => import('@/components/wiki/approval-history'), { ssr: false });
 
 type ViewingMode = 'live' | 'draft';
 
@@ -136,7 +135,6 @@ export default function Wiki() {
   }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    // Activity logs are now available to everyone
     if ((view === 'template-management' || view === 'approval-workflow') && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
         return;
@@ -501,29 +499,16 @@ export default function Wiki() {
         case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
         case 'approval-workflow': return (
-            <Tabs defaultValue="queue" className="h-full flex flex-col">
-                <div className="px-6 pt-4 bg-white border-b">
-                    <TabsList className="bg-slate-100 p-1 mb-4">
-                        <TabsTrigger value="queue" className="font-bold px-8">Approval Queue</TabsTrigger>
-                        <TabsTrigger value="history" className="font-bold px-8">Approval History</TabsTrigger>
-                    </TabsList>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                    <TabsContent value="queue" className="h-full m-0 p-0 data-[state=inactive]:hidden">
-                        <ApprovalQueue 
-                            pendingDefinitions={categorizedDefinitions.pending} 
-                            history={approvalHistory}
-                            allDefinitions={definitions}
-                            drafts={drafts}
-                            onApprove={handlePublish} 
-                            onReject={handleReject} 
-                        />
-                    </TabsContent>
-                    <TabsContent value="history" className="h-full m-0 p-6 overflow-y-auto data-[state=inactive]:hidden">
-                        <ApprovalHistory history={approvalHistory} />
-                    </TabsContent>
-                </div>
-            </Tabs>
+            <div className="h-full">
+                <ApprovalQueue 
+                    pendingDefinitions={categorizedDefinitions.pending} 
+                    history={approvalHistory}
+                    allDefinitions={definitions}
+                    drafts={drafts}
+                    onApprove={handlePublish} 
+                    onReject={handleReject} 
+                />
+            </div>
         );
         default: {
             const defSource = viewingMode === 'draft' ? drafts : definitions;

@@ -137,7 +137,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                         className="h-7 text-[12px]"
                                                     >
                                                         <Library className="h-3.5 w-3.5 mr-1" />
-                                                        Library
+                                                        MPM Data Definitions
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                                 

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -179,7 +178,7 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                 Queue ({filteredPending.length})
                             </TabsTrigger>
                             <TabsTrigger value="decided" className="text-[10px] font-black uppercase tracking-wider rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
-                                Decided
+                                Decisions
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
