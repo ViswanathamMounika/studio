@@ -38,8 +38,7 @@ import { cn } from '@/lib/utils';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
-
-type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-queue' | 'approval-history';
+import type { View } from '@/lib/types';
 
 type AppSidebarProps = {
     activeView: View;
@@ -67,13 +66,12 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     ];
 
     const adminNavItems = [
-        { id: 'approval-queue', label: 'Approval Queue', icon: ClipboardCheck },
-        { id: 'approval-history', label: 'Approval History', icon: ClipboardList },
+        { id: 'approval-workflow', label: 'Approvals', icon: ClipboardCheck },
         { id: 'template-management', label: 'Template Management', icon: Settings2 },
     ];
 
     const handleNavigate = (id: string) => {
-        if (id === 'definitions' || id === 'activity-logs' || id === 'template-management' || id === 'approval-queue' || id === 'approval-history') {
+        if (id === 'definitions' || id === 'activity-logs' || id === 'template-management' || id === 'approval-workflow') {
             onNavigate(id as View);
         } else {
             console.log(`Navigating to ${id}`);
@@ -137,7 +135,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                 <CollapsibleTrigger asChild>
                                                     <SidebarMenuButton className={cn(
                                                         "h-8 font-semibold text-foreground hover:text-primary transition-colors",
-                                                        (activeView === 'template-management' || activeView === 'approval-queue' || activeView === 'approval-history') && "text-primary"
+                                                        (activeView === 'template-management' || activeView === 'approval-workflow') && "text-primary"
                                                     )}>
                                                         <UserCog className="h-4 w-4" />
                                                         <span>Admin</span>

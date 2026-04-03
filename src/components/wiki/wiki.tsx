@@ -1,11 +1,10 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts } from '@/lib/data';
-import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry } from '@/lib/types';
+import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, Revision } from '@/lib/types';
 import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -137,7 +136,7 @@ export default function Wiki() {
   }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    if ((view === 'activity-logs' || view === 'template-management' || view === 'approval-queue' || view === 'approval-history') && !isAdmin) {
+    if ((view === 'activity-logs' || view === 'template-management' || view === 'approval-workflow') && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
         return;
     }
@@ -500,8 +499,28 @@ export default function Wiki() {
     switch (activeView) {
         case 'activity-logs': return <div className="p-6"><ActivityLogs /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
-        case 'approval-queue': return <ApprovalQueue pendingDefinitions={categorizedDefinitions.pending} onApprove={handlePublish} onReject={handleReject} />;
-        case 'approval-history': return <div className="p-6"><ApprovalHistory history={approvalHistory} /></div>;
+        case 'approval-workflow': return (
+            <Tabs defaultValue="queue" className="h-full flex flex-col">
+                <div className="px-6 pt-4 bg-white border-b">
+                    <TabsList className="bg-slate-100 p-1 mb-4">
+                        <TabsTrigger value="queue" className="font-bold px-8">Approval Queue</TabsTrigger>
+                        <TabsTrigger value="history" className="font-bold px-8">Approval History</TabsTrigger>
+                    </TabsList>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                    <TabsContent value="queue" className="h-full m-0 p-0 data-[state=inactive]:hidden">
+                        <ApprovalQueue 
+                            pendingDefinitions={categorizedDefinitions.pending} 
+                            onApprove={handlePublish} 
+                            onReject={handleReject} 
+                        />
+                    </TabsContent>
+                    <TabsContent value="history" className="h-full m-0 p-6 overflow-y-auto data-[state=inactive]:hidden">
+                        <ApprovalHistory history={approvalHistory} />
+                    </TabsContent>
+                </div>
+            </Tabs>
+        );
         default: {
             const defSource = viewingMode === 'draft' ? drafts : definitions;
             const selectedDef = findDefinition(defSource, selectedDefinitionId || '');

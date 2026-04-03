@@ -157,7 +157,7 @@ export interface Notification {
     read: boolean;
 }
 
-export type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-queue' | 'approval-history';
+export type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow';
 
 export type ActivityType = 
   | 'Definition Created'
