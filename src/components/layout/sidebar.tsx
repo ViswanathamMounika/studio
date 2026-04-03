@@ -18,7 +18,8 @@ import {
     ShieldCheck,
     ClipboardCheck,
     Fingerprint,
-    ClipboardList
+    ClipboardList,
+    Library
 } from "lucide-react";
 import {
     Collapsible,
@@ -33,6 +34,9 @@ import {
     SidebarMenuItem,
     SidebarMenuButton,
     SidebarFooter,
+    SidebarMenuSub,
+    SidebarMenuSubItem,
+    SidebarMenuSubButton,
 } from "../ui/sidebar";
 import { cn } from '@/lib/utils';
 import { Switch } from '../ui/switch';
@@ -54,20 +58,14 @@ const topNavItems = [
 
 export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAdmin }: AppSidebarProps) {
     const [isWikiOpen, setIsWikiOpen] = useState(true);
-    const [isAdminOpen, setIsAdminOpen] = useState(true);
+    const [isDefinitionsOpen, setIsDefinitionsOpen] = useState(true);
 
     const wikiNavItems = [
-        { id: 'definitions', label: 'MPM Definitions', icon: KeyRound },
         { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
         { id: 'acronyms', label: 'Healthcare Acronyms', icon: GanttChart },
         { id: 'clients', label: 'Clients', icon: Users },
         { id: 'health-plans', label: 'Health Plans', icon: HeartPulse },
         { id: 'lob-codes', label: 'LOB Codes', icon: BadgePercent },
-    ];
-
-    const adminNavItems = [
-        { id: 'approval-workflow', label: 'Approvals', icon: ClipboardCheck },
-        { id: 'template-management', label: 'Template Management', icon: Settings2 },
     ];
 
     const handleNavigate = (id: string) => {
@@ -115,68 +113,75 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
 
                         <CollapsibleContent className="py-1">
                             <SidebarMenu className='pl-4'>
-                                {/* MPM Definitions always first */}
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton
-                                        isActive={activeView === 'definitions'}
-                                        onClick={() => handleNavigate('definitions')}
-                                        className="h-8"
-                                    >
-                                        <KeyRound className="h-4 w-4" />
-                                        <span>MPM Definitions</span>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-
-                                {/* Admin Section */}
-                                {isAdmin && (
-                                    <>
-                                        <Collapsible open={isAdminOpen} onOpenChange={setIsAdminOpen}>
-                                            <SidebarMenuItem>
-                                                <CollapsibleTrigger asChild>
-                                                    <SidebarMenuButton className={cn(
-                                                        "h-8 font-semibold text-foreground hover:text-primary transition-colors",
-                                                        (activeView === 'template-management' || activeView === 'approval-workflow') && "text-primary"
-                                                    )}>
-                                                        <UserCog className="h-4 w-4" />
-                                                        <span>Admin</span>
-                                                        <ChevronDown className={cn("ml-auto h-3 w-3 transition-transform", isAdminOpen && "rotate-180")} />
-                                                    </SidebarMenuButton>
-                                                </CollapsibleTrigger>
-                                            </SidebarMenuItem>
-                                            <CollapsibleContent>
-                                                <SidebarMenu className="pl-4">
-                                                    {adminNavItems.map(item => (
-                                                        <SidebarMenuItem key={item.id}>
-                                                            <SidebarMenuButton
-                                                                isActive={activeView === item.id}
-                                                                onClick={() => handleNavigate(item.id)}
-                                                                className="h-8 text-[13px]"
-                                                            >
-                                                                <item.icon className="h-3.5 w-3.5" />
-                                                                {item.label}
-                                                            </SidebarMenuButton>
-                                                        </SidebarMenuItem>
-                                                    ))}
-                                                </SidebarMenu>
-                                            </CollapsibleContent>
-                                        </Collapsible>
-
-                                        {/* Activity Logs Standalone Item (After Admin Collapsible) */}
-                                        <SidebarMenuItem>
-                                            <SidebarMenuButton
-                                                isActive={activeView === 'activity-logs'}
-                                                onClick={() => handleNavigate('activity-logs')}
-                                                className="h-8"
+                                {/* MPM Definitions Hub */}
+                                <Collapsible open={isDefinitionsOpen} onOpenChange={setIsDefinitionsOpen}>
+                                    <SidebarMenuItem>
+                                        <CollapsibleTrigger asChild>
+                                            <SidebarMenuButton 
+                                                className={cn(
+                                                    "h-8",
+                                                    (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'activity-logs') && "text-primary font-bold"
+                                                )}
                                             >
-                                                <History className="h-4 w-4" />
-                                                <span>Activity Logs</span>
+                                                <KeyRound className="h-4 w-4" />
+                                                <span>MPM Definitions</span>
+                                                <ChevronDown className={cn("ml-auto h-3 w-3 transition-transform", isDefinitionsOpen && "rotate-180")} />
                                             </SidebarMenuButton>
-                                        </SidebarMenuItem>
-                                    </>
-                                )}
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent>
+                                            <SidebarMenuSub className="pl-4 border-l ml-2 space-y-0.5 mt-1">
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton 
+                                                        isActive={activeView === 'definitions'}
+                                                        onClick={() => handleNavigate('definitions')}
+                                                        className="h-7 text-[12px]"
+                                                    >
+                                                        <Library className="h-3.5 w-3.5 mr-1" />
+                                                        Library
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                                
+                                                {isAdmin && (
+                                                    <>
+                                                        <SidebarMenuSubItem>
+                                                            <SidebarMenuSubButton 
+                                                                isActive={activeView === 'approval-workflow'}
+                                                                onClick={() => handleNavigate('approval-workflow')}
+                                                                className="h-7 text-[12px]"
+                                                            >
+                                                                <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
+                                                                Approvals
+                                                            </SidebarMenuSubButton>
+                                                        </SidebarMenuSubItem>
+                                                        <SidebarMenuSubItem>
+                                                            <SidebarMenuSubButton 
+                                                                isActive={activeView === 'template-management'}
+                                                                onClick={() => handleNavigate('template-management')}
+                                                                className="h-7 text-[12px]"
+                                                            >
+                                                                <Settings2 className="h-3.5 w-3.5 mr-1" />
+                                                                Templates
+                                                            </SidebarMenuSubButton>
+                                                        </SidebarMenuSubItem>
+                                                        <SidebarMenuSubItem>
+                                                            <SidebarMenuSubButton 
+                                                                isActive={activeView === 'activity-logs'}
+                                                                onClick={() => handleNavigate('activity-logs')}
+                                                                className="h-7 text-[12px]"
+                                                            >
+                                                                <History className="h-3.5 w-3.5 mr-1" />
+                                                                Activity Logs
+                                                            </SidebarMenuSubButton>
+                                                        </SidebarMenuSubItem>
+                                                    </>
+                                                )}
+                                            </SidebarMenuSub>
+                                        </CollapsibleContent>
+                                    </SidebarMenuItem>
+                                </Collapsible>
 
                                 {/* Remaining Wiki Items */}
-                                {wikiNavItems.slice(1).map(item => (
+                                {wikiNavItems.map(item => (
                                     <SidebarMenuItem key={item.id}>
                                         <SidebarMenuButton
                                             isActive={activeView === item.id}
