@@ -404,43 +404,46 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
           <ScrollArea className="flex-1 bg-slate-50/30">
             <div className="p-8 space-y-10 pb-32">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-                <div className="md:col-span-2 space-y-2">
-                  <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Template Name <span className="text-red-500">*</span></Label>
-                  <Input 
-                    value={currentTemplate.name} 
-                    onChange={e => setCurrentTemplate(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g., Standard Clinical Definition"
-                    className="rounded-xl border-slate-200 h-11 text-base font-bold focus-visible:ring-primary/20"
+              <div className="space-y-6">
+                {/* Row 1: Active Status */}
+                <div className="flex justify-end items-center gap-2">
+                  <Label htmlFor="is-active" className="text-[10px] font-black uppercase text-slate-400 tracking-widest cursor-pointer">Active Status</Label>
+                  <Switch 
+                    id="is-active" 
+                    checked={currentTemplate.isActive} 
+                    onCheckedChange={v => setCurrentTemplate(prev => ({ ...prev, isActive: v }))}
+                    className="scale-75"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Module <span className="text-red-500">*</span></Label>
-                  <Select 
-                    value={currentTemplate.module} 
-                    onValueChange={v => setCurrentTemplate(prev => ({ ...prev, module: v }))}
-                  >
-                    <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white">
-                      <SelectValue placeholder="Select Module" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MODULE_OPTIONS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-4 flex flex-col items-end">
-                  <div className="flex items-center gap-2 pt-1">
-                    <Label htmlFor="is-active" className="text-[10px] font-black uppercase text-slate-400 tracking-widest cursor-pointer">Active Status</Label>
-                    <Switch 
-                      id="is-active" 
-                      checked={currentTemplate.isActive} 
-                      onCheckedChange={v => setCurrentTemplate(prev => ({ ...prev, isActive: v }))}
-                      className="scale-75"
+
+                {/* Row 2: Name, Module, Configuration */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+                  <div className="md:col-span-2 space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Template Name <span className="text-red-500">*</span></Label>
+                    <Input 
+                      value={currentTemplate.name} 
+                      onChange={e => setCurrentTemplate(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g., Standard Clinical Definition"
+                      className="rounded-xl border-slate-200 h-11 text-base font-bold focus-visible:ring-primary/20"
                     />
                   </div>
-                  <div className="w-full space-y-2">
+                  <div className="space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Module <span className="text-red-500">*</span></Label>
+                    <Select 
+                      value={currentTemplate.module} 
+                      onValueChange={v => setCurrentTemplate(prev => ({ ...prev, module: v }))}
+                    >
+                      <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white">
+                        <SelectValue placeholder="Select Module" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MODULE_OPTIONS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Configuration</Label>
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="flex items-center gap-2 pt-2">
                       <Checkbox 
                         id="is-default" 
                         checked={currentTemplate.isDefault} 
@@ -450,7 +453,9 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                     </div>
                   </div>
                 </div>
-                <div className="md:col-span-4 space-y-2">
+
+                {/* Description */}
+                <div className="space-y-2">
                   <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Description</Label>
                   <Textarea 
                     value={currentTemplate.description} 
