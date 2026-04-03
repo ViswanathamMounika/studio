@@ -77,6 +77,7 @@ export default function DefinitionView({
     const [noteText, setNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
     const [showFeedbackPane, setShowFeedbackPane] = useState(false);
+    const [notesSubTab, setNotesSubTab] = useState('my-notes');
     
     const { toast } = useToast();
 
@@ -139,6 +140,11 @@ export default function DefinitionView({
         requested: latestFeedback ? 'active' : 'pending'
     };
 
+    const handleShowReviewHistory = () => {
+        setNotesSubTab('review-history');
+        onTabChange('notes');
+    };
+
   return (
     <TooltipProvider>
         <article className="max-w-none">
@@ -173,16 +179,25 @@ export default function DefinitionView({
             {showFeedbackPane && latestFeedback && (
                 <div className="mb-6 animate-in slide-in-from-top-2 fade-in">
                     <Card className="border-indigo-100 bg-indigo-50/30 rounded-2xl overflow-hidden shadow-sm">
-                        <CardHeader className="py-2.5 px-4 bg-white/50 border-b flex items-center justify-between">
+                        <CardHeader className="py-2.5 px-4 bg-white/50 border-b flex flex-row items-center justify-between">
                             <span className="text-[10px] font-black uppercase text-indigo-900 tracking-widest">Feedback Received</span>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowFeedbackPane(false)}><X className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-slate-600" onClick={() => setShowFeedbackPane(false)}><X className="h-3.5 w-3.5" /></Button>
                         </CardHeader>
                         <CardContent className="p-4">
                             <div className="flex gap-3">
                                 <Avatar className="h-7 w-7"><AvatarImage src={latestFeedback.avatar}/><AvatarFallback>{latestFeedback.author[0]}</AvatarFallback></Avatar>
                                 <div className="flex-1">
                                     <p className="text-xs font-bold text-slate-900">{latestFeedback.author} • <span className="text-slate-400 font-normal">{formatDistanceToNow(new Date(latestFeedback.date), { addSuffix: true })}</span></p>
-                                    <p className="text-xs text-slate-700 italic mt-1">"{latestFeedback.content}"</p>
+                                    <p className="text-xs text-slate-700 italic mt-1 leading-relaxed">
+                                        "{latestFeedback.content}"
+                                        <button 
+                                            onClick={handleShowReviewHistory}
+                                            className="ml-2 inline-flex items-center font-bold text-primary hover:underline not-italic"
+                                        >
+                                            Show full review history
+                                            <ChevronRight className="h-3 w-3" />
+                                        </button>
+                                    </p>
                                 </div>
                             </div>
                         </CardContent>
@@ -254,7 +269,7 @@ export default function DefinitionView({
                     </div>
                     <div className="pt-4 space-y-6">
                         <div className="flex items-center gap-2 mb-4"><h3 className="text-sm font-bold">Saved Notes</h3><Info className="h-3.5 w-3.5 text-slate-400" /></div>
-                        <Tabs defaultValue="my-notes" className="w-full">
+                        <Tabs value={notesSubTab} onValueChange={setNotesSubTab} className="w-full">
                             <TabsList className="bg-transparent border-b h-auto p-0 gap-8">
                                 <TabsTrigger value="my-notes" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=active]:border-primary">My Notes</TabsTrigger>
                                 <TabsTrigger value="others-notes" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=active]:border-primary">Other's Notes</TabsTrigger>
