@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send, AlertTriangle, Trash2, ClipboardList, Share2, Undo2 } from 'lucide-react';
+import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send, AlertTriangle, Trash2, ClipboardList, Share2, Undo2, XCircle } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -182,7 +182,12 @@ export default function DefinitionView({
                 <div className="mb-6 animate-in slide-in-from-top-2 fade-in">
                     <Card className="border-indigo-100 bg-indigo-50/30 rounded-2xl overflow-hidden shadow-sm">
                         <CardHeader className="py-2.5 px-4 bg-white/50 border-b flex flex-row items-center justify-between">
-                            <span className="text-[10px] font-black uppercase text-indigo-900 tracking-widest">Feedback Received</span>
+                            <div className="flex items-center gap-2">
+                                {latestFeedback.type === 'rejection' ? <XCircle className="h-4 w-4 text-red-600" /> : <RefreshCw className="h-4 w-4 text-amber-600" />}
+                                <span className={cn("text-[10px] font-black uppercase tracking-widest", latestFeedback.type === 'rejection' ? "text-red-900" : "text-indigo-900")}>
+                                    {latestFeedback.type === 'rejection' ? 'Submission Rejected' : 'Feedback Received'}
+                                </span>
+                            </div>
                             <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-slate-600" onClick={() => setShowFeedbackPane(false)}><X className="h-3.5 w-3.5" /></Button>
                         </CardHeader>
                         <CardContent className="p-4">
@@ -215,11 +220,16 @@ export default function DefinitionView({
                         <Badge variant="outline" className={cn("h-6 rounded-full text-[10px] font-bold uppercase", 
                             viewingMode === 'live' ? "bg-emerald-50 text-emerald-700" : 
                             definition.isPendingApproval ? "bg-blue-50 text-blue-700 border-blue-100 shadow-sm" : 
+                            latestFeedback?.type === 'rejection' ? "bg-red-50 text-red-700 border-red-100" :
+                            latestFeedback?.type === 'change-request' ? "bg-amber-50 text-amber-700 border-amber-100" :
                             "bg-amber-50 text-amber-700"
                         )}>
                             {definition.isArchived ? 'Archived' : 
                              viewingMode === 'live' ? 'Published' : 
-                             definition.isPendingApproval ? 'Pending Review' : 'Draft'}
+                             definition.isPendingApproval ? 'Pending Review' : 
+                             latestFeedback?.type === 'rejection' ? 'Rejected' :
+                             latestFeedback?.type === 'change-request' ? 'Changes Requested' :
+                             'Draft'}
                         </Badge>
                     </div>
                 </div>

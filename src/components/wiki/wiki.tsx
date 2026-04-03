@@ -487,6 +487,8 @@ export default function Wiki() {
   };
 
   const categorizedDefinitions = useMemo(() => {
+    const hasFeedbackFunc = (d: Definition) => (d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection');
+
     const filterPublishedTree = (items: Definition[]): Definition[] => {
         return items.reduce((acc: Definition[], item) => {
             const children = filterPublishedTree(item.children || []);
@@ -502,9 +504,9 @@ export default function Wiki() {
     };
 
     return {
-        drafts: drafts.filter(d => d.isDraft && !d.isPendingApproval),
+        drafts: drafts.filter(d => d.isDraft && !d.isPendingApproval && !hasFeedbackFunc(d)),
         published: filterPublishedTree(definitions),
-        pending: drafts.filter(d => d.isPendingApproval)
+        pending: drafts.filter(d => d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d)))
     };
   }, [definitions, drafts, showArchived, showBookmarked, isBookmarked]);
 

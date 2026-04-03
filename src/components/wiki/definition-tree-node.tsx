@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link, Archive, Pencil, Clock } from 'lucide-react';
+import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link, Archive, Pencil, Clock, XCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -127,8 +127,9 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
     e.stopPropagation();
   };
 
-  const hasFeedback = useMemo(() => {
-    return (node.discussions || []).some(d => d.type === 'change-request' || d.type === 'rejection');
+  const latestFeedback = useMemo(() => {
+    const feedback = (node.discussions || []).filter(d => d.type === 'change-request' || d.type === 'rejection');
+    return feedback[feedback.length - 1];
   }, [node.discussions]);
 
   // Workflow badges should only show in workflow trees (drafts, pending), not in the primary library (mpm)
@@ -214,14 +215,18 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                             </Tooltip>
                         </TooltipProvider>
                     )}
-                    {showWorkflowBadges && hasFeedback && (
+                    {showWorkflowBadges && latestFeedback && (
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <MessageSquare className="h-3 w-3 text-indigo-600 fill-indigo-100" />
+                                    {latestFeedback.type === 'rejection' ? (
+                                        <XCircle className="h-3 w-3 text-red-600" />
+                                    ) : (
+                                        <RefreshCw className="h-3 w-3 text-amber-600" />
+                                    )}
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Feedback Received</p>
+                                    <p>{latestFeedback.type === 'rejection' ? 'Rejected - Feedback Provided' : 'Changes Requested'}</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
