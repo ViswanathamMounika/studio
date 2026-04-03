@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -11,7 +12,6 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useBookmarks } from '@/hooks/use-bookmarks';
-import { Checkbox } from '@/components/ui/checkbox';
 import { trackSearch, trackView } from '@/lib/analytics';
 import { useDebounce } from '@/hooks/use-debounce';
 import useLocalStorage from '@/hooks/use-local-storage';
@@ -59,21 +59,13 @@ const initialNotifications: NotificationType[] = [
     date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     read: false,
   },
-  {
-    id: '2',
-    definitionId: '2.1.1',
-    definitionName: 'Contracted Rates',
-    message: 'A new note was added by Jane Smith.',
-    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    read: false,
-  },
 ];
 
 export default function Wiki() {
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v18', initialDefinitions);
-  const [drafts, setDrafts] = useLocalStorage<Definition[]>('mpm_user_drafts_v18', initialDrafts);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v18', initialTemplates);
-  const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v18', initialApprovalHistory);
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v19', initialDefinitions);
+  const [drafts, setDrafts] = useLocalStorage<Definition[]>('mpm_user_drafts_v19', initialDrafts);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v19', initialTemplates);
+  const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v19', initialApprovalHistory);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
@@ -81,14 +73,14 @@ export default function Wiki() {
   const [showBookmarked, setShowBookmarked] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
   const [searchQuery, setSearchQuery] = useState("");
-  const { isMounted, bookmarks, toggleBookmark, isBookmarked } = useBookmarks();
+  const { isMounted, toggleBookmark, isBookmarked } = useBookmarks();
   const [selectedForExport, setSelectedForExport] = useState<string[]>([]);
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v18', true);
+  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v19', true);
   const [activeView, setActiveView] = useState<View>('definitions');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v18', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v19', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const { toast } = useToast();
@@ -101,14 +93,6 @@ export default function Wiki() {
       trackSearch(debouncedSearchQuery);
     }
   }, [debouncedSearchQuery]);
-
-  const getStatusText = useCallback((def: Definition) => {
-    if (!def) return 'Unknown';
-    if (def.isArchived) return 'Archived';
-    if (def.isPendingApproval) return 'Pending Approval';
-    if (def.isDraft) return 'Draft';
-    return 'Published';
-  }, []);
 
   const updateUrl = useCallback((definitionId: string, sectionId?: string, view?: View) => {
     if (typeof window === 'undefined') return;
@@ -144,14 +128,13 @@ export default function Wiki() {
     const sourceList = mode === 'draft' ? drafts : definitions;
     const def = findDefinition(sourceList, id);
     if (def) {
-        const status = getStatusText(def);
-        trackView(id, def.name, def.module, status);
+        trackView(id, def.name, def.module, def.isArchived ? 'Archived' : mode === 'live' ? 'Published' : 'Draft');
     }
     
     const targetSection = sectionId || 'description';
     setActiveTab(targetSection);
     if (shouldUpdateUrl) updateUrl(id, targetSection);
-  }, [definitions, drafts, getStatusText, updateUrl]);
+  }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
     if ((view === 'activity-logs' || view === 'template-management' || view === 'approval-queue' || view === 'approval-history') && !isAdmin) {
@@ -215,13 +198,7 @@ export default function Wiki() {
   }, [isEditing, selectedDefinitionId, viewingMode, setDrafts]);
 
   const toggleSelectionForExport = (id: string, checked: boolean) => {
-    setSelectedForExport(prev => {
-      if (checked) {
-        return [...prev, id];
-      } else {
-        return prev.filter(i => i !== id);
-      }
-    });
+    setSelectedForExport(prev => checked ? [...prev, id] : prev.filter(i => i !== id));
   };
 
   const handleSave = (updatedDefinition: Definition) => {
@@ -235,9 +212,7 @@ export default function Wiki() {
               submittedBy: isNowPending ? currentUser.name : updatedDefinition.submittedBy,
               submittedAt: isNowPending ? new Date().toISOString() : updatedDefinition.submittedAt
             };
-            if (exists) {
-                return prev.map(d => d.id === updatedDefinition.id ? savedDraft : d);
-            }
+            if (exists) return prev.map(d => d.id === updatedDefinition.id ? savedDraft : d);
             return [...prev, savedDraft];
         });
 
@@ -250,9 +225,19 @@ export default function Wiki() {
                 userName: currentUser.name,
                 date: new Date().toISOString()
             }, ...(prev || [])]);
+
+            setNotifications(prev => [{
+                id: `notif_${Date.now()}`,
+                definitionId: updatedDefinition.id,
+                definitionName: updatedDefinition.name,
+                message: `${currentUser.name} submitted a definition for approval.`,
+                date: new Date().toISOString(),
+                read: false
+            }, ...(prev || [])]);
         }
         setViewingMode('draft');
     } else {
+        // Direct Publish (Admin)
         const newRevision: Revision = {
             ticketId: `MPM-REV-${Date.now()}`,
             date: new Date().toISOString().split('T')[0],
@@ -266,15 +251,15 @@ export default function Wiki() {
             revisions: [newRevision, ...updatedDefinition.revisions]
         };
 
-        const updateDefinitions = (items: Definition[]): Definition[] => {
+        const updateTree = (items: Definition[]): Definition[] => {
             return items.map(item => {
                 if (item.id === (updatedDefinition.originalId || updatedDefinition.id)) return finalDef;
-                if (item.children) return { ...item, children: updateDefinitions(item.children) };
+                if (item.children) return { ...item, children: updateTree(item.children) };
                 return item;
             });
         };
 
-        setDefinitions(prev => updateDefinitions(prev || []));
+        setDefinitions(prev => updateTree(prev || []));
         setDrafts(prev => prev.filter(d => d.id !== updatedDefinition.id && d.originalId !== updatedDefinition.id));
         setViewingMode('live');
         setSelectedDefinitionId(updatedDefinition.originalId || updatedDefinition.id);
@@ -282,8 +267,8 @@ export default function Wiki() {
 
     setIsEditing(false);
     toast({
-        title: "Changes Persisted",
-        description: updatedDefinition.isDraft ? "Draft updated. Lock maintained." : "Changes submitted for approval.",
+        title: "Changes Saved",
+        description: updatedDefinition.isDraft ? "Draft updated." : "Changes successfully processed.",
     });
   };
 
@@ -292,7 +277,7 @@ export default function Wiki() {
     setIsEditing(false);
     setViewingMode('live');
     setSelectedDefinitionId(null);
-    toast({ title: "Draft Discarded", description: "Your working copy has been deleted." });
+    toast({ title: "Draft Discarded" });
   };
   
   const handleCreateDefinition = (newDefinitionData: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => {
@@ -308,11 +293,7 @@ export default function Wiki() {
         notes: [],
         discussions: [],
         relatedDefinitions: [],
-        lock: {
-          userId: currentUser.id,
-          userName: currentUser.name,
-          expireAt: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString()
-        }
+        lock: { userId: currentUser.id, userName: currentUser.name, expireAt: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString() }
     };
 
     setDrafts(prev => [...prev, newDefinition]);
@@ -325,21 +306,19 @@ export default function Wiki() {
 
   const handleDuplicate = (id: string) => {
     const sourceList = viewingMode === 'draft' ? drafts : definitions;
-    const definitionToDuplicate = findDefinition(sourceList, id);
-    if (!definitionToDuplicate) return;
+    const original = findDefinition(sourceList, id);
+    if (!original) return;
     
-    const newDefinition: Omit<Definition, 'id' | 'revisions' | 'isArchived'> = {
-      ...definitionToDuplicate,
-      name: `${definitionToDuplicate.name} (Copy)`,
+    handleCreateDefinition({
+      ...original,
+      name: `${original.name} (Copy)`,
       children: [],
       isDraft: true,
       isPendingApproval: false,
       notes: [],
       discussions: [],
       publishedSnapshot: undefined,
-    };
-    
-    handleCreateDefinition(newDefinition);
+    });
   };
 
   const handleArchive = (id: string | string[], archive: boolean) => {
@@ -352,18 +331,12 @@ export default function Wiki() {
       });
     };
     setDefinitions(prev => updateArchiveStatus(prev || []));
-    toast({ 
-      title: archive ? 'Definition Archived' : 'Definition Unarchived', 
-      description: archive ? 'Moved to Archive.' : 'Restored to Library.' 
-    });
+    toast({ title: archive ? 'Definition Archived' : 'Definition Unarchived' });
   };
 
   const handleDelete = (id: string) => {
     const remove = (items: Definition[]): Definition[] => {
-      return items.filter(def => def.id !== id).map(def => {
-          if (def.children) return { ...def, children: remove(def.children) };
-          return def;
-        });
+      return items.filter(def => def.id !== id).map(def => def.children ? { ...def, children: remove(def.children) } : def);
     };
     setDefinitions(prev => remove(prev || []));
     setDrafts(prev => prev.filter(d => d.id !== id));
@@ -402,23 +375,21 @@ export default function Wiki() {
         date: new Date().toISOString()
     }, ...(prev || [])]);
 
-    const updateDefinitions = (items: Definition[]): Definition[] => {
+    const updateTree = (items: Definition[]): Definition[] => {
         const existingIdx = items.findIndex(item => item.id === finalPublishedDef.id);
-        if (existingIdx !== -1) {
-            return items.map(item => item.id === finalPublishedDef.id ? finalPublishedDef : item);
-        }
+        if (existingIdx !== -1) return items.map(item => item.id === finalPublishedDef.id ? finalPublishedDef : item);
+        
         const moduleExists = items.find(m => m.name === draft.module);
-        if (moduleExists) {
-            return items.map(m => m.name === draft.module ? { ...m, children: [finalPublishedDef, ...(m.children || [])] } : m);
-        }
+        if (moduleExists) return items.map(m => m.name === draft.module ? { ...m, children: [finalPublishedDef, ...(m.children || [])] } : m);
+        
         return [...items, { id: `mod-${Date.now()}`, name: draft.module, module: draft.module, revisions: [], isArchived: false, children: [finalPublishedDef], attachments: [], keywords: [], description: '', supportingTables: [] }];
     };
 
-    setDefinitions(prev => updateDefinitions(prev || []));
+    setDefinitions(prev => updateTree(prev || []));
     setDrafts(prev => prev.filter(d => d.id !== draftId));
     setViewingMode('live');
     setSelectedDefinitionId(finalPublishedDef.id);
-    toast({ title: 'Published', description: 'Changes are now live.' });
+    toast({ title: 'Published Successfully' });
   };
 
   const handleReject = (draftId: string, comment: string, isRejection: boolean = true) => {
@@ -461,7 +432,6 @@ export default function Wiki() {
 
   const handleEditClick = () => {
     if (!selectedDefinitionId) return;
-    
     const sourceList = viewingMode === 'draft' ? drafts : definitions;
     const def = findDefinition(sourceList, selectedDefinitionId);
     if (!def) return;
@@ -478,12 +448,6 @@ export default function Wiki() {
         return;
     }
 
-    const newLock: LockInfo = {
-      userId: currentUser.id,
-      userName: currentUser.name,
-      expireAt: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString()
-    };
-
     const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = def;
     const draftId = `draft_${def.id}_${currentUser.id}`;
     const newDraft: Definition = { 
@@ -493,7 +457,7 @@ export default function Wiki() {
         isDraft: true, 
         isPendingApproval: false,
         publishedSnapshot: snapshot, 
-        lock: newLock,
+        lock: { userId: currentUser.id, userName: currentUser.name, expireAt: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString() },
         baseVersionId: def.revisions[0]?.ticketId 
     };
 
@@ -501,16 +465,7 @@ export default function Wiki() {
     setIsEditing(true);
     setViewingMode('draft');
     setSelectedDefinitionId(draftId);
-    toast({ title: "Draft Created", description: "Exclusive lock acquired." });
-  };
-
-  const handleNewDefinitionClick = (type: 'template' | 'blank') => {
-    if (type === 'template') {
-      setIsTemplatesModalOpen(true);
-    } else {
-      setDraftedDefinitionData(null);
-      setIsNewDefinitionModalOpen(true);
-    }
+    toast({ title: "Drafting Started" });
   };
 
   const handleUseTemplate = (templateData: Partial<Definition>, templateId: string) => {
@@ -524,13 +479,11 @@ export default function Wiki() {
         return items.reduce((acc: Definition[], item) => {
             const children = filterPublishedTree(item.children || []);
             const isMatch = children.length > 0 || (!item.isDraft && !item.isPendingApproval);
-            
             if (isMatch) {
-                let filteredItem = { ...item, children };
                 if (showArchived && !item.isArchived && children.length === 0) return acc;
                 if (!showArchived && item.isArchived) return acc;
                 if (showBookmarked && !isBookmarked(item.id) && children.length === 0) return acc;
-                acc.push(filteredItem);
+                acc.push({ ...item, children });
             }
             return acc;
         }, []);
@@ -547,13 +500,7 @@ export default function Wiki() {
     switch (activeView) {
         case 'activity-logs': return <div className="p-6"><ActivityLogs /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
-        case 'approval-queue': return (
-            <ApprovalQueue 
-                pendingDefinitions={categorizedDefinitions.pending} 
-                onApprove={handlePublish}
-                onReject={(id, comment, isRejection) => handleReject(id, comment, isRejection)}
-            />
-        );
+        case 'approval-queue': return <ApprovalQueue pendingDefinitions={categorizedDefinitions.pending} onApprove={handlePublish} onReject={handleReject} />;
         case 'approval-history': return <div className="p-6"><ApprovalHistory history={approvalHistory} /></div>;
         default: {
             const defSource = viewingMode === 'draft' ? drafts : definitions;
@@ -588,7 +535,7 @@ export default function Wiki() {
                         />
                       </div>
                   ) : (
-                      <div className="flex items-center justify-center h-full"><p className="text-muted-foreground font-medium">Select a definition from the sidebar to view details.</p></div>
+                      <div className="flex items-center justify-center h-full text-muted-foreground font-medium">Select a definition from the sidebar to begin.</div>
                   )}
                 </div>
             );
@@ -605,7 +552,7 @@ export default function Wiki() {
         <div className="flex flex-col h-screen bg-background">
           <AppHeader
               onRecentClick={() => setIsRecentModalOpen(true)}
-              onNewDefinitionClick={handleNewDefinitionClick}
+              onNewDefinitionClick={(type) => type === 'template' ? setIsTemplatesModalOpen(true) : setIsNewDefinitionModalOpen(true)}
               isAdmin={isAdmin}
               notifications={notifications}
               setNotifications={setNotifications}
@@ -616,7 +563,6 @@ export default function Wiki() {
              {activeView === 'definitions' && (
               <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card relative">
                   <div className="p-4 flex flex-col gap-4 border-b bg-background sticky top-0 z-30 shadow-sm">
-                    <div className="flex items-center justify-between"><h1 className="text-lg font-bold tracking-tight">Documentation</h1></div>
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input type="search" placeholder="Search library..." className="w-full h-9 rounded-xl bg-muted/50 pl-8 focus-visible:bg-background border-muted" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -648,34 +594,26 @@ export default function Wiki() {
                           </Tabs>
                         </div>
                       ) : (
-                        <>
-                          <div className="p-4 space-y-3 border-b bg-white/50">
-                              <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Clock className="h-3.5 w-3.5 text-slate-400" />
-                                    <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Saved Definitions</h2>
-                                  </div>
-                                  {categorizedDefinitions.drafts.length > 0 && (
-                                    <Badge className="bg-primary/10 text-primary h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black">
-                                        {categorizedDefinitions.drafts.length}
-                                    </Badge>
-                                  )}
-                              </div>
-                              <div className="pt-1">
-                                  <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                              </div>
-                          </div>
-                        </>
+                        <div className="p-4 space-y-3 border-b bg-white/50">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-3.5 w-3.5 text-slate-400" />
+                                  <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Saved Definitions</h2>
+                                </div>
+                                {categorizedDefinitions.drafts.length > 0 && <Badge className="bg-primary/10 text-primary h-5 px-1.5 rounded-full text-[10px] font-black">{categorizedDefinitions.drafts.length}</Badge>}
+                            </div>
+                            <div className="pt-1">
+                                <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                            </div>
+                        </div>
                       )}
 
-                      <div className="flex-1">
-                          <div className="p-3">
-                            <div className="flex items-center gap-2 px-2 mb-3">
-                                <FolderTree className="h-3 w-3 text-slate-400" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">MPM Definitions</span>
-                            </div>
-                            <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'live')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={null} />
-                          </div>
+                      <div className="flex-1 p-3">
+                        <div className="flex items-center gap-2 px-2 mb-3">
+                            <FolderTree className="h-3 w-3 text-slate-400" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">MPM Definitions</span>
+                        </div>
+                        <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'live')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={null} />
                       </div>
                   </div>
               </div>
