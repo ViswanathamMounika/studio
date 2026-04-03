@@ -7,14 +7,31 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, CheckCircle2, XCircle, RefreshCcw, User, ChevronRight, ShieldCheck, AlertCircle, History, Check, ArrowRight, UserCheck } from 'lucide-react';
+import { 
+    Clock, 
+    CheckCircle2, 
+    XCircle, 
+    RefreshCcw, 
+    User, 
+    ChevronRight, 
+    ShieldCheck, 
+    AlertCircle, 
+    History, 
+    Check, 
+    ArrowRight, 
+    UserCheck,
+    Calendar as CalendarIcon,
+    FilterX
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import ChangeRequestModal from './change-request-modal';
 import diff_match_patch from 'diff-match-patch';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { findDefinition } from '@/lib/data';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 
 const dmp = new diff_match_patch();
 
@@ -69,40 +86,63 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [feedbackMode, setFeedbackMode] = useState<'request' | 'reject'>('request');
+    const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>();
 
-    // Filter history to show only actual decisions, not submissions
-    const recentDecisions = useMemo(() => {
-        return (history || [])
-            .filter(h => h.action !== 'Submitted')
-            .slice(0, 20);
-    }, [history]);
+    // Filtered lists based on date
+    const filteredPending = useMemo(() => {
+        if (!dateRange?.from) return pendingDefinitions;
+        return pendingDefinitions.filter(d => {
+            if (!d.submittedAt) return false;
+            const dDate = new Date(d.submittedAt);
+            return isWithinInterval(dDate, { 
+                start: startOfDay(dateRange.from), 
+                end: endOfDay(dateRange.to || dateRange.from) 
+            });
+        });
+    }, [pendingDefinitions, dateRange]);
 
-    // Effect to auto-select first item when switching tabs
+    const filteredDecisions = useMemo(() => {
+        const decisions = (history || []).filter(h => h.action !== 'Submitted');
+        if (!dateRange?.from) return decisions.slice(0, 20);
+        
+        return decisions.filter(h => {
+            const hDate = new Date(h.date);
+            return isWithinInterval(hDate, { 
+                start: startOfDay(dateRange.from), 
+                end: endOfDay(dateRange.to || dateRange.from) 
+            });
+        }).slice(0, 20);
+    }, [history, dateRange]);
+
+    // Selection logic when data or tabs change
     useMemo(() => {
         if (sidebarTab === 'pending') {
-            setSelectedItemId(pendingDefinitions[0]?.id || null);
+            if (!selectedItemId || !filteredPending.some(d => d.id === selectedItemId)) {
+                setSelectedItemId(filteredPending[0]?.id || null);
+            }
         } else {
-            setSelectedItemId(recentDecisions[0]?.id || null);
+            if (!selectedItemId || !filteredDecisions.some(h => h.id === selectedItemId)) {
+                setSelectedItemId(filteredDecisions[0]?.id || null);
+            }
         }
-    }, [sidebarTab, pendingDefinitions, recentDecisions]);
+    }, [sidebarTab, filteredPending, filteredDecisions, selectedItemId]);
 
     const selectedDef = useMemo(() => {
         if (sidebarTab === 'pending') {
-            return pendingDefinitions.find(d => d.id === selectedItemId);
+            return filteredPending.find(d => d.id === selectedItemId);
         } else {
-            const h = recentDecisions.find(item => item.id === selectedItemId);
+            const h = filteredDecisions.find(item => item.id === selectedItemId);
             if (!h) return undefined;
-            // Find the definition in either live library or drafts
             return findDefinition(allDefinitions, h.definitionId) || findDefinition(drafts, h.definitionId);
         }
-    }, [sidebarTab, selectedItemId, pendingDefinitions, recentDecisions, allDefinitions, drafts]);
+    }, [sidebarTab, selectedItemId, filteredPending, filteredDecisions, allDefinitions, drafts]);
 
     const selectedHistoryItem = useMemo(() => {
         if (sidebarTab === 'decided') {
-            return recentDecisions.find(h => h.id === selectedItemId);
+            return filteredDecisions.find(h => h.id === selectedItemId);
         }
         return null;
-    }, [sidebarTab, recentDecisions, selectedItemId]);
+    }, [sidebarTab, filteredDecisions, selectedItemId]);
 
     const handleActionClick = (mode: 'request' | 'reject') => {
         setFeedbackMode(mode);
@@ -131,29 +171,77 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
     return (
         <div className="flex h-full overflow-hidden bg-slate-50/30">
             <div className="w-80 border-r bg-white flex flex-col shrink-0 shadow-sm z-10">
-                <div className="p-4 border-b bg-slate-50/50">
+                <div className="p-4 border-b bg-slate-50/50 space-y-4">
                     <Tabs value={sidebarTab} onValueChange={(v) => setSidebarTab(v as any)} className="w-full">
                         <TabsList className="grid grid-cols-2 w-full h-9 p-1 bg-slate-200/50 rounded-xl">
                             <TabsTrigger value="pending" className="text-[10px] font-black uppercase tracking-wider rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
-                                Queue ({pendingDefinitions.length})
+                                Queue ({filteredPending.length})
                             </TabsTrigger>
                             <TabsTrigger value="decided" className="text-[10px] font-black uppercase tracking-wider rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
                                 Decided
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
+
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Filter by Date</Label>
+                            {dateRange && (
+                                <Button 
+                                    variant="ghost" 
+                                    className="h-5 px-1.5 text-[9px] font-bold text-primary hover:bg-primary/5" 
+                                    onClick={() => setDateRange(undefined)}
+                                >
+                                    <FilterX className="h-3 w-3 mr-1" />
+                                    Clear
+                                </Button>
+                            )}
+                        </div>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className={cn(
+                                        "w-full justify-start text-left font-medium text-[11px] rounded-lg border-slate-200 h-8",
+                                        !dateRange && "text-slate-400"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                                    {dateRange?.from ? (
+                                        dateRange.to ? (
+                                            <>{format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd")}</>
+                                        ) : format(dateRange.from, "MMM dd, yyyy")
+                                    ) : (
+                                        <span>Pick a date range</span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    initialFocus
+                                    mode="range"
+                                    defaultMonth={dateRange?.from}
+                                    selected={dateRange as any}
+                                    onSelect={(range) => setDateRange(range as any)}
+                                    numberOfMonths={1}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 </div>
                 
                 <ScrollArea className="flex-1">
                     <div className="p-3 space-y-1">
                         {sidebarTab === 'pending' ? (
-                            pendingDefinitions.length === 0 ? (
+                            filteredPending.length === 0 ? (
                                 <div className="py-12 px-4 text-center text-slate-400">
                                     <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                                    <p className="text-xs font-medium">All items processed</p>
+                                    <p className="text-xs font-medium">No pending items found</p>
+                                    {dateRange && <p className="text-[10px] mt-1">Try adjusting the date range</p>}
                                 </div>
                             ) : (
-                                pendingDefinitions.map(def => (
+                                filteredPending.map(def => (
                                     <button key={def.id} onClick={() => setSelectedItemId(def.id)} className={cn("w-full text-left p-4 rounded-xl transition-all border", selectedItemId === def.id ? "bg-indigo-50 border-indigo-100 ring-1 ring-indigo-100" : "bg-transparent border-transparent hover:bg-slate-50")}>
                                         <div className="flex items-start justify-between gap-2"><span className={cn("text-[13px] font-bold truncate flex-1", selectedItemId === def.id ? "text-indigo-900" : "text-slate-700")}>{def.name}</span><Badge variant="outline" className="h-5 px-1.5 text-[9px] uppercase font-black bg-white">{def.module}</Badge></div>
                                         <div className="flex items-center gap-2 mt-2.5"><span className="text-[11px] font-medium text-slate-500 truncate">{def.submittedBy || "System"}</span><span className="text-slate-300">•</span><span className="text-[10px] font-bold text-slate-400 uppercase">{def.submittedAt ? format(new Date(def.submittedAt), 'MMM dd') : 'Recent'}</span></div>
@@ -161,13 +249,14 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                 ))
                             )
                         ) : (
-                            recentDecisions.length === 0 ? (
+                            filteredDecisions.length === 0 ? (
                                 <div className="py-12 px-4 text-center text-slate-400">
                                     <History className="h-8 w-8 mx-auto mb-2 opacity-20" />
                                     <p className="text-xs font-medium">No recent decisions</p>
+                                    {dateRange && <p className="text-[10px] mt-1">Try adjusting the date range</p>}
                                 </div>
                             ) : (
-                                recentDecisions.map(h => (
+                                filteredDecisions.map(h => (
                                     <button key={h.id} onClick={() => setSelectedItemId(h.id)} className={cn("w-full text-left p-4 rounded-xl transition-all border", selectedItemId === h.id ? "bg-slate-50 border-slate-200 ring-1 ring-slate-100" : "bg-transparent border-transparent hover:bg-slate-50")}>
                                         <div className="flex items-start justify-between gap-2">
                                             <span className={cn("text-[13px] font-bold truncate flex-1", selectedItemId === h.id ? "text-slate-900" : "text-slate-700")}>{h.definitionName}</span>
