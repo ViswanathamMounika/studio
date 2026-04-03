@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -511,6 +512,9 @@ export default function Wiki() {
                     <TabsContent value="queue" className="h-full m-0 p-0 data-[state=inactive]:hidden">
                         <ApprovalQueue 
                             pendingDefinitions={categorizedDefinitions.pending} 
+                            history={approvalHistory}
+                            allDefinitions={definitions}
+                            drafts={drafts}
                             onApprove={handlePublish} 
                             onReject={handleReject} 
                         />

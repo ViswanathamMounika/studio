@@ -2,22 +2,27 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import type { Definition } from '@/lib/types';
+import type { Definition, ApprovalHistoryEntry } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, CheckCircle2, XCircle, RefreshCcw, User, ChevronRight, ShieldCheck, AlertCircle, History } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, RefreshCcw, User, ChevronRight, ShieldCheck, AlertCircle, History, Check, ArrowRight, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import ChangeRequestModal from './change-request-modal';
 import diff_match_patch from 'diff-match-patch';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { findDefinition } from '@/lib/data';
 
 const dmp = new diff_match_patch();
 
 type ApprovalQueueProps = {
     pendingDefinitions: Definition[];
+    history: ApprovalHistoryEntry[];
+    allDefinitions: Definition[];
+    drafts: Definition[];
     onApprove: (id: string) => void;
     onReject: (id: string, comment: string, isRejection: boolean) => void;
 };
@@ -59,12 +64,45 @@ const ComparisonSection = ({ title, published = '', submitted = '', isHtml = fal
     );
 };
 
-export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject }: ApprovalQueueProps) {
-    const [selectedId, setSelectedId] = useState<string | null>(pendingDefinitions[0]?.id || null);
+export default function ApprovalQueue({ pendingDefinitions, history, allDefinitions, drafts, onApprove, onReject }: ApprovalQueueProps) {
+    const [sidebarTab, setSidebarTab] = useState<'pending' | 'decided'>('pending');
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [feedbackMode, setFeedbackMode] = useState<'request' | 'reject'>('request');
 
-    const selectedDef = useMemo(() => pendingDefinitions.find(d => d.id === selectedId), [pendingDefinitions, selectedId]);
+    // Filter history to show only actual decisions, not submissions
+    const recentDecisions = useMemo(() => {
+        return (history || [])
+            .filter(h => h.action !== 'Submitted')
+            .slice(0, 20);
+    }, [history]);
+
+    // Effect to auto-select first item when switching tabs
+    useMemo(() => {
+        if (sidebarTab === 'pending') {
+            setSelectedItemId(pendingDefinitions[0]?.id || null);
+        } else {
+            setSelectedItemId(recentDecisions[0]?.id || null);
+        }
+    }, [sidebarTab, pendingDefinitions, recentDecisions]);
+
+    const selectedDef = useMemo(() => {
+        if (sidebarTab === 'pending') {
+            return pendingDefinitions.find(d => d.id === selectedItemId);
+        } else {
+            const h = recentDecisions.find(item => item.id === selectedItemId);
+            if (!h) return undefined;
+            // Find the definition in either live library or drafts
+            return findDefinition(allDefinitions, h.definitionId) || findDefinition(drafts, h.definitionId);
+        }
+    }, [sidebarTab, selectedItemId, pendingDefinitions, recentDecisions, allDefinitions, drafts]);
+
+    const selectedHistoryItem = useMemo(() => {
+        if (sidebarTab === 'decided') {
+            return recentDecisions.find(h => h.id === selectedItemId);
+        }
+        return null;
+    }, [sidebarTab, recentDecisions, selectedItemId]);
 
     const handleActionClick = (mode: 'request' | 'reject') => {
         setFeedbackMode(mode);
@@ -72,44 +110,74 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
     };
 
     const handleFeedbackSubmit = (data: { content: string }) => {
-        if (!selectedId) return;
-        onReject(selectedId, data.content, feedbackMode === 'reject');
-        const nextIdx = pendingDefinitions.findIndex(d => d.id === selectedId) + 1;
-        setSelectedId(pendingDefinitions[nextIdx]?.id || null);
+        if (!selectedItemId) return;
+        onReject(selectedItemId, data.content, feedbackMode === 'reject');
     };
 
     const handleApprove = () => {
-        if (!selectedId) return;
-        onApprove(selectedId);
-        const nextIdx = pendingDefinitions.findIndex(d => d.id === selectedId) + 1;
-        setSelectedId(pendingDefinitions[nextIdx]?.id || null);
+        if (!selectedItemId) return;
+        onApprove(selectedItemId);
     };
 
-    if (pendingDefinitions.length === 0) {
-        return (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-slate-50/50">
-                <div className="h-20 w-20 rounded-full bg-white shadow-sm border flex items-center justify-center mb-6"><CheckCircle2 className="h-10 w-10 text-emerald-500" /></div>
-                <h2 className="text-2xl font-bold text-slate-900">All caught up!</h2>
-                <p className="text-slate-500 max-w-sm mt-2">There are no pending definitions requiring your review at this time.</p>
-            </div>
-        );
-    }
+    const getActionColor = (action: string) => {
+        switch (action) {
+            case 'Approved': return 'text-emerald-600 bg-emerald-50 border-emerald-100';
+            case 'Rejected': return 'text-red-600 bg-red-50 border-red-100';
+            case 'Changes Requested': return 'text-amber-600 bg-amber-50 border-amber-100';
+            default: return 'text-slate-600 bg-slate-50 border-slate-100';
+        }
+    };
 
     return (
         <div className="flex h-full overflow-hidden bg-slate-50/30">
             <div className="w-80 border-r bg-white flex flex-col shrink-0 shadow-sm z-10">
-                <div className="p-6 border-b bg-slate-50/50 flex items-center justify-between">
-                    <div><h2 className="text-lg font-bold tracking-tight text-slate-900">Queue</h2><p className="text-xs text-slate-500">Items for review</p></div>
-                    <Badge className="bg-primary/10 text-primary font-bold">{pendingDefinitions.length}</Badge>
+                <div className="p-4 border-b bg-slate-50/50">
+                    <Tabs value={sidebarTab} onValueChange={(v) => setSidebarTab(v as any)} className="w-full">
+                        <TabsList className="grid grid-cols-2 w-full h-9 p-1 bg-slate-200/50 rounded-xl">
+                            <TabsTrigger value="pending" className="text-[10px] font-black uppercase tracking-wider rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                                Queue ({pendingDefinitions.length})
+                            </TabsTrigger>
+                            <TabsTrigger value="decided" className="text-[10px] font-black uppercase tracking-wider rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                                Decided
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                 </div>
+                
                 <ScrollArea className="flex-1">
                     <div className="p-3 space-y-1">
-                        {pendingDefinitions.map(def => (
-                            <button key={def.id} onClick={() => setSelectedId(def.id)} className={cn("w-full text-left p-4 rounded-xl transition-all border", selectedId === def.id ? "bg-indigo-50 border-indigo-100 ring-1 ring-indigo-100" : "bg-transparent border-transparent hover:bg-slate-50")}>
-                                <div className="flex items-start justify-between gap-2"><span className={cn("text-[13px] font-bold truncate flex-1", selectedId === def.id ? "text-indigo-900" : "text-slate-700")}>{def.name}</span><Badge variant="outline" className="h-5 px-1.5 text-[9px] uppercase font-black bg-white">{def.module}</Badge></div>
-                                <div className="flex items-center gap-2 mt-2.5"><span className="text-[11px] font-medium text-slate-500 truncate">{def.submittedBy || "System"}</span><span className="text-slate-300">•</span><span className="text-[10px] font-bold text-slate-400 uppercase">{def.submittedAt ? format(new Date(def.submittedAt), 'MMM dd') : 'Recent'}</span></div>
-                            </button>
-                        ))}
+                        {sidebarTab === 'pending' ? (
+                            pendingDefinitions.length === 0 ? (
+                                <div className="py-12 px-4 text-center text-slate-400">
+                                    <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                                    <p className="text-xs font-medium">All items processed</p>
+                                </div>
+                            ) : (
+                                pendingDefinitions.map(def => (
+                                    <button key={def.id} onClick={() => setSelectedItemId(def.id)} className={cn("w-full text-left p-4 rounded-xl transition-all border", selectedItemId === def.id ? "bg-indigo-50 border-indigo-100 ring-1 ring-indigo-100" : "bg-transparent border-transparent hover:bg-slate-50")}>
+                                        <div className="flex items-start justify-between gap-2"><span className={cn("text-[13px] font-bold truncate flex-1", selectedItemId === def.id ? "text-indigo-900" : "text-slate-700")}>{def.name}</span><Badge variant="outline" className="h-5 px-1.5 text-[9px] uppercase font-black bg-white">{def.module}</Badge></div>
+                                        <div className="flex items-center gap-2 mt-2.5"><span className="text-[11px] font-medium text-slate-500 truncate">{def.submittedBy || "System"}</span><span className="text-slate-300">•</span><span className="text-[10px] font-bold text-slate-400 uppercase">{def.submittedAt ? format(new Date(def.submittedAt), 'MMM dd') : 'Recent'}</span></div>
+                                    </button>
+                                ))
+                            )
+                        ) : (
+                            recentDecisions.length === 0 ? (
+                                <div className="py-12 px-4 text-center text-slate-400">
+                                    <History className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                                    <p className="text-xs font-medium">No recent decisions</p>
+                                </div>
+                            ) : (
+                                recentDecisions.map(h => (
+                                    <button key={h.id} onClick={() => setSelectedItemId(h.id)} className={cn("w-full text-left p-4 rounded-xl transition-all border", selectedItemId === h.id ? "bg-slate-50 border-slate-200 ring-1 ring-slate-100" : "bg-transparent border-transparent hover:bg-slate-50")}>
+                                        <div className="flex items-start justify-between gap-2">
+                                            <span className={cn("text-[13px] font-bold truncate flex-1", selectedItemId === h.id ? "text-slate-900" : "text-slate-700")}>{h.definitionName}</span>
+                                            <Badge variant="outline" className={cn("h-5 px-1.5 text-[8px] uppercase font-black", getActionColor(h.action))}>{h.action}</Badge>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-2.5"><span className="text-[11px] font-medium text-slate-500 truncate">By {h.userName}</span><span className="text-slate-300">•</span><span className="text-[10px] font-bold text-slate-400 uppercase">{format(new Date(h.date), 'MMM dd')}</span></div>
+                                    </button>
+                                ))
+                            )
+                        )}
                     </div>
                 </ScrollArea>
             </div>
@@ -119,15 +187,48 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                     <>
                         <div className="bg-white border-b px-8 py-4 flex items-center justify-between sticky top-0 z-20 shadow-sm">
                             <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center border border-amber-100"><Clock className="h-5 w-5 text-amber-600" /></div>
-                                <div><p className="text-sm font-bold">Reviewing <span className="text-primary">{selectedDef.name}</span></p><p className="text-[11px] text-slate-500">Submitted by <span className="font-bold">{selectedDef.submittedBy}</span> • {selectedDef.submittedAt ? formatDistanceToNow(new Date(selectedDef.submittedAt), { addSuffix: true }) : 'Recently'}</p></div>
+                                <div className={cn(
+                                    "h-10 w-10 rounded-xl flex items-center justify-center border",
+                                    sidebarTab === 'pending' ? "bg-amber-50 border-amber-100" : "bg-slate-50 border-slate-100"
+                                )}>
+                                    {sidebarTab === 'pending' ? <Clock className="h-5 w-5 text-amber-600" /> : <UserCheck className="h-5 w-5 text-slate-600" />}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold">Reviewing <span className="text-primary">{selectedDef.name}</span></p>
+                                    <p className="text-[11px] text-slate-500">
+                                        {sidebarTab === 'pending' 
+                                            ? `Submitted by ${selectedDef.submittedBy} • ${selectedDef.submittedAt ? formatDistanceToNow(new Date(selectedDef.submittedAt), { addSuffix: true }) : 'Recently'}`
+                                            : `Decision record from governance audit trail`
+                                        }
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <Button variant="outline" size="sm" className="rounded-xl text-red-600 font-bold bg-white" onClick={() => handleActionClick('reject')}>Reject</Button>
-                                <Button variant="outline" size="sm" className="rounded-xl text-amber-600 font-bold bg-white" onClick={() => handleActionClick('request')}>Request Changes</Button>
-                                <Button size="sm" className="rounded-xl bg-[#3F51B5] text-white font-bold px-6" onClick={handleApprove}><ShieldCheck className="h-4 w-4 mr-2" />Approve & Publish</Button>
-                            </div>
+                            {sidebarTab === 'pending' && (
+                                <div className="flex items-center gap-3">
+                                    <Button variant="outline" size="sm" className="rounded-xl text-red-600 font-bold bg-white" onClick={() => handleActionClick('reject')}>Reject</Button>
+                                    <Button variant="outline" size="sm" className="rounded-xl text-amber-600 font-bold bg-white" onClick={() => handleActionClick('request')}>Request Changes</Button>
+                                    <Button size="sm" className="rounded-xl bg-[#3F51B5] text-white font-bold px-6" onClick={handleApprove}><ShieldCheck className="h-4 w-4 mr-2" />Approve & Publish</Button>
+                                </div>
+                            )}
                         </div>
+
+                        {sidebarTab === 'decided' && selectedHistoryItem && (
+                            <div className="bg-slate-100/50 px-8 py-3 border-b flex items-center gap-4 animate-in slide-in-from-top-1 fade-in">
+                                <Badge className={cn("rounded-lg font-black uppercase text-[10px] py-1 px-3", getActionColor(selectedHistoryItem.action))}>
+                                    {selectedHistoryItem.action}
+                                </Badge>
+                                <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                                    <span>Acted upon by <strong>{selectedHistoryItem.userName}</strong> on {format(new Date(selectedHistoryItem.date), 'PPP p')}</span>
+                                    {selectedHistoryItem.comment && (
+                                        <>
+                                            <span className="text-slate-300">|</span>
+                                            <span className="italic text-slate-500">"{selectedHistoryItem.comment}"</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         <ScrollArea className="flex-1">
                             <div className="p-8 max-w-7xl mx-auto space-y-10 pb-32">
                                 <div className="space-y-4">
@@ -144,7 +245,10 @@ export default function ApprovalQueue({ pendingDefinitions, onApprove, onReject 
                         </ScrollArea>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/20"><History className="h-12 w-12 text-slate-300 mb-4" /><h3 className="text-lg font-bold">Select a request to review</h3></div>
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/20">
+                        <History className="h-12 w-12 text-slate-300 mb-4" />
+                        <h3 className="text-lg font-bold">Select a request to review</h3>
+                    </div>
                 )}
             </div>
 
