@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -257,9 +256,9 @@ export default function DefinitionView({
                         <div className="flex items-center gap-2 mb-4"><h3 className="text-sm font-bold">Saved Notes</h3><Info className="h-3.5 w-3.5 text-slate-400" /></div>
                         <Tabs defaultValue="my-notes" className="w-full">
                             <TabsList className="bg-transparent border-b h-auto p-0 gap-8">
-                                <TabsTrigger value="my-notes" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold">My Notes</TabsTrigger>
-                                <TabsTrigger value="others-notes" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold">Other's Notes</TabsTrigger>
-                                <TabsTrigger value="review-history" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold">Review History</TabsTrigger>
+                                <TabsTrigger value="my-notes" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=active]:border-primary">My Notes</TabsTrigger>
+                                <TabsTrigger value="others-notes" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=active]:border-primary">Other's Notes</TabsTrigger>
+                                <TabsTrigger value="review-history" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=active]:border-primary">Review History</TabsTrigger>
                             </TabsList>
                             <TabsContent value="my-notes" className="mt-6 space-y-4">{(definition.notes || []).filter(n => n.authorId === currentUser.id).map(n => <Card key={n.id} className="p-4 rounded-xl shadow-sm"><div className="flex items-center gap-2 mb-2"><Avatar className="h-6 w-6"><AvatarImage src={n.avatar}/><AvatarFallback>{n.author[0]}</AvatarFallback></Avatar><span className="font-bold text-xs">{n.author}</span><span className="text-[10px] text-slate-400 uppercase font-black">{new Date(n.date).toLocaleDateString()}</span></div><p className="text-sm text-slate-600 pl-8">{n.content}</p></Card>)}</TabsContent>
                             <TabsContent value="others-notes" className="mt-6 space-y-4">{(definition.notes || []).filter(n => n.authorId !== currentUser.id).map(n => <Card key={n.id} className="p-4 rounded-xl shadow-sm"><div className="flex items-center gap-2 mb-2"><Avatar className="h-6 w-6"><AvatarImage src={n.avatar}/><AvatarFallback>{n.author[0]}</AvatarFallback></Avatar><span className="font-bold text-xs">{n.author}</span><span className="text-[10px] text-slate-400 uppercase font-black">{new Date(n.date).toLocaleDateString()}</span></div><p className="text-sm text-slate-600 pl-8">{n.content}</p></Card>)}</TabsContent>

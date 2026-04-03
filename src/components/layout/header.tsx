@@ -58,7 +58,7 @@ export default function AppHeader({
       case 'template-management':
         return 'Template Management';
       case 'approval-workflow':
-        return 'Documentation Governance';
+        return 'Approvals';
       default:
         return 'MedPoint Wiki';
     }
