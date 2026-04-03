@@ -106,7 +106,8 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
     downloadAnchorNode.remove();
   };
 
-  const isEditable = isAdmin || (definition.isDraft && !definition.isPendingApproval);
+  // Lock editing if pending review
+  const isEditable = !definition.isPendingApproval && (isAdmin || definition.isDraft);
 
   return (
     <DropdownMenu>

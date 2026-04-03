@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send, AlertTriangle, Trash2, ClipboardList, Share2 } from 'lucide-react';
+import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send, AlertTriangle, Trash2, ClipboardList, Share2, Undo2 } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,7 @@ type DefinitionViewProps = {
   onReject?: (id: string, requestData?: { content: string; priority?: 'Low' | 'Medium' | 'High'; isRejection?: boolean }) => void;
   onSendApproval?: (id: string) => void;
   onDiscard?: (id: string) => void;
+  onRetract?: (id: string) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
   onSave: (definition: Definition) => void;
@@ -69,7 +71,7 @@ const WorkflowStep = ({ label, status, isLast = false }: { label: string, status
 
 export default function DefinitionView({ 
     definition, allDefinitions, templates, liveVersion, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
-    activeTab, onTabChange, onSave, onDiscard, isAdmin, currentUser, viewingMode
+    onRetract, activeTab, onTabChange, onSave, onDiscard, isAdmin, currentUser, viewingMode
 }: DefinitionViewProps) {
     const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
     const [showComparison, setShowComparison] = useState(false);
@@ -210,14 +212,44 @@ export default function DefinitionView({
                     <p className="text-xs font-semibold text-slate-500">{definition.module}</p>
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl font-bold text-slate-900">{definition.name}</h1>
-                        <Badge variant="outline" className={cn("h-6 rounded-full text-[10px] font-bold uppercase", viewingMode === 'live' ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700")}>{definition.isArchived ? 'Archived' : viewingMode === 'live' ? 'Published' : 'Draft'}</Badge>
+                        <Badge variant="outline" className={cn("h-6 rounded-full text-[10px] font-bold uppercase", 
+                            viewingMode === 'live' ? "bg-emerald-50 text-emerald-700" : 
+                            definition.isPendingApproval ? "bg-blue-50 text-blue-700 border-blue-100 shadow-sm" : 
+                            "bg-amber-50 text-amber-700"
+                        )}>
+                            {definition.isArchived ? 'Archived' : 
+                             viewingMode === 'live' ? 'Published' : 
+                             definition.isPendingApproval ? 'Pending Review' : 'Draft'}
+                        </Badge>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" className="text-primary"><Share2 className="h-5 w-5" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-primary"><Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary")} /></Button>
-                    {!definition.isArchived && <Button onClick={onEdit} className="bg-primary font-bold px-6 h-9 rounded-lg">Edit</Button>}
-                    <DefinitionActions definition={definition} onEdit={onEdit} onDuplicate={() => onDuplicate(definition.id)} onArchive={onArchive} onToggleBookmark={onToggleBookmark} isAdmin={isAdmin} />
+                    
+                    {!definition.isArchived && !definition.isPendingApproval && (
+                        <Button onClick={onEdit} className="bg-primary font-bold px-6 h-9 rounded-lg shadow-sm">Edit</Button>
+                    )}
+                    
+                    {definition.isPendingApproval && (
+                        <Button 
+                            variant="outline" 
+                            onClick={() => onRetract?.(definition.id)} 
+                            className="border-red-200 text-red-600 hover:bg-red-50 font-bold h-9 rounded-lg gap-2"
+                        >
+                            <Undo2 className="h-4 w-4" />
+                            Retract Submission
+                        </Button>
+                    )}
+
+                    <DefinitionActions 
+                        definition={definition} 
+                        onEdit={onEdit} 
+                        onDuplicate={() => onDuplicate(definition.id)} 
+                        onArchive={onArchive} 
+                        onToggleBookmark={onToggleBookmark} 
+                        isAdmin={isAdmin} 
+                    />
                 </div>
             </div>
 

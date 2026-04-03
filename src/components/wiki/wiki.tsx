@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -126,7 +127,7 @@ export default function Wiki() {
     const sourceList = mode === 'draft' ? drafts : definitions;
     const def = findDefinition(sourceList, id);
     if (def) {
-        trackView(id, def.name, def.module, def.isArchived ? 'Archived' : mode === 'live' ? 'Published' : 'Draft');
+        trackView(id, def.name, def.module, def.isArchived ? 'Archived' : mode === 'live' ? 'Published' : (def.isPendingApproval ? 'Pending Review' : 'Draft'));
     }
     
     const targetSection = sectionId || 'description';
@@ -276,6 +277,19 @@ export default function Wiki() {
     setViewingMode('live');
     setSelectedDefinitionId(null);
     toast({ title: "Draft Discarded" });
+  };
+
+  const handleRetract = (id: string) => {
+    setDrafts(prev => prev.map(d => {
+      if (d.id === id) {
+        return { ...d, isPendingApproval: false, isDraft: true };
+      }
+      return d;
+    }));
+    toast({ 
+      title: "Submission Retracted", 
+      description: "The definition has been returned to your drafts." 
+    });
   };
   
   const handleCreateDefinition = (newDefinitionData: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => {
@@ -533,6 +547,7 @@ export default function Wiki() {
                           onToggleBookmark={toggleBookmark} 
                           onPublish={handlePublish}
                           onReject={(id, data) => handleReject(id, data?.content || '', data?.isRejection)}
+                          onRetract={handleRetract}
                           activeTab={activeTab} 
                           onTabChange={handleTabChange} 
                           onSave={handleSave} 
