@@ -41,12 +41,75 @@ interface GroupForm {
 }
 
 const MODULE_OPTIONS = [
-  'Authorization',
+  'Authorizations',
   'Claims',
   'Member',
   'Provider',
-  'Other'
+  'Core',
+  'Member Management',
+  'Provider Network'
 ];
+
+/**
+ * Re-indexes all sections in a template to ensure global and internal orders are contiguous.
+ */
+function reindexTemplate(sections: TemplateSection[]): TemplateSection[] {
+  // 1. Group items into "Units" (Standalone Section or a Group Name)
+  const standaloneSections = sections.filter(s => !s.group);
+  const uniqueGroupNames = Array.from(new Set(sections.filter(s => s.group).map(s => s.group as string)));
+
+  type Unit = {
+    type: 'section' | 'group';
+    name: string; // section id or group name
+    globalOrder: number;
+    sections: TemplateSection[];
+  };
+
+  const units: Unit[] = [];
+
+  standaloneSections.forEach(s => {
+    units.push({
+      type: 'section',
+      name: s.id,
+      globalOrder: s.order || 999,
+      sections: [s]
+    });
+  });
+
+  uniqueGroupNames.forEach(name => {
+    const members = sections.filter(s => s.group === name);
+    units.push({
+      type: 'group',
+      name: name,
+      globalOrder: members[0]?.groupOrder || 999,
+      sections: members.sort((a, b) => (a.order || 0) - (b.order || 0))
+    });
+  });
+
+  // 2. Sort units by their current global positions
+  units.sort((a, b) => a.globalOrder - b.globalOrder);
+
+  // 3. Re-assign positions
+  const reindexed: TemplateSection[] = [];
+  units.forEach((unit, unitIdx) => {
+    const newGlobalOrder = unitIdx + 1;
+    
+    unit.sections.forEach((s, secIdx) => {
+      const updatedSection = { ...s };
+      if (unit.type === 'group') {
+        updatedSection.groupOrder = newGlobalOrder;
+        updatedSection.order = secIdx + 1; // Internal order starts from 1
+      } else {
+        updatedSection.order = newGlobalOrder;
+        updatedSection.group = undefined;
+        updatedSection.groupOrder = undefined;
+      }
+      reindexed.push(updatedSection);
+    });
+  });
+
+  return reindexed;
+}
 
 export default function TemplateManagement({ templates, onSaveTemplates }: TemplateManagementProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -108,7 +171,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       updatedTemplates = [...templates, templateToSave];
     }
 
-    // If setting as default, unset others
     if (templateToSave.isDefault) {
       updatedTemplates = updatedTemplates.map(t => t.id === templateToSave.id ? t : { ...t, isDefault: false });
     }
@@ -119,35 +181,38 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   };
 
   const handleAddSection = () => {
-    const newSection: TemplateSection = {
-      id: `sec-${Date.now()}`,
-      templateId: currentTemplate.id!,
-      name: '',
-      order: (currentTemplate.sections?.length || 0) + 1,
-      fieldType: 'PlainText',
-      isMulti: false,
-      isRequired: false,
-      options: [],
-      columns: []
-    };
-    setCurrentTemplate(prev => ({
-      ...prev,
-      sections: [...(prev.sections || []), newSection]
-    }));
+    setCurrentTemplate(prev => {
+      const nextOrder = (prev.sections?.length || 0) + 1;
+      const newSection: TemplateSection = {
+        id: `sec-${Date.now()}`,
+        templateId: prev.id!,
+        name: '',
+        order: nextOrder,
+        fieldType: 'PlainText',
+        isMulti: false,
+        isRequired: false,
+        options: [],
+        columns: []
+      };
+      const updated = [...(prev.sections || []), newSection];
+      return { ...prev, sections: reindexTemplate(updated) };
+    });
   };
 
   const updateSection = (id: string, updates: Partial<TemplateSection>) => {
-    setCurrentTemplate(prev => ({
-      ...prev,
-      sections: (prev.sections || []).map(s => s.id === id ? { ...s, ...updates } : s)
-    }));
+    setCurrentTemplate(prev => {
+      const updated = (prev.sections || []).map(s => s.id === id ? { ...s, ...updates } : s);
+      // If order was manually changed, we might want to re-index, but usually we just trust the user
+      // For grouping logic specifically, we definitely re-index
+      return { ...prev, sections: updated };
+    });
   };
 
   const removeSection = (id: string) => {
-    setCurrentTemplate(prev => ({
-      ...prev,
-      sections: (prev.sections || []).filter(s => s.id !== id)
-    }));
+    setCurrentTemplate(prev => {
+      const filtered = (prev.sections || []).filter(s => s.id !== id);
+      return { ...prev, sections: reindexTemplate(filtered) };
+    });
   };
 
   const handleAddOption = (sectionId: string, columnId?: string) => {
@@ -235,6 +300,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       });
       setEditingGroupName(groupToEdit);
     } else {
+      // Logic for new group: default order is current count + 1 or lowest of selected sections
       setGroupForm({ name: '', order: 1, sectionConfigs: configs });
       setEditingGroupName(null);
     }
@@ -256,21 +322,23 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         }
         return s;
       });
-      return { ...prev, sections };
+      
+      // Auto-reindex after applying group changes
+      return { ...prev, sections: reindexTemplate(sections) };
     });
 
     setIsGroupModalOpen(false);
-    toast({ title: 'Groups Updated', description: `Group "${groupForm.name}" has been configured.` });
+    toast({ title: 'Groups Updated', description: `Group "${groupForm.name}" has been configured and re-indexed.` });
   };
 
   const handleRemoveGroup = (groupName: string) => {
-    setCurrentTemplate(prev => ({
-      ...prev,
-      sections: (prev.sections || []).map(s => 
+    setCurrentTemplate(prev => {
+      const sections = (prev.sections || []).map(s => 
         s.group === groupName ? { ...s, group: undefined, groupOrder: undefined } : s
-      )
-    }));
-    toast({ title: 'Group Deleted', description: `All sections from "${groupName}" have been ungrouped.` });
+      );
+      return { ...prev, sections: reindexTemplate(sections) };
+    });
+    toast({ title: 'Group Deleted', description: `All sections from "${groupName}" have been ungrouped and re-indexed.` });
   };
 
   const displayGroups = useMemo(() => {
@@ -405,7 +473,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
           <ScrollArea className="flex-1 bg-slate-50/30">
             <div className="p-8 space-y-10 pb-32">
               <div className="space-y-6">
-                {/* Row 1: Active Status */}
                 <div className="flex justify-end items-center gap-2">
                   <Label htmlFor="is-active" className="text-[10px] font-black uppercase text-slate-400 tracking-widest cursor-pointer">Active Status</Label>
                   <Switch 
@@ -416,7 +483,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                   />
                 </div>
 
-                {/* Row 2: Name, Module, Configuration */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
                   <div className="md:col-span-2 space-y-2">
                     <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Template Name <span className="text-red-500">*</span></Label>
@@ -454,7 +520,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                   </div>
                 </div>
 
-                {/* Description */}
                 <div className="space-y-2">
                   <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Description</Label>
                   <Textarea 
@@ -470,7 +535,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">Schema Architecture</h3>
-                    <p className="text-sm text-slate-500">Add sections or cluster them into logical groups.</p>
+                    <p className="text-sm text-slate-500">Add sections or cluster them into logical groups. Orders will auto-reindex.</p>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => handleOpenGroupModal()} className="rounded-xl border-slate-200 bg-white hover:bg-slate-50 shadow-sm gap-2 font-bold h-9">
@@ -495,19 +560,24 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                             </div>
                             <div className="flex flex-col">
                               <h4 className="text-base font-black text-slate-800 uppercase tracking-widest">{unit.name}</h4>
-                              <span className="text-[10px] font-bold text-slate-400">Global Group Order: {unit.order}</span>
+                              <span className="text-[10px] font-bold text-slate-400">Global Unit Order: {unit.order}</span>
                             </div>
                           </div>
-                          <Button variant="ghost" size="sm" onClick={() => handleOpenGroupModal(unit.name)} className="h-8 rounded-lg text-slate-500 font-bold hover:bg-white">
-                            <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Edit Group
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => handleOpenGroupModal(unit.name)} className="h-8 rounded-lg text-slate-500 font-bold hover:bg-white">
+                              <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Edit Group
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleRemoveGroup(unit.name!)} className="h-8 rounded-lg text-red-500 font-bold hover:bg-white">
+                              <X className="h-3.5 w-3.5 mr-1.5" /> Dissolve
+                            </Button>
+                          </div>
                         </div>
                       )}
 
                       <div className="space-y-6">
                         {unit.sections.map((section) => (
                           <Card key={section.id} className={cn(
-                            "rounded-2xl border-slate-200 shadow-sm overflow-hidden group/section bg-white",
+                            "rounded-2xl border-slate-200 shadow-sm overflow-hidden group/section bg-white transition-all",
                             unit.type === 'group' ? "border-l-4 border-l-[#3F51B5]" : "border-l-4 border-l-slate-200"
                           )}>
                             <div className="p-4 bg-slate-50/50 border-b flex items-center justify-between">
@@ -546,11 +616,16 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                             <CardContent className="p-6 space-y-6">
                               <div className="grid grid-cols-4 gap-6">
                                 <div className="space-y-1.5">
-                                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Display Order</Label>
+                                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                                    {unit.type === 'group' ? 'Internal Sequence' : 'Global Sequence'}
+                                  </Label>
                                   <Input 
                                     type="number"
                                     value={section.order || ''} 
-                                    onChange={e => updateSection(section.id, { order: parseInt(e.target.value) || 0 })}
+                                    onChange={e => {
+                                      const newVal = parseInt(e.target.value) || 0;
+                                      updateSection(section.id, { order: newVal });
+                                    }}
                                     className="h-9 rounded-xl border-slate-200 font-bold"
                                   />
                                 </div>
@@ -814,7 +889,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
               </div>
               <div>
                 <DialogTitle className="text-lg font-bold">{editingGroupName ? 'Edit Group' : 'Create Section Group'}</DialogTitle>
-                <p className="text-xs text-slate-500">Cluster sections under a shared documentation heading.</p>
+                <p className="text-xs text-slate-500">Cluster sections under a heading. Orders will auto-reindex globally.</p>
               </div>
             </div>
           </div>
@@ -831,7 +906,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Group Sort Order</Label>
+                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Global Group Order</Label>
                 <Input 
                   type="number"
                   value={groupForm.order} 
@@ -842,7 +917,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
             </div>
 
             <div className="space-y-3">
-              <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Assign Sections & Define Sequence</Label>
+              <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Assign Sections & Sequence within Group</Label>
               <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
                 <ScrollArea className="h-[300px]">
                   <Table>
@@ -850,7 +925,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                       <TableRow>
                         <TableHead className="w-12 text-center font-black uppercase text-[10px]">Include</TableHead>
                         <TableHead className="font-black uppercase text-[10px]">Section Name</TableHead>
-                        <TableHead className="w-24 text-center font-black uppercase text-[10px]">Sort Order</TableHead>
+                        <TableHead className="w-24 text-center font-black uppercase text-[10px]">Internal Seq</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -908,7 +983,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
             )}
             <Button variant="outline" onClick={() => setIsGroupModalOpen(false)} className="rounded-xl font-bold">Cancel</Button>
             <Button onClick={handleSaveGroup} className="rounded-xl bg-[#3F51B5] hover:bg-[#3F51B5]/90 font-bold shadow-sm px-8" disabled={!groupForm.name.trim()}>
-              Save Group Configuration
+              Save Group & Re-index
             </Button>
           </DialogFooter>
         </DialogContent>
