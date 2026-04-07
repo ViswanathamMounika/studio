@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Save, Send, Pencil, Trash, ChevronDown, Check, Plus } from 'lucide-react';
+import { X, Upload, Save, Send, Pencil, Trash, ChevronDown, Check, Plus, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -20,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { ScrollArea } from '../ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -67,72 +67,89 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
   }, [selectedTemplate]);
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/30">
-      <div className="sticky top-0 z-30 bg-white px-8 py-4 border-b flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><Pencil className="h-5 w-5 text-indigo-600" /></div>
-            <div><h2 className="text-2xl font-bold tracking-tight">Edit Mode</h2><p className="text-xs text-slate-500 font-medium">Drafting improvements for <span className="font-bold text-slate-900">{definition.name}</span></p></div>
+    <TooltipProvider>
+      <div className="flex flex-col h-full bg-slate-50/30">
+        <div className="sticky top-0 z-30 bg-white px-8 py-4 border-b flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><Pencil className="h-5 w-5 text-indigo-600" /></div>
+              <div><h2 className="text-2xl font-bold tracking-tight">Edit Mode</h2><p className="text-xs text-slate-500 font-medium">Drafting improvements for <span className="font-bold text-slate-900">{definition.name}</span></p></div>
+          </div>
+          <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-100 gap-1.5 h-7 px-3"><div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />Editing Lock Active</Badge>
         </div>
-        <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-100 gap-1.5 h-7 px-3"><div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />Editing Lock Active</Badge>
+        
+        <ScrollArea className="flex-1">
+          <div className="p-8 space-y-10 max-w-[1000px] mx-auto pb-32">
+              <Card className="rounded-2xl border-slate-200 shadow-sm">
+                  <CardHeader className="bg-slate-50/50 border-b p-6"><CardTitle className="text-sm font-black uppercase text-slate-500 tracking-wider">Categorization</CardTitle></CardHeader>
+                  <CardContent className="p-6 space-y-6">
+                      <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-400">Definition Name</Label><Input value={name} onChange={e => setName(e.target.value)} className="rounded-xl h-11 font-bold" /></div>
+                          <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-400">Module</Label>
+                              <Select value={module} onValueChange={setModule}><SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger><SelectContent>{modules.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
+                          </div>
+                      </div>
+                      <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-400">Keywords</Label>
+                          <div className="flex flex-wrap gap-2 p-3 border border-slate-200 rounded-xl bg-white min-h-[44px]">{keywords.map(k => <Badge key={k} className="bg-slate-100 text-slate-700 gap-1.5 px-2.5 py-1">{k}<button onClick={() => setKeywords(keywords.filter(kw => kw !== k))}><X className="h-3 w-3" /></button></Badge>)}<Input placeholder="Add keyword..." value={currentKeyword} onChange={e => setCurrentKeyword(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && currentKeyword) { e.preventDefault(); if (!keywords.includes(currentKeyword.trim())) setKeywords([...keywords, currentKeyword.trim()]); setCurrentKeyword(''); } }} className="flex-1 border-none shadow-none p-0 h-auto text-sm" /></div>
+                      </div>
+                  </CardContent>
+              </Card>
+
+              {groupedSections.map((unit, idx) => (
+                  <div key={idx} className="space-y-6">
+                      {unit.type === 'group' && <div className="flex items-center gap-3"><h3 className="text-lg font-bold text-slate-900">{unit.name}</h3><div className="h-px bg-slate-200 flex-1" /></div>}
+                      <div className="space-y-6">{unit.sections.map(section => {
+                          const value = sectionValues.find(v => v.sectionId === section.id);
+                          return (
+                              <Card key={section.id} className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
+                                  <CardHeader className="py-3 bg-white border-b px-6 flex flex-row items-center justify-between">
+                                    <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                      {section.name}{section.isRequired && <span className="text-red-500">*</span>}
+                                      {section.description && (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                                          </TooltipTrigger>
+                                          <TooltipContent className="max-w-xs">
+                                            <p className="text-xs">{section.description}</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      )}
+                                    </CardTitle>
+                                    <Badge variant="ghost" className="text-[9px] font-black uppercase text-slate-400 bg-slate-50">{section.fieldType}</Badge>
+                                  </CardHeader>
+                                  <CardContent className="p-6">
+                                      {section.fieldType === 'RichText' && <WysiwygEditor value={value?.html || ''} onChange={html => updateSectionValue(section.id, { html, raw: html.replace(/<[^>]+>/g, '') })} />}
+                                      {section.fieldType === 'PlainText' && <Textarea value={value?.raw || ''} onChange={e => updateSectionValue(section.id, { raw: e.target.value })} maxLength={section.maxLength} className="rounded-xl min-h-[120px]" />}
+                                      {section.fieldType === 'Dropdown' && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          {section.isMulti ? <div className="flex flex-wrap gap-2">{section.options?.map(opt => {
+                                              const isSelected = value?.multiValues?.includes(opt.value);
+                                              return <button key={opt.id} type="button" className={cn("flex items-center gap-2 px-4 py-2 border rounded-xl font-medium text-sm transition-all", isSelected ? "bg-primary/10 border-primary text-primary" : "bg-white border-slate-200 text-slate-600")} onClick={() => { const current = value?.multiValues || []; const next = isSelected ? current.filter(v => v !== opt.value) : [...current, opt.value]; updateSectionValue(section.id, { multiValues: next, raw: next.join(', ') }); }}><div className={cn("h-4 w-4 rounded-md border flex items-center justify-center transition-colors", isSelected ? "bg-primary border-primary" : "border-slate-300")}>{isSelected && <Check className="h-3 w-3 text-white" />}</div>{opt.label}</button>;
+                                          })}</div> : <Select value={value?.raw} onValueChange={v => updateSectionValue(section.id, { raw: v })}><SelectTrigger className="rounded-xl"><SelectValue placeholder="Select..." /></SelectTrigger><SelectContent>{section.options?.map(opt => <SelectItem key={opt.id} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select>}
+                                      </div>}
+                                      {section.fieldType === 'KeyValue' && <div className="space-y-4"><Table><TableHeader className="bg-slate-50"><TableRow className="border-none">{section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(c=><TableHead key={c.id} className="font-bold text-slate-700 h-10">{c.name}</TableHead>)}<TableHead className="w-10"/></TableRow></TableHeader><TableBody>{value?.structuredRows?.map((row, ri)=><TableRow key={ri} className="border-slate-100">{section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(col=><TableCell key={col.id} className="py-2 px-1">{col.inputType === 'TextBox' ? <Input value={row[col.id] || ''} onChange={e=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri], [col.id]: e.target.value}; updateSectionValue(section.id, {structuredRows: rows}); }} className="h-9 rounded-lg" /> : (col.isMulti ? <Popover><PopoverTrigger asChild><Button variant="outline" className="h-9 w-full justify-between rounded-lg"><span className="truncate">{row[col.id] || "Select..."}</span><ChevronDown className="h-3 w-3 opacity-50"/></Button></PopoverTrigger><PopoverContent className="w-64 p-2 rounded-xl">{col.options?.map(opt=>{ const curr = row[col.id]?.split(', ') || []; const sel = curr.includes(opt.value); return <div key={opt.id} className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer" onClick={()=>{ const next = sel ? curr.filter(v=>v!==opt.value) : [...curr, opt.value]; const rows = [...(value.structuredRows || [])]; rows[ri] = {...rows[ri], [col.id]: next.join(', ')}; updateSectionValue(section.id, {structuredRows: rows}); }}><Checkbox checked={sel} /><span className="text-sm font-medium">{opt.label}</span></div>; })}</PopoverContent></Popover> : <Select value={row[col.id]} onValueChange={v=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri],[col.id]:v}; updateSectionValue(section.id, {structuredRows: rows}); }}><SelectTrigger className="h-9 rounded-lg"><SelectValue/></SelectTrigger><SelectContent>{col.options?.map(o=><SelectItem key={o.id} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>)}</TableCell>)}<TableCell className="w-10 text-center"><Button variant="ghost" size="icon" onClick={()=>{ const rows = value.structuredRows?.filter((_,i)=>i!==ri); updateSectionValue(section.id, {structuredRows: rows}); }}><X className="h-4 w-4"/></Button></TableCell></TableRow>)}</TableBody></Table><Button variant="outline" size="sm" className="rounded-lg h-8 border-dashed font-bold" onClick={()=>{ const rows = [...(value?.structuredRows || []), {}]; updateSectionValue(section.id, {structuredRows: rows}); }}><Plus className="h-3 w-3 mr-1.5"/> Add Row</Button></div>}
+                                  </CardContent>
+                              </Card>
+                          );
+                      })}</div>
+                  </div>
+              ))}
+
+              <Card className="rounded-2xl border-slate-200 shadow-sm">
+                  <CardHeader className="bg-slate-50/50 border-b p-6 flex items-center justify-between"><CardTitle className="text-sm font-black uppercase text-slate-500 tracking-wider">Attachments</CardTitle><Button variant="outline" size="sm" onClick={()=>fileInputRef.current?.click()} className="rounded-xl font-bold bg-white"><Upload className="mr-2 h-4 w-4" />Upload</Button><input type="file" ref={fileInputRef} onChange={e=>{ const files = e.target.files; if (files?.length) { const file = files[0]; setAttachments([...attachments, { name: file.name, url: URL.createObjectURL(file), size: `${(file.size / 1024).toFixed(2)} KB`, type: file.type.split('/')[1]?.toUpperCase() || 'FILE' }]); } }} className="hidden" /></CardHeader>
+                  <CardContent className="p-6"><AttachmentList attachments={attachments} onRemove={n=>setAttachments(attachments.filter(a=>a.name!==n))} isEditing /></CardContent>
+              </Card>
+          </div>
+        </ScrollArea>
+
+        <div className="fixed bottom-0 left-[var(--sidebar-width)] right-0 bg-white border-t p-4 px-10 flex justify-between items-center z-40 shadow-lg">
+          <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" className="text-red-600 font-bold gap-2"><Trash className="h-4 w-4" />Discard Draft</Button></AlertDialogTrigger><AlertDialogContent className="rounded-3xl border-none p-8"><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your working copy and release the lock.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter className="mt-8 gap-3"><AlertDialogCancel className="rounded-xl font-bold">Keep Draft</AlertDialogCancel><AlertDialogAction onClick={()=>onDiscard(definition.id)} className="rounded-xl bg-red-600 font-bold">Confirm Discard</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+          <div className="flex gap-3">
+              <Button variant="secondary" onClick={()=>onSave({...definition, name, module, keywords, attachments, sectionValues, isDraft: true, isPendingApproval: false})} className="rounded-xl font-bold px-8">Save Draft</Button>
+              <Button onClick={()=>onSave({...definition, name, module, keywords, attachments, sectionValues, isDraft: isAdmin ? false : true, isPendingApproval: !isAdmin})} disabled={!name.trim()} className="bg-indigo-600 text-white rounded-xl font-bold px-10">{isAdmin ? 'Publish Changes' : 'Submit for Approval'}</Button>
+          </div>
+        </div>
+        <DataSourcePreviewDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen} sourceName={null} />
       </div>
-      
-      <ScrollArea className="flex-1">
-        <div className="p-8 space-y-10 max-w-[1000px] mx-auto pb-32">
-            <Card className="rounded-2xl border-slate-200 shadow-sm">
-                <CardHeader className="bg-slate-50/50 border-b p-6"><CardTitle className="text-sm font-black uppercase text-slate-500 tracking-wider">Categorization</CardTitle></CardHeader>
-                <CardContent className="p-6 space-y-6">
-                    <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-400">Definition Name</Label><Input value={name} onChange={e => setName(e.target.value)} className="rounded-xl h-11 font-bold" /></div>
-                        <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-400">Module</Label>
-                            <Select value={module} onValueChange={setModule}><SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger><SelectContent>{modules.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
-                        </div>
-                    </div>
-                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-400">Keywords</Label>
-                        <div className="flex flex-wrap gap-2 p-3 border border-slate-200 rounded-xl bg-white min-h-[44px]">{keywords.map(k => <Badge key={k} className="bg-slate-100 text-slate-700 gap-1.5 px-2.5 py-1">{k}<button onClick={() => setKeywords(keywords.filter(kw => kw !== k))}><X className="h-3 w-3" /></button></Badge>)}<Input placeholder="Add keyword..." value={currentKeyword} onChange={e => setCurrentKeyword(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && currentKeyword) { e.preventDefault(); if (!keywords.includes(currentKeyword.trim())) setKeywords([...keywords, currentKeyword.trim()]); setCurrentKeyword(''); } }} className="flex-1 border-none shadow-none p-0 h-auto text-sm" /></div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {groupedSections.map((unit, idx) => (
-                <div key={idx} className="space-y-6">
-                    {unit.type === 'group' && <div className="flex items-center gap-3"><h3 className="text-lg font-bold text-slate-900">{unit.name}</h3><div className="h-px bg-slate-200 flex-1" /></div>}
-                    <div className="space-y-6">{unit.sections.map(section => {
-                        const value = sectionValues.find(v => v.sectionId === section.id);
-                        return (
-                            <Card key={section.id} className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
-                                <CardHeader className="py-3 bg-white border-b px-6 flex flex-row items-center justify-between"><CardTitle className="text-sm font-bold text-slate-800">{section.name}{section.isRequired && <span className="text-red-500">*</span>}</CardTitle><Badge variant="ghost" className="text-[9px] font-black uppercase text-slate-400 bg-slate-50">{section.fieldType}</Badge></CardHeader>
-                                <CardContent className="p-6">
-                                    {section.fieldType === 'RichText' && <WysiwygEditor value={value?.html || ''} onChange={html => updateSectionValue(section.id, { html, raw: html.replace(/<[^>]+>/g, '') })} />}
-                                    {section.fieldType === 'PlainText' && <Textarea value={value?.raw || ''} onChange={e => updateSectionValue(section.id, { raw: e.target.value })} maxLength={section.maxLength} className="rounded-xl min-h-[120px]" />}
-                                    {section.fieldType === 'Dropdown' && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {section.isMulti ? <div className="flex flex-wrap gap-2">{section.options?.map(opt => {
-                                            const isSelected = value?.multiValues?.includes(opt.value);
-                                            return <button key={opt.id} type="button" className={cn("flex items-center gap-2 px-4 py-2 border rounded-xl font-medium text-sm transition-all", isSelected ? "bg-primary/10 border-primary text-primary" : "bg-white border-slate-200 text-slate-600")} onClick={() => { const current = value?.multiValues || []; const next = isSelected ? current.filter(v => v !== opt.value) : [...current, opt.value]; updateSectionValue(section.id, { multiValues: next, raw: next.join(', ') }); }}><div className={cn("h-4 w-4 rounded-md border flex items-center justify-center transition-colors", isSelected ? "bg-primary border-primary" : "border-slate-300")}>{isSelected && <Check className="h-3 w-3 text-white" />}</div>{opt.label}</button>;
-                                        })}</div> : <Select value={value?.raw} onValueChange={v => updateSectionValue(section.id, { raw: v })}><SelectTrigger className="rounded-xl"><SelectValue placeholder="Select..." /></SelectTrigger><SelectContent>{section.options?.map(opt => <SelectItem key={opt.id} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select>}
-                                    </div>}
-                                    {section.fieldType === 'KeyValue' && <div className="space-y-4"><Table><TableHeader className="bg-slate-50"><TableRow className="border-none">{section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(c=><TableHead key={c.id} className="font-bold text-slate-700 h-10">{c.name}</TableHead>)}<TableHead className="w-10"/></TableRow></TableHeader><TableBody>{value?.structuredRows?.map((row, ri)=><TableRow key={ri} className="border-slate-100">{section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(col=><TableCell key={col.id} className="py-2 px-1">{col.inputType === 'TextBox' ? <Input value={row[col.id] || ''} onChange={e=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri], [col.id]: e.target.value}; updateSectionValue(section.id, {structuredRows: rows}); }} className="h-9 rounded-lg" /> : (col.isMulti ? <Popover><PopoverTrigger asChild><Button variant="outline" className="h-9 w-full justify-between rounded-lg"><span className="truncate">{row[col.id] || "Select..."}</span><ChevronDown className="h-3 w-3 opacity-50"/></Button></PopoverTrigger><PopoverContent className="w-64 p-2 rounded-xl">{col.options?.map(opt=>{ const curr = row[col.id]?.split(', ') || []; const sel = curr.includes(opt.value); return <div key={opt.id} className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer" onClick={()=>{ const next = sel ? curr.filter(v=>v!==opt.value) : [...curr, opt.value]; const rows = [...(value.structuredRows || [])]; rows[ri] = {...rows[ri], [col.id]: next.join(', ')}; updateSectionValue(section.id, {structuredRows: rows}); }}><Checkbox checked={sel} /><span className="text-sm font-medium">{opt.label}</span></div>; })}</PopoverContent></Popover> : <Select value={row[col.id]} onValueChange={v=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri],[col.id]:v}; updateSectionValue(section.id, {structuredRows: rows}); }}><SelectTrigger className="h-9 rounded-lg"><SelectValue/></SelectTrigger><SelectContent>{col.options?.map(o=><SelectItem key={o.id} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>)}</TableCell>)}<TableCell className="w-10 text-center"><Button variant="ghost" size="icon" onClick={()=>{ const rows = value.structuredRows?.filter((_,i)=>i!==ri); updateSectionValue(section.id, {structuredRows: rows}); }}><X className="h-4 w-4"/></Button></TableCell></TableRow>)}</TableBody></Table><Button variant="outline" size="sm" className="rounded-lg h-8 border-dashed font-bold" onClick={()=>{ const rows = [...(value?.structuredRows || []), {}]; updateSectionValue(section.id, {structuredRows: rows}); }}><Plus className="h-3 w-3 mr-1.5"/> Add Row</Button></div>}
-                                </CardContent>
-                            </Card>
-                        );
-                    })}</div>
-                </div>
-            ))}
-
-            <Card className="rounded-2xl border-slate-200 shadow-sm">
-                <CardHeader className="bg-slate-50/50 border-b p-6 flex items-center justify-between"><CardTitle className="text-sm font-black uppercase text-slate-500 tracking-wider">Attachments</CardTitle><Button variant="outline" size="sm" onClick={()=>fileInputRef.current?.click()} className="rounded-xl font-bold bg-white"><Upload className="mr-2 h-4 w-4" />Upload</Button><input type="file" ref={fileInputRef} onChange={e=>{ const files = e.target.files; if (files?.length) { const file = files[0]; setAttachments([...attachments, { name: file.name, url: URL.createObjectURL(file), size: `${(file.size / 1024).toFixed(2)} KB`, type: file.type.split('/')[1]?.toUpperCase() || 'FILE' }]); } }} className="hidden" /></CardHeader>
-                <CardContent className="p-6"><AttachmentList attachments={attachments} onRemove={n=>setAttachments(attachments.filter(a=>a.name!==n))} isEditing /></CardContent>
-            </Card>
-        </div>
-      </ScrollArea>
-
-      <div className="fixed bottom-0 left-[var(--sidebar-width)] right-0 bg-white border-t p-4 px-10 flex justify-between items-center z-40 shadow-lg">
-        <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" className="text-red-600 font-bold gap-2"><Trash className="h-4 w-4" />Discard Draft</Button></AlertDialogTrigger><AlertDialogContent className="rounded-3xl border-none p-8"><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your working copy and release the lock.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter className="mt-8 gap-3"><AlertDialogCancel className="rounded-xl font-bold">Keep Draft</AlertDialogCancel><AlertDialogAction onClick={()=>onDiscard(definition.id)} className="rounded-xl bg-red-600 font-bold">Confirm Discard</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-        <div className="flex gap-3">
-            <Button variant="secondary" onClick={()=>onSave({...definition, name, module, keywords, attachments, sectionValues, isDraft: true, isPendingApproval: false})} className="rounded-xl font-bold px-8">Save Draft</Button>
-            <Button onClick={()=>onSave({...definition, name, module, keywords, attachments, sectionValues, isDraft: isAdmin ? false : true, isPendingApproval: !isAdmin})} disabled={!name.trim()} className="bg-indigo-600 text-white rounded-xl font-bold px-10">{isAdmin ? 'Publish Changes' : 'Submit for Approval'}</Button>
-        </div>
-      </div>
-      <DataSourcePreviewDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen} sourceName={null} />
-    </div>
+    </TooltipProvider>
   );
 }

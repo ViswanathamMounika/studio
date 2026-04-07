@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -279,7 +278,23 @@ export default function DefinitionView({
                             <Accordion type="multiple" defaultValue={unit.sections.map(s => s.id)} className="space-y-4">
                                 {unit.sections.map(section => (
                                     <AccordionItem key={section.id} value={section.id} className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
-                                        <AccordionTrigger className="font-bold py-4 hover:no-underline"><div className="flex items-center gap-2">{section.name}<Info className="h-4 w-4 text-slate-400" /></div></AccordionTrigger>
+                                        <AccordionTrigger className="font-bold py-4 hover:no-underline">
+                                            <div className="flex items-center gap-2">
+                                                {section.name}
+                                                {section.description ? (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Info className="h-4 w-4 text-slate-400" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-xs">
+                                                            <p className="text-xs">{section.description}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                ) : (
+                                                    <Info className="h-4 w-4 text-slate-400" />
+                                                )}
+                                            </div>
+                                        </AccordionTrigger>
                                         <AccordionContent className="pb-6">{renderSectionContent(section, (definition.sectionValues || []).find(v => v.sectionId === section.id))}</AccordionContent>
                                     </AccordionItem>
                                 ))}

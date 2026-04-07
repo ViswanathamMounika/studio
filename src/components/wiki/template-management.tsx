@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Save, Plus, X, LayoutTemplate, Type, FileType, List, AlignLeft, Hash, Table as TableIcon, Settings2, FolderPlus, FolderTree } from 'lucide-react';
+import { Pencil, Trash2, Save, Plus, X, LayoutTemplate, Type, FileType, List, AlignLeft, Hash, Table as TableIcon, Settings2, FolderPlus, FolderTree, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Template, TemplateSection, TemplateOption, TemplateColumn } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
@@ -162,6 +162,13 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       return;
     }
 
+    // Validate sections
+    const hasInvalidSections = currentTemplate.sections?.some(s => !s.name.trim());
+    if (hasInvalidSections) {
+      toast({ variant: 'destructive', title: 'Error', description: 'All sections must have a name.' });
+      return;
+    }
+
     const templateToSave = currentTemplate as Template;
     let updatedTemplates: Template[];
 
@@ -202,8 +209,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   const updateSection = (id: string, updates: Partial<TemplateSection>) => {
     setCurrentTemplate(prev => {
       const updated = (prev.sections || []).map(s => s.id === id ? { ...s, ...updates } : s);
-      // If order was manually changed, we might want to re-index, but usually we just trust the user
-      // For grouping logic specifically, we definitely re-index
       return { ...prev, sections: updated };
     });
   };
@@ -300,7 +305,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       });
       setEditingGroupName(groupToEdit);
     } else {
-      // Logic for new group: default order is current count + 1 or lowest of selected sections
       setGroupForm({ name: '', order: 1, sectionConfigs: configs });
       setEditingGroupName(null);
     }
@@ -323,12 +327,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         return s;
       });
       
-      // Auto-reindex after applying group changes
       return { ...prev, sections: reindexTemplate(sections) };
     });
 
     setIsGroupModalOpen(false);
-    toast({ title: 'Groups Updated', description: `Group "${groupForm.name}" has been configured and re-indexed.` });
+    toast({ title: 'Groups Updated', description: `Group "${groupForm.name}" has been configured.` });
   };
 
   const handleRemoveGroup = (groupName: string) => {
@@ -338,7 +341,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       );
       return { ...prev, sections: reindexTemplate(sections) };
     });
-    toast({ title: 'Group Deleted', description: `All sections from "${groupName}" have been ungrouped and re-indexed.` });
+    toast({ title: 'Group Deleted', description: `All sections from "${groupName}" have been ungrouped.` });
   };
 
   const displayGroups = useMemo(() => {
@@ -423,7 +426,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                           <AlertDialogHeader>
                             <AlertDialogTitle className="text-2xl font-bold">Delete Template?</AlertDialogTitle>
                             <AlertDialogDescription className="text-slate-500 text-sm">
-                              This action will remove the blueprint <strong>{template.name}</strong> from the management list. Existing documentation using this template will remain intact, but it cannot be used for new definitions.
+                              This action will remove the blueprint <strong>{template.name}</strong> from the management list.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter className="mt-8 gap-3">
@@ -456,7 +459,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 <DialogTitle className="text-xl font-bold tracking-tight">
                   {isEditing ? 'Edit Template' : 'New Blueprint'}
                 </DialogTitle>
-                <p className="text-sm text-slate-500">Configure sections and validation logic.</p>
+                <p className="text-sm text-slate-500">Configure documentation structure and metadata validation.</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -489,7 +492,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                     <Input 
                       value={currentTemplate.name} 
                       onChange={e => setCurrentTemplate(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g., Standard Clinical Definition"
+                      placeholder="e.g., Clinical Workflow Blueprint"
                       className="rounded-xl border-slate-200 h-11 text-base font-bold focus-visible:ring-primary/20"
                     />
                   </div>
@@ -525,7 +528,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                   <Textarea 
                     value={currentTemplate.description} 
                     onChange={e => setCurrentTemplate(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe the usage of this template..."
+                    placeholder="Describe the purpose of this documentation blueprint..."
                     className="rounded-xl border-slate-200 min-h-[80px]"
                   />
                 </div>
@@ -535,7 +538,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">Schema Architecture</h3>
-                    <p className="text-sm text-slate-500">Add sections or cluster them into logical groups. Orders will auto-reindex.</p>
+                    <p className="text-sm text-slate-500">Define the data capture sections for this blueprint.</p>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => handleOpenGroupModal()} className="rounded-xl border-slate-200 bg-white hover:bg-slate-50 shadow-sm gap-2 font-bold h-9">
@@ -560,7 +563,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                             </div>
                             <div className="flex flex-col">
                               <h4 className="text-base font-black text-slate-800 uppercase tracking-widest">{unit.name}</h4>
-                              <span className="text-[10px] font-bold text-slate-400">Global Unit Order: {unit.order}</span>
+                              <span className="text-[10px] font-bold text-slate-400">Global Index: {unit.order}</span>
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -568,7 +571,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                               <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Edit Group
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleRemoveGroup(unit.name!)} className="h-8 rounded-lg text-red-500 font-bold hover:bg-white">
-                              <X className="h-3.5 w-3.5 mr-1.5" /> Dissolve
+                              <X className="h-3.5 w-3.5 mr-1.5" /> Ungroup
                             </Button>
                           </div>
                         </div>
@@ -581,16 +584,21 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                             unit.type === 'group' ? "border-l-4 border-l-[#3F51B5]" : "border-l-4 border-l-slate-200"
                           )}>
                             <div className="p-4 bg-slate-50/50 border-b flex items-center justify-between">
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-3 flex-1">
                                 <Badge className={cn("text-white h-6 w-6 p-0 rounded-lg flex items-center justify-center font-bold text-[10px]", unit.type === 'group' ? "bg-[#3F51B5]" : "bg-slate-400")}>
                                   {section.order}
                                 </Badge>
-                                <Input 
-                                  value={section.name} 
-                                  onChange={e => updateSection(section.id, { name: e.target.value })}
-                                  placeholder="Section Name"
-                                  className="bg-transparent border-none shadow-none font-bold text-slate-800 p-0 h-auto focus-visible:ring-0 w-64"
-                                />
+                                <div className="flex flex-col flex-1 gap-1">
+                                  <div className="flex items-center gap-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Section Name <span className="text-red-500">*</span></Label>
+                                    <Input 
+                                      value={section.name} 
+                                      onChange={e => updateSection(section.id, { name: e.target.value })}
+                                      placeholder="Required"
+                                      className="bg-transparent border-none shadow-none font-bold text-slate-800 p-0 h-auto focus-visible:ring-0 max-w-sm"
+                                    />
+                                  </div>
+                                </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Select 
@@ -614,43 +622,50 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                             </div>
                             
                             <CardContent className="p-6 space-y-6">
-                              <div className="grid grid-cols-4 gap-6">
-                                <div className="space-y-1.5">
-                                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                                    {unit.type === 'group' ? 'Internal Sequence' : 'Global Sequence'}
-                                  </Label>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Description (Optional)</Label>
                                   <Input 
-                                    type="number"
-                                    value={section.order || ''} 
-                                    onChange={e => {
-                                      const newVal = parseInt(e.target.value) || 0;
-                                      updateSection(section.id, { order: newVal });
-                                    }}
-                                    className="h-9 rounded-xl border-slate-200 font-bold"
+                                    value={section.description || ''} 
+                                    onChange={e => updateSection(section.id, { description: e.target.value })}
+                                    placeholder="Provide context or guidelines for this section..."
+                                    className="h-9 rounded-xl border-slate-200"
                                   />
                                 </div>
-                                {(section.fieldType === 'PlainText' || section.fieldType === 'RichText') && (
+                                <div className="grid grid-cols-3 gap-4">
                                   <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Max Length</Label>
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sequence</Label>
                                     <Input 
                                       type="number"
-                                      value={section.maxLength || ''} 
-                                      onChange={e => updateSection(section.id, { maxLength: parseInt(e.target.value) || undefined })}
-                                      className="h-9 rounded-xl border-slate-200"
+                                      value={section.order || ''} 
+                                      onChange={e => updateSection(section.id, { order: parseInt(e.target.value) || 0 })}
+                                      className="h-9 rounded-xl border-slate-200 font-bold text-center"
                                     />
                                   </div>
-                                )}
-                                <div className="flex items-center gap-2 pt-6">
-                                  <Checkbox id={`req-${section.id}`} checked={section.isRequired} onCheckedChange={v => updateSection(section.id, { isRequired: !!v })} />
-                                  <Label htmlFor={`req-${section.id}`} className="text-xs font-bold text-slate-600">Mandatory</Label>
-                                </div>
-                                {section.fieldType === 'Dropdown' && (
                                   <div className="flex items-center gap-2 pt-6">
-                                    <Checkbox id={`multi-${section.id}`} checked={section.isMulti} onCheckedChange={v => updateSection(section.id, { isMulti: !!v })} />
-                                    <Label htmlFor={`multi-${section.id}`} className="text-xs font-bold text-slate-600">Allow Multiple</Label>
+                                    <Checkbox id={`req-${section.id}`} checked={section.isRequired} onCheckedChange={v => updateSection(section.id, { isRequired: !!v })} />
+                                    <Label htmlFor={`req-${section.id}`} className="text-xs font-bold text-slate-600">Mandatory</Label>
                                   </div>
-                                )}
+                                  {section.fieldType === 'Dropdown' && (
+                                    <div className="flex items-center gap-2 pt-6">
+                                      <Checkbox id={`multi-${section.id}`} checked={section.isMulti} onCheckedChange={v => updateSection(section.id, { isMulti: !!v })} />
+                                      <Label htmlFor={`multi-${section.id}`} className="text-xs font-bold text-slate-600">Multi-Select</Label>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
+
+                              {(section.fieldType === 'PlainText' || section.fieldType === 'RichText') && (
+                                <div className="w-1/4 space-y-1.5">
+                                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Max Character Length</Label>
+                                  <Input 
+                                    type="number"
+                                    value={section.maxLength || ''} 
+                                    onChange={e => updateSection(section.id, { maxLength: parseInt(e.target.value) || undefined })}
+                                    className="h-9 rounded-xl border-slate-200"
+                                  />
+                                </div>
+                              )}
 
                               {section.fieldType === 'Dropdown' && (
                                 <div className="space-y-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
@@ -665,7 +680,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                       <div key={opt.id} className="flex gap-2 items-center">
                                         <Input 
                                           value={opt.label} 
-                                          placeholder="Option Label" 
+                                          placeholder="Display Label" 
                                           className="h-8 rounded-lg flex-1 font-medium" 
                                           onChange={e => {
                                             const opts = [...(section.options || [])];
@@ -675,7 +690,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                         />
                                         <Input 
                                           value={opt.value} 
-                                          placeholder="Storage Value" 
+                                          placeholder="Database Value" 
                                           className="h-8 rounded-lg flex-1 text-slate-500" 
                                           onChange={e => {
                                             const opts = [...(section.options || [])];
@@ -687,7 +702,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                           <Input 
                                             type="number"
                                             value={opt.sortOrder} 
-                                            placeholder="Sort" 
                                             className="h-8 rounded-lg text-center" 
                                             onChange={e => {
                                               const opts = [...(section.options || [])];
@@ -718,7 +732,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                   <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2">
                                       <TableIcon className="h-4 w-4 text-slate-400" />
-                                      <Label className="text-[11px] font-black uppercase text-slate-500">Column Definitions</Label>
+                                      <Label className="text-[11px] font-black uppercase text-slate-500">Grid Columns</Label>
                                     </div>
                                     <Button variant="ghost" size="sm" className="h-7 text-xs font-bold text-[#3F51B5]" onClick={() => handleAddColumn(section.id)}>
                                       <Plus className="h-3 w-3 mr-1" /> Add Column
@@ -731,7 +745,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                         <div className="space-y-4">
                                           <div className="grid grid-cols-12 gap-4 items-end">
                                             <div className="col-span-3 space-y-1.5">
-                                              <Label className="text-[9px] font-black uppercase text-slate-400">Name</Label>
+                                              <Label className="text-[9px] font-black uppercase text-slate-400">Column Name</Label>
                                               <Input value={col.name} onChange={e => {
                                                 const cols = [...(section.columns || [])];
                                                 cols[cIdx].name = e.target.value;
@@ -739,7 +753,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                               }} className="h-8 rounded-lg font-bold" />
                                             </div>
                                             <div className="col-span-1 space-y-1.5">
-                                              <Label className="text-[9px] font-black uppercase text-slate-400">Order</Label>
+                                              <Label className="text-[9px] font-black uppercase text-slate-400">Index</Label>
                                               <Input type="number" value={col.sortOrder} onChange={e => {
                                                 const cols = [...(section.columns || [])];
                                                 cols[cIdx].sortOrder = parseInt(e.target.value) || 0;
@@ -747,7 +761,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                               }} className="h-8 rounded-lg" />
                                             </div>
                                             <div className="col-span-2 space-y-1.5">
-                                              <Label className="text-[9px] font-black uppercase text-slate-400">Input Type</Label>
+                                              <Label className="text-[9px] font-black uppercase text-slate-400">Type</Label>
                                               <Select value={col.inputType} onValueChange={v => {
                                                 const cols = [...(section.columns || [])];
                                                 cols[cIdx].inputType = v as any;
@@ -771,13 +785,13 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Required</Label>
                                             </div>
                                             {col.inputType === 'Dropdown' && (
-                                              <div className="col-span-2 pb-2 flex items-center gap-2 animate-in fade-in slide-in-from-left-1">
+                                              <div className="col-span-2 pb-2 flex items-center gap-2">
                                                 <Checkbox checked={col.isMulti} onCheckedChange={v => {
                                                   const cols = [...(section.columns || [])];
                                                   cols[cIdx].isMulti = !!v;
                                                   updateSection(section.id, { columns: cols });
                                                 }} />
-                                                <Label className="text-[9px] font-black uppercase text-slate-400">Allow Multiple</Label>
+                                                <Label className="text-[9px] font-black uppercase text-slate-400">Multi</Label>
                                               </div>
                                             )}
                                             <div className={cn("flex justify-end pb-1", col.inputType === 'Dropdown' ? "col-span-2" : "col-span-4")}>
@@ -793,9 +807,9 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                           {col.inputType === 'Dropdown' && (
                                             <div className="ml-4 pl-4 border-l-2 border-slate-100 space-y-3">
                                               <div className="flex items-center justify-between">
-                                                <Label className="text-[10px] font-black uppercase text-slate-500">Column Options</Label>
+                                                <Label className="text-[10px] font-black uppercase text-slate-500">Column Values</Label>
                                                 <Button variant="ghost" size="sm" className="h-6 text-[10px] font-bold text-[#3F51B5]" onClick={() => handleAddOption(section.id, col.id)}>
-                                                  <Plus className="h-3 w-3 mr-1" /> Add Option
+                                                  <Plus className="h-3 w-3 mr-1" /> Add Value
                                                 </Button>
                                               </div>
                                               <div className="space-y-2">
@@ -803,7 +817,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                                   <div key={opt.id} className="flex gap-2 items-center">
                                                     <Input 
                                                       value={opt.label} 
-                                                      placeholder="Option Label" 
                                                       className="h-7 rounded-lg flex-1 text-xs font-medium" 
                                                       onChange={e => {
                                                         const cols = [...(section.columns || [])];
@@ -815,7 +828,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                                     />
                                                     <Input 
                                                       value={opt.value} 
-                                                      placeholder="Value" 
                                                       className="h-7 rounded-lg flex-1 text-xs text-slate-500" 
                                                       onChange={e => {
                                                         const cols = [...(section.columns || [])];
@@ -825,21 +837,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                                         updateSection(section.id, { columns: cols });
                                                       }} 
                                                     />
-                                                    <div className="w-16">
-                                                      <Input 
-                                                        type="number"
-                                                        value={opt.sortOrder} 
-                                                        placeholder="Sort" 
-                                                        className="h-7 rounded-lg text-center text-xs" 
-                                                        onChange={e => {
-                                                          const cols = [...(section.columns || [])];
-                                                          const opts = [...(cols[cIdx].options || [])];
-                                                          opts[oIdx].sortOrder = parseInt(e.target.value) || 0;
-                                                          cols[cIdx].options = opts;
-                                                          updateSection(section.id, { columns: cols });
-                                                        }} 
-                                                      />
-                                                    </div>
                                                     <Button 
                                                       variant="ghost" 
                                                       size="icon" 
@@ -888,8 +885,8 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 <FolderPlus className="h-5 w-5 text-[#3F51B5]" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold">{editingGroupName ? 'Edit Group' : 'Create Section Group'}</DialogTitle>
-                <p className="text-xs text-slate-500">Cluster sections under a heading. Orders will auto-reindex globally.</p>
+                <DialogTitle className="text-lg font-bold">{editingGroupName ? 'Configure Group' : 'New Section Group'}</DialogTitle>
+                <p className="text-xs text-slate-500">Organize documentation sections into a logical cluster.</p>
               </div>
             </div>
           </div>
@@ -897,16 +894,16 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
           <div className="p-6 space-y-6 bg-slate-50/30">
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2 space-y-2">
-                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Group Name</Label>
+                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Group Heading</Label>
                 <Input 
                   value={groupForm.name} 
                   onChange={e => setGroupForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Clinical Parameters"
+                  placeholder="e.g., Utilization Management Parameters"
                   className="rounded-xl border-slate-200 bg-white h-10 font-bold"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Global Group Order</Label>
+                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Global Index</Label>
                 <Input 
                   type="number"
                   value={groupForm.order} 
@@ -917,14 +914,14 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
             </div>
 
             <div className="space-y-3">
-              <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Assign Sections & Sequence within Group</Label>
+              <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Member Sections & Sequencing</Label>
               <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
                 <ScrollArea className="h-[300px]">
                   <Table>
                     <TableHeader className="bg-slate-50 sticky top-0 z-10">
                       <TableRow>
-                        <TableHead className="w-12 text-center font-black uppercase text-[10px]">Include</TableHead>
-                        <TableHead className="font-black uppercase text-[10px]">Section Name</TableHead>
+                        <TableHead className="w-12 text-center font-black uppercase text-[10px]">Incl.</TableHead>
+                        <TableHead className="font-black uppercase text-[10px]">Section</TableHead>
                         <TableHead className="w-24 text-center font-black uppercase text-[10px]">Internal Seq</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -945,7 +942,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-col">
-                                <span className="text-sm font-bold text-slate-700">{section?.name || 'Untitled Section'}</span>
+                                <span className="text-sm font-bold text-slate-700">{section?.name || 'Unnamed Section'}</span>
                                 <span className="text-[10px] text-slate-400 uppercase font-bold">{section?.fieldType}</span>
                               </div>
                             </TableCell>
@@ -978,12 +975,12 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 handleRemoveGroup(editingGroupName);
                 setIsGroupModalOpen(false);
               }}>
-                Delete Group
+                Dissolve Group
               </Button>
             )}
             <Button variant="outline" onClick={() => setIsGroupModalOpen(false)} className="rounded-xl font-bold">Cancel</Button>
             <Button onClick={handleSaveGroup} className="rounded-xl bg-[#3F51B5] hover:bg-[#3F51B5]/90 font-bold shadow-sm px-8" disabled={!groupForm.name.trim()}>
-              Save Group & Re-index
+              Finalize Group
             </Button>
           </DialogFooter>
         </DialogContent>

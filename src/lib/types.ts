@@ -69,6 +69,7 @@ export interface TemplateSection {
   id: string;
   templateId: string;
   name: string;
+  description?: string; // Optional description field
   group?: string; // This is the Section_Group name
   groupOrder?: number; // Sorting order for the group itself
   order: number; // Sorting order within the document/group
