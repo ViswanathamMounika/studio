@@ -390,7 +390,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
               <TableRow className="bg-slate-100 dark:bg-slate-900 border-none">
                 <TableHead className="py-4 px-6 font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Template Name</TableHead>
                 <TableHead className="font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Module</TableHead>
-                <TableHead className="font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Default</TableHead>
                 <TableHead className="font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Status</TableHead>
                 <TableHead className="text-right px-6 font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Actions</TableHead>
               </TableRow>
@@ -399,14 +398,14 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
               {templates.map(template => (
                 <TableRow key={template.id} className="hover:bg-slate-50/50 transition-colors border-slate-100">
                   <TableCell className="px-6 py-4">
-                    <p className="font-bold text-slate-900">{template.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-slate-900">{template.name}</p>
+                      {template.isDefault && <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100 font-bold text-[9px] h-5 px-1.5 uppercase">Default</Badge>}
+                    </div>
                     <p className="text-xs text-slate-500 line-clamp-1">{template.description}</p>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="font-bold border-slate-200 bg-slate-50 text-slate-600">{template.module}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {template.isDefault && <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100 font-bold">Default</Badge>}
                   </TableCell>
                   <TableCell>
                     <Badge variant={template.isActive ? 'success' : 'secondary'} className="font-bold">{template.isActive ? 'Active' : 'Inactive'}</Badge>
