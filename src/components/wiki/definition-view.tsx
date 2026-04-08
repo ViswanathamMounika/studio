@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Bookmark, Info, History, Share2, XCircle, RefreshCw, AlertTriangle, ArrowRight, ChevronRight } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
@@ -194,7 +194,7 @@ export default function DefinitionView({
                     <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-primary hover:bg-primary/5 rounded-xl transition-all"><Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary")} /></Button>
                     
                     {!definition.isArchived && !definition.isPendingApproval && (
-                        <Button onClick={onEdit} className="bg-[#3F51B5] hover:bg-[#303F9F] text-white font-bold px-6 h-9 rounded-xl shadow-sm transition-all active:scale-95">Edit</Button>
+                        <Button onClick={onEdit} className="bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white font-bold px-6 h-9 rounded-xl shadow-sm transition-all active:scale-95">Edit</Button>
                     )}
                     
                     {(latestFeedback && !definition.isPendingApproval && !definition.isArchived) && (
