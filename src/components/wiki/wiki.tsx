@@ -535,7 +535,7 @@ export default function Wiki() {
     return {
         userDrafts: drafts.filter(d => d.authorId === currentUser.id && d.isDraft && !d.isPendingApproval && !hasFeedbackFunc(d)),
         userPending: drafts.filter(d => d.authorId === currentUser.id && (d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d)))),
-        allPending: drafts.filter(d => d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d))),
+        allPending: drafts.filter(d => d.isPendingApproval),
         published: filterPublishedTree(definitions)
     };
   }, [definitions, drafts, showArchived, showBookmarked, isBookmarked, currentUser.id]);
