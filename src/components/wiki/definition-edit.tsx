@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Save, Send, Pencil, Trash, ChevronDown, Check, Plus, Info } from 'lucide-react';
+import { X, Upload, Save, Send, Pencil, Trash, ChevronDown, Check, Plus, Info, Undo2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -142,7 +143,25 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
         </ScrollArea>
 
         <div className="fixed bottom-0 left-[var(--sidebar-width)] right-0 bg-white border-t p-4 px-10 flex justify-between items-center z-40 shadow-lg">
-          <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" className="text-red-600 font-bold gap-2"><Trash className="h-4 w-4" />Discard Draft</Button></AlertDialogTrigger><AlertDialogContent className="rounded-3xl border-none p-8"><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your working copy and release the lock.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter className="mt-8 gap-3"><AlertDialogCancel className="rounded-xl font-bold">Keep Draft</AlertDialogCancel><AlertDialogAction onClick={()=>onDiscard(definition.id)} className="rounded-xl bg-red-600 font-bold">Confirm Discard</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" className="text-slate-500 font-bold gap-2 hover:bg-slate-50">
+                <Undo2 className="h-4 w-4" />Cancel
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-3xl border-none p-8">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-2xl font-bold">Discard Changes?</AlertDialogTitle>
+                <AlertDialogDescription className="text-slate-500 text-sm">
+                  This will discard your unsaved changes and return to the previous view. Your working copy will be preserved in "My Saved Definitions".
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="mt-8 gap-3">
+                <AlertDialogCancel className="rounded-xl font-bold">Continue Editing</AlertDialogCancel>
+                <AlertDialogAction onClick={()=>onDiscard(definition.id)} className="rounded-xl bg-primary font-bold">Confirm Cancel</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <div className="flex gap-3">
               <Button variant="secondary" onClick={()=>onSave({...definition, name, module, keywords, attachments, sectionValues, isDraft: true, isPendingApproval: false})} className="rounded-xl font-bold px-8">Save Draft</Button>
               <Button onClick={()=>onSave({...definition, name, module, keywords, attachments, sectionValues, isDraft: isAdmin ? false : true, isPendingApproval: !isAdmin})} disabled={!name.trim()} className="bg-indigo-600 text-white rounded-xl font-bold px-10">{isAdmin ? 'Publish Changes' : 'Submit for Approval'}</Button>

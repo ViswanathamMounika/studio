@@ -9,6 +9,7 @@ type DefinitionTreeProps = {
   definitions: Definition[];
   selectedId: string | null;
   onSelect: (id: string, sectionId?: string) => void;
+  onDelete?: (id: string) => void;
   onToggleSelection: (id: string, checked: boolean) => void;
   selectedForExport: string[];
   isSelectMode: boolean;
@@ -18,7 +19,7 @@ type DefinitionTreeProps = {
   treeId: string;
 };
 
-export default function DefinitionTree({ definitions, selectedId, onSelect, onToggleSelection, selectedForExport, isSelectMode, activeSection, searchQuery, editLockId, treeId }: DefinitionTreeProps) {
+export default function DefinitionTree({ definitions, selectedId, onSelect, onDelete, onToggleSelection, selectedForExport, isSelectMode, activeSection, searchQuery, editLockId, treeId }: DefinitionTreeProps) {
   return (
     <div className="space-y-1">
       {definitions.map(node => (
@@ -27,6 +28,7 @@ export default function DefinitionTree({ definitions, selectedId, onSelect, onTo
           node={node}
           selectedId={selectedId}
           onSelect={onSelect}
+          onDelete={onDelete}
           level={0}
           onToggleSelection={onToggleSelection}
           isSelectedForExport={selectedForExport.includes(node.id)}

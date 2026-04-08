@@ -276,7 +276,7 @@ export default function Wiki() {
     setIsEditing(false);
     setViewingMode('live');
     setSelectedDefinitionId(null);
-    toast({ title: "Draft Discarded" });
+    toast({ title: "Draft Cancelled" });
   };
 
   const handleRetract = (id: string) => {
@@ -611,7 +611,7 @@ export default function Wiki() {
                               </TabsTrigger>
                             </TabsList>
                             <TabsContent value="saved" className="mt-0 p-3">
-                               <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                               <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onDelete={handleDelete} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
                             </TabsContent>
                             <TabsContent value="submitted" className="mt-0 p-3">
                                <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.pending} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
@@ -628,7 +628,7 @@ export default function Wiki() {
                                 {categorizedDefinitions.drafts.length > 0 && <Badge className="bg-primary/10 text-primary h-5 px-1.5 rounded-full text-[10px] font-black">{categorizedDefinitions.drafts.length}</Badge>}
                             </div>
                             <div className="pt-1">
-                                <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                                <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onDelete={handleDelete} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
                             </div>
                         </div>
                       )}

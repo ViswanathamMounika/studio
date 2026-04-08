@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { Definition } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link, Archive, Pencil, Clock, XCircle, RefreshCw } from 'lucide-react';
+import { ChevronRight, Folder, FileText, Bookmark, FileClock, Paperclip, MessageSquare, Link, Archive, Pencil, Clock, XCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -84,7 +84,7 @@ const DefinitionSubItems = ({ definition, onSelect, activeSection, level }: { de
 };
 
 
-export default function DefinitionTreeNode({ node, selectedId, onSelect, level, onToggleSelection, isSelectedForExport, isSelectMode, selectedForExport, activeSection, searchQuery, editLockId, treeId }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isSelectMode: boolean, selectedForExport: string[], activeSection: string, searchQuery: string, editLockId: string | null, treeId?: string }) {
+export default function DefinitionTreeNode({ node, selectedId, onSelect, onDelete, level, onToggleSelection, isSelectedForExport, isSelectMode, selectedForExport, activeSection, searchQuery, editLockId, treeId }: { node: Definition, selectedId: string | null, onSelect: (id: string, sectionId?: string) => void, onDelete?: (id: string) => void, level: number, onToggleSelection: (id: string, checked: boolean) => void, isSelectedForExport: boolean, isSelectMode: boolean, selectedForExport: string[], activeSection: string, searchQuery: string, editLockId: string | null, treeId?: string }) {
   const isModule = !node.description && !node.shortDescription && node.children && node.children.length > 0;
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId !== null && node.id === selectedId;
@@ -125,6 +125,13 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+  };
+
+  const handleTrashClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+        onDelete(node.id);
+    }
   };
 
   const latestFeedback = useMemo(() => {
@@ -191,6 +198,16 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                 </TooltipProvider>
 
                 <div className="ml-auto flex items-center gap-1.5 opacity-60 group-hover/item:opacity-100 transition-opacity pr-1">
+                    {treeId === 'drafts' && !isSelectMode && (
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-slate-300 hover:text-destructive rounded-md"
+                            onClick={handleTrashClick}
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                    )}
                     {showWorkflowBadges && isLocked && (
                         <TooltipProvider>
                             <Tooltip>
@@ -268,6 +285,7 @@ export default function DefinitionTreeNode({ node, selectedId, onSelect, level, 
                         node={child}
                         selectedId={selectedId}
                         onSelect={onSelect}
+                        onDelete={onDelete}
                         level={level + 1}
                         onToggleSelection={onToggleSelection}
                         isSelectedForExport={selectedForExport.includes(child.id)}
