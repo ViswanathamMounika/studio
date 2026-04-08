@@ -116,8 +116,12 @@ export default function DefinitionView({
     const isOutdated = useMemo(() => {
         if (viewingMode !== 'draft' || !liveVersion) return false;
         const latestLiveTicket = liveVersion.revisions?.[0]?.ticketId;
-        if (!latestLiveTicket) return false;
-        return definition.baseVersionId !== latestLiveTicket;
+        const currentBaseTicket = definition.baseVersionId;
+        
+        if (latestLiveTicket && currentBaseTicket !== latestLiveTicket) {
+            return true;
+        }
+        return false;
     }, [viewingMode, liveVersion, definition.baseVersionId]);
 
     const handleShowReviewHistory = () => {

@@ -62,8 +62,12 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
   const isOutdated = useMemo(() => {
     if (!liveVersion) return false;
     const latestLiveTicket = liveVersion.revisions?.[0]?.ticketId;
-    if (!latestLiveTicket) return false;
-    return definition.baseVersionId !== latestLiveTicket;
+    const currentBaseTicket = definition.baseVersionId;
+    
+    if (latestLiveTicket && currentBaseTicket !== latestLiveTicket) {
+        return true;
+    }
+    return false;
   }, [liveVersion, definition.baseVersionId]);
 
   const groupedSections = useMemo(() => {
