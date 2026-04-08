@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Save, Send, Pencil, Trash, ChevronDown, Check, Plus, Info, Undo2 } from 'lucide-react';
+import { X, Upload, Save, Send, Pencil, Trash, ChevronDown, Check, Plus, Info, Undo2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,17 +23,20 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
+const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
 
 type DefinitionEditProps = {
   definition: Definition;
+  liveVersion?: Definition | null;
   onSave: (definition: Definition) => void;
   onDiscard: (id: string) => void;
+  onAcceptLiveChanges?: (id: string) => void;
   isAdmin: boolean;
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
 
-export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin }: DefinitionEditProps) {
+export default function DefinitionEdit({ definition, liveVersion, onSave, onDiscard, onAcceptLiveChanges, isAdmin }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
   const [module, setModule] = useState(definition.module);
   const [keywords, setKeywords] = useState<string[]>(definition.keywords || []);
@@ -41,6 +44,7 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
   const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments || []);
   const [sectionValues, setSectionValues] = useState<SectionValue[]>(definition.sectionValues || []);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [showConflictDiff, setShowConflictDiff] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedTemplate = useMemo(() => initialTemplates.find(t => t.id === definition.templateId) || initialTemplates[0], [definition.templateId]);
@@ -53,6 +57,12 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
         return next;
     });
   };
+
+  const isOutdated = useMemo(() => {
+    if (!liveVersion || !definition.baseVersionId) return false;
+    const latestLiveTicket = liveVersion.revisions?.[0]?.ticketId;
+    return latestLiveTicket && definition.baseVersionId !== latestLiveTicket;
+  }, [liveVersion, definition.baseVersionId]);
 
   const groupedSections = useMemo(() => {
     const allSections = selectedTemplate.sections || [];
@@ -80,6 +90,46 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
         
         <ScrollArea className="flex-1">
           <div className="p-8 space-y-10 max-w-[1000px] mx-auto pb-32">
+              {/* VERSION CONFLICT BANNER IN EDITOR */}
+              {isOutdated && (
+                  <div className="animate-in slide-in-from-top-4 fade-in duration-500">
+                      <div className="group relative flex items-center justify-between p-4 rounded-[20px] bg-[#FFF9EB] border border-[#FFE0B2] shadow-sm overflow-hidden">
+                          <div className="flex items-center gap-4">
+                              <div className="h-10 w-10 shrink-0 rounded-xl bg-[#FFF3E0] flex items-center justify-center">
+                                  <AlertTriangle className="h-5 w-5 text-[#E65100]" />
+                              </div>
+                              <div className="flex flex-col">
+                                  <div className="flex items-center gap-2">
+                                      <span className="text-sm font-bold text-[#5D4037]">Older Draft Version Detected</span>
+                                      <span className="bg-[#FFE0B2] text-[#E65100] text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md leading-none h-4 flex items-center">OUTDATED</span>
+                                  </div>
+                                  <p className="text-[13px] text-[#8D6E63] font-medium mt-0.5">
+                                      The live version was updated while you were editing. Your changes might conflict with the current standard.
+                                  </p>
+                              </div>
+                          </div>
+                          <div className="flex items-center gap-3 relative z-10">
+                              <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-9 px-5 rounded-xl border-[#FFE0B2] bg-white text-[#E65100] font-bold hover:bg-[#FFF3E0] transition-colors shadow-sm"
+                                  onClick={() => setShowConflictDiff(true)}
+                              >
+                                  View Differences
+                              </Button>
+                              <Button 
+                                  size="sm" 
+                                  className="h-9 px-5 rounded-xl bg-[#E65100] hover:bg-[#D84315] text-white font-bold shadow-md shadow-orange-100 flex items-center gap-2 transition-all active:scale-95"
+                                  onClick={() => onAcceptLiveChanges?.(definition.id)}
+                              >
+                                  Accept Live Changes
+                                  <ArrowRight className="h-4 w-4" />
+                              </Button>
+                          </div>
+                      </div>
+                  </div>
+              )}
+
               <Card className="rounded-2xl border-slate-200 shadow-sm">
                   <CardHeader className="bg-slate-50/50 border-b p-6"><CardTitle className="text-sm font-black uppercase text-slate-500 tracking-wider">Categorization</CardTitle></CardHeader>
                   <CardContent className="p-6 space-y-6">
@@ -168,6 +218,28 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
           </div>
         </div>
         <DataSourcePreviewDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen} sourceName={null} />
+        
+        {showConflictDiff && liveVersion && (
+            <RevisionComparisonDialog 
+                open={showConflictDiff} 
+                onOpenChange={setShowConflictDiff} 
+                revision1={{ 
+                    ticketId: 'LIVE', 
+                    date: liveVersion.revisions?.[0]?.date || 'Now', 
+                    developer: liveVersion.revisions?.[0]?.developer || 'System', 
+                    description: 'Latest Published Version', 
+                    snapshot: liveVersion 
+                }} 
+                revision2={{ 
+                    ticketId: 'DRAFT', 
+                    date: 'Current', 
+                    developer: 'You', 
+                    description: 'Your Current Draft', 
+                    snapshot: { ...definition, name, module, keywords, attachments, sectionValues }
+                }} 
+                definition={definition} 
+            />
+        )}
       </div>
     </TooltipProvider>
   );

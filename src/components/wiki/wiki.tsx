@@ -570,7 +570,14 @@ export default function Wiki() {
             return (
                 <div className="relative h-full">
                   {isEditing && selectedDef ? (
-                      <DefinitionEdit definition={selectedDef} onSave={handleSave} onDiscard={handleDiscardDraft} isAdmin={isAdmin} />
+                      <DefinitionEdit 
+                        definition={selectedDef} 
+                        liveVersion={liveDef}
+                        onSave={handleSave} 
+                        onDiscard={handleDiscardDraft} 
+                        onAcceptLiveChanges={handleAcceptLiveChanges}
+                        isAdmin={isAdmin} 
+                      />
                   ) : selectedDef ? (
                       <div className="p-6">
                         <DefinitionView 
