@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import type { Definition, ApprovalHistoryEntry, DiscussionMessage } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,30 +10,24 @@ import { Label } from '@/components/ui/label';
 import { 
     Clock, 
     CheckCircle2, 
-    XCircle, 
-    RefreshCcw, 
-    User, 
     ChevronRight, 
     ShieldCheck, 
-    AlertCircle, 
     History, 
-    Check, 
-    ArrowRight, 
     UserCheck,
     Calendar as CalendarIcon,
     FilterX,
     MessageSquare,
+    XCircle,
     RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, formatDistanceToNow, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { format, isWithinInterval, startOfDay, endOfDay, formatDistanceToNow } from 'date-fns';
 import ChangeRequestModal from './change-request-modal';
 import diff_match_patch from 'diff-match-patch';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { findDefinition } from '@/lib/data';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import DiscussionsPanel from './discussions-panel';
 
 const dmp = new diff_match_patch();
 
@@ -87,6 +81,7 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
     const [sidebarTab, setSidebarTab] = useState<'pending' | 'decided'>('pending');
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+    const [isDiscussionsOpen, setIsDiscussionsOpen] = useState(false);
     const [feedbackMode, setFeedbackMode] = useState<'request' | 'reject'>('request');
     const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>();
 
@@ -169,6 +164,8 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
             default: return 'text-slate-600 bg-slate-50 border-slate-100';
         }
     };
+
+    const discussionCount = selectedDef?.discussions?.length || 0;
 
     return (
         <div className="flex h-full overflow-hidden bg-slate-50/30">
@@ -294,13 +291,30 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                     </p>
                                 </div>
                             </div>
-                            {sidebarTab === 'pending' && (
-                                <div className="flex items-center gap-3">
-                                    <Button variant="outline" size="sm" className="rounded-xl text-red-600 font-bold bg-white" onClick={() => handleActionClick('reject')}>Reject</Button>
-                                    <Button variant="outline" size="sm" className="rounded-xl text-amber-600 font-bold bg-white" onClick={() => handleActionClick('request')}>Request Changes</Button>
-                                    <Button size="sm" className="rounded-xl bg-[#3F51B5] text-white font-bold px-6" onClick={handleApprove}><ShieldCheck className="h-4 w-4 mr-2" />Approve & Publish</Button>
-                                </div>
-                            )}
+                            
+                            <div className="flex items-center gap-3">
+                                <Button 
+                                    variant="outline" 
+                                    size="icon" 
+                                    className="relative h-9 w-9 rounded-xl border-slate-200"
+                                    onClick={() => setIsDiscussionsOpen(true)}
+                                >
+                                    <MessageSquare className="h-4 w-4" />
+                                    {discussionCount > 0 && (
+                                        <Badge className="absolute -top-2 -right-2 h-5 min-w-[20px] justify-center px-1 font-bold text-[10px] bg-primary text-white border-white">
+                                            {discussionCount}
+                                        </Badge>
+                                    )}
+                                </Button>
+
+                                {sidebarTab === 'pending' && (
+                                    <div className="flex items-center gap-3 ml-2 pl-4 border-l">
+                                        <Button variant="outline" size="sm" className="rounded-xl text-red-600 font-bold bg-white" onClick={() => handleActionClick('reject')}>Reject</Button>
+                                        <Button variant="outline" size="sm" className="rounded-xl text-amber-600 font-bold bg-white" onClick={() => handleActionClick('request')}>Request Changes</Button>
+                                        <Button size="sm" className="rounded-xl bg-[#3F51B5] text-white font-bold px-6" onClick={handleApprove}><ShieldCheck className="h-4 w-4 mr-2" />Approve & Publish</Button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {sidebarTab === 'decided' && selectedHistoryItem && (
@@ -327,54 +341,6 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                     <h1 className="text-4xl font-bold tracking-tight text-slate-900">{selectedDef.name}</h1>
                                 </div>
 
-                                {sidebarTab === 'pending' && (
-                                    <div className="space-y-6">
-                                        <div className="flex items-center gap-3">
-                                            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Review History</h3>
-                                            <div className="h-px bg-slate-200 flex-1" />
-                                        </div>
-                                        
-                                        {selectedDef.discussions && selectedDef.discussions.length > 0 ? (
-                                            <div className="grid gap-4">
-                                                {selectedDef.discussions.map((msg) => (
-                                                    <Card key={msg.id} className="border-slate-200 shadow-none bg-white rounded-xl overflow-hidden">
-                                                        <div className="px-4 py-3 bg-slate-50/50 border-b flex items-center justify-between">
-                                                            <div className="flex items-center gap-3">
-                                                                <Avatar className="h-6 w-6">
-                                                                    <AvatarImage src={msg.avatar} />
-                                                                    <AvatarFallback>{msg.author[0]}</AvatarFallback>
-                                                                </Avatar>
-                                                                <div>
-                                                                    <span className="text-xs font-bold text-slate-900">{msg.author}</span>
-                                                                    <span className="text-[10px] text-slate-400 font-medium ml-2">{format(new Date(msg.date), 'MMM dd, yyyy HH:mm')}</span>
-                                                                </div>
-                                                            </div>
-                                                            <Badge className={cn(
-                                                                "text-[9px] uppercase font-black px-2 py-0.5",
-                                                                msg.type === 'rejection' ? "bg-red-100 text-red-700" :
-                                                                msg.type === 'change-request' ? "bg-amber-100 text-amber-700" :
-                                                                "bg-blue-100 text-blue-700"
-                                                            )}>
-                                                                {msg.type === 'rejection' ? 'Rejected' : 
-                                                                 msg.type === 'change-request' ? 'Requested Changes' : 
-                                                                 'Reviewer Comment'}
-                                                            </Badge>
-                                                        </div>
-                                                        <CardContent className="p-4">
-                                                            <p className="text-sm text-slate-600 leading-relaxed italic">"{msg.content}"</p>
-                                                        </CardContent>
-                                                    </Card>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="p-8 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center gap-2 bg-slate-50/30">
-                                                <MessageSquare className="h-6 w-6 text-slate-300" />
-                                                <p className="text-xs text-slate-400 font-medium italic">No previous review history available for this submission.</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
                                 <div className="space-y-8">
                                     <div className="flex items-center gap-3"><h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Field Comparison</h3><div className="h-px bg-slate-200 flex-1" /></div>
                                     <ComparisonSection title="Summary" published={selectedDef.publishedSnapshot?.shortDescription} submitted={selectedDef.shortDescription} />
@@ -391,6 +357,19 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                     </div>
                 )}
             </div>
+
+            {selectedDef && (
+                <DiscussionsPanel 
+                    open={isDiscussionsOpen}
+                    onOpenChange={setIsDiscussionsOpen}
+                    discussions={selectedDef.discussions || []}
+                    definitionName={selectedDef.name}
+                    onAddReply={(content) => {
+                        // In a real app, this would update the definitions state
+                        console.log("New reply:", content);
+                    }}
+                />
+            )}
 
             <ChangeRequestModal 
                 open={isFeedbackModalOpen} 
