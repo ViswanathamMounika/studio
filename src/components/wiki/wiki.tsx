@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -40,12 +41,6 @@ const ApprovalQueue = dynamic(() => import('@/components/wiki/approval-queue'), 
 
 type ViewingMode = 'live' | 'draft';
 
-const currentUser = {
-    id: "user_123",
-    name: "Dhilip Sagadevan",
-    avatar: "https://picsum.photos/seed/dhilip/40/40"
-};
-
 const LOCK_TIMEOUT_MINUTES = 30;
 
 const initialNotifications: NotificationType[] = [
@@ -85,6 +80,13 @@ export default function Wiki() {
   
   const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
+  // Simulation: Switch current user context based on Admin Mode
+  const currentUser = useMemo(() => ({
+    id: isAdmin ? "user_admin" : "user_std",
+    name: isAdmin ? "Administrator" : "Standard User",
+    avatar: isAdmin ? "https://picsum.photos/seed/admin/40/40" : "https://picsum.photos/seed/std/40/40"
+  }), [isAdmin]);
 
   useEffect(() => {
     if (debouncedSearchQuery) {
@@ -259,7 +261,9 @@ export default function Wiki() {
         };
 
         setDefinitions(prev => updateTree(prev || []));
-        setDrafts(prev => prev.filter(d => d.id !== updatedDefinition.id && d.originalId !== updatedDefinition.id));
+        // ONLY remove the specific draft that was just published. 
+        // DO NOT remove other users' drafts of the same definition.
+        setDrafts(prev => prev.filter(d => d.id !== updatedDefinition.id));
         setViewingMode('live');
         setSelectedDefinitionId(updatedDefinition.originalId || updatedDefinition.id);
     }
@@ -424,6 +428,7 @@ export default function Wiki() {
     };
 
     setDefinitions(prev => updateTree(prev || []));
+    // CRITICAL: Only remove the draft that was published. Other drafts stay for conflict management.
     setDrafts(prev => prev.filter(d => d.id !== draftId));
     setViewingMode('live');
     setSelectedDefinitionId(finalPublishedDef.id);
@@ -539,7 +544,7 @@ export default function Wiki() {
         allPending: drafts.filter(d => d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d))),
         published: filterPublishedTree(definitions)
     };
-  }, [definitions, drafts, showArchived, showBookmarked, isBookmarked]);
+  }, [definitions, drafts, showArchived, showBookmarked, isBookmarked, currentUser.id]);
 
   const renderContent = () => {
     switch (activeView) {
