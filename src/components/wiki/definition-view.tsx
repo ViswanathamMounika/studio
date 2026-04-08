@@ -196,10 +196,6 @@ export default function DefinitionView({
                     {!definition.isArchived && !definition.isPendingApproval && (
                         <Button onClick={onEdit} className="bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white font-bold px-6 h-9 rounded-xl shadow-sm transition-all active:scale-95">Edit</Button>
                     )}
-                    
-                    {(latestFeedback && !definition.isPendingApproval && !definition.isArchived) && (
-                        <Button onClick={onEdit} className="bg-[#3F51B5] hover:bg-[#303F9F] text-white font-bold px-6 h-9 rounded-xl shadow-sm transition-all active:scale-95">Edit Submission</Button>
-                    )}
 
                     <DefinitionActions 
                         definition={definition} 
