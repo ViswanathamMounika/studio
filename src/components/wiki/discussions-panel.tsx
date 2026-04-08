@@ -1,147 +1,73 @@
 'use client';
 
-import React, { useState } from 'react';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetOverlay,
-  SheetPortal,
-} from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, RefreshCw, XCircle } from 'lucide-react';
+import { RefreshCw, XCircle, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { DiscussionMessage } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 
 type DiscussionsPanelProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   discussions: DiscussionMessage[];
   definitionName: string;
-  onAddReply: (content: string) => void;
 };
 
-export default function DiscussionsPanel({ open, onOpenChange, discussions, definitionName, onAddReply }: DiscussionsPanelProps) {
-  const [reply, setReply] = useState('');
-
-  const handleSendReply = () => {
-    if (!reply.trim()) return;
-    onAddReply(reply);
-    setReply('');
-  };
-
-  const openThreadCount = discussions.filter(d => d.type === 'change-request' || d.type === 'rejection').length;
+export default function DiscussionList({ discussions, definitionName }: DiscussionsPanelProps) {
+  if (discussions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center mb-3">
+          <MessageSquare className="h-6 w-6 text-slate-200" />
+        </div>
+        <p className="text-sm font-medium text-slate-400 italic">No previous review history for this definition.</p>
+      </div>
+    );
+  }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetPortal>
-        {/* Custom overlay with no background dimming/blur */}
-        <SheetOverlay className="bg-transparent backdrop-blur-none" />
-        <SheetContent className="w-full sm:max-w-md p-0 flex flex-col bg-slate-50 shadow-2xl border-l border-slate-200">
-          <SheetHeader className="p-6 bg-white border-b shadow-sm">
-            <SheetTitle className="text-xl font-bold">Activity & Feedback</SheetTitle>
-            <SheetDescription className="text-sm">
-              {openThreadCount} feedback thread{openThreadCount !== 1 ? 's' : ''} · {definitionName}
-            </SheetDescription>
-          </SheetHeader>
-
-          <ScrollArea className="flex-1 px-6 py-4">
-            <div className="space-y-8">
-              <div className="relative flex justify-center py-2">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-slate-200" />
-                </div>
-                <span className="relative bg-slate-50 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">History</span>
-              </div>
-
-              {discussions.map((msg) => (
-                <div key={msg.id} className="flex gap-3">
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarImage src={msg.avatar} alt={msg.author} />
-                    <AvatarFallback>{msg.author.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-700">{msg.author}</span>
-                      <span className="text-[11px] text-slate-400">{formatDistanceToNow(new Date(msg.date), { addSuffix: true })}</span>
-                    </div>
-
-                    {(msg.type === 'change-request' || msg.type === 'rejection') ? (
-                      <div className={cn(
-                        "p-4 border rounded-xl space-y-3 shadow-sm",
-                        msg.type === 'rejection' ? "bg-red-50/50 border-red-100" : "bg-amber-50/50 border-amber-100"
-                      )}>
-                        <div className={cn(
-                          "inline-flex items-center gap-1.5 px-2 py-1 bg-white border rounded-lg text-[10px] font-bold uppercase",
-                          msg.type === 'rejection' ? "text-red-600 border-red-200" : "text-amber-600 border-amber-200"
-                        )}>
-                          {msg.type === 'rejection' ? <XCircle className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
-                          {msg.type === 'rejection' ? 'Rejected' : 'Change Request'}
-                        </div>
-                        
-                        {msg.priority && (
-                          <p className="text-sm">
-                            <span className="font-bold text-slate-800">Priority: </span>
-                            <span className={cn(
-                              "font-bold",
-                              msg.priority === 'High' ? "text-red-600" : msg.priority === 'Medium' ? "text-amber-600" : "text-green-600"
-                            )}>{msg.priority}</span>
-                          </p>
-                        )}
-                        
-                        <p className="text-sm text-slate-600 leading-relaxed">
-                          {msg.content}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-                        <p className="text-sm text-slate-600 leading-relaxed">
-                          {msg.content}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+    <div className="space-y-6">
+      {discussions.map((msg) => (
+        <div key={msg.id} className="flex gap-4 group/msg">
+          <Avatar className="h-8 w-8 shrink-0 ring-2 ring-white">
+            <AvatarImage src={msg.avatar} alt={msg.author} />
+            <AvatarFallback className="bg-slate-100 text-slate-500 font-bold">{msg.author.charAt(0)}</AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-900">{msg.author}</span>
+              <span className="text-slate-300 text-[10px]">•</span>
+              <span className="text-[11px] font-medium text-slate-400">{formatDistanceToNow(new Date(msg.date), { addSuffix: true })}</span>
             </div>
-          </ScrollArea>
 
-          <div className="p-6 bg-white border-t mt-auto shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
-            <div className="relative bg-slate-50 border rounded-2xl p-2 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-              <Textarea
-                placeholder="Reply or add a comment..."
-                className="min-h-[80px] border-none shadow-none focus-visible:ring-0 bg-transparent resize-none text-sm placeholder:text-slate-400"
-                value={reply}
-                onChange={(e) => setReply(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendReply();
-                  }
-                }}
-              />
-              <div className="flex justify-end pr-1 pb-1">
-                <Button 
-                  size="icon" 
-                  className="h-9 w-9 rounded-xl bg-primary hover:bg-primary/90" 
-                  disabled={!reply.trim()}
-                  onClick={handleSendReply}
-                >
-                  <Send className="h-4 w-4 text-white" />
-                </Button>
+            {(msg.type === 'change-request' || msg.type === 'rejection') ? (
+              <div className={cn(
+                "p-4 border rounded-2xl space-y-3 shadow-sm transition-all",
+                msg.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-amber-50/30 border-amber-100"
+              )}>
+                <div className={cn(
+                  "inline-flex items-center gap-1.5 px-2 py-0.5 bg-white border rounded-lg text-[9px] font-black uppercase tracking-wider",
+                  msg.type === 'rejection' ? "text-red-600 border-red-200" : "text-amber-600 border-amber-200"
+                )}>
+                  {msg.type === 'rejection' ? <XCircle className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
+                  {msg.type === 'rejection' ? 'Rejected Submission' : 'Change Request Issued'}
+                </div>
+                
+                <p className="text-[13px] text-slate-700 leading-relaxed font-medium">
+                  {msg.content}
+                </p>
               </div>
-            </div>
+            ) : (
+              <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm group-hover/msg:border-slate-300 transition-colors">
+                <p className="text-[13px] text-slate-600 leading-relaxed">
+                  {msg.content}
+                </p>
+              </div>
+            )}
           </div>
-        </SheetContent>
-      </SheetPortal>
-    </Sheet>
+        </div>
+      ))}
+    </div>
   );
 }

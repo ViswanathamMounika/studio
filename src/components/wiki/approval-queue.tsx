@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import type { Definition, ApprovalHistoryEntry, DiscussionMessage } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -19,7 +19,8 @@ import {
     FilterX,
     MessageSquare,
     XCircle,
-    RefreshCw
+    RefreshCw,
+    X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isWithinInterval, startOfDay, endOfDay, formatDistanceToNow } from 'date-fns';
@@ -28,7 +29,7 @@ import diff_match_patch from 'diff-match-patch';
 import { findDefinition } from '@/lib/data';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import DiscussionsPanel from './discussions-panel';
+import DiscussionList from './discussions-panel';
 
 const dmp = new diff_match_patch();
 
@@ -297,11 +298,14 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                 <Button 
                                     variant="outline" 
                                     size="icon" 
-                                    className="relative h-9 w-9 rounded-xl border-slate-200"
-                                    onClick={() => setIsDiscussionsOpen(true)}
+                                    className={cn(
+                                        "relative h-9 w-9 rounded-xl border-slate-200 transition-all",
+                                        isDiscussionsOpen ? "bg-primary text-white border-primary" : "bg-white text-slate-600 hover:bg-slate-50"
+                                    )}
+                                    onClick={() => setIsDiscussionsOpen(!isDiscussionsOpen)}
                                 >
                                     <MessageSquare className="h-4 w-4" />
-                                    {discussionCount > 0 && (
+                                    {discussionCount > 0 && !isDiscussionsOpen && (
                                         <Badge className="absolute -top-2 -right-2 h-5 min-w-[20px] justify-center px-1 font-bold text-[10px] bg-primary text-white border-white">
                                             {discussionCount}
                                         </Badge>
@@ -342,6 +346,30 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                     <h1 className="text-4xl font-bold tracking-tight text-slate-900">{selectedDef.name}</h1>
                                 </div>
 
+                                {isDiscussionsOpen && (
+                                    <div className="animate-in slide-in-from-top-4 fade-in duration-300">
+                                        <Card className="rounded-[24px] border-indigo-100 bg-indigo-50/20 shadow-sm overflow-hidden mb-10">
+                                            <CardHeader className="py-4 px-8 border-b bg-white/80 backdrop-blur-sm flex flex-row items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                                                        <MessageSquare className="h-4 w-4 text-indigo-600" />
+                                                    </div>
+                                                    <CardTitle className="text-sm font-black uppercase tracking-widest text-indigo-900">Review History & Team Discussions</CardTitle>
+                                                </div>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => setIsDiscussionsOpen(false)}>
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </CardHeader>
+                                            <CardContent className="p-8">
+                                                <DiscussionList 
+                                                    discussions={selectedDef.discussions || []}
+                                                    definitionName={selectedDef.name}
+                                                />
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                )}
+
                                 <div className="space-y-8">
                                     <div className="flex items-center gap-3"><h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Field Comparison</h3><div className="h-px bg-slate-200 flex-1" /></div>
                                     <ComparisonSection title="Summary" published={selectedDef.publishedSnapshot?.shortDescription} submitted={selectedDef.shortDescription} />
@@ -354,23 +382,11 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/20">
                         <History className="h-12 w-12 text-slate-300 mb-4" />
-                        <h3 className="text-lg font-bold">Select a request to review</h3>
+                        <h3 className="text-lg font-bold text-slate-900">Governance Review Workspace</h3>
+                        <p className="text-sm text-slate-500 max-w-xs mt-2">Select a definition from the queue to start reviewing metadata improvements.</p>
                     </div>
                 )}
             </div>
-
-            {selectedDef && (
-                <DiscussionsPanel 
-                    open={isDiscussionsOpen}
-                    onOpenChange={setIsDiscussionsOpen}
-                    discussions={selectedDef.discussions || []}
-                    definitionName={selectedDef.name}
-                    onAddReply={(content) => {
-                        // In a real app, this would update the definitions state
-                        console.log("New reply:", content);
-                    }}
-                />
-            )}
 
             <ChangeRequestModal 
                 open={isFeedbackModalOpen} 
