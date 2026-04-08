@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -186,7 +185,7 @@ export default function DefinitionView({
                                         size="sm" 
                                         className="h-9 px-4 text-[#8D6E63] hover:text-red-600 font-bold hover:bg-red-50/50 rounded-xl transition-all"
                                     >
-                                        Discard Changes
+                                        Discard Draft
                                     </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent className="rounded-[24px] border-none p-8 shadow-2xl">
@@ -205,7 +204,7 @@ export default function DefinitionView({
                                             onClick={() => onDelete(definition.id)} 
                                             className="rounded-xl bg-red-600 hover:bg-red-700 font-bold px-6"
                                         >
-                                            Discard Changes
+                                            Discard Draft
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -402,3 +401,4 @@ export default function DefinitionView({
     </TooltipProvider>
   );
 }
+")
