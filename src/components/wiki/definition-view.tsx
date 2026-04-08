@@ -11,8 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, MessageSquare, History, CheckCircle2, ChevronRight, Share2, XCircle, RefreshCw, X, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/accordion";
+import { Bookmark, Info, History, Share2, XCircle, RefreshCw, AlertTriangle, ArrowRight, ChevronRight } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -115,7 +115,7 @@ export default function DefinitionView({
 
     const isOutdated = useMemo(() => {
         if (viewingMode !== 'draft' || !liveVersion || !definition.baseVersionId) return false;
-        const latestLiveTicket = liveVersion.revisions[0]?.ticketId;
+        const latestLiveTicket = liveVersion.revisions?.[0]?.ticketId;
         return latestLiveTicket && definition.baseVersionId !== latestLiveTicket;
     }, [viewingMode, liveVersion, definition.baseVersionId]);
 
@@ -127,6 +127,47 @@ export default function DefinitionView({
   return (
     <TooltipProvider>
         <article className="max-w-none">
+            {/* VERSION CONFLICT BANNER */}
+            {isOutdated && (
+                <div className="mb-8 animate-in slide-in-from-top-4 fade-in duration-500">
+                    <div className="group relative flex items-center justify-between p-4 rounded-[20px] bg-[#FFF9EB] border border-[#FFE0B2] shadow-sm overflow-hidden">
+                        <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 shrink-0 rounded-xl bg-[#FFF3E0] flex items-center justify-center">
+                                <AlertTriangle className="h-5 w-5 text-[#E65100]" />
+                            </div>
+                            <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-[#5D4037]">Older Draft Version Detected</span>
+                                    <span className="bg-[#FFE0B2] text-[#E65100] text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md leading-none h-4 flex items-center">OUTDATED</span>
+                                </div>
+                                <p className="text-[13px] text-[#8D6E63] font-medium mt-0.5">
+                                    The live definition was updated by an admin while you were drafting. Your workspace is currently out of sync.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 relative z-10">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-9 px-5 rounded-xl border-[#FFE0B2] bg-white text-[#E65100] font-bold hover:bg-[#FFF3E0] transition-colors shadow-sm"
+                                onClick={() => setShowConflictDiff(true)}
+                            >
+                                View Differences
+                            </Button>
+                            <Button 
+                                size="sm" 
+                                className="h-9 px-5 rounded-xl bg-[#E65100] hover:bg-[#D84315] text-white font-bold shadow-md shadow-orange-100 flex items-center gap-2 transition-all active:scale-95"
+                                onClick={() => onAcceptLiveChanges?.(definition.id)}
+                            >
+                                Accept Live Changes
+                                <ArrowRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* HEADER SECTION */}
             <div className="flex justify-between items-start mb-6 px-2">
                 <div className="space-y-1">
                     <p className="text-xs font-semibold text-slate-500">{definition.module}</p>
@@ -149,15 +190,15 @@ export default function DefinitionView({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="text-primary"><Share2 className="h-5 w-5" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-primary"><Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary")} /></Button>
+                    <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/5 rounded-xl transition-all"><Share2 className="h-5 w-5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-primary hover:bg-primary/5 rounded-xl transition-all"><Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary")} /></Button>
                     
                     {!definition.isArchived && !definition.isPendingApproval && (
-                        <Button onClick={onEdit} className="bg-primary font-bold px-6 h-9 rounded-lg shadow-sm">Edit</Button>
+                        <Button onClick={onEdit} className="bg-[#3F51B5] hover:bg-[#303F9F] text-white font-bold px-6 h-9 rounded-xl shadow-sm transition-all active:scale-95">Edit</Button>
                     )}
                     
                     {(latestFeedback && !definition.isPendingApproval && !definition.isArchived) && (
-                        <Button onClick={onEdit} className="bg-primary font-bold px-6 h-9 rounded-lg shadow-sm">Edit Submission</Button>
+                        <Button onClick={onEdit} className="bg-[#3F51B5] hover:bg-[#303F9F] text-white font-bold px-6 h-9 rounded-xl shadow-sm transition-all active:scale-95">Edit Submission</Button>
                     )}
 
                     <DefinitionActions 
@@ -171,45 +212,7 @@ export default function DefinitionView({
                 </div>
             </div>
 
-            {isOutdated && (
-                <div className="mb-6 animate-in slide-in-from-top-2 fade-in">
-                    <Card className="rounded-[20px] border-amber-200 bg-amber-50/50 shadow-sm overflow-hidden">
-                        <CardContent className="p-4 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                                    <AlertTriangle className="h-5 w-5 text-amber-600" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-amber-900 flex items-center gap-2">
-                                        Older Draft Version Detected
-                                        <Badge className="bg-amber-200 text-amber-800 border-none font-black text-[9px] uppercase tracking-wider h-4">Outdated</Badge>
-                                    </p>
-                                    <p className="text-xs text-amber-700 mt-0.5">The live definition was updated by an admin while you were drafting. Your workspace is currently out of sync.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    className="rounded-lg border-amber-200 bg-white text-amber-700 font-bold hover:bg-amber-50"
-                                    onClick={() => setShowConflictDiff(true)}
-                                >
-                                    View Differences
-                                </Button>
-                                <Button 
-                                    size="sm" 
-                                    className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-sm"
-                                    onClick={() => onAcceptLiveChanges?.(definition.id)}
-                                >
-                                    Accept Live Changes
-                                    <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-
+            {/* FEEDBACK BANNER */}
             {latestFeedback && (
                 <div className="mb-6 animate-in slide-in-from-top-2 fade-in">
                     <Card className={cn(
@@ -247,13 +250,14 @@ export default function DefinitionView({
                 </div>
             )}
 
+            {/* MAIN CONTENT TABS */}
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-                <TabsList className="w-full bg-slate-100 rounded-lg p-1 h-12">
-                    <TabsTrigger value="description" className="flex-1 font-bold text-sm">Description</TabsTrigger>
-                    <TabsTrigger value="version-history" className="flex-1 font-bold text-sm">Version History</TabsTrigger>
-                    <TabsTrigger value="attachments" className="flex-1 font-bold text-sm">Attachments</TabsTrigger>
-                    <TabsTrigger value="notes" className="flex-1 font-bold text-sm">Notes</TabsTrigger>
-                    <TabsTrigger value="related-definitions" className="flex-1 font-bold text-sm">Related Definitions</TabsTrigger>
+                <TabsList className="w-full bg-slate-100 rounded-xl p-1 h-12">
+                    <TabsTrigger value="description" className="flex-1 font-bold text-sm rounded-lg transition-all">Description</TabsTrigger>
+                    <TabsTrigger value="version-history" className="flex-1 font-bold text-sm rounded-lg transition-all">Version History</TabsTrigger>
+                    <TabsTrigger value="attachments" className="flex-1 font-bold text-sm rounded-lg transition-all">Attachments</TabsTrigger>
+                    <TabsTrigger value="notes" className="flex-1 font-bold text-sm rounded-lg transition-all">Notes</TabsTrigger>
+                    <TabsTrigger value="related-definitions" className="flex-1 font-bold text-sm rounded-lg transition-all">Related Definitions</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="description" className="mt-6 space-y-10">
@@ -262,8 +266,8 @@ export default function DefinitionView({
                             {unit.type === 'group' && <div className="flex items-center gap-3"><h3 className="text-lg font-bold text-slate-900">{unit.name}</h3><div className="h-px bg-slate-200 flex-1" /></div>}
                             <Accordion type="multiple" defaultValue={unit.sections.map(s => s.id)} className="space-y-4">
                                 {unit.sections.map(section => (
-                                    <AccordionItem key={section.id} value={section.id} className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden">
-                                        <AccordionTrigger className="font-bold py-4 hover:no-underline">
+                                    <AccordionItem key={section.id} value={section.id} className="border rounded-xl px-6 bg-white border-slate-200 shadow-sm overflow-hidden group/accordion">
+                                        <AccordionTrigger className="font-bold py-4 hover:no-underline group-data-[state=open]/accordion:border-b group-data-[state=open]/accordion:border-slate-100 mb-0">
                                             <div className="flex items-center gap-2">
                                                 {section.name}
                                                 {section.description && (
@@ -278,7 +282,7 @@ export default function DefinitionView({
                                                 )}
                                             </div>
                                         </AccordionTrigger>
-                                        <AccordionContent className="pb-6">{renderSectionContent(section, (definition.sectionValues || []).find(v => v.sectionId === section.id))}</AccordionContent>
+                                        <AccordionContent className="pb-6 pt-4">{renderSectionContent(section, (definition.sectionValues || []).find(v => v.sectionId === section.id))}</AccordionContent>
                                     </AccordionItem>
                                 ))}
                             </Accordion>
@@ -287,10 +291,10 @@ export default function DefinitionView({
                 </TabsContent>
 
                 <TabsContent value="version-history" className="mt-8 space-y-6">
-                    <div className="flex items-center justify-between"><h2 className="text-xl font-bold">Archive Revisions</h2><Button variant="outline" size="sm" disabled={selectedRevisions.length !== 2} onClick={() => setShowComparison(true)} className="rounded-xl font-bold">Compare</Button></div>
+                    <div className="flex items-center justify-between"><h2 className="text-xl font-bold">Archive Revisions</h2><Button variant="outline" size="sm" disabled={selectedRevisions.length !== 2} onClick={() => setShowComparison(true)} className="rounded-xl font-bold">Compare Selected</Button></div>
                     <Card className="rounded-2xl border-slate-200 overflow-hidden shadow-sm">
                       <Table><TableHeader className="bg-slate-50"><TableRow><TableHead className="w-12"/><TableHead className="text-[10px] font-black uppercase">Date</TableHead><TableHead className="text-[10px] font-black uppercase">User</TableHead><TableHead className="text-[10px] font-black uppercase">Summary</TableHead></TableRow></TableHeader>
-                        <TableBody>{definition.revisions.map(r => <TableRow key={r.ticketId} className="hover:bg-slate-50"><TableCell><Checkbox checked={selectedRevisions.some(sr => sr.ticketId === r.ticketId)} onCheckedChange={() => setSelectedRevisions(prev => prev.some(sr => sr.ticketId === r.ticketId) ? prev.filter(sr => sr.ticketId !== r.ticketId) : (prev.length < 2 ? [...prev, r] : prev))}/></TableCell><TableCell className="font-bold">{r.date}</TableCell><TableCell className="font-medium text-slate-600">{r.developer}</TableCell><TableCell className="text-slate-500">{r.description}</TableCell></TableRow>)}</TableBody>
+                        <TableBody>{definition.revisions.map(r => <TableRow key={r.ticketId} className="hover:bg-slate-50 transition-colors"><TableCell><Checkbox checked={selectedRevisions.some(sr => sr.ticketId === r.ticketId)} onCheckedChange={() => setSelectedRevisions(prev => prev.some(sr => sr.ticketId === r.ticketId) ? prev.filter(sr => sr.ticketId !== r.ticketId) : (prev.length < 2 ? [...prev, r] : prev))}/></TableCell><TableCell className="font-bold">{r.date}</TableCell><TableCell className="font-medium text-slate-600">{r.developer}</TableCell><TableCell className="text-slate-500">{r.description}</TableCell></TableRow>)}</TableBody>
                       </Table>
                     </Card>
                 </TabsContent>
@@ -298,31 +302,31 @@ export default function DefinitionView({
                 <TabsContent value="notes" className="mt-8 space-y-8">
                     <div className="space-y-4">
                         <div className="flex items-center gap-2"><h3 className="text-sm font-bold">Add a Note</h3><Info className="h-3.5 w-3.5 text-slate-400" /></div>
-                        <div className="relative border border-slate-200 rounded-lg p-1 bg-white">
+                        <div className="relative border border-slate-200 rounded-xl p-1 bg-white focus-within:ring-2 focus-within:ring-primary/10 transition-all">
                             <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add a personal or shared note..." className="border-none shadow-none focus-visible:ring-0 min-h-[100px] text-sm" maxLength={5000}/>
-                            <div className="absolute bottom-2 right-3 text-[10px] text-slate-400">{noteText.length}/5000</div>
+                            <div className="absolute bottom-2 right-3 text-[10px] text-slate-400 font-bold">{noteText.length}/5000</div>
                         </div>
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2"><Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} /><Label htmlFor="share" className="text-xs font-medium text-slate-500">Share with everyone</Label></div>
-                            <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="bg-slate-200 text-slate-700 font-bold px-6 h-9">Save</Button>
+                            <div className="flex items-center gap-2"><Checkbox id="share" checked={shareNote} onCheckedChange={v => setShareNote(!!v)} /><Label htmlFor="share" className="text-xs font-bold text-slate-500 cursor-pointer">Share with everyone</Label></div>
+                            <Button onClick={handleSaveNote} disabled={!noteText.trim()} className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-8 h-9 rounded-xl transition-all">Save Note</Button>
                         </div>
                     </div>
                     <div className="pt-4 space-y-6">
                         <div className="flex items-center gap-2 mb-4"><h3 className="text-sm font-bold">Saved Notes</h3><Info className="h-3.5 w-3.5 text-slate-400" /></div>
                         <Tabs value={notesSubTab} onValueChange={setNotesSubTab} className="w-full">
-                            <TabsList className="bg-transparent border-b h-auto p-0 gap-8">
-                                <TabsTrigger value="my-notes" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=active]:border-primary">My Notes</TabsTrigger>
-                                <TabsTrigger value="others-notes" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=active]:border-primary">Other's Notes</TabsTrigger>
-                                <TabsTrigger value="review-history" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=active]:border-primary">Review History</TabsTrigger>
+                            <TabsList className="bg-transparent border-b h-auto p-0 gap-8 rounded-none">
+                                <TabsTrigger value="my-notes" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=active]:border-primary transition-all">My Notes</TabsTrigger>
+                                <TabsTrigger value="others-notes" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=active]:border-primary transition-all">Other's Notes</TabsTrigger>
+                                <TabsTrigger value="review-history" className="rounded-none border-b-2 border-transparent px-0 pb-2 text-sm font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=active]:border-primary transition-all">Review History</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="my-notes" className="mt-6 space-y-4">{(definition.notes || []).filter(n => n.authorId === currentUser.id).map(n => <Card key={n.id} className="p-4 rounded-xl shadow-sm"><div className="flex items-center gap-2 mb-2"><Avatar className="h-6 w-6"><AvatarImage src={n.avatar}/><AvatarFallback>{n.author[0]}</AvatarFallback></Avatar><span className="font-bold text-xs">{n.author}</span><span className="text-[10px] text-slate-400 uppercase font-black">{new Date(n.date).toLocaleDateString()}</span></div><p className="text-sm text-slate-600 pl-8">{n.content}</p></Card>)}</TabsContent>
-                            <TabsContent value="others-notes" className="mt-6 space-y-4">{(definition.notes || []).filter(n => n.authorId !== currentUser.id).map(n => <Card key={n.id} className="p-4 rounded-xl shadow-sm"><div className="flex items-center gap-2 mb-2"><Avatar className="h-6 w-6"><AvatarImage src={n.avatar}/><AvatarFallback>{n.author[0]}</AvatarFallback></Avatar><span className="font-bold text-xs">{n.author}</span><span className="text-[10px] text-slate-400 uppercase font-black">{new Date(n.date).toLocaleDateString()}</span></div><p className="text-sm text-slate-600 pl-8">{n.content}</p></Card>)}</TabsContent>
-                            <TabsContent value="review-history" className="mt-6 space-y-4">{(definition.discussions || []).map(m => <Card key={m.id} className={cn("p-4 rounded-xl shadow-sm", m.type === 'change-request' ? "bg-amber-50/30 border-amber-100" : m.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-white")}><div className="flex items-center gap-3 mb-3"><Avatar className="h-6 w-6"><AvatarImage src={m.avatar} /><AvatarFallback>{m.author[0]}</AvatarFallback></Avatar><div className="flex items-center gap-2"><span className="font-bold text-xs">{m.author}</span><span className="text-[10px] text-slate-400 uppercase font-black">{new Date(m.date).toLocaleDateString()}</span></div>{m.type !== 'comment' && <Badge className={cn("ml-auto text-[9px] uppercase font-black", m.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700")}>{m.type === 'rejection' ? 'Rejected' : 'Changes Requested'}</Badge>}</div><p className="text-sm text-slate-700 pl-9">"{m.content}"</p></Card>)}</TabsContent>
+                            <TabsContent value="my-notes" className="mt-6 space-y-4">{(definition.notes || []).filter(n => n.authorId === currentUser.id).map(n => <Card key={n.id} className="p-4 rounded-xl shadow-sm border-slate-100 hover:border-slate-200 transition-all"><div className="flex items-center gap-2 mb-2"><Avatar className="h-6 w-6"><AvatarImage src={n.avatar}/><AvatarFallback>{n.author[0]}</AvatarFallback></Avatar><span className="font-bold text-xs">{n.author}</span><span className="text-[10px] text-slate-400 uppercase font-black">{new Date(n.date).toLocaleDateString()}</span></div><p className="text-sm text-slate-600 pl-8">{n.content}</p></Card>)}</TabsContent>
+                            <TabsContent value="others-notes" className="mt-6 space-y-4">{(definition.notes || []).filter(n => n.authorId !== currentUser.id).map(n => <Card key={n.id} className="p-4 rounded-xl shadow-sm border-slate-100 hover:border-slate-200 transition-all"><div className="flex items-center gap-2 mb-2"><Avatar className="h-6 w-6"><AvatarImage src={n.avatar}/><AvatarFallback>{n.author[0]}</AvatarFallback></Avatar><span className="font-bold text-xs">{n.author}</span><span className="text-[10px] text-slate-400 uppercase font-black">{new Date(n.date).toLocaleDateString()}</span></div><p className="text-sm text-slate-600 pl-8">{n.content}</p></Card>)}</TabsContent>
+                            <TabsContent value="review-history" className="mt-6 space-y-4">{(definition.discussions || []).map(m => <Card key={m.id} className={cn("p-4 rounded-xl shadow-sm transition-all", m.type === 'change-request' ? "bg-amber-50/30 border-amber-100" : m.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-white border-slate-100")}><div className="flex items-center gap-3 mb-3"><Avatar className="h-6 w-6"><AvatarImage src={m.avatar} /><AvatarFallback>{m.author[0]}</AvatarFallback></Avatar><div className="flex items-center gap-2"><span className="font-bold text-xs">{m.author}</span><span className="text-[10px] text-slate-400 uppercase font-black">{new Date(m.date).toLocaleDateString()}</span></div>{m.type !== 'comment' && <Badge className={cn("ml-auto text-[9px] uppercase font-black", m.type === 'rejection' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700")}>{m.type === 'rejection' ? 'Rejected' : 'Changes Requested'}</Badge>}</div><p className="text-sm text-slate-700 pl-9 leading-relaxed">"{m.content}"</p></Card>)}</TabsContent>
                         </Tabs>
                     </div>
                 </TabsContent>
 
-                <TabsContent value="attachments" className="mt-8"><Card className="rounded-2xl border-slate-200 overflow-hidden"><CardHeader className="bg-slate-50/50 border-b px-6 py-4"><CardTitle className="text-lg font-bold">Reference Attachments</CardTitle></CardHeader><CardContent className="p-6"><AttachmentList attachments={definition.attachments} /></CardContent></Card></TabsContent>
+                <TabsContent value="attachments" className="mt-8"><Card className="rounded-2xl border-slate-200 overflow-hidden shadow-sm"><CardHeader className="bg-slate-50/50 border-b px-6 py-4"><CardTitle className="text-lg font-bold">Reference Attachments</CardTitle></CardHeader><CardContent className="p-6"><AttachmentList attachments={definition.attachments} /></CardContent></Card></TabsContent>
                 <TabsContent value="related-definitions" className="mt-8"><RelatedDefinitions currentDefinition={definition} allDefinitions={allDefinitions} onDefinitionClick={(id) => onTabChange('description')} onSave={onSave} isAdmin={isAdmin} /></TabsContent>
             </Tabs>
         </article>
@@ -335,8 +339,8 @@ export default function DefinitionView({
                 onOpenChange={setShowConflictDiff} 
                 revision1={{ 
                     ticketId: 'LIVE', 
-                    date: liveVersion.revisions[0]?.date || 'Now', 
-                    developer: liveVersion.revisions[0]?.developer || 'System', 
+                    date: liveVersion.revisions?.[0]?.date || 'Now', 
+                    developer: liveVersion.revisions?.[0]?.developer || 'System', 
                     description: 'Latest Published Version', 
                     snapshot: liveVersion 
                 }} 
