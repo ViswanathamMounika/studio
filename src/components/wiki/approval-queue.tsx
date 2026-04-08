@@ -341,7 +341,16 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                 )}
             </div>
 
-            <ChangeRequestModal open={isFeedbackModalOpen} onOpenChange={setIsFeedbackModalOpen} definitionName={selectedDef?.name || ''} title={feedbackMode === 'reject' ? "Reject Submission" : "Request Changes"} description={feedbackMode === 'reject' ? "Explain why this submission is being rejected. It will return to the author as a draft." : "Specify necessary updates."} buttonText={feedbackMode === 'reject' ? "Confirm Rejection" : "Send Request"} showPriority={feedbackMode === 'request'} isRejection={feedbackMode === 'reject'} onSend={handleFeedbackSubmit} />
+            <ChangeRequestModal 
+                open={isFeedbackModalOpen} 
+                onOpenChange={setIsFeedbackModalOpen} 
+                definitionName={selectedDef?.name || ''} 
+                title={feedbackMode === 'reject' ? "Reject Submission" : "Request Changes"} 
+                description={feedbackMode === 'reject' ? "Explain why this submission is being rejected. It will return to the author as a draft." : "Specify necessary updates."} 
+                buttonText={feedbackMode === 'reject' ? "Confirm Rejection" : "Send Request"} 
+                isRejection={feedbackMode === 'reject'} 
+                onSend={handleFeedbackSubmit} 
+            />
         </div>
     );
 }

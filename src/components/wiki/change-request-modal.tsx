@@ -18,11 +18,10 @@ import { cn } from '@/lib/utils';
 type ChangeRequestModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSend: (data: { content: string; priority?: 'Low' | 'Medium' | 'High' }) => void;
+  onSend: (data: { content: string }) => void;
   definitionName: string;
   title?: string;
   description?: string;
-  showPriority?: boolean;
   buttonText?: string;
   isRejection?: boolean;
 };
@@ -34,34 +33,24 @@ export default function ChangeRequestModal({
   definitionName,
   title = "Request Changes",
   description = "Describe what needs to be updated. The definition owner will be notified.",
-  showPriority = true,
   buttonText = "Send Request",
   isRejection = false
 }: ChangeRequestModalProps) {
   const [content, setContent] = useState('');
-  const [priority, setPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
 
   useEffect(() => {
     if (open) {
       setContent('');
-      setPriority('Medium');
     }
   }, [open]);
 
   const handleSend = () => {
     if (!content.trim()) return;
     onSend({ 
-      content, 
-      priority: showPriority ? priority : undefined 
+      content
     });
     onOpenChange(false);
   };
-
-  const priorities = [
-    { label: 'Low', value: 'Low' as const, color: 'bg-emerald-400' },
-    { label: 'Medium', value: 'Medium' as const, color: 'bg-amber-400' },
-    { label: 'High', value: 'High' as const, color: 'bg-red-500' },
-  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -99,30 +88,6 @@ export default function ChangeRequestModal({
                 onChange={(e) => setContent(e.target.value)}
               />
             </div>
-
-            {showPriority && (
-              <div className="space-y-3">
-                <Label className="text-[13px] font-bold text-slate-600">Priority</Label>
-                <div className="grid grid-cols-3 gap-3">
-                  {priorities.map((p) => (
-                    <button
-                      key={p.value}
-                      type="button"
-                      onClick={() => setPriority(p.value)}
-                      className={cn(
-                        "flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-sm font-medium transition-all",
-                        priority === p.value 
-                          ? "bg-white border-primary ring-1 ring-primary text-slate-900 shadow-sm" 
-                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                      )}
-                    >
-                      <span className={cn("h-2 w-2 rounded-full", p.color)} />
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

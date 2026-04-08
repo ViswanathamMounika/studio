@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -413,8 +412,7 @@ export default function Wiki() {
         avatar: currentUser.avatar,
         date: new Date().toISOString(),
         content: comment,
-        type: isRejection ? 'rejection' : 'change-request',
-        priority: 'Medium'
+        type: isRejection ? 'rejection' : 'change-request'
     };
 
     const updatedDraft = {
