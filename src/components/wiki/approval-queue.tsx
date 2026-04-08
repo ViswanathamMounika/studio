@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
     Clock, 
     CheckCircle2, 
