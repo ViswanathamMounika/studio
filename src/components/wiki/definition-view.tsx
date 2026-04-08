@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, MessageSquare, History, CheckCircle2, ChevronRight, Share2, XCircle, RefreshCw, X } from 'lucide-react';
+import { Bookmark, Info, MessageSquare, History, CheckCircle2, ChevronRight, Share2, XCircle, RefreshCw, X, AlertTriangle, ArrowRight } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -43,6 +43,7 @@ type DefinitionViewProps = {
   onSendApproval?: (id: string) => void;
   onDiscard?: (id: string) => void;
   onRetract?: (id: string) => void;
+  onAcceptLiveChanges?: (id: string) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
   onSave: (definition: Definition) => void;
@@ -53,7 +54,7 @@ type DefinitionViewProps = {
 
 export default function DefinitionView({ 
     definition, allDefinitions, templates, liveVersion, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
-    activeTab, onTabChange, onSave, isAdmin, currentUser, viewingMode
+    activeTab, onTabChange, onSave, isAdmin, currentUser, viewingMode, onAcceptLiveChanges
 }: DefinitionViewProps) {
     const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
     const [showComparison, setShowComparison] = useState(false);
@@ -112,6 +113,12 @@ export default function DefinitionView({
       return fb[fb.length - 1];
     }, [definition.discussions]);
 
+    const isOutdated = useMemo(() => {
+        if (viewingMode !== 'draft' || !liveVersion || !definition.baseVersionId) return false;
+        const latestLiveTicket = liveVersion.revisions[0]?.ticketId;
+        return latestLiveTicket && definition.baseVersionId !== latestLiveTicket;
+    }, [viewingMode, liveVersion, definition.baseVersionId]);
+
     const handleShowReviewHistory = () => {
         setNotesSubTab('review-history');
         onTabChange('notes');
@@ -149,7 +156,6 @@ export default function DefinitionView({
                         <Button onClick={onEdit} className="bg-primary font-bold px-6 h-9 rounded-lg shadow-sm">Edit</Button>
                     )}
                     
-                    {/* Re-enabled Edit for items requiring changes/rejections */}
                     {(latestFeedback && !definition.isPendingApproval && !definition.isArchived) && (
                         <Button onClick={onEdit} className="bg-primary font-bold px-6 h-9 rounded-lg shadow-sm">Edit Submission</Button>
                     )}
@@ -164,6 +170,45 @@ export default function DefinitionView({
                     />
                 </div>
             </div>
+
+            {isOutdated && (
+                <div className="mb-6 animate-in slide-in-from-top-2 fade-in">
+                    <Card className="rounded-[20px] border-amber-200 bg-amber-50/50 shadow-sm overflow-hidden">
+                        <CardContent className="p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-amber-900 flex items-center gap-2">
+                                        Older Draft Version Detected
+                                        <Badge className="bg-amber-200 text-amber-800 border-none font-black text-[9px] uppercase tracking-wider h-4">Outdated</Badge>
+                                    </p>
+                                    <p className="text-xs text-amber-700 mt-0.5">The live definition was updated by an admin while you were drafting. Your workspace is currently out of sync.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="rounded-lg border-amber-200 bg-white text-amber-700 font-bold hover:bg-amber-50"
+                                    onClick={() => setShowConflictDiff(true)}
+                                >
+                                    View Differences
+                                </Button>
+                                <Button 
+                                    size="sm" 
+                                    className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-sm"
+                                    onClick={() => onAcceptLiveChanges?.(definition.id)}
+                                >
+                                    Accept Live Changes
+                                    <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             {latestFeedback && (
                 <div className="mb-6 animate-in slide-in-from-top-2 fade-in">
@@ -283,7 +328,28 @@ export default function DefinitionView({
         </article>
 
         {showComparison && selectedRevisions.length === 2 && <RevisionComparisonDialog open={showComparison} onOpenChange={setShowComparison} revision1={selectedRevisions[0]} revision2={selectedRevisions[1]} definition={definition} />}
-        {showConflictDiff && liveVersion && <RevisionComparisonDialog open={showConflictDiff} onOpenChange={setShowConflictDiff} revision1={{ ticketId: 'DRAFT', date: 'Current', developer: 'You', description: 'Your Draft', snapshot: definition }} revision2={{ ticketId: 'LIVE', date: liveVersion.revisions[0]?.date || 'Now', developer: liveVersion.revisions[0]?.developer || 'System', description: 'Current Published', snapshot: liveVersion }} definition={definition} />}
+        
+        {showConflictDiff && liveVersion && (
+            <RevisionComparisonDialog 
+                open={showConflictDiff} 
+                onOpenChange={setShowConflictDiff} 
+                revision1={{ 
+                    ticketId: 'LIVE', 
+                    date: liveVersion.revisions[0]?.date || 'Now', 
+                    developer: liveVersion.revisions[0]?.developer || 'System', 
+                    description: 'Latest Published Version', 
+                    snapshot: liveVersion 
+                }} 
+                revision2={{ 
+                    ticketId: 'DRAFT', 
+                    date: 'Current', 
+                    developer: 'You', 
+                    description: 'Your Current Draft', 
+                    snapshot: definition 
+                }} 
+                definition={definition} 
+            />
+        )}
     </TooltipProvider>
   );
 }

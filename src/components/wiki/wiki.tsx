@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -287,6 +288,33 @@ export default function Wiki() {
       description: "The definition has been returned to your drafts." 
     });
   };
+
+  const handleAcceptLiveChanges = (draftId: string) => {
+    const draft = drafts.find(d => d.id === draftId);
+    const live = draft?.originalId ? findDefinition(definitions, draft.originalId) : null;
+    
+    if (draft && live) {
+        const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = live;
+        const updatedDraft: Definition = {
+            ...live,
+            id: draft.id, // Preserve draft identity
+            originalId: draft.originalId,
+            isDraft: true,
+            isPendingApproval: false,
+            publishedSnapshot: snapshot,
+            baseVersionId: live.revisions[0]?.ticketId,
+            revisions: draft.revisions, // Keep draft revisions history
+            notes: draft.notes,
+            discussions: draft.discussions
+        };
+
+        setDrafts(prev => prev.map(d => d.id === draftId ? updatedDraft : d));
+        toast({ 
+            title: "Draft Synced", 
+            description: "Your draft has been updated to match the latest published version." 
+        });
+    }
+  };
   
   const handleCreateDefinition = (newDefinitionData: Omit<Definition, 'id' | 'revisions' | 'isArchived'>) => {
     const tempId = `draft_new_${Date.now()}`;
@@ -546,6 +574,7 @@ export default function Wiki() {
                           onPublish={handlePublish}
                           onReject={(id, data) => handleReject(id, data?.content || '', data?.isRejection)}
                           onRetract={handleRetract}
+                          onAcceptLiveChanges={handleAcceptLiveChanges}
                           activeTab={activeTab} 
                           onTabChange={handleTabChange} 
                           onSave={handleSave} 
