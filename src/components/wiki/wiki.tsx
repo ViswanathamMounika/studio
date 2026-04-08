@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -208,6 +207,7 @@ export default function Wiki() {
             const exists = prev.some(d => d.id === updatedDefinition.id);
             const savedDraft = {
               ...updatedDefinition,
+              authorId: updatedDefinition.authorId || currentUser.id,
               submittedBy: isNowPending ? currentUser.name : updatedDefinition.submittedBy,
               submittedAt: isNowPending ? new Date().toISOString() : updatedDefinition.submittedAt
             };
@@ -299,6 +299,7 @@ export default function Wiki() {
             ...live,
             id: draft.id, // Preserve draft identity
             originalId: draft.originalId,
+            authorId: draft.authorId,
             isDraft: true,
             isPendingApproval: false,
             publishedSnapshot: snapshot,
@@ -321,6 +322,7 @@ export default function Wiki() {
     const newDefinition: Definition = {
         ...newDefinitionData,
         id: tempId,
+        authorId: currentUser.id,
         isDraft: true,
         isPendingApproval: false,
         revisions: [],
@@ -476,7 +478,7 @@ export default function Wiki() {
         return;
     }
 
-    const existingDraft = drafts.find(d => d.originalId === def.id);
+    const existingDraft = drafts.find(d => d.originalId === def.id && d.authorId === currentUser.id);
     if (existingDraft) {
         handleSelectDefinition(existingDraft.id, undefined, 'draft');
         setIsEditing(true);
@@ -484,11 +486,12 @@ export default function Wiki() {
     }
 
     const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = def;
-    const draftId = `draft_${def.id}_${currentUser.id}`;
+    const draftId = `draft_${def.id}_${currentUser.id}_${Date.now()}`;
     const newDraft: Definition = { 
         ...def, 
         id: draftId,
         originalId: def.id,
+        authorId: currentUser.id,
         isDraft: true, 
         isPendingApproval: false,
         publishedSnapshot: snapshot, 
@@ -528,9 +531,13 @@ export default function Wiki() {
     };
 
     return {
-        drafts: drafts.filter(d => d.isDraft && !d.isPendingApproval && !hasFeedbackFunc(d)),
-        published: filterPublishedTree(definitions),
-        pending: drafts.filter(d => d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d)))
+        // User specific drafts for the sidebar
+        userDrafts: drafts.filter(d => d.authorId === currentUser.id && d.isDraft && !d.isPendingApproval && !hasFeedbackFunc(d)),
+        // User specific pending items for the sidebar
+        userPending: drafts.filter(d => d.authorId === currentUser.id && (d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d)))),
+        // All pending items for the Admin Approval view
+        allPending: drafts.filter(d => d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d))),
+        published: filterPublishedTree(definitions)
     };
   }, [definitions, drafts, showArchived, showBookmarked, isBookmarked]);
 
@@ -541,7 +548,7 @@ export default function Wiki() {
         case 'approval-workflow': return (
             <div className="h-full">
                 <ApprovalQueue 
-                    pendingDefinitions={categorizedDefinitions.pending} 
+                    pendingDefinitions={categorizedDefinitions.allPending} 
                     history={approvalHistory}
                     allDefinitions={definitions}
                     drafts={drafts}
@@ -636,10 +643,10 @@ export default function Wiki() {
                               </TabsTrigger>
                             </TabsList>
                             <TabsContent value="saved" className="mt-0 p-3">
-                               <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onDelete={handleDelete} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                               <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.userDrafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onDelete={handleDelete} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
                             </TabsContent>
                             <TabsContent value="submitted" className="mt-0 p-3">
-                               <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.pending} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                               <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.userPending} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
                             </TabsContent>
                           </Tabs>
                         </div>
@@ -650,10 +657,10 @@ export default function Wiki() {
                                   <Clock className="h-3.5 w-3.5 text-slate-400" />
                                   <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Saved Definitions</h2>
                                 </div>
-                                {categorizedDefinitions.drafts.length > 0 && <Badge className="bg-primary/10 text-primary h-5 px-1.5 rounded-full text-[10px] font-black">{categorizedDefinitions.drafts.length}</Badge>}
+                                {categorizedDefinitions.userDrafts.length > 0 && <Badge className="bg-primary/10 text-primary h-5 px-1.5 rounded-full text-[10px] font-black">{categorizedDefinitions.userDrafts.length}</Badge>}
                             </div>
                             <div className="pt-1">
-                                <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.drafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onDelete={handleDelete} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                                <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.userDrafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onDelete={handleDelete} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
                             </div>
                         </div>
                       )}

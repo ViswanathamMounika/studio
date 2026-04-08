@@ -110,6 +110,7 @@ export interface Definition {
   id: string;
   originalId?: string; // Links draft to live version
   baseVersionId?: string; // The revision ID this draft was branched from
+  authorId?: string; // User ID who owns this draft/submission
   name: string;
   module: string;
   templateId?: string;

@@ -1,4 +1,3 @@
-
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
@@ -222,6 +221,7 @@ export const initialDrafts: Definition[] = [
   {
     id: 'draft_101',
     originalId: '3', // Links to Provider module or item
+    authorId: 'user_123',
     name: 'Provider Master Verification',
     module: 'Provider',
     templateId: '1',
@@ -255,6 +255,7 @@ export const initialDrafts: Definition[] = [
   {
     id: 'draft_102',
     originalId: '1.1.1',
+    authorId: 'user_123',
     name: 'Urgent Care TAT Rules',
     module: 'Authorizations',
     templateId: '1',
@@ -288,6 +289,7 @@ export const initialDrafts: Definition[] = [
   },
   {
     id: 'draft_103',
+    authorId: 'user_123',
     name: 'Claims Adjudication Logic v2',
     module: 'Claims',
     templateId: '1',
