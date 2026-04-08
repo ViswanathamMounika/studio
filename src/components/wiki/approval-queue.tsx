@@ -127,6 +127,7 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
         } else {
             const h = filteredDecisions.find(item => item.id === selectedItemId);
             if (!h) return undefined;
+            // Find the definition associated with this history item
             return findDefinition(allDefinitions, h.definitionId) || findDefinition(drafts, h.definitionId);
         }
     }, [sidebarTab, selectedItemId, filteredPending, filteredDecisions, allDefinitions, drafts]);
@@ -300,7 +301,7 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
 
                         {sidebarTab === 'decided' && selectedHistoryItem && (
                             <div className="bg-slate-100/50 px-8 py-3 border-b flex items-center gap-4 animate-in slide-in-from-top-1 fade-in">
-                                <Badge className={cn("rounded-lg font-black uppercase text-[10px] py-1 px-3", getActionColor(selectedHistoryItem.action))}>
+                                <Badge className={cn("rounded-lg font-black uppercase text-[10px] py-1 px-3 border", getActionColor(selectedHistoryItem.action))}>
                                     {selectedHistoryItem.action}
                                 </Badge>
                                 <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
@@ -318,7 +319,11 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                         <ScrollArea className="flex-1">
                             <div className="p-8 max-w-7xl mx-auto space-y-10 pb-32">
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase"><span>Governance Review</span><ChevronRight className="h-3 w-3" /><span className="text-primary">{selectedDef.module}</span></div>
+                                    <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase">
+                                        <span>Governance {sidebarTab === 'decided' ? 'Audit' : 'Review'}</span>
+                                        <ChevronRight className="h-3 w-3" />
+                                        <span className="text-primary">{selectedDef.module}</span>
+                                    </div>
                                     <h1 className="text-4xl font-bold tracking-tight text-slate-900">{selectedDef.name}</h1>
                                 </div>
 
@@ -335,7 +340,7 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/20">
                         <History className="h-12 w-12 text-slate-300 mb-4" />
                         <h3 className="text-lg font-bold text-slate-900">Governance Review Workspace</h3>
-                        <p className="text-sm text-slate-500 max-w-xs mt-2">Select a definition from the queue to start reviewing metadata improvements.</p>
+                        <p className="text-sm text-slate-500 max-w-xs mt-2">Select a definition from the list to view its full comparison and lifecycle details.</p>
                     </div>
                 )}
             </div>
