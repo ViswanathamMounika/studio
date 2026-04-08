@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Save, Send, Pencil, Trash, Trash2, ChevronDown, Check, Plus, Info, Undo2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { X, Upload, Save, Pencil, Trash2, ChevronDown, Check, Plus, Info, Undo2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -96,7 +96,6 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
         
         <ScrollArea className="flex-1">
           <div className="p-8 space-y-10 max-w-[1000px] mx-auto pb-32">
-              {/* VERSION CONFLICT BANNER IN EDITOR */}
               {isOutdated && (
                   <div className="animate-in slide-in-from-top-4 fade-in duration-500">
                       <div className="group relative flex items-center justify-between p-4 rounded-[20px] bg-[#FFF9EB] border border-[#FFE0B2] shadow-sm overflow-hidden">
@@ -283,4 +282,3 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
     </TooltipProvider>
   );
 }
-")

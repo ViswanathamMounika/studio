@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-sql';
-import type { Definition, Revision, Note, SectionValue, DiscussionMessage, Template, TemplateSection } from '@/lib/types';
+import type { Definition, Revision, Note, SectionValue, Template, TemplateSection } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +22,7 @@ import {
     AlertDialogTitle, 
     AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
-import { Bookmark, Info, History, Share2, XCircle, RefreshCw, AlertTriangle, ArrowRight, ChevronRight, Trash2 } from 'lucide-react';
+import { Bookmark, Info, Share2, XCircle, RefreshCw, AlertTriangle, ArrowRight, ChevronRight, Trash2 } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -142,7 +142,6 @@ export default function DefinitionView({
   return (
     <TooltipProvider>
         <article className="max-w-none">
-            {/* VERSION CONFLICT BANNER */}
             {isOutdated && (
                 <div className="mb-8 animate-in slide-in-from-top-4 fade-in duration-500">
                     <div className="group relative flex items-center justify-between p-4 rounded-[20px] bg-[#FFF9EB] border border-[#FFE0B2] shadow-sm overflow-hidden">
@@ -214,7 +213,6 @@ export default function DefinitionView({
                 </div>
             )}
 
-            {/* HEADER SECTION */}
             <div className="flex justify-between items-start mb-6 px-2">
                 <div className="space-y-1">
                     <p className="text-xs font-semibold text-slate-500">{definition.module}</p>
@@ -255,7 +253,6 @@ export default function DefinitionView({
                 </div>
             </div>
 
-            {/* FEEDBACK BANNER */}
             {latestFeedback && (
                 <div className="mb-6 animate-in slide-in-from-top-2 fade-in">
                     <Card className={cn(
@@ -293,7 +290,6 @@ export default function DefinitionView({
                 </div>
             )}
 
-            {/* MAIN CONTENT TABS */}
             <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
                 <TabsList className="w-full bg-slate-100 rounded-xl p-1 h-12">
                     <TabsTrigger value="description" className="flex-1 font-bold text-sm rounded-lg transition-all">Description</TabsTrigger>
@@ -401,4 +397,3 @@ export default function DefinitionView({
     </TooltipProvider>
   );
 }
-")
