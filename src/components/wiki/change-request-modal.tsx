@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -69,9 +70,11 @@ export default function ChangeRequestModal({
             </div>
             <div>
               <DialogTitle className="text-2xl font-bold font-serif tracking-tight text-slate-900">{title}</DialogTitle>
-              <DialogDescription className="text-slate-500 text-sm mt-1">
-                {description}
-              </DialogDescription>
+              {description && (
+                <DialogDescription className="text-slate-500 text-sm mt-1">
+                  {description}
+                </DialogDescription>
+              )}
             </div>
           </DialogHeader>
           

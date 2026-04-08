@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -344,7 +345,7 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                 onOpenChange={setIsFeedbackModalOpen} 
                 definitionName={selectedDef?.name || ''} 
                 title={feedbackMode === 'reject' ? "Reject Submission" : "Request Changes"} 
-                description={feedbackMode === 'reject' ? "Explain why this submission is being rejected. It will return to the author as a draft." : "Specify necessary updates."} 
+                description={feedbackMode === 'reject' ? "" : "Specify necessary updates."} 
                 buttonText={feedbackMode === 'reject' ? "Confirm Rejection" : "Send Request"} 
                 isRejection={feedbackMode === 'reject'} 
                 onSend={handleFeedbackSubmit} 
