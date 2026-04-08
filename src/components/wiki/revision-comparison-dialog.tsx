@@ -91,23 +91,26 @@ export default function RevisionComparisonDialog({
     const comparisonGroups = useMemo(() => {
         const groups: { label: string; diffs: Diff[] }[] = [];
         
-        // 1. Categorization Metadata
-        const nameDiff = dmp.diff_main(revA.snapshot.name || '', revB.snapshot.name || '');
-        dmp.diff_cleanupSemantic(nameDiff);
-        groups.push({ label: 'Definition Name', diffs: nameDiff });
-
-        const moduleDiff = dmp.diff_main(revA.snapshot.module || '', revB.snapshot.module || '');
-        dmp.diff_cleanupSemantic(moduleDiff);
-        groups.push({ label: 'Module', diffs: moduleDiff });
-
+        // 1. Keywords
         const keywordsDiff = dmp.diff_main((revA.snapshot.keywords || []).join(', '), (revB.snapshot.keywords || []).join(', '));
         dmp.diff_cleanupSemantic(keywordsDiff);
         groups.push({ label: 'Keywords', diffs: keywordsDiff });
 
-        // 2. Template-defined sections
+        // 2. Filtered Template-defined sections
+        const allowedSectionNames = [
+            'Short Description',
+            'Source of Truth',
+            'Technical Details',
+            'Usage Examples',
+            'Description'
+        ];
+
         const activeTemplate = (templates || initialTemplates).find(t => t.id === definition.templateId) || (templates || initialTemplates)[0];
         if (activeTemplate) {
-            const sortedSections = [...activeTemplate.sections].sort((a, b) => a.order - b.order);
+            const sortedSections = [...activeTemplate.sections]
+                .filter(s => allowedSectionNames.includes(s.name))
+                .sort((a, b) => a.order - b.order);
+
             sortedSections.forEach(section => {
                 const valA = getSectionDisplayValue(section, (revA.snapshot.sectionValues || []).find(v => v.sectionId === section.id));
                 const valB = getSectionDisplayValue(section, (revB.snapshot.sectionValues || []).find(v => v.sectionId === section.id));
@@ -117,20 +120,24 @@ export default function RevisionComparisonDialog({
             });
         }
 
-        // 3. Fallback for legacy text fields
+        // 3. Fallback for legacy text fields if they aren't already covered by template sections
+        // (Ensures backward compatibility for older definitions)
         const legacyFields = [
-            { key: 'description', label: 'Root Description' },
-            { key: 'shortDescription', label: 'Short Summary' },
-            { key: 'technicalDetails', label: 'Logic Specification' }
+            { key: 'shortDescription', label: 'Short Description' },
+            { key: 'technicalDetails', label: 'Technical Details' },
+            { key: 'description', label: 'Description' }
         ];
 
         legacyFields.forEach(field => {
-            const valA = (revA.snapshot as any)[field.key] || '';
-            const valB = (revB.snapshot as any)[field.key] || '';
-            if (valA !== valB) {
-                const diff = dmp.diff_main(valA, valB);
-                dmp.diff_cleanupSemantic(diff);
-                groups.push({ label: field.label, diffs: diff });
+            // Only add if not already added via template sections
+            if (!groups.some(g => g.label === field.label)) {
+                const valA = (revA.snapshot as any)[field.key] || '';
+                const valB = (revB.snapshot as any)[field.key] || '';
+                if (valA !== valB && (valA || valB)) {
+                    const diff = dmp.diff_main(valA, valB);
+                    dmp.diff_cleanupSemantic(diff);
+                    groups.push({ label: field.label, diffs: diff });
+                }
             }
         });
 
@@ -149,7 +156,7 @@ export default function RevisionComparisonDialog({
                 <DialogTitle className="text-xl font-bold">
                     {isConflictMode ? `Merge Review: ${definition.name}` : `Version Comparison: ${definition.name}`}
                 </DialogTitle>
-                <p className="text-xs text-slate-500 font-medium">Auditing all metadata and section improvements between selected versions.</p>
+                <p className="text-xs text-slate-500 font-medium">Auditing documentation content and section improvements between selected versions.</p>
             </div>
           </div>
           
