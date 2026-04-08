@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Definition, ApprovalHistoryEntry, Template, TemplateSection, SectionValue } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,20 +55,29 @@ const ComparisonSection = ({ title, published = '', submitted = '', isHtml = fal
     };
 
     return (
-        <Card className="overflow-hidden border-slate-200 shadow-sm">
+        <Card className="overflow-hidden border-slate-200 shadow-sm bg-white">
             <div className="px-4 py-2.5 bg-slate-50 border-b flex items-center justify-between">
                 <h4 className="text-sm font-bold text-slate-700">{title}</h4>
-                {isModified ? <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 gap-1.5 h-6 text-[10px] uppercase font-bold"><div className="h-1.5 w-1.5 rounded-full bg-amber-500" />Modified</Badge> : <Badge variant="outline" className="text-slate-400 h-6 text-[10px] uppercase font-bold">No change</Badge>}
+                {isModified ? (
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 gap-1.5 h-6 text-[10px] uppercase font-bold">
+                        <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                        Modified
+                    </Badge>
+                ) : (
+                    <Badge variant="outline" className="text-slate-400 h-6 text-[10px] uppercase font-bold border-slate-200">
+                        No change
+                    </Badge>
+                )}
             </div>
             <CardContent className="p-0">
                 <div className="grid grid-cols-2 divide-x border-slate-100">
-                    <div className="p-6 bg-slate-50/30">
+                    <div className="p-6 bg-slate-50/30 min-h-[100px]">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Original Version</p>
-                        <div className="text-sm text-slate-600 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: isHtml ? renderDiff('deletion') : (renderDiff('deletion') || 'No content provided.') }} />
+                        <div className="text-sm text-slate-600 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: isHtml ? renderDiff('deletion') : (renderDiff('deletion') || '<span class="italic opacity-50">Empty</span>') }} />
                     </div>
-                    <div className={cn("p-6 transition-colors", isModified ? "bg-green-50/10" : "bg-slate-50/10")}>
+                    <div className={cn("p-6 min-h-[100px] transition-colors", isModified ? "bg-green-50/10" : "bg-slate-50/10")}>
                         <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-4">Submitted Changes</p>
-                        <div className="text-sm text-slate-800 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: isHtml ? renderDiff('insertion') : (renderDiff('insertion') || 'No content provided.') }} />
+                        <div className="text-sm text-slate-800 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: isHtml ? renderDiff('insertion') : (renderDiff('insertion') || '<span class="italic opacity-50">Empty</span>') }} />
                     </div>
                 </div>
             </CardContent>
@@ -78,26 +87,33 @@ const ComparisonSection = ({ title, published = '', submitted = '', isHtml = fal
 
 function getSectionVal(def: any, sectionId: string, templates: Template[]): string {
     if (!def) return '';
+    
+    // Check template-defined values
     const sectionVal = (def.sectionValues || []).find((v: any) => v.sectionId === sectionId);
     if (sectionVal) {
         const template = templates.find(t => t.id === def.templateId) || templates[0];
         const section = template?.sections.find(s => s.id === sectionId);
+        
         if (section?.fieldType === 'KeyValue') {
             if (!sectionVal.structuredRows?.length) return '';
             return sectionVal.structuredRows.map((row: any) => 
                 Object.entries(row).map(([k, v]) => `${k}: ${v}`).join(' | ')
             ).join('\n');
         }
+        
         if (section?.fieldType === 'Dropdown' && section.isMulti) {
             return (sectionVal.multiValues || []).join(', ');
         }
+        
         return sectionVal.raw || '';
     }
-    // Fallback to legacy fields
+    
+    // Fallback to legacy fields for historical compatibility
     if (sectionId === '1') return def.shortDescription || '';
     if (sectionId === '2') return def.description || '';
     if (sectionId === '3') return def.technicalDetails || '';
     if (sectionId === '4') return def.usageExamples || '';
+    
     return '';
 }
 
@@ -122,7 +138,7 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
 
     const filteredDecisions = useMemo(() => {
         const decisions = (history || []).filter(h => h.action !== 'Submitted');
-        if (!dateRange?.from) return decisions.slice(0, 20);
+        if (!dateRange?.from) return decisions;
         
         return decisions.filter(h => {
             const hDate = new Date(h.date);
@@ -130,23 +146,30 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                 start: startOfDay(dateRange.from), 
                 end: endOfDay(dateRange.to || dateRange.from) 
             });
-        }).slice(0, 20);
+        });
     }, [history, dateRange]);
 
-    useMemo(() => {
+    // Handle selection synchronization when changing tabs or data updates
+    useEffect(() => {
         if (sidebarTab === 'pending') {
-            if (!selectedItemId || !filteredPending.some(d => d.id === selectedItemId)) {
-                setSelectedItemId(filteredPending[0]?.id || null);
+            const currentIsValid = selectedItemId && filteredPending.some(d => d.id === selectedItemId);
+            if (!currentIsValid && filteredPending.length > 0) {
+                setSelectedItemId(filteredPending[0].id);
+            } else if (filteredPending.length === 0) {
+                setSelectedItemId(null);
             }
         } else {
-            if (!selectedItemId || !filteredDecisions.some(h => h.id === selectedItemId)) {
-                setSelectedItemId(filteredDecisions[0]?.id || null);
+            const currentIsValid = selectedItemId && filteredDecisions.some(h => h.id === selectedItemId);
+            if (!currentIsValid && filteredDecisions.length > 0) {
+                setSelectedItemId(filteredDecisions[0].id);
+            } else if (filteredDecisions.length === 0) {
+                setSelectedItemId(null);
             }
         }
     }, [sidebarTab, filteredPending, filteredDecisions, selectedItemId]);
 
     const selectedHistoryItem = useMemo(() => {
-        if (sidebarTab === 'decided') {
+        if (sidebarTab === 'decided' && selectedItemId) {
             return filteredDecisions.find(h => h.id === selectedItemId);
         }
         return null;
@@ -157,14 +180,16 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
             return filteredPending.find(d => d.id === selectedItemId);
         } else {
             if (!selectedHistoryItem) return undefined;
-            return findDefinition(allDefinitions, selectedHistoryItem.definitionId) || findDefinition(drafts, selectedHistoryItem.definitionId);
+            // Robust lookup across live library and drafts
+            return findDefinition(allDefinitions, selectedHistoryItem.definitionId) || 
+                   findDefinition(drafts, selectedHistoryItem.definitionId);
         }
     }, [sidebarTab, selectedItemId, filteredPending, selectedHistoryItem, allDefinitions, drafts]);
 
     const comparisonData = useMemo(() => {
         if (!selectedDef) return null;
         
-        // Handle approved (live) definitions by comparing latest 2 revisions
+        // Handle approved items by comparing the processed version against the previous revision
         if (!selectedDef.isDraft && selectedDef.revisions && selectedDef.revisions.length > 1 && sidebarTab === 'decided') {
             return {
                 original: selectedDef.revisions[1].snapshot,
@@ -172,9 +197,9 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
             };
         }
         
-        // Handle drafts or single-revision published items
+        // Handle drafts, rejected items, or new published items with single revision
         return {
-            original: selectedDef.publishedSnapshot || (selectedDef.revisions?.[0]?.snapshot),
+            original: selectedDef.publishedSnapshot || (selectedDef.revisions && selectedDef.revisions.length > 0 ? selectedDef.revisions[0].snapshot : undefined),
             submitted: selectedDef
         };
     }, [selectedDef, sidebarTab]);
@@ -205,6 +230,7 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
 
     return (
         <div className="flex h-full overflow-hidden bg-slate-50/30">
+            {/* Sidebar List */}
             <div className="w-80 border-r bg-white flex flex-col shrink-0 shadow-sm z-10">
                 <div className="p-4 border-b bg-slate-50/50 space-y-4">
                     <Tabs value={sidebarTab} onValueChange={(v) => setSidebarTab(v as any)} className="w-full">
@@ -238,7 +264,7 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                     variant="outline" 
                                     size="sm" 
                                     className={cn(
-                                        "w-full justify-start text-left font-medium text-[11px] rounded-lg border-slate-200 h-8",
+                                        "w-full justify-start text-left font-medium text-[11px] rounded-lg border-slate-200 h-8 bg-white",
                                         !dateRange && "text-slate-400"
                                     )}
                                 >
@@ -273,13 +299,26 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                 <div className="py-12 px-4 text-center text-slate-400">
                                     <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-20" />
                                     <p className="text-xs font-medium">No pending items found</p>
-                                    {dateRange && <p className="text-[10px] mt-1">Try adjusting the date range</p>}
                                 </div>
                             ) : (
                                 filteredPending.map(def => (
-                                    <button key={def.id} onClick={() => setSelectedItemId(def.id)} className={cn("w-full text-left p-4 rounded-xl transition-all border", selectedItemId === def.id ? "bg-indigo-50 border-indigo-100 ring-1 ring-indigo-100" : "bg-transparent border-transparent hover:bg-slate-50")}>
-                                        <div className="flex items-start justify-between gap-2"><span className={cn("text-[13px] font-bold truncate flex-1", selectedItemId === def.id ? "text-indigo-900" : "text-slate-700")}>{def.name}</span><Badge variant="outline" className="h-5 px-1.5 text-[9px] uppercase font-black bg-white">{def.module}</Badge></div>
-                                        <div className="flex items-center gap-2 mt-2.5"><span className="text-[11px] font-medium text-slate-500 truncate">{def.submittedBy || "System"}</span><span className="text-slate-300">•</span><span className="text-[10px] font-bold text-slate-400 uppercase">{def.submittedAt ? format(new Date(def.submittedAt), 'MMM dd') : 'Recent'}</span></div>
+                                    <button 
+                                        key={def.id} 
+                                        onClick={() => setSelectedItemId(def.id)} 
+                                        className={cn(
+                                            "w-full text-left p-4 rounded-xl transition-all border", 
+                                            selectedItemId === def.id ? "bg-indigo-50 border-indigo-100 ring-1 ring-indigo-100" : "bg-transparent border-transparent hover:bg-slate-50"
+                                        )}
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <span className={cn("text-[13px] font-bold truncate flex-1", selectedItemId === def.id ? "text-indigo-900" : "text-slate-700")}>{def.name}</span>
+                                            <Badge variant="outline" className="h-5 px-1.5 text-[9px] uppercase font-black bg-white">{def.module}</Badge>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-2.5">
+                                            <span className="text-[11px] font-medium text-slate-500 truncate">{def.submittedBy || "Author"}</span>
+                                            <span className="text-slate-300">•</span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase">{def.submittedAt ? format(new Date(def.submittedAt), 'MMM dd') : 'Recent'}</span>
+                                        </div>
                                     </button>
                                 ))
                             )
@@ -288,16 +327,26 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                 <div className="py-12 px-4 text-center text-slate-400">
                                     <History className="h-8 w-8 mx-auto mb-2 opacity-20" />
                                     <p className="text-xs font-medium">No recent decisions</p>
-                                    {dateRange && <p className="text-[10px] mt-1">Try adjusting the date range</p>}
                                 </div>
                             ) : (
                                 filteredDecisions.map(h => (
-                                    <button key={h.id} onClick={() => setSelectedItemId(h.id)} className={cn("w-full text-left p-4 rounded-xl transition-all border", selectedItemId === h.id ? "bg-slate-50 border-slate-200 ring-1 ring-slate-100" : "bg-transparent border-transparent hover:bg-slate-50")}>
+                                    <button 
+                                        key={h.id} 
+                                        onClick={() => setSelectedItemId(h.id)} 
+                                        className={cn(
+                                            "w-full text-left p-4 rounded-xl transition-all border", 
+                                            selectedItemId === h.id ? "bg-slate-50 border-slate-200 ring-1 ring-slate-100" : "bg-transparent border-transparent hover:bg-slate-50"
+                                        )}
+                                    >
                                         <div className="flex items-start justify-between gap-2">
                                             <span className={cn("text-[13px] font-bold truncate flex-1", selectedItemId === h.id ? "text-slate-900" : "text-slate-700")}>{h.definitionName}</span>
                                             <Badge variant="outline" className={cn("h-5 px-1.5 text-[8px] uppercase font-black", getActionColor(h.action))}>{h.action}</Badge>
                                         </div>
-                                        <div className="flex items-center gap-2 mt-2.5"><span className="text-[11px] font-medium text-slate-500 truncate">By {h.userName}</span><span className="text-slate-300">•</span><span className="text-[10px] font-bold text-slate-400 uppercase">{format(new Date(h.date), 'MMM dd')}</span></div>
+                                        <div className="flex items-center gap-2 mt-2.5">
+                                            <span className="text-[11px] font-medium text-slate-500 truncate">By {h.userName}</span>
+                                            <span className="text-slate-300">•</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase">{format(new Date(h.date), 'MMM dd')}</span>
+                                        </div>
                                     </button>
                                 ))
                             )
@@ -306,6 +355,7 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                 </ScrollArea>
             </div>
 
+            {/* Details Panel */}
             <div className="flex-1 flex flex-col min-w-0">
                 {selectedDef && comparisonData ? (
                     <>
@@ -321,8 +371,8 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                     <p className="text-sm font-bold">Reviewing <span className="text-primary">{selectedDef.name}</span></p>
                                     <p className="text-[11px] text-slate-500">
                                         {sidebarTab === 'pending' 
-                                            ? `Submitted by ${selectedDef.submittedBy} • ${selectedDef.submittedAt ? formatDistanceToNow(new Date(selectedDef.submittedAt), { addSuffix: true }) : 'Recently'}`
-                                            : `Decision record from governance audit trail`
+                                            ? `Submitted by ${selectedDef.submittedBy || 'Author'} • ${selectedDef.submittedAt ? formatDistanceToNow(new Date(selectedDef.submittedAt), { addSuffix: true }) : 'Recently'}`
+                                            : `Historical decision audit log`
                                         }
                                     </p>
                                 </div>
@@ -413,8 +463,8 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/20">
                         <History className="h-12 w-12 text-slate-300 mb-4" />
-                        <h3 className="text-lg font-bold text-slate-900">Governance Review Workspace</h3>
-                        <p className="text-sm text-slate-500 max-w-xs mt-2">Select a definition from the list to view its full comparison and lifecycle details.</p>
+                        <h3 className="text-lg font-bold text-slate-900">Governance Archive</h3>
+                        <p className="text-sm text-slate-500 max-w-xs mt-2">Select a record from the history list to view the full metadata audit and decision details.</p>
                     </div>
                 )}
             </div>
