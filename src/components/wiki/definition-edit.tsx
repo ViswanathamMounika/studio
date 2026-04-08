@@ -151,9 +151,9 @@ export default function DefinitionEdit({ definition, onSave, onDiscard, isAdmin 
             </AlertDialogTrigger>
             <AlertDialogContent className="rounded-3xl border-none p-8">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-2xl font-bold">Discard Changes?</AlertDialogTitle>
+                <AlertDialogTitle className="text-2xl font-bold">Cancel Changes?</AlertDialogTitle>
                 <AlertDialogDescription className="text-slate-500 text-sm">
-                  This will discard your unsaved changes and return to the previous view. Your working copy will be preserved in "My Saved Definitions".
+                  This will exit edit mode and discard your unsaved progress. Your working copy will remain in "My Saved Definitions" until you manually delete it.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="mt-8 gap-3">

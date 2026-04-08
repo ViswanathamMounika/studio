@@ -272,11 +272,8 @@ export default function Wiki() {
   };
 
   const handleDiscardDraft = (id: string) => {
-    setDrafts(prev => prev.filter(d => d.id !== id));
     setIsEditing(false);
-    setViewingMode('live');
-    setSelectedDefinitionId(null);
-    toast({ title: "Draft Cancelled" });
+    toast({ title: "Changes Cancelled" });
   };
 
   const handleRetract = (id: string) => {
@@ -474,9 +471,10 @@ export default function Wiki() {
     };
 
     setDrafts(prev => [...prev, newDraft]);
-    setIsEditing(true);
     setViewingMode('draft');
     setSelectedDefinitionId(draftId);
+    setIsEditing(true);
+    updateUrl(draftId, activeTab);
     toast({ title: "Drafting Started" });
   };
 
