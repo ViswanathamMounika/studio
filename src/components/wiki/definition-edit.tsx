@@ -60,9 +60,10 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
   };
 
   const isOutdated = useMemo(() => {
-    if (!liveVersion || !definition.baseVersionId) return false;
+    if (!liveVersion) return false;
     const latestLiveTicket = liveVersion.revisions?.[0]?.ticketId;
-    return latestLiveTicket && definition.baseVersionId !== latestLiveTicket;
+    if (!latestLiveTicket) return false;
+    return definition.baseVersionId !== latestLiveTicket;
   }, [liveVersion, definition.baseVersionId]);
 
   const groupedSections = useMemo(() => {
@@ -105,7 +106,7 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                                       <span className="bg-[#FFE0B2] text-[#E65100] text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md leading-none h-4 flex items-center">OUTDATED</span>
                                   </div>
                                   <p className="text-[13px] text-[#8D6E63] font-medium mt-0.5">
-                                      The live version was updated while you were editing. Your changes might conflict with the current standard.
+                                      The live definition was updated by an admin while you were drafting. Your workspace is currently out of sync.
                                   </p>
                               </div>
                           </div>

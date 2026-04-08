@@ -247,14 +247,16 @@ export default function Wiki() {
             snapshot: { ...updatedDefinition, revisions: [] }
         };
 
+        const targetId = updatedDefinition.originalId || updatedDefinition.id;
         const finalDef = {
             ...updatedDefinition,
+            id: targetId,
             revisions: [newRevision, ...updatedDefinition.revisions]
         };
 
         const updateTree = (items: Definition[]): Definition[] => {
             return items.map(item => {
-                if (item.id === (updatedDefinition.originalId || updatedDefinition.id)) return finalDef;
+                if (item.id === targetId) return finalDef;
                 if (item.children) return { ...item, children: updateTree(item.children) };
                 return item;
             });
@@ -263,7 +265,7 @@ export default function Wiki() {
         setDefinitions(prev => updateTree(prev || []));
         setDrafts(prev => prev.filter(d => d.id !== updatedDefinition.id));
         setViewingMode('live');
-        setSelectedDefinitionId(updatedDefinition.originalId || updatedDefinition.id);
+        setSelectedDefinitionId(targetId);
     }
 
     setIsEditing(false);
@@ -396,9 +398,10 @@ export default function Wiki() {
         snapshot: { ...draft, revisions: [], isDraft: false, isPendingApproval: false }
     };
 
+    const targetId = draft.originalId || `pub_${Date.now()}`;
     const finalPublishedDef = {
         ...draft,
-        id: draft.originalId || `pub_${Date.now()}`,
+        id: targetId,
         isDraft: false,
         isPendingApproval: false,
         revisions: [newRevision, ...draft.revisions],
@@ -415,17 +418,35 @@ export default function Wiki() {
         date: new Date().toISOString()
     }, ...(prev || [])]);
 
-    const updateTree = (items: Definition[]): Definition[] => {
-        const existingIdx = items.findIndex(item => item.id === finalPublishedDef.id);
-        if (existingIdx !== -1) return items.map(item => item.id === finalPublishedDef.id ? finalPublishedDef : item);
-        
+    const updateTreeRecursive = (items: Definition[]): { items: Definition[], found: boolean } => {
+        let found = false;
+        const newItems = items.map(item => {
+            if (item.id === targetId) {
+                found = true;
+                return finalPublishedDef;
+            }
+            if (item.children) {
+                const { items: newChildren, found: childFound } = updateTreeRecursive(item.children);
+                if (childFound) {
+                    found = true;
+                    return { ...item, children: newChildren };
+                }
+            }
+            return item;
+        });
+        return { items: newItems, found };
+    };
+
+    setDefinitions(prev => {
+        const { items, found } = updateTreeRecursive(prev || []);
+        if (found) return items;
+
         const moduleExists = items.find(m => m.name === draft.module);
         if (moduleExists) return items.map(m => m.name === draft.module ? { ...m, children: [finalPublishedDef, ...(m.children || [])] } : m);
         
         return [...items, { id: `mod-${Date.now()}`, name: draft.module, module: draft.module, revisions: [], isArchived: false, children: [finalPublishedDef], attachments: [], keywords: [], description: '', supportingTables: [] }];
-    };
+    });
 
-    setDefinitions(prev => updateTree(prev || []));
     setDrafts(prev => prev.filter(d => d.id !== draftId));
     setViewingMode('live');
     setSelectedDefinitionId(finalPublishedDef.id);
@@ -643,10 +664,10 @@ export default function Wiki() {
                         <div className="border-b bg-white/50">
                           <Tabs defaultValue="saved" className="w-full">
                             <TabsList className="w-full grid grid-cols-2 h-10 bg-transparent rounded-none border-b p-0">
-                              <TabsTrigger value="saved" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none font-bold text-[10px] text-slate-500 uppercase tracking-wider transition-all">
+                              <TabsTrigger value="saved" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-primary data-[state=active]:text-primary rounded-none font-bold text-[10px] text-slate-500 uppercase tracking-wider transition-all">
                                 My Saved
                               </TabsTrigger>
-                              <TabsTrigger value="submitted" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none font-bold text-[10px] text-slate-500 uppercase tracking-wider transition-all">
+                              <TabsTrigger value="submitted" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-primary data-[state=active]:text-primary rounded-none font-bold text-[10px] text-slate-500 uppercase tracking-wider transition-all">
                                 Submitted
                               </TabsTrigger>
                             </TabsList>

@@ -114,9 +114,10 @@ export default function DefinitionView({
     }, [definition.discussions]);
 
     const isOutdated = useMemo(() => {
-        if (viewingMode !== 'draft' || !liveVersion || !definition.baseVersionId) return false;
+        if (viewingMode !== 'draft' || !liveVersion) return false;
         const latestLiveTicket = liveVersion.revisions?.[0]?.ticketId;
-        return latestLiveTicket && definition.baseVersionId !== latestLiveTicket;
+        if (!latestLiveTicket) return false;
+        return definition.baseVersionId !== latestLiveTicket;
     }, [viewingMode, liveVersion, definition.baseVersionId]);
 
     const handleShowReviewHistory = () => {
