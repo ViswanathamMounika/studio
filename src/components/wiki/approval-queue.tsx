@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import type { Definition, ApprovalHistoryEntry } from '@/lib/types';
+import type { Definition, ApprovalHistoryEntry, Template, TemplateSection, SectionValue } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,7 @@ type ApprovalQueueProps = {
     history: ApprovalHistoryEntry[];
     allDefinitions: Definition[];
     drafts: Definition[];
+    templates: Template[];
     onApprove: (id: string) => void;
     onReject: (id: string, comment: string, isRejection: boolean) => void;
 };
@@ -75,14 +76,38 @@ const ComparisonSection = ({ title, published = '', submitted = '', isHtml = fal
     );
 };
 
-export default function ApprovalQueue({ pendingDefinitions, history, allDefinitions, drafts, onApprove, onReject }: ApprovalQueueProps) {
+function getSectionVal(def: any, sectionId: string, templates: Template[]): string {
+    if (!def) return '';
+    const sectionVal = (def.sectionValues || []).find((v: any) => v.sectionId === sectionId);
+    if (sectionVal) {
+        const template = templates.find(t => t.id === def.templateId) || templates[0];
+        const section = template?.sections.find(s => s.id === sectionId);
+        if (section?.fieldType === 'KeyValue') {
+            if (!sectionVal.structuredRows?.length) return '';
+            return sectionVal.structuredRows.map((row: any) => 
+                Object.entries(row).map(([k, v]) => `${k}: ${v}`).join(' | ')
+            ).join('\n');
+        }
+        if (section?.fieldType === 'Dropdown' && section.isMulti) {
+            return (sectionVal.multiValues || []).join(', ');
+        }
+        return sectionVal.raw || '';
+    }
+    // Fallback to legacy fields
+    if (sectionId === '1') return def.shortDescription || '';
+    if (sectionId === '2') return def.description || '';
+    if (sectionId === '3') return def.technicalDetails || '';
+    if (sectionId === '4') return def.usageExamples || '';
+    return '';
+}
+
+export default function ApprovalQueue({ pendingDefinitions, history, allDefinitions, drafts, templates, onApprove, onReject }: ApprovalQueueProps) {
     const [sidebarTab, setSidebarTab] = useState<'pending' | 'decided'>('pending');
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [feedbackMode, setFeedbackMode] = useState<'request' | 'reject'>('request');
     const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>();
 
-    // Filtered lists based on date
     const filteredPending = useMemo(() => {
         if (!dateRange?.from) return pendingDefinitions;
         return pendingDefinitions.filter(d => {
@@ -108,7 +133,6 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
         }).slice(0, 20);
     }, [history, dateRange]);
 
-    // Selection logic when data or tabs change
     useMemo(() => {
         if (sidebarTab === 'pending') {
             if (!selectedItemId || !filteredPending.some(d => d.id === selectedItemId)) {
@@ -121,23 +145,39 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
         }
     }, [sidebarTab, filteredPending, filteredDecisions, selectedItemId]);
 
-    const selectedDef = useMemo(() => {
-        if (sidebarTab === 'pending') {
-            return filteredPending.find(d => d.id === selectedItemId);
-        } else {
-            const h = filteredDecisions.find(item => item.id === selectedItemId);
-            if (!h) return undefined;
-            // Find the definition associated with this history item
-            return findDefinition(allDefinitions, h.definitionId) || findDefinition(drafts, h.definitionId);
-        }
-    }, [sidebarTab, selectedItemId, filteredPending, filteredDecisions, allDefinitions, drafts]);
-
     const selectedHistoryItem = useMemo(() => {
         if (sidebarTab === 'decided') {
             return filteredDecisions.find(h => h.id === selectedItemId);
         }
         return null;
     }, [sidebarTab, filteredDecisions, selectedItemId]);
+
+    const selectedDef = useMemo(() => {
+        if (sidebarTab === 'pending') {
+            return filteredPending.find(d => d.id === selectedItemId);
+        } else {
+            if (!selectedHistoryItem) return undefined;
+            return findDefinition(allDefinitions, selectedHistoryItem.definitionId) || findDefinition(drafts, selectedHistoryItem.definitionId);
+        }
+    }, [sidebarTab, selectedItemId, filteredPending, selectedHistoryItem, allDefinitions, drafts]);
+
+    const comparisonData = useMemo(() => {
+        if (!selectedDef) return null;
+        
+        // Handle approved (live) definitions by comparing latest 2 revisions
+        if (!selectedDef.isDraft && selectedDef.revisions && selectedDef.revisions.length > 1 && sidebarTab === 'decided') {
+            return {
+                original: selectedDef.revisions[1].snapshot,
+                submitted: selectedDef.revisions[0].snapshot
+            };
+        }
+        
+        // Handle drafts or single-revision published items
+        return {
+            original: selectedDef.publishedSnapshot || (selectedDef.revisions?.[0]?.snapshot),
+            submitted: selectedDef
+        };
+    }, [selectedDef, sidebarTab]);
 
     const handleActionClick = (mode: 'request' | 'reject') => {
         setFeedbackMode(mode);
@@ -267,7 +307,7 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
             </div>
 
             <div className="flex-1 flex flex-col min-w-0">
-                {selectedDef ? (
+                {selectedDef && comparisonData ? (
                     <>
                         <div className="bg-white border-b px-8 py-4 flex items-center justify-between sticky top-0 z-20 shadow-sm">
                             <div className="flex items-center gap-4">
@@ -288,15 +328,13 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                 </div>
                             </div>
                             
-                            <div className="flex items-center gap-3">
-                                {sidebarTab === 'pending' && (
-                                    <div className="flex items-center gap-3 ml-2 pl-4 border-l">
-                                        <Button variant="outline" size="sm" className="rounded-xl text-red-600 font-bold bg-white" onClick={() => handleActionClick('reject')}>Reject</Button>
-                                        <Button variant="outline" size="sm" className="rounded-xl text-amber-600 font-bold bg-white" onClick={() => handleActionClick('request')}>Request Changes</Button>
-                                        <Button size="sm" className="rounded-xl bg-[#3F51B5] text-white font-bold px-6" onClick={handleApprove}><ShieldCheck className="h-4 w-4 mr-2" />Approve & Publish</Button>
-                                    </div>
-                                )}
-                            </div>
+                            {sidebarTab === 'pending' && (
+                                <div className="flex items-center gap-3 ml-2 pl-4 border-l">
+                                    <Button variant="outline" size="sm" className="rounded-xl text-red-600 font-bold bg-white" onClick={() => handleActionClick('reject')}>Reject</Button>
+                                    <Button variant="outline" size="sm" className="rounded-xl text-amber-600 font-bold bg-white" onClick={() => handleActionClick('request')}>Request Changes</Button>
+                                    <Button size="sm" className="rounded-xl bg-[#3F51B5] text-white font-bold px-6" onClick={handleApprove}><ShieldCheck className="h-4 w-4 mr-2" />Approve & Publish</Button>
+                                </div>
+                            )}
                         </div>
 
                         {sidebarTab === 'decided' && selectedHistoryItem && (
@@ -328,10 +366,46 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                 </div>
 
                                 <div className="space-y-8">
-                                    <div className="flex items-center gap-3"><h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Field Comparison</h3><div className="h-px bg-slate-200 flex-1" /></div>
-                                    <ComparisonSection title="Summary" published={selectedDef.publishedSnapshot?.shortDescription} submitted={selectedDef.shortDescription} />
-                                    <ComparisonSection title="Description" published={selectedDef.publishedSnapshot?.description} submitted={selectedDef.description} isHtml />
-                                    <ComparisonSection title="Technical Logic" published={selectedDef.publishedSnapshot?.technicalDetails} submitted={selectedDef.technicalDetails} isHtml />
+                                    <div className="flex items-center gap-3"><h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Metadata Comparison</h3><div className="h-px bg-slate-200 flex-1" /></div>
+                                    
+                                    <ComparisonSection 
+                                        title="Keywords" 
+                                        published={(comparisonData.original?.keywords || []).join(', ')} 
+                                        submitted={(comparisonData.submitted?.keywords || []).join(', ')} 
+                                    />
+                                    
+                                    <ComparisonSection 
+                                        title="Short Description" 
+                                        published={getSectionVal(comparisonData.original, '1', templates)} 
+                                        submitted={getSectionVal(comparisonData.submitted, '1', templates)} 
+                                    />
+
+                                    <ComparisonSection 
+                                        title="Source of Truth" 
+                                        published={getSectionVal(comparisonData.original, '8', templates)} 
+                                        submitted={getSectionVal(comparisonData.submitted, '8', templates)} 
+                                    />
+
+                                    <ComparisonSection 
+                                        title="Description" 
+                                        published={getSectionVal(comparisonData.original, '2', templates)} 
+                                        submitted={getSectionVal(comparisonData.submitted, '2', templates)} 
+                                        isHtml 
+                                    />
+
+                                    <ComparisonSection 
+                                        title="Technical Details" 
+                                        published={getSectionVal(comparisonData.original, '3', templates)} 
+                                        submitted={getSectionVal(comparisonData.submitted, '3', templates)} 
+                                        isHtml 
+                                    />
+
+                                    <ComparisonSection 
+                                        title="Usage Examples" 
+                                        published={getSectionVal(comparisonData.original, '4', templates)} 
+                                        submitted={getSectionVal(comparisonData.submitted, '4', templates)} 
+                                        isHtml 
+                                    />
                                 </div>
                             </div>
                         </ScrollArea>

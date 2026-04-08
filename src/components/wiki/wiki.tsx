@@ -551,6 +551,7 @@ export default function Wiki() {
                     history={approvalHistory}
                     allDefinitions={definitions}
                     drafts={drafts}
+                    templates={templates}
                     onApprove={handlePublish} 
                     onReject={handleReject} 
                 />
