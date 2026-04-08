@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import type { Definition, ApprovalHistoryEntry } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
+import type { Definition, ApprovalHistoryEntry, DiscussionMessage } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,7 +21,9 @@ import {
     ArrowRight, 
     UserCheck,
     Calendar as CalendarIcon,
-    FilterX
+    FilterX,
+    MessageSquare,
+    RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
@@ -324,6 +326,55 @@ export default function ApprovalQueue({ pendingDefinitions, history, allDefiniti
                                     <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase"><span>Governance Review</span><ChevronRight className="h-3 w-3" /><span className="text-primary">{selectedDef.module}</span></div>
                                     <h1 className="text-4xl font-bold tracking-tight text-slate-900">{selectedDef.name}</h1>
                                 </div>
+
+                                {sidebarTab === 'pending' && (
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Review History</h3>
+                                            <div className="h-px bg-slate-200 flex-1" />
+                                        </div>
+                                        
+                                        {selectedDef.discussions && selectedDef.discussions.length > 0 ? (
+                                            <div className="grid gap-4">
+                                                {selectedDef.discussions.map((msg) => (
+                                                    <Card key={msg.id} className="border-slate-200 shadow-none bg-white rounded-xl overflow-hidden">
+                                                        <div className="px-4 py-3 bg-slate-50/50 border-b flex items-center justify-between">
+                                                            <div className="flex items-center gap-3">
+                                                                <Avatar className="h-6 w-6">
+                                                                    <AvatarImage src={msg.avatar} />
+                                                                    <AvatarFallback>{msg.author[0]}</AvatarFallback>
+                                                                </Avatar>
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-slate-900">{msg.author}</span>
+                                                                    <span className="text-[10px] text-slate-400 font-medium ml-2">{format(new Date(msg.date), 'MMM dd, yyyy HH:mm')}</span>
+                                                                </div>
+                                                            </div>
+                                                            <Badge className={cn(
+                                                                "text-[9px] uppercase font-black px-2 py-0.5",
+                                                                msg.type === 'rejection' ? "bg-red-100 text-red-700" :
+                                                                msg.type === 'change-request' ? "bg-amber-100 text-amber-700" :
+                                                                "bg-blue-100 text-blue-700"
+                                                            )}>
+                                                                {msg.type === 'rejection' ? 'Rejected' : 
+                                                                 msg.type === 'change-request' ? 'Requested Changes' : 
+                                                                 'Reviewer Comment'}
+                                                            </Badge>
+                                                        </div>
+                                                        <CardContent className="p-4">
+                                                            <p className="text-sm text-slate-600 leading-relaxed italic">"{msg.content}"</p>
+                                                        </CardContent>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-8 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center gap-2 bg-slate-50/30">
+                                                <MessageSquare className="h-6 w-6 text-slate-300" />
+                                                <p className="text-xs text-slate-400 font-medium italic">No previous review history available for this submission.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="space-y-8">
                                     <div className="flex items-center gap-3"><h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Field Comparison</h3><div className="h-px bg-slate-200 flex-1" /></div>
                                     <ComparisonSection title="Summary" published={selectedDef.publishedSnapshot?.shortDescription} submitted={selectedDef.shortDescription} />
