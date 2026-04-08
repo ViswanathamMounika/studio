@@ -377,12 +377,33 @@ export default function Wiki() {
   };
 
   const handleDelete = (id: string) => {
+    const draft = drafts.find(d => d.id === id);
+    const originalId = draft?.originalId;
+
     const remove = (items: Definition[]): Definition[] => {
       return items.filter(def => def.id !== id).map(def => def.children ? { ...def, children: remove(def.children) } : def);
     };
+
     setDefinitions(prev => remove(prev || []));
     setDrafts(prev => prev.filter(d => d.id !== id));
-    if (selectedDefinitionId === id) setSelectedDefinitionId(null);
+
+    if (selectedDefinitionId === id) {
+      if (originalId) {
+        // Redirection logic for discarded drafts
+        setSelectedDefinitionId(originalId);
+        setViewingMode('live');
+        setIsEditing(false);
+        updateUrl(originalId, activeTab);
+      } else {
+        setSelectedDefinitionId(null);
+        updateUrl('', '', activeView);
+      }
+    }
+    
+    toast({ 
+      title: draft ? "Draft Discarded" : "Definition Deleted",
+      description: draft ? "Your private draft has been removed." : "Item permanently deleted from the library."
+    });
   };
 
   const handlePublish = (draftId: string) => {
@@ -591,6 +612,7 @@ export default function Wiki() {
                         liveVersion={liveDef}
                         onSave={handleSave} 
                         onDiscard={handleDiscardDraft} 
+                        onDelete={handleDelete}
                         onAcceptLiveChanges={handleAcceptLiveChanges}
                         isAdmin={isAdmin} 
                         templates={templates}

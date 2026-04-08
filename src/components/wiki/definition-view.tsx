@@ -12,7 +12,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, History, Share2, XCircle, RefreshCw, AlertTriangle, ArrowRight, ChevronRight } from 'lucide-react';
+import { 
+    AlertDialog, 
+    AlertDialogAction, 
+    AlertDialogCancel, 
+    AlertDialogContent, 
+    AlertDialogDescription, 
+    AlertDialogFooter, 
+    AlertDialogHeader, 
+    AlertDialogTitle, 
+    AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
+import { Bookmark, Info, History, Share2, XCircle, RefreshCw, AlertTriangle, ArrowRight, ChevronRight, Trash2 } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -167,6 +178,38 @@ export default function DefinitionView({
                                 Accept Live Changes
                                 <ArrowRight className="h-4 w-4" />
                             </Button>
+                            
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-9 px-4 text-[#8D6E63] hover:text-red-600 font-bold hover:bg-red-50/50 rounded-xl transition-all"
+                                    >
+                                        Discard Changes
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="rounded-[24px] border-none p-8 shadow-2xl">
+                                    <AlertDialogHeader className="space-y-3">
+                                        <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
+                                            <Trash2 className="h-6 w-6 text-red-600" />
+                                        </div>
+                                        <AlertDialogTitle className="text-2xl font-bold text-slate-900">Discard Private Draft?</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
+                                            This will permanently delete your outdated working copy of <strong>{definition.name}</strong>. You will be redirected to the latest published version. This action cannot be reversed.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter className="mt-8 gap-3 sm:justify-end">
+                                        <AlertDialogCancel className="rounded-xl font-bold border-slate-200">Keep Draft</AlertDialogCancel>
+                                        <AlertDialogAction 
+                                            onClick={() => onDelete(definition.id)} 
+                                            className="rounded-xl bg-red-600 hover:bg-red-700 font-bold px-6"
+                                        >
+                                            Discard Changes
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </div>
                     </div>
                 </div>

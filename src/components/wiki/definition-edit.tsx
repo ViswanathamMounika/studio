@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Save, Send, Pencil, Trash, ChevronDown, Check, Plus, Info, Undo2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { X, Upload, Save, Send, Pencil, Trash, Trash2, ChevronDown, Check, Plus, Info, Undo2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -30,6 +30,7 @@ type DefinitionEditProps = {
   liveVersion?: Definition | null;
   onSave: (definition: Definition) => void;
   onDiscard: (id: string) => void;
+  onDelete: (id: string) => void;
   onAcceptLiveChanges?: (id: string) => void;
   isAdmin: boolean;
   templates?: Template[];
@@ -37,7 +38,7 @@ type DefinitionEditProps = {
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
 
-export default function DefinitionEdit({ definition, liveVersion, onSave, onDiscard, onAcceptLiveChanges, isAdmin, templates }: DefinitionEditProps) {
+export default function DefinitionEdit({ definition, liveVersion, onSave, onDiscard, onDelete, onAcceptLiveChanges, isAdmin, templates }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
   const [module, setModule] = useState(definition.module);
   const [keywords, setKeywords] = useState<string[]>(definition.keywords || []);
@@ -131,6 +132,38 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                                   Accept Live Changes
                                   <ArrowRight className="h-4 w-4" />
                               </Button>
+                              
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-9 px-4 text-[#8D6E63] hover:text-red-600 font-bold hover:bg-red-50/50 rounded-xl transition-all"
+                                    >
+                                        Discard Changes
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="rounded-[24px] border-none p-8 shadow-2xl">
+                                    <AlertDialogHeader className="space-y-3">
+                                        <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
+                                            <Trash2 className="h-6 w-6 text-red-600" />
+                                        </div>
+                                        <AlertDialogTitle className="text-2xl font-bold text-slate-900">Discard Your Draft?</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
+                                            Your current working copy of <strong>{definition.name}</strong> is outdated and differs from the live version. Discarding will permanently remove your local modifications.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter className="mt-8 gap-3 sm:justify-end">
+                                        <AlertDialogCancel className="rounded-xl font-bold border-slate-200">Keep Editing</AlertDialogCancel>
+                                        <AlertDialogAction 
+                                            onClick={() => onDelete(definition.id)} 
+                                            className="rounded-xl bg-red-600 hover:bg-red-700 font-bold px-6"
+                                        >
+                                            Discard Changes
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                       </div>
                   </div>
@@ -183,7 +216,7 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                                               return <button key={opt.id} type="button" className={cn("flex items-center gap-2 px-4 py-2 border rounded-xl font-medium text-sm transition-all", isSelected ? "bg-primary/10 border-primary text-primary" : "bg-white border-slate-200 text-slate-600")} onClick={() => { const current = value?.multiValues || []; const next = isSelected ? current.filter(v => v !== opt.value) : [...current, opt.value]; updateSectionValue(section.id, { multiValues: next, raw: next.join(', ') }); }}><div className={cn("h-4 w-4 rounded-md border flex items-center justify-center transition-colors", isSelected ? "bg-primary border-primary" : "border-slate-300")}>{isSelected && <Check className="h-3 w-3 text-white" />}</div>{opt.label}</button>;
                                           })}</div> : <Select value={value?.raw} onValueChange={v => updateSectionValue(section.id, { raw: v })}><SelectTrigger className="rounded-xl"><SelectValue placeholder="Select..." /></SelectTrigger><SelectContent>{section.options?.map(opt => <SelectItem key={opt.id} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select>}
                                       </div>}
-                                      {section.fieldType === 'KeyValue' && <div className="space-y-4"><Table><TableHeader className="bg-slate-50"><TableRow className="border-none">{section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(c=><TableHead key={c.id} className="font-bold text-slate-700 h-10">{c.name}</TableHead>)}<TableHead className="w-10"/></TableRow></TableHeader><TableBody>{value?.structuredRows?.map((row, ri)=><TableRow key={ri} className="border-slate-100">{section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(col=><TableCell key={col.id} className="py-2 px-1">{col.inputType === 'TextBox' ? <Input value={row[col.id] || ''} onChange={e=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri], [col.id]: e.target.value}; updateSectionValue(section.id, {structuredRows: rows}); }} className="h-9 rounded-lg" /> : (col.isMulti ? <Popover><PopoverTrigger asChild><Button variant="outline" className="h-9 w-full justify-between rounded-lg"><span className="truncate">{row[col.id] || "Select..."}</span><ChevronDown className="h-3 w-3 opacity-50"/></Button></PopoverTrigger><PopoverContent className="w-64 p-2 rounded-xl">{col.options?.map(opt=>{ const curr = row[col.id]?.split(', ') || []; const sel = curr.includes(opt.value); return <div key={opt.id} className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer" onClick={()=>{ const next = sel ? curr.filter(v=>v!==opt.value) : [...curr, opt.value]; const rows = [...(value.structuredRows || [])]; rows[ri] = {...rows[ri], [col.id]: next.join(', ')}; updateSectionValue(section.id, {structuredRows: rows}); }}><Checkbox checked={sel} /><span className="text-sm font-medium">{opt.label}</span></div>; })}</PopoverContent></Popover> : <Select value={row[col.id]} onValueChange={v=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri],[col.id]:v}; updateSectionValue(section.id, {structuredRows: rows}); }}><SelectTrigger className="h-9 rounded-lg"><SelectValue/></SelectTrigger><SelectContent>{col.options?.map(o=><SelectItem key={o.id} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>)}</TableCell>)}<TableCell className="w-10 text-center"><Button variant="ghost" size="icon" onClick={()=>{ const rows = value.structuredRows?.filter((_,i)=>i!==ri); updateSectionValue(section.id, {structuredRows: rows}); }}><X className="h-4 w-4"/></Button></TableCell></TableRow>)}</TableBody></Table><Button variant="outline" size="sm" className="rounded-lg h-8 border-dashed font-bold" onClick={()=>{ const rows = [...(value?.structuredRows || []), {}]; updateSectionValue(section.id, {structuredRows: rows}); }}><Plus className="h-3 w-3 mr-1.5"/> Add Row</Button></div>}
+                                      {section.fieldType === 'KeyValue' && <div className="space-y-4"><Table><TableHeader className="bg-slate-50"><TableRow className="border-none">{section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(c=><TableHead key={c.id} className="font-bold text-slate-700 h-10">{c.name}</TableHead>)}<TableHead className="w-10"/></TableRow></TableHeader><TableBody>{value?.structuredRows?.map((row, ri)=><TableRow key={ri} className="border-slate-100">{section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(col=><TableCell key={col.id} className="py-2 px-1">{col.inputType === 'TextBox' ? <Input value={row[col.id] || ''} onChange={e=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri], [col.id]: e.target.value}; updateSectionValue(section.id, {structuredRows: rows}); }} className="h-9 rounded-lg" /> : (col.isMulti ? <Popover><PopoverTrigger asChild><Button variant="outline" className="h-9 w-full justify-between rounded-lg"><span className="truncate">{row[col.id] || "Select..."}</span><ChevronDown className="h-3 w-3 opacity-50"/></Button></PopoverTrigger><PopoverContent className="w-64 p-2 rounded-xl">{col.options?.map(opt=>{ const curr = row[col.id]?.split(', ') || []; const sel = curr.includes(opt.value); return <div key={opt.id} className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer" onClick={()=>{ const next = sel ? curr.filter(v=>v!==opt.value) : [...curr, translateToSpanishFlow next.join(', ')]; const rows = [...(value.structuredRows || [])]; rows[ri] = {...rows[ri], [col.id]: next.join(', ')}; updateSectionValue(section.id, {structuredRows: rows}); }}><Checkbox checked={sel} /><span className="text-sm font-medium">{opt.label}</span></div>; })}</PopoverContent></Popover> : <Select value={row[col.id]} onValueChange={v=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri],[col.id]:v}; updateSectionValue(section.id, {structuredRows: rows}); }}><SelectTrigger className="h-9 rounded-lg"><SelectValue/></SelectTrigger><SelectContent>{col.options?.map(o=><SelectItem key={o.id} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>)}</TableCell>)}<TableCell className="w-10 text-center"><Button variant="ghost" size="icon" onClick={()=>{ const rows = value.structuredRows?.filter((_,i)=>i!==ri); updateSectionValue(section.id, {structuredRows: rows}); }}><X className="h-4 w-4"/></Button></TableCell></TableRow>)}</TableBody></Table><Button variant="outline" size="sm" className="rounded-lg h-8 border-dashed font-bold" onClick={()=>{ const rows = [...(value?.structuredRows || []), {}]; updateSectionValue(section.id, {structuredRows: rows}); }}><Plus className="h-3 w-3 mr-1.5"/> Add Row</Button></div>}
                                   </CardContent>
                               </Card>
                           );
