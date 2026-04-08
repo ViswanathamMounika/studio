@@ -223,7 +223,7 @@ export default function DefinitionView({
                             <div className="flex items-center gap-2">
                                 {latestFeedback.type === 'rejection' ? <XCircle className="h-4 w-4 text-red-600" /> : <RefreshCw className="h-4 w-4 text-amber-600" />}
                                 <span className={cn("text-[10px] font-black uppercase tracking-widest", latestFeedback.type === 'rejection' ? "text-red-900" : "text-amber-900")}>
-                                    {latestFeedback.type === 'rejection' ? 'Latest Feedback: Submission Rejected' : 'Latest Feedback: Changes Requested'}
+                                    {latestFeedback.type === 'rejection' ? 'Latest Feedback: Submission Rejected' : 'Latest Feedback: Change Request Issued'}
                                 </span>
                             </div>
                             <span className="text-[10px] font-bold text-slate-400 uppercase">{formatDistanceToNow(new Date(latestFeedback.date), { addSuffix: true })}</span>
@@ -331,7 +331,7 @@ export default function DefinitionView({
             </Tabs>
         </article>
 
-        {showComparison && selectedRevisions.length === 2 && <RevisionComparisonDialog open={showComparison} onOpenChange={setShowComparison} revision1={selectedRevisions[0]} revision2={selectedRevisions[1]} definition={definition} />}
+        {showComparison && selectedRevisions.length === 2 && <RevisionComparisonDialog open={showComparison} onOpenChange={setShowComparison} revision1={selectedRevisions[0]} revision2={selectedRevisions[1]} definition={definition} templates={templates} />}
         
         {showConflictDiff && liveVersion && (
             <RevisionComparisonDialog 
@@ -352,6 +352,7 @@ export default function DefinitionView({
                     snapshot: definition 
                 }} 
                 definition={definition} 
+                templates={templates}
             />
         )}
     </TooltipProvider>

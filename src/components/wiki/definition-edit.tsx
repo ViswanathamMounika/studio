@@ -32,11 +32,12 @@ type DefinitionEditProps = {
   onDiscard: (id: string) => void;
   onAcceptLiveChanges?: (id: string) => void;
   isAdmin: boolean;
+  templates?: Template[];
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
 
-export default function DefinitionEdit({ definition, liveVersion, onSave, onDiscard, onAcceptLiveChanges, isAdmin }: DefinitionEditProps) {
+export default function DefinitionEdit({ definition, liveVersion, onSave, onDiscard, onAcceptLiveChanges, isAdmin, templates }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
   const [module, setModule] = useState(definition.module);
   const [keywords, setKeywords] = useState<string[]>(definition.keywords || []);
@@ -47,7 +48,7 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
   const [showConflictDiff, setShowConflictDiff] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const selectedTemplate = useMemo(() => initialTemplates.find(t => t.id === definition.templateId) || initialTemplates[0], [definition.templateId]);
+  const selectedTemplate = useMemo(() => (templates || initialTemplates).find(t => t.id === definition.templateId) || (templates || initialTemplates)[0], [definition.templateId, templates]);
 
   const updateSectionValue = (sectionId: string, updates: Partial<SectionValue>) => {
     setSectionValues(prev => {
@@ -238,6 +239,7 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                     snapshot: { ...definition, name, module, keywords, attachments, sectionValues }
                 }} 
                 definition={definition} 
+                templates={templates}
             />
         )}
       </div>

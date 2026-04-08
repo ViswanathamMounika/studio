@@ -261,8 +261,6 @@ export default function Wiki() {
         };
 
         setDefinitions(prev => updateTree(prev || []));
-        // ONLY remove the specific draft that was just published. 
-        // DO NOT remove other users' drafts of the same definition.
         setDrafts(prev => prev.filter(d => d.id !== updatedDefinition.id));
         setViewingMode('live');
         setSelectedDefinitionId(updatedDefinition.originalId || updatedDefinition.id);
@@ -428,7 +426,6 @@ export default function Wiki() {
     };
 
     setDefinitions(prev => updateTree(prev || []));
-    // CRITICAL: Only remove the draft that was published. Other drafts stay for conflict management.
     setDrafts(prev => prev.filter(d => d.id !== draftId));
     setViewingMode('live');
     setSelectedDefinitionId(finalPublishedDef.id);
@@ -536,11 +533,8 @@ export default function Wiki() {
     };
 
     return {
-        // User specific drafts for the sidebar
         userDrafts: drafts.filter(d => d.authorId === currentUser.id && d.isDraft && !d.isPendingApproval && !hasFeedbackFunc(d)),
-        // User specific pending items for the sidebar
         userPending: drafts.filter(d => d.authorId === currentUser.id && (d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d)))),
-        // All pending items for the Admin Approval view
         allPending: drafts.filter(d => d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d))),
         published: filterPublishedTree(definitions)
     };
@@ -577,6 +571,7 @@ export default function Wiki() {
                         onDiscard={handleDiscardDraft} 
                         onAcceptLiveChanges={handleAcceptLiveChanges}
                         isAdmin={isAdmin} 
+                        templates={templates}
                       />
                   ) : selectedDef ? (
                       <div className="p-6">
