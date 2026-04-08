@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bookmark, Info, Lock as LockIcon, MessageSquare, History, AlertCircle, RefreshCw, Clock, CheckCircle2, ChevronRight, User2, X, Send, AlertTriangle, Trash2, ClipboardList, Share2, Undo2, XCircle } from 'lucide-react';
+import { Bookmark, Info, MessageSquare, History, CheckCircle2, ChevronRight, Share2, XCircle, RefreshCw, X } from 'lucide-react';
 import DefinitionActions from './definition-actions';
 import { initialTemplates } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -24,7 +25,6 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/comp
 import RelatedDefinitions from './related-definitions';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
 
@@ -51,33 +51,15 @@ type DefinitionViewProps = {
   viewingMode: 'live' | 'draft';
 };
 
-const WorkflowStep = ({ label, status, isLast = false }: { label: string, status: 'completed' | 'active' | 'pending', isLast?: boolean }) => {
-    return (
-        <div className="flex items-center gap-2">
-            <div className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all",
-                status === 'completed' ? "bg-emerald-50 text-emerald-600" : 
-                status === 'active' ? "bg-primary text-white shadow-sm" : 
-                "bg-slate-100 text-slate-400"
-            )}>
-                {status === 'completed' ? <CheckCircle2 className="h-3 w-3" /> : null}
-                {label}
-            </div>
-            {!isLast && <ChevronRight className="h-3 w-3 text-slate-300" />}
-        </div>
-    );
-};
-
 export default function DefinitionView({ 
     definition, allDefinitions, templates, liveVersion, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, 
-    onRetract, activeTab, onTabChange, onSave, onDiscard, isAdmin, currentUser, viewingMode
+    activeTab, onTabChange, onSave, isAdmin, currentUser, viewingMode
 }: DefinitionViewProps) {
     const [selectedRevisions, setSelectedRevisions] = useState<Revision[]>([]);
     const [showComparison, setShowComparison] = useState(false);
     const [showConflictDiff, setShowConflictDiff] = useState(false);
     const [noteText, setNoteText] = useState('');
     const [shareNote, setShareNote] = useState(false);
-    const [showFeedbackPane, setShowFeedbackPane] = useState(false);
     const [notesSubTab, setNotesSubTab] = useState('my-notes');
     
     const { toast } = useToast();
@@ -86,11 +68,6 @@ export default function DefinitionView({
         const timer = setTimeout(() => { Prism.highlightAll(); }, 100);
         return () => clearTimeout(timer);
     }, [definition, activeTab]);
-
-    const isOutdated = useMemo(() => {
-        if (viewingMode !== 'draft' || !definition.baseVersionId || !liveVersion) return false;
-        return liveVersion.revisions[0]?.ticketId && definition.baseVersionId !== liveVersion.revisions[0].ticketId;
-    }, [viewingMode, definition.baseVersionId, liveVersion]);
 
     const groupedSections = useMemo(() => {
         const selectedTemplate = (templates || initialTemplates).find(t => t.id === definition.templateId) || (templates || initialTemplates)[0];
@@ -135,12 +112,6 @@ export default function DefinitionView({
       return fb[fb.length - 1];
     }, [definition.discussions]);
 
-    const status = {
-        draft: definition.isPendingApproval ? 'completed' : (definition.isDraft ? 'active' : 'completed'),
-        submitted: definition.isPendingApproval ? 'active' : (latestFeedback ? 'completed' : 'pending'),
-        requested: latestFeedback ? 'active' : 'pending'
-    };
-
     const handleShowReviewHistory = () => {
         setNotesSubTab('review-history');
         onTabChange('notes');
@@ -149,69 +120,7 @@ export default function DefinitionView({
   return (
     <TooltipProvider>
         <article className="max-w-none">
-            {isOutdated && (
-                <Alert variant="destructive" className="bg-red-50 border-red-200 rounded-2xl shadow-sm mb-6">
-                    <AlertTriangle className="h-5 w-5 text-red-600" />
-                    <div className="flex-1 ml-3 flex items-center justify-between">
-                        <div>
-                            <AlertTitle className="text-red-900 font-bold">Version Conflict</AlertTitle>
-                            <AlertDescription className="text-red-700 text-xs">The published version has changed. Review differences before submitting.</AlertDescription>
-                        </div>
-                        <Button variant="outline" size="sm" className="bg-white rounded-xl h-8 font-bold" onClick={() => setShowConflictDiff(true)}>View Diff</Button>
-                    </div>
-                </Alert>
-            )}
-
-            {(viewingMode === 'draft' || definition.isPendingApproval) && (
-              <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center gap-4">
-                      <WorkflowStep label="Draft" status={status.draft as any} />
-                      <WorkflowStep label="Submitted" status={status.submitted as any} />
-                      <WorkflowStep label="Requested" status={status.requested as any} isLast />
-                  </div>
-                  {latestFeedback && (
-                      <Button variant="ghost" size="icon" onClick={() => setShowFeedbackPane(!showFeedbackPane)} className={cn("h-8 w-8 rounded-xl border", showFeedbackPane ? "bg-primary text-white" : "bg-indigo-50 text-indigo-600")}>
-                          <MessageSquare className="h-4 w-4" />
-                      </Button>
-                  )}
-              </div>
-            )}
-
-            {showFeedbackPane && latestFeedback && (
-                <div className="mb-6 animate-in slide-in-from-top-2 fade-in">
-                    <Card className="border-indigo-100 bg-indigo-50/30 rounded-2xl overflow-hidden shadow-sm">
-                        <CardHeader className="py-2.5 px-4 bg-white/50 border-b flex flex-row items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                {latestFeedback.type === 'rejection' ? <XCircle className="h-4 w-4 text-red-600" /> : <RefreshCw className="h-4 w-4 text-amber-600" />}
-                                <span className={cn("text-[10px] font-black uppercase tracking-widest", latestFeedback.type === 'rejection' ? "text-red-900" : "text-indigo-900")}>
-                                    {latestFeedback.type === 'rejection' ? 'Submission Rejected' : 'Feedback Received'}
-                                </span>
-                            </div>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-slate-600" onClick={() => setShowFeedbackPane(false)}><X className="h-3.5 w-3.5" /></Button>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                            <div className="flex gap-3">
-                                <Avatar className="h-7 w-7"><AvatarImage src={latestFeedback.avatar}/><AvatarFallback>{latestFeedback.author[0]}</AvatarFallback></Avatar>
-                                <div className="flex-1">
-                                    <p className="text-xs font-bold text-slate-900">{latestFeedback.author} • <span className="text-slate-400 font-normal">{formatDistanceToNow(new Date(latestFeedback.date), { addSuffix: true })}</span></p>
-                                    <p className="text-xs text-slate-700 italic mt-1 leading-relaxed">
-                                        "{latestFeedback.content}"
-                                        <button 
-                                            onClick={handleShowReviewHistory}
-                                            className="ml-2 inline-flex items-center font-bold text-primary hover:underline not-italic"
-                                        >
-                                            Show full review history
-                                            <ChevronRight className="h-3 w-3" />
-                                        </button>
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-
-            <div className="flex justify-between items-start mb-2 px-2">
+            <div className="flex justify-between items-start mb-6 px-2">
                 <div className="space-y-1">
                     <p className="text-xs font-semibold text-slate-500">{definition.module}</p>
                     <div className="flex items-center gap-3">
@@ -240,15 +149,9 @@ export default function DefinitionView({
                         <Button onClick={onEdit} className="bg-primary font-bold px-6 h-9 rounded-lg shadow-sm">Edit</Button>
                     )}
                     
-                    {definition.isPendingApproval && (
-                        <Button 
-                            variant="outline" 
-                            onClick={() => onRetract?.(definition.id)} 
-                            className="border-red-200 text-red-600 hover:bg-red-50 font-bold h-9 rounded-lg gap-2"
-                        >
-                            <Undo2 className="h-4 w-4" />
-                            Retract Submission
-                        </Button>
+                    {/* Re-enabled Edit for items requiring changes/rejections */}
+                    {(latestFeedback && !definition.isPendingApproval && !definition.isArchived) && (
+                        <Button onClick={onEdit} className="bg-primary font-bold px-6 h-9 rounded-lg shadow-sm">Edit Submission</Button>
                     )}
 
                     <DefinitionActions 
@@ -262,7 +165,44 @@ export default function DefinitionView({
                 </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={onTabChange} className="w-full mt-4">
+            {latestFeedback && (
+                <div className="mb-6 animate-in slide-in-from-top-2 fade-in">
+                    <Card className={cn(
+                        "rounded-2xl overflow-hidden shadow-sm border",
+                        latestFeedback.type === 'rejection' ? "bg-red-50/30 border-red-100" : "bg-amber-50/30 border-amber-100"
+                    )}>
+                        <CardHeader className="py-2.5 px-4 bg-white/50 border-b flex flex-row items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                {latestFeedback.type === 'rejection' ? <XCircle className="h-4 w-4 text-red-600" /> : <RefreshCw className="h-4 w-4 text-amber-600" />}
+                                <span className={cn("text-[10px] font-black uppercase tracking-widest", latestFeedback.type === 'rejection' ? "text-red-900" : "text-amber-900")}>
+                                    {latestFeedback.type === 'rejection' ? 'Latest Feedback: Submission Rejected' : 'Latest Feedback: Changes Requested'}
+                                </span>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">{formatDistanceToNow(new Date(latestFeedback.date), { addSuffix: true })}</span>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                            <div className="flex gap-3">
+                                <Avatar className="h-7 w-7"><AvatarImage src={latestFeedback.avatar}/><AvatarFallback>{latestFeedback.author[0]}</AvatarFallback></Avatar>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold text-slate-900">{latestFeedback.author}</p>
+                                    <p className="text-xs text-slate-700 italic mt-1 leading-relaxed line-clamp-3">
+                                        "{latestFeedback.content}"
+                                    </p>
+                                    <button 
+                                        onClick={handleShowReviewHistory}
+                                        className="mt-2 inline-flex items-center text-[11px] font-bold text-primary hover:underline"
+                                    >
+                                        View full history & older comments
+                                        <ChevronRight className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
                 <TabsList className="w-full bg-slate-100 rounded-lg p-1 h-12">
                     <TabsTrigger value="description" className="flex-1 font-bold text-sm">Description</TabsTrigger>
                     <TabsTrigger value="version-history" className="flex-1 font-bold text-sm">Version History</TabsTrigger>
@@ -281,7 +221,7 @@ export default function DefinitionView({
                                         <AccordionTrigger className="font-bold py-4 hover:no-underline">
                                             <div className="flex items-center gap-2">
                                                 {section.name}
-                                                {section.description ? (
+                                                {section.description && (
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <Info className="h-4 w-4 text-slate-400" />
@@ -290,8 +230,6 @@ export default function DefinitionView({
                                                             <p className="text-xs">{section.description}</p>
                                                         </TooltipContent>
                                                     </Tooltip>
-                                                ) : (
-                                                    <Info className="h-4 w-4 text-slate-400" />
                                                 )}
                                             </div>
                                         </AccordionTrigger>
