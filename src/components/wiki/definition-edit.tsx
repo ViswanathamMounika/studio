@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
@@ -33,11 +34,12 @@ type DefinitionEditProps = {
   onAcceptLiveChanges?: (id: string) => void;
   isAdmin: boolean;
   templates?: Template[];
+  isNewBranch?: boolean; // Indicates if this session created a new draft branch from live
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
 
-export default function DefinitionEdit({ definition, liveVersion, onSave, onDiscard, onDelete, onAcceptLiveChanges, isAdmin, templates }: DefinitionEditProps) {
+export default function DefinitionEdit({ definition, liveVersion, onSave, onDiscard, onDelete, onAcceptLiveChanges, isAdmin, templates, isNewBranch }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
   const [module, setModule] = useState(definition.module);
   const [keywords, setKeywords] = useState<string[]>(definition.keywords || []);
@@ -82,8 +84,6 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
     });
     return units.sort((a, b) => a.order - b.order);
   }, [selectedTemplate]);
-
-  const isBranchedFromLive = !!definition.originalId;
 
   return (
     <TooltipProvider>
@@ -236,25 +236,25 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
             <AlertDialogTrigger asChild>
               <Button variant="ghost" className="text-slate-500 font-bold gap-2 hover:bg-slate-50">
                 <Undo2 className="h-4 w-4" />
-                {isBranchedFromLive ? "Discard Draft" : "Cancel"}
+                {isNewBranch ? "Discard Draft" : "Cancel"}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="rounded-3xl border-none p-8">
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-2xl font-bold">
-                  {isBranchedFromLive ? "Discard This Draft?" : "Cancel Changes?"}
+                  {isNewBranch ? "Discard This Branch?" : "Cancel Changes?"}
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-slate-500 text-sm">
-                  {isBranchedFromLive 
-                    ? "This will exit edit mode and permanently discard this temporary working copy. You will return to the latest published version."
-                    : "This will exit edit mode and discard your unsaved progress. Your working copy will remain in 'My Saved Definitions' until you manually delete it."
+                  {isNewBranch 
+                    ? "This will exit edit mode and permanently discard this temporary working branch. You will return to the latest published version."
+                    : "This will exit edit mode and discard your unsaved progress for this session. Your draft will remain in 'My Saved Definitions' for future editing."
                   }
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="mt-8 gap-3">
                 <AlertDialogCancel className="rounded-xl font-bold">Continue Editing</AlertDialogCancel>
                 <AlertDialogAction onClick={()=>onDiscard(definition.id)} className="rounded-xl bg-primary font-bold">
-                  {isBranchedFromLive ? "Confirm Discard" : "Confirm Cancel"}
+                  {isNewBranch ? "Confirm Discard" : "Confirm Cancel"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

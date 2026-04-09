@@ -62,6 +62,7 @@ export default function Wiki() {
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
+  const [isNewBranch, setIsNewBranch] = useState(false); // Track if current edit session just branched from live
   const [showArchived, setShowArchived] = useState(false);
   const [showBookmarked, setShowBookmarked] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
@@ -124,6 +125,7 @@ export default function Wiki() {
     setViewingMode(mode);
     setSelectedDefinitionId(id);
     setIsEditing(false);
+    setIsNewBranch(false);
     
     const sourceList = mode === 'draft' ? drafts : definitions;
     const def = findDefinition(sourceList, id);
@@ -269,6 +271,7 @@ export default function Wiki() {
     }
 
     setIsEditing(false);
+    setIsNewBranch(false);
     toast({
         title: "Changes Saved",
         description: updatedDefinition.isDraft ? "Draft updated." : "Changes successfully processed.",
@@ -276,8 +279,23 @@ export default function Wiki() {
   };
 
   const handleDiscardDraft = (id: string) => {
+    // If it was a newly created branch in this session, we revert completely
+    if (isNewBranch) {
+      const draft = drafts.find(d => d.id === id);
+      const originalId = draft?.originalId;
+      
+      setDrafts(prev => prev.filter(d => d.id !== id));
+      
+      if (originalId) {
+        setSelectedDefinitionId(originalId);
+        setViewingMode('live');
+        updateUrl(originalId, activeTab);
+      }
+    }
+    
     setIsEditing(false);
-    toast({ title: "Changes Cancelled" });
+    setIsNewBranch(false);
+    toast({ title: isNewBranch ? "Temporary Branch Discarded" : "Changes Cancelled" });
   };
 
   const handleRetract = (id: string) => {
@@ -344,6 +362,7 @@ export default function Wiki() {
     setSelectedDefinitionId(tempId);
     setViewingMode('draft');
     setIsEditing(true);
+    setIsNewBranch(true); // New definition starts as a branch
   };
 
   const handleDuplicate = (id: string) => {
@@ -519,6 +538,7 @@ export default function Wiki() {
 
     if (viewingMode === 'draft') {
         setIsEditing(true);
+        setIsNewBranch(false); // Returning to an existing draft
         return;
     }
 
@@ -526,9 +546,11 @@ export default function Wiki() {
     if (existingDraft) {
         handleSelectDefinition(existingDraft.id, undefined, 'draft');
         setIsEditing(true);
+        setIsNewBranch(false); // Transitioning to an already existing draft
         return;
     }
 
+    // SCENARIO: Creating a new branch from a published definition
     const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = def;
     const draftId = `draft_${def.id}_${currentUser.id}_${Date.now()}`;
     const newDraft: Definition = { 
@@ -547,6 +569,7 @@ export default function Wiki() {
     setViewingMode('draft');
     setSelectedDefinitionId(draftId);
     setIsEditing(true);
+    setIsNewBranch(true); // This session just created this draft
     updateUrl(draftId, activeTab);
     toast({ title: "Drafting Started" });
   };
@@ -616,6 +639,7 @@ export default function Wiki() {
                         onAcceptLiveChanges={handleAcceptLiveChanges}
                         isAdmin={isAdmin} 
                         templates={templates}
+                        isNewBranch={isNewBranch}
                       />
                   ) : selectedDef ? (
                       <div className="p-6">
