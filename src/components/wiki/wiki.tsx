@@ -62,7 +62,7 @@ export default function Wiki() {
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
-  const [isNewBranch, setIsNewBranch] = useState(false); // Track if current edit session just branched from live
+  const [isNewBranch, setIsNewBranch] = useState(false); 
   const [showArchived, setShowArchived] = useState(false);
   const [showBookmarked, setShowBookmarked] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
@@ -82,7 +82,6 @@ export default function Wiki() {
   const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  // Simulation: Switch current user context based on Admin Mode
   const currentUser = useMemo(() => ({
     id: isAdmin ? "user_admin" : "user_std",
     name: isAdmin ? "Administrator" : "Standard User",
@@ -240,7 +239,6 @@ export default function Wiki() {
         }
         setViewingMode('draft');
     } else {
-        // Direct Publish (Admin)
         const newRevision: Revision = {
             ticketId: `MPM-REV-${Date.now()}`,
             date: new Date().toISOString().split('T')[0],
@@ -279,7 +277,6 @@ export default function Wiki() {
   };
 
   const handleDiscardDraft = (id: string) => {
-    // If it was a newly created branch in this session, we revert completely
     if (isNewBranch) {
       const draft = drafts.find(d => d.id === id);
       const originalId = draft?.originalId;
@@ -319,14 +316,14 @@ export default function Wiki() {
         const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = live;
         const updatedDraft: Definition = {
             ...live,
-            id: draft.id, // Preserve draft identity
+            id: draft.id,
             originalId: draft.originalId,
             authorId: draft.authorId,
             isDraft: true,
             isPendingApproval: false,
             publishedSnapshot: snapshot,
             baseVersionId: live.revisions[0]?.ticketId,
-            revisions: draft.revisions, // Keep draft revisions history
+            revisions: draft.revisions,
             notes: draft.notes,
             discussions: draft.discussions
         };
@@ -362,7 +359,7 @@ export default function Wiki() {
     setSelectedDefinitionId(tempId);
     setViewingMode('draft');
     setIsEditing(true);
-    setIsNewBranch(true); // New definition starts as a branch
+    setIsNewBranch(true);
   };
 
   const handleDuplicate = (id: string) => {
@@ -408,7 +405,6 @@ export default function Wiki() {
 
     if (selectedDefinitionId === id) {
       if (originalId) {
-        // Redirection logic for discarded drafts
         setSelectedDefinitionId(originalId);
         setViewingMode('live');
         setIsEditing(false);
@@ -538,7 +534,7 @@ export default function Wiki() {
 
     if (viewingMode === 'draft') {
         setIsEditing(true);
-        setIsNewBranch(false); // Returning to an existing draft
+        setIsNewBranch(false);
         return;
     }
 
@@ -546,11 +542,10 @@ export default function Wiki() {
     if (existingDraft) {
         handleSelectDefinition(existingDraft.id, undefined, 'draft');
         setIsEditing(true);
-        setIsNewBranch(false); // Transitioning to an already existing draft
+        setIsNewBranch(false); 
         return;
     }
 
-    // SCENARIO: Creating a new branch from a published definition
     const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = def;
     const draftId = `draft_${def.id}_${currentUser.id}_${Date.now()}`;
     const newDraft: Definition = { 
@@ -569,7 +564,7 @@ export default function Wiki() {
     setViewingMode('draft');
     setSelectedDefinitionId(draftId);
     setIsEditing(true);
-    setIsNewBranch(true); // This session just created this draft
+    setIsNewBranch(true); 
     updateUrl(draftId, activeTab);
     toast({ title: "Drafting Started" });
   };
@@ -598,12 +593,15 @@ export default function Wiki() {
     };
 
     return {
-        userDrafts: drafts.filter(d => d.authorId === currentUser.id && d.isDraft && !d.isPendingApproval && !hasFeedbackFunc(d)),
+        userDrafts: drafts.filter(d => {
+            if (isEditing && isNewBranch && d.id === selectedDefinitionId) return false;
+            return d.authorId === currentUser.id && d.isDraft && !d.isPendingApproval && !hasFeedbackFunc(d);
+        }),
         userPending: drafts.filter(d => d.authorId === currentUser.id && (d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d)))),
         allPending: drafts.filter(d => d.isPendingApproval),
         published: filterPublishedTree(definitions)
     };
-  }, [definitions, drafts, showArchived, showBookmarked, isBookmarked, currentUser.id]);
+  }, [definitions, drafts, showArchived, showBookmarked, isBookmarked, currentUser.id, isEditing, isNewBranch, selectedDefinitionId]);
 
   const renderContent = () => {
     switch (activeView) {
