@@ -16,7 +16,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Plus, LayoutTemplate, Box } from 'lucide-react';
+import { FileText, LayoutTemplate, Box } from 'lucide-react';
 import type { Definition, Template } from '@/lib/types';
 
 type TemplatesModalProps = {
@@ -62,22 +62,6 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate, mana
           <ScrollArea className="max-h-[70vh] bg-slate-50/30">
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Blank / Default Baseline */}
-                <Card 
-                  className="group relative flex flex-col border-dashed border-2 border-slate-300 bg-white hover:border-primary hover:bg-primary/5 transition-all cursor-pointer rounded-2xl p-2" 
-                  onClick={() => handleUseTemplateInternal('blank', 'Definition')}
-                >
-                  <CardHeader className="p-4">
-                    <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
-                        <Plus className="h-5 w-5 text-slate-500 group-hover:text-primary" />
-                    </div>
-                    <CardTitle className="text-base font-bold text-slate-900">Standard / Blank</CardTitle>
-                    <CardDescription className="text-xs leading-relaxed text-slate-500 mt-1">
-                      Start with the system default baseline and manual content entry.
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-
                 {/* Dynamic Templates from Template Management */}
                 {activeManagedTemplates.map((template) => (
                   <Card 
