@@ -287,6 +287,9 @@ export default function Wiki() {
         setSelectedDefinitionId(originalId);
         setViewingMode('live');
         updateUrl(originalId, activeTab);
+      } else {
+        setSelectedDefinitionId(null);
+        updateUrl('', '', activeView);
       }
     }
     
@@ -594,6 +597,7 @@ export default function Wiki() {
 
     return {
         userDrafts: drafts.filter(d => {
+            // CRITICAL: Suppress drafts that are currently in a fresh "Edit" branch from sidebar
             if (isEditing && isNewBranch && d.id === selectedDefinitionId) return false;
             return d.authorId === currentUser.id && d.isDraft && !d.isPendingApproval && !hasFeedbackFunc(d);
         }),
