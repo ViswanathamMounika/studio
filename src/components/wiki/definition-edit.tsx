@@ -83,6 +83,8 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
     return units.sort((a, b) => a.order - b.order);
   }, [selectedTemplate]);
 
+  const isBranchedFromLive = !!definition.originalId;
+
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full bg-slate-50/30">
@@ -233,19 +235,27 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" className="text-slate-500 font-bold gap-2 hover:bg-slate-50">
-                <Undo2 className="h-4 w-4" />Cancel
+                <Undo2 className="h-4 w-4" />
+                {isBranchedFromLive ? "Discard Draft" : "Cancel"}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="rounded-3xl border-none p-8">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-2xl font-bold">Cancel Changes?</AlertDialogTitle>
+                <AlertDialogTitle className="text-2xl font-bold">
+                  {isBranchedFromLive ? "Discard This Draft?" : "Cancel Changes?"}
+                </AlertDialogTitle>
                 <AlertDialogDescription className="text-slate-500 text-sm">
-                  This will exit edit mode and discard your unsaved progress. Your working copy will remain in "My Saved Definitions" until you manually delete it.
+                  {isBranchedFromLive 
+                    ? "This will exit edit mode and permanently discard this temporary working copy. You will return to the latest published version."
+                    : "This will exit edit mode and discard your unsaved progress. Your working copy will remain in 'My Saved Definitions' until you manually delete it."
+                  }
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="mt-8 gap-3">
                 <AlertDialogCancel className="rounded-xl font-bold">Continue Editing</AlertDialogCancel>
-                <AlertDialogAction onClick={()=>onDiscard(definition.id)} className="rounded-xl bg-primary font-bold">Confirm Cancel</AlertDialogAction>
+                <AlertDialogAction onClick={()=>onDiscard(definition.id)} className="rounded-xl bg-primary font-bold">
+                  {isBranchedFromLive ? "Confirm Discard" : "Confirm Cancel"}
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
