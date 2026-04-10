@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -115,6 +114,10 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   const [currentTemplate, setCurrentTemplate] = useState<Partial<Template>>({});
   const [isEditing, setIsEditing] = useState(false);
   
+  // Track original IDs to lock field types
+  const [originalSectionIds, setOriginalSectionIds] = useState<Set<string>>(new Set());
+  const [originalColumnIds, setOriginalColumnIds] = useState<Set<string>>(new Set());
+
   const [groupForm, setGroupForm] = useState<GroupForm>({ name: '', order: 1, sectionConfigs: [] });
   const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
 
@@ -122,6 +125,8 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
   const handleCreateNew = () => {
     setIsEditing(false);
+    setOriginalSectionIds(new Set());
+    setOriginalColumnIds(new Set());
     setCurrentTemplate({
       id: `t-${Date.now()}`,
       name: '',
@@ -137,6 +142,13 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   const handleEdit = (template: Template) => {
     setIsEditing(true);
     setCurrentTemplate({ ...template });
+    
+    // Store original IDs to enforce immutable field types
+    setOriginalSectionIds(new Set(template.sections.map(s => s.id)));
+    const colIds = new Set<string>();
+    template.sections.forEach(s => s.columns?.forEach(c => colIds.add(c.id)));
+    setOriginalColumnIds(colIds);
+    
     setIsModalOpen(true);
   };
 
@@ -598,6 +610,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                               </div>
                               <div className="flex items-center gap-2">
                                 <Select 
+                                  disabled={isEditing && originalSectionIds.has(section.id)}
                                   value={section.fieldType} 
                                   onValueChange={v => updateSection(section.id, { fieldType: v as any })}
                                 >
@@ -739,7 +752,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                     {section.columns?.map((col, cIdx) => (
                                       <Card key={col.id} className="p-4 border-slate-200 shadow-none bg-white rounded-xl">
                                         <div className="space-y-4">
-                                          {/* Row 1: Column Header/Metadata */}
+                                          {/* Header Metadata Row */}
                                           <div className="grid grid-cols-12 gap-4 items-end">
                                             <div className="col-span-8 space-y-1.5">
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Column Name</Label>
@@ -775,7 +788,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                             </div>
                                           </div>
 
-                                          {/* Row 2: Value Configuration */}
+                                          {/* Value Row - Type & Options */}
                                           <div className="mt-4 p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center justify-between">
                                             <div className="flex items-center gap-6">
                                               <div className="flex flex-col gap-1">
@@ -784,6 +797,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                               <div className="flex items-center gap-2">
                                                 <span className="text-xs font-bold text-slate-600">Type:</span>
                                                 <Select 
+                                                  disabled={isEditing && originalColumnIds.has(col.id)}
                                                   value={col.inputType} 
                                                   onValueChange={v => {
                                                     const cols = [...(section.columns || [])];
