@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -355,59 +356,21 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                                                 className="h-9 rounded-lg border-slate-200"
                                               />
                                             ) : (
-                                              col.isMulti ? (
-                                                <Popover>
-                                                  <PopoverTrigger asChild>
-                                                    <Button variant="outline" size="sm" className="h-9 w-full justify-between rounded-lg border-slate-200 font-normal">
-                                                      <span className="truncate">
-                                                        {row[col.id] || "Select items..."}
-                                                      </span>
-                                                      <ChevronDown className="h-3 w-3 opacity-50" />
-                                                    </Button>
-                                                  </PopoverTrigger>
-                                                  <PopoverContent className="w-64 p-2 rounded-xl" align="start">
-                                                    <div className="space-y-1">
-                                                      {col.options?.map(opt => {
-                                                        const currentValues = row[col.id] ? row[col.id].split(', ') : [];
-                                                        const isSelected = currentValues.includes(opt.value);
-                                                        return (
-                                                          <div 
-                                                            key={opt.id} 
-                                                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer"
-                                                            onClick={() => {
-                                                              const next = isSelected 
-                                                                ? currentValues.filter(v => v !== opt.value) 
-                                                                : [...currentValues, opt.value];
-                                                              const rows = [...(value.structuredRows || [])];
-                                                              rows[rIdx] = { ...rows[rIdx], [col.id]: next.join(', ') };
-                                                              updateSectionValue(section.id, { structuredRows: rows });
-                                                            }}
-                                                          >
-                                                            <Checkbox checked={isSelected} />
-                                                            <span className="text-sm font-medium">{opt.label}</span>
-                                                          </div>
-                                                        );
-                                                      })}
-                                                    </div>
-                                                  </PopoverContent>
-                                                </Popover>
-                                              ) : (
-                                                <Select 
-                                                  value={row[col.id]} 
-                                                  onValueChange={v => {
-                                                    const rows = [...(value.structuredRows || [])];
-                                                    rows[rIdx] = { ...rows[rIdx], [col.id]: v };
-                                                    updateSectionValue(section.id, { structuredRows: rows });
-                                                  }}
-                                                >
-                                                  <SelectTrigger className="h-9 rounded-lg border-slate-200 bg-white">
-                                                    <SelectValue />
-                                                  </SelectTrigger>
-                                                  <SelectContent>
-                                                    {col.options?.map(o => <SelectItem key={o.id} value={o.value}>{o.label}</SelectItem>)}
-                                                  </SelectContent>
-                                                </Select>
-                                              )
+                                              <Select 
+                                                value={row[col.id]} 
+                                                onValueChange={v => {
+                                                  const rows = [...(value.structuredRows || [])];
+                                                  rows[rIdx] = { ...rows[rIdx], [col.id]: v };
+                                                  updateSectionValue(section.id, { structuredRows: rows });
+                                                }}
+                                              >
+                                                <SelectTrigger className="h-9 rounded-lg border-slate-200 bg-white">
+                                                  <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {col.options?.map(o => <SelectItem key={o.id} value={o.value}>{o.label}</SelectItem>)}
+                                                </SelectContent>
+                                              </Select>
                                             )}
                                           </TableCell>
                                         ))}
