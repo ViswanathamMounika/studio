@@ -34,7 +34,7 @@ type DefinitionEditProps = {
   onAcceptLiveChanges?: (id: string) => void;
   isAdmin: boolean;
   templates?: Template[];
-  isNewBranch?: boolean; // Indicates if this session created a new draft branch from live
+  isNewBranch?: boolean; 
 };
 
 const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
@@ -148,13 +148,13 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                                         <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
                                             <Trash2 className="h-6 w-6 text-red-600" />
                                         </div>
-                                        <AlertDialogTitle className="text-2xl font-bold text-slate-900">Discard Your Draft?</AlertDialogTitle>
+                                        <AlertDialogTitle className="text-2xl font-bold text-slate-900">Discard Private Draft?</AlertDialogTitle>
                                         <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
-                                            Your current working copy of <strong>{definition.name}</strong> is outdated and differs from the live version. Discarding will permanently remove your local modifications.
+                                            This will permanently delete your outdated working copy of <strong>{definition.name}</strong>. You will be redirected to the latest published version.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter className="mt-8 gap-3 sm:justify-end">
-                                        <AlertDialogCancel className="rounded-xl font-bold border-slate-200">Keep Editing</AlertDialogCancel>
+                                        <AlertDialogCancel className="rounded-xl font-bold border-slate-200">Keep Draft</AlertDialogCancel>
                                         <AlertDialogAction 
                                             onClick={() => onDelete(definition.id)} 
                                             className="rounded-xl bg-red-600 hover:bg-red-700 font-bold px-6"

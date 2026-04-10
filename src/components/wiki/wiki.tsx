@@ -277,10 +277,10 @@ export default function Wiki() {
   };
 
   const handleDiscardDraft = (id: string) => {
+    const draft = drafts.find(d => d.id === id);
+    const originalId = draft?.originalId;
+
     if (isNewBranch) {
-      const draft = drafts.find(d => d.id === id);
-      const originalId = draft?.originalId;
-      
       setDrafts(prev => prev.filter(d => d.id !== id));
       
       if (originalId) {
@@ -411,6 +411,7 @@ export default function Wiki() {
         setSelectedDefinitionId(originalId);
         setViewingMode('live');
         setIsEditing(false);
+        setIsNewBranch(false);
         updateUrl(originalId, activeTab);
       } else {
         setSelectedDefinitionId(null);
