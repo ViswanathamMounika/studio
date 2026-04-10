@@ -737,10 +737,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                   
                                   <div className="space-y-4">
                                     {section.columns?.map((col, cIdx) => (
-                                      <Card key={col.id} className="p-3 border-slate-200 shadow-none bg-white rounded-xl">
+                                      <Card key={col.id} className="p-4 border-slate-200 shadow-none bg-white rounded-xl">
                                         <div className="space-y-4">
+                                          {/* Row 1: Column Header/Metadata */}
                                           <div className="grid grid-cols-12 gap-4 items-end">
-                                            <div className="col-span-5 space-y-1.5">
+                                            <div className="col-span-8 space-y-1.5">
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Column Name</Label>
                                               <Input value={col.name} onChange={e => {
                                                 const cols = [...(section.columns || [])];
@@ -748,34 +749,15 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                                 updateSection(section.id, { columns: cols });
                                               }} className="h-8 rounded-lg font-bold" />
                                             </div>
-                                            <div className="col-span-3 space-y-1.5">
-                                              <Label className="text-[9px] font-black uppercase text-slate-400">Input Type</Label>
-                                              <Select 
-                                                value={col.inputType} 
-                                                onValueChange={v => {
-                                                  const cols = [...(section.columns || [])];
-                                                  cols[cIdx].inputType = v as any;
-                                                  updateSection(section.id, { columns: cols });
-                                                }}
-                                              >
-                                                <SelectTrigger className="h-8 rounded-lg bg-white">
-                                                  <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  <SelectItem value="TextBox">Text Box</SelectItem>
-                                                  <SelectItem value="Dropdown">Dropdown</SelectItem>
-                                                </SelectContent>
-                                              </Select>
-                                            </div>
                                             <div className="col-span-1 space-y-1.5">
-                                              <Label className="text-[9px] font-black uppercase text-slate-400">Index</Label>
+                                              <Label className="text-[9px] font-black uppercase text-slate-400 text-center">Index</Label>
                                               <Input type="number" value={col.sortOrder} onChange={e => {
                                                 const cols = [...(section.columns || [])];
                                                 cols[cIdx].sortOrder = parseInt(e.target.value) || 0;
                                                 updateSection(section.id, { columns: cols });
-                                              }} className="h-8 rounded-lg" />
+                                              }} className="h-8 rounded-lg text-center" />
                                             </div>
-                                            <div className="col-span-2 pb-2 flex items-center gap-2">
+                                            <div className="col-span-2 pb-2 flex items-center gap-2 justify-center">
                                               <Checkbox checked={col.isRequired} onCheckedChange={v => {
                                                 const cols = [...(section.columns || [])];
                                                 cols[cIdx].isRequired = !!v;
@@ -793,19 +775,53 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                             </div>
                                           </div>
 
-                                          {col.inputType === 'Dropdown' && (
-                                            <div className="ml-4 pl-4 border-l-2 border-slate-100 space-y-3">
-                                              <div className="flex items-center justify-between">
-                                                <Label className="text-[10px] font-black uppercase text-slate-500">Column Values (Dropdown)</Label>
-                                                <Button variant="ghost" size="sm" className="h-6 text-[10px] font-bold text-[#3F51B5]" onClick={() => handleAddOption(section.id, col.id)}>
-                                                  <Plus className="h-3 w-3 mr-1" /> Add Value
-                                                </Button>
+                                          {/* Row 2: Value Configuration */}
+                                          <div className="mt-4 p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center justify-between">
+                                            <div className="flex items-center gap-6">
+                                              <div className="flex flex-col gap-1">
+                                                <Label className="text-[10px] font-black uppercase text-slate-500 tracking-tight">Column Value</Label>
                                               </div>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold text-slate-600">Type:</span>
+                                                <Select 
+                                                  value={col.inputType} 
+                                                  onValueChange={v => {
+                                                    const cols = [...(section.columns || [])];
+                                                    cols[cIdx].inputType = v as any;
+                                                    updateSection(section.id, { columns: cols });
+                                                  }}
+                                                >
+                                                  <SelectTrigger className="h-7 w-32 rounded-lg bg-white border-slate-200 text-xs font-bold">
+                                                    <SelectValue />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="TextBox">Text Box</SelectItem>
+                                                    <SelectItem value="Dropdown">Drop Down</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                            </div>
+
+                                            {col.inputType === 'Dropdown' && (
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="h-7 text-[10px] font-black uppercase tracking-wider text-primary hover:bg-white rounded-lg px-3"
+                                                onClick={() => handleAddOption(section.id, col.id)}
+                                              >
+                                                <Plus className="h-3 w-3 mr-1.5" /> Add Value
+                                              </Button>
+                                            )}
+                                          </div>
+
+                                          {col.inputType === 'Dropdown' && (
+                                            <div className="ml-6 pl-4 border-l-2 border-slate-100 space-y-3">
                                               <div className="space-y-2">
                                                 {col.options?.map((opt, oIdx) => (
                                                   <div key={opt.id} className="flex gap-2 items-center">
                                                     <Input 
                                                       value={opt.label} 
+                                                      placeholder="Label"
                                                       className="h-7 rounded-lg flex-1 text-xs font-medium" 
                                                       onChange={e => {
                                                         const cols = [...(section.columns || [])];
@@ -817,6 +833,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                                     />
                                                     <Input 
                                                       value={opt.value} 
+                                                      placeholder="Value"
                                                       className="h-7 rounded-lg flex-1 text-xs text-slate-500" 
                                                       onChange={e => {
                                                         const cols = [...(section.columns || [])];
