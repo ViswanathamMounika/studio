@@ -7,20 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Save, Pencil, Trash2, ChevronDown, Check, Plus, Info, Undo2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { X, Upload, Pencil, Trash2, Check, Plus, Info, Undo2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import AttachmentList from './attachments';
-import { Textarea } from '../ui/textarea';
 import { initialTemplates } from '@/lib/data';
-import DataSourcePreviewDialog from './data-source-preview-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import AttachmentList from './attachments';
+import { Textarea } from '../ui/textarea';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 const RevisionComparisonDialog = dynamic(() => import('./revision-comparison-dialog'), { ssr: false });
@@ -46,7 +43,6 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
   const [currentKeyword, setCurrentKeyword] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>(definition.attachments || []);
   const [sectionValues, setSectionValues] = useState<SectionValue[]>(definition.sectionValues || []);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [showConflictDiff, setShowConflictDiff] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,11 +61,7 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
     if (!liveVersion) return false;
     const latestLiveTicket = liveVersion.revisions?.[0]?.ticketId;
     const currentBaseTicket = definition.baseVersionId;
-    
-    if (latestLiveTicket && currentBaseTicket !== latestLiveTicket) {
-        return true;
-    }
-    return false;
+    return latestLiveTicket && currentBaseTicket !== latestLiveTicket;
   }, [liveVersion, definition.baseVersionId]);
 
   const groupedSections = useMemo(() => {
@@ -90,10 +82,18 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
       <div className="flex flex-col h-full bg-slate-50/30">
         <div className="sticky top-0 z-30 bg-white px-8 py-4 border-b flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><Pencil className="h-5 w-5 text-indigo-600" /></div>
-              <div><h2 className="text-2xl font-bold tracking-tight">Edit Mode</h2><p className="text-xs text-slate-500 font-medium">Drafting improvements for <span className="font-bold text-slate-900">{definition.name}</span></p></div>
+              <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                <Pencil className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">Edit Mode</h2>
+                <p className="text-xs text-slate-500 font-medium">Drafting improvements for <span className="font-bold text-slate-900">{definition.name}</span></p>
+              </div>
           </div>
-          <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-100 gap-1.5 h-7 px-3"><div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />Editing Lock Active</Badge>
+          <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-100 gap-1.5 h-7 px-3">
+            <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+            Editing Lock Active
+          </Badge>
         </div>
         
         <ScrollArea className="flex-1">
@@ -111,56 +111,40 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                                       <span className="bg-[#FFE0B2] text-[#E65100] text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md leading-none h-4 flex items-center">OUTDATED</span>
                                   </div>
                                   <p className="text-[13px] text-[#8D6E63] font-medium mt-0.5">
-                                      The live definition was updated by an admin while you were drafting. Your workspace is currently out of sync.
+                                      The live definition was updated while you were drafting.
                                   </p>
                               </div>
                           </div>
-                          <div className="flex items-center gap-3 relative z-10">
+                          <div className="flex items-center gap-3">
                               <Button 
                                   variant="outline" 
                                   size="sm" 
-                                  className="h-9 px-5 rounded-xl border-[#FFE0B2] bg-white text-[#E65100] font-bold hover:bg-[#FFF3E0] transition-colors shadow-sm"
+                                  className="h-9 px-5 rounded-xl border-[#FFE0B2] bg-white text-[#E65100] font-bold"
                                   onClick={() => setShowConflictDiff(true)}
                               >
                                   View Differences
                               </Button>
                               <Button 
                                   size="sm" 
-                                  className="h-9 px-5 rounded-xl bg-[#E65100] hover:bg-[#D84315] text-white font-bold shadow-md shadow-orange-100 flex items-center gap-2 transition-all active:scale-95"
+                                  className="h-9 px-5 rounded-xl bg-[#E65100] hover:bg-[#D84315] text-white font-bold flex items-center gap-2"
                                   onClick={() => onAcceptLiveChanges?.(definition.id)}
                               >
                                   Accept Live Changes
                                   <ArrowRight className="h-4 w-4" />
                               </Button>
-                              
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="h-9 px-4 text-[#8D6E63] hover:text-red-600 font-bold hover:bg-red-50/50 rounded-xl transition-all"
-                                    >
-                                        Discard Draft
-                                    </Button>
+                                    <Button variant="ghost" size="sm" className="h-9 px-4 text-[#8D6E63] hover:text-red-600 font-bold rounded-xl transition-all">Discard Draft</Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent className="rounded-[24px] border-none p-8 shadow-2xl">
-                                    <AlertDialogHeader className="space-y-3">
-                                        <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
-                                            <Trash2 className="h-6 w-6 text-red-600" />
-                                        </div>
-                                        <AlertDialogTitle className="text-2xl font-bold text-slate-900">Discard Private Draft?</AlertDialogTitle>
-                                        <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
-                                            This will permanently delete your outdated working copy of <strong>{definition.name}</strong>. You will be redirected to the latest published version.
-                                        </AlertDialogDescription>
+                                <AlertDialogContent className="rounded-[24px] border-none p-8">
+                                    <AlertDialogHeader>
+                                        <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center mb-2"><Trash2 className="h-6 w-6 text-red-600" /></div>
+                                        <AlertDialogTitle className="text-2xl font-bold">Discard Draft?</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-slate-500 text-sm">This will permanently delete your outdated draft of <strong>{definition.name}</strong>.</AlertDialogDescription>
                                     </AlertDialogHeader>
-                                    <AlertDialogFooter className="mt-8 gap-3 sm:justify-end">
-                                        <AlertDialogCancel className="rounded-xl font-bold border-slate-200">Keep Draft</AlertDialogCancel>
-                                        <AlertDialogAction 
-                                            onClick={() => onDelete(definition.id)} 
-                                            className="rounded-xl bg-red-600 hover:bg-red-700 font-bold px-6"
-                                        >
-                                            Discard Draft
-                                        </AlertDialogAction>
+                                    <AlertDialogFooter className="mt-8 gap-3">
+                                        <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => onDelete(definition.id)} className="rounded-xl bg-red-600 font-bold px-6">Discard Draft</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -186,7 +170,7 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
 
               {groupedSections.map((unit, idx) => (
                   <div key={idx} className="space-y-6">
-                      {unit.type === 'group' && <div className="flex items-center gap-3"><h3 className="text-lg font-bold text-slate-900">{unit.name}</h3><div className="h-px bg-slate-200 flex-1" /></div>}
+                      {unit.type === 'group' && unit.name && <div className="flex items-center gap-3"><h3 className="text-lg font-bold text-slate-900">{unit.name}</h3><div className="h-px bg-slate-200 flex-1" /></div>}
                       <div className="space-y-6">{unit.sections.map(section => {
                           const value = sectionValues.find(v => v.sectionId === section.id);
                           return (
@@ -196,12 +180,8 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                                       {section.name}{section.isRequired && <span className="text-red-500">*</span>}
                                       {section.description && (
                                         <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Info className="h-4 w-4 text-slate-400 cursor-help" />
-                                          </TooltipTrigger>
-                                          <TooltipContent className="max-w-xs">
-                                            <p className="text-xs">{section.description}</p>
-                                          </TooltipContent>
+                                          <TooltipTrigger asChild><Info className="h-4 w-4 text-slate-400 cursor-help" /></TooltipTrigger>
+                                          <TooltipContent className="max-w-xs"><p className="text-xs">{section.description}</p></TooltipContent>
                                         </Tooltip>
                                       )}
                                     </CardTitle>
@@ -216,7 +196,47 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                                               return <button key={opt.id} type="button" className={cn("flex items-center gap-2 px-4 py-2 border rounded-xl font-medium text-sm transition-all", isSelected ? "bg-primary/10 border-primary text-primary" : "bg-white border-slate-200 text-slate-600")} onClick={() => { const current = value?.multiValues || []; const next = isSelected ? current.filter(v => v !== opt.value) : [...current, opt.value]; updateSectionValue(section.id, { multiValues: next, raw: next.join(', ') }); }}><div className={cn("h-4 w-4 rounded-md border flex items-center justify-center transition-colors", isSelected ? "bg-primary border-primary" : "border-slate-300")}>{isSelected && <Check className="h-3 w-3 text-white" />}</div>{opt.label}</button>;
                                           })}</div> : <Select value={value?.raw} onValueChange={v => updateSectionValue(section.id, { raw: v })}><SelectTrigger className="rounded-xl"><SelectValue placeholder="Select..." /></SelectTrigger><SelectContent>{section.options?.map(opt => <SelectItem key={opt.id} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select>}
                                       </div>}
-                                      {section.fieldType === 'KeyValue' && <div className="space-y-4"><Table><TableHeader className="bg-slate-50"><TableRow className="border-none">{section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(c=><TableHead key={c.id} className="font-bold text-slate-700 h-10">{c.name}</TableHead>)}<TableHead className="w-10"/></TableRow></TableHeader><TableBody>{value?.structuredRows?.map((row, ri)=><TableRow key={ri} className="border-slate-100">{section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(col=><TableCell key={col.id} className="py-2 px-1">{col.inputType === 'TextBox' ? <Input value={row[col.id] || ''} onChange={e=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri], [col.id]: e.target.value}; updateSectionValue(section.id, {structuredRows: rows}); }} className="h-9 rounded-lg" /> : <Select value={row[col.id]} onValueChange={v=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri],[col.id]:v}; updateSectionValue(section.id, {structuredRows: rows}); }}><SelectTrigger className="h-9 rounded-lg"><SelectValue/></SelectTrigger><SelectContent>{col.options?.map(o=><SelectItem key={o.id} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>)}</TableCell>)}<TableCell className="w-10 text-center"><Button variant="ghost" size="icon" onClick={()=>{ const rows = value.structuredRows?.filter((_,i)=>i!==ri); updateSectionValue(section.id, {structuredRows: rows}); }}><X className="h-4 w-4"/></Button></TableCell></TableRow>)}</TableBody></Table><Button variant="outline" size="sm" className="rounded-lg h-8 border-dashed font-bold" onClick={()=>{ const rows = [...(value?.structuredRows || []), {}]; updateSectionValue(section.id, {structuredRows: rows}); }}><Plus className="h-3 w-3 mr-1.5"/> Add Row</Button></div>}
+                                      {section.fieldType === 'KeyValue' && (
+                                        <div className="space-y-4">
+                                          <Table>
+                                            <TableHeader className="bg-slate-50">
+                                              <TableRow className="border-none">
+                                                {section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(c=><TableHead key={c.id} className="font-bold text-slate-700 h-10">{c.name}</TableHead>)}
+                                                <TableHead className="w-10"/>
+                                              </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                              {value?.structuredRows?.map((row, ri)=>(
+                                                <TableRow key={ri} className="border-slate-100">
+                                                  {section.columns?.sort((a,b)=>a.sortOrder-b.sortOrder).map(col=>(
+                                                    <TableCell key={col.id} className="py-2 px-1">
+                                                      {col.inputType === 'TextBox' ? (
+                                                        <Input 
+                                                          value={row[col.id] || ''} 
+                                                          onChange={e=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri], [col.id]: e.target.value}; updateSectionValue(section.id, {structuredRows: rows}); }} 
+                                                          className="h-9 rounded-lg" 
+                                                        />
+                                                      ) : (
+                                                        <Select 
+                                                          value={row[col.id]} 
+                                                          onValueChange={v=>{ const rows = [...(value.structuredRows || [])]; rows[ri]={...rows[ri],[col.id]:v}; updateSectionValue(section.id, {structuredRows: rows}); }}
+                                                        >
+                                                          <SelectTrigger className="h-9 rounded-lg"><SelectValue/></SelectTrigger>
+                                                          <SelectContent>{col.options?.map(o=><SelectItem key={o.id} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                                                        </Select>
+                                                      )}
+                                                    </TableCell>
+                                                  ))}
+                                                  <TableCell className="w-10 text-center">
+                                                    <Button variant="ghost" size="icon" onClick={()=>{ const rows = value.structuredRows?.filter((_,i)=>i!==ri); updateSectionValue(section.id, {structuredRows: rows}); }}><X className="h-4 w-4"/></Button>
+                                                  </TableCell>
+                                                </TableRow>
+                                              ))}
+                                            </TableBody>
+                                          </Table>
+                                          <Button variant="outline" size="sm" className="rounded-lg h-8 border-dashed font-bold" onClick={()=>{ const rows = [...(value?.structuredRows || []), {}]; updateSectionValue(section.id, {structuredRows: rows}); }}><Plus className="h-3 w-3 mr-1.5"/> Add Row</Button>
+                                        </div>
+                                      )}
                                   </CardContent>
                               </Card>
                           );
@@ -234,28 +254,18 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
         <div className="fixed bottom-0 left-[var(--sidebar-width)] right-0 bg-white border-t p-4 px-10 flex justify-between items-center z-40 shadow-lg">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" className="text-slate-500 font-bold gap-2 hover:bg-slate-50">
-                <Undo2 className="h-4 w-4" />
-                {isNewBranch ? "Discard Draft" : "Cancel"}
-              </Button>
+              <Button variant="ghost" className="text-slate-500 font-bold gap-2 hover:bg-slate-50"><Undo2 className="h-4 w-4" />{isNewBranch ? "Discard Draft" : "Cancel"}</Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="rounded-3xl border-none p-8">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-2xl font-bold">
-                  {isNewBranch ? "Discard This Branch?" : "Cancel Changes?"}
-                </AlertDialogTitle>
+                <AlertDialogTitle className="text-2xl font-bold">{isNewBranch ? "Discard This Branch?" : "Cancel Changes?"}</AlertDialogTitle>
                 <AlertDialogDescription className="text-slate-500 text-sm">
-                  {isNewBranch 
-                    ? "This will exit edit mode and permanently discard this temporary working branch. You will return to the latest published version."
-                    : "This will exit edit mode and discard your unsaved progress for this session. Your draft will remain in 'My Saved Definitions' for future editing."
-                  }
+                  {isNewBranch ? "This will exit edit mode and discard this temporary draft." : "This will exit edit mode and discard your unsaved progress."}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="mt-8 gap-3">
                 <AlertDialogCancel className="rounded-xl font-bold">Continue Editing</AlertDialogCancel>
-                <AlertDialogAction onClick={()=>onDiscard(definition.id)} className="rounded-xl bg-primary font-bold">
-                  {isNewBranch ? "Confirm Discard" : "Confirm Cancel"}
-                </AlertDialogAction>
+                <AlertDialogAction onClick={()=>onDiscard(definition.id)} className="rounded-xl bg-primary font-bold">{isNewBranch ? "Confirm Discard" : "Confirm Cancel"}</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -264,28 +274,15 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
               <Button onClick={()=>onSave({...definition, name, module, keywords, attachments, sectionValues, isDraft: isAdmin ? false : true, isPendingApproval: !isAdmin})} disabled={!name.trim()} className="bg-indigo-600 text-white rounded-xl font-bold px-10">{isAdmin ? 'Publish Changes' : 'Submit for Approval'}</Button>
           </div>
         </div>
-        <DataSourcePreviewDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen} sourceName={null} />
         
         {showConflictDiff && liveVersion && (
             <RevisionComparisonDialog 
-                open={showConflictDiff} 
-                onOpenChange={setShowConflictDiff} 
-                revision1={{ 
-                    ticketId: 'LIVE', 
-                    date: liveVersion.revisions?.[0]?.date || 'Now', 
-                    developer: liveVersion.revisions?.[0]?.developer || 'System', 
-                    description: 'Latest Published Version', 
-                    snapshot: liveVersion 
-                }} 
-                revision2={{ 
-                    ticketId: 'DRAFT', 
-                    date: 'Current', 
-                    developer: 'You', 
-                    description: 'Your Current Draft', 
-                    snapshot: { ...definition, name, module, keywords, attachments, sectionValues }
-                }} 
-                definition={definition} 
-                templates={templates}
+              open={showConflictDiff} 
+              onOpenChange={setShowConflictDiff} 
+              revision1={{ ticketId: 'LIVE', date: liveVersion.revisions?.[0]?.date || 'Now', developer: liveVersion.revisions?.[0]?.developer || 'System', description: 'Latest Published Version', snapshot: liveVersion }} 
+              revision2={{ ticketId: 'DRAFT', date: 'Current', developer: 'You', description: 'Your Current Draft', snapshot: { ...definition, name, module, keywords, attachments, sectionValues } }} 
+              definition={definition} 
+              templates={templates} 
             />
         )}
       </div>

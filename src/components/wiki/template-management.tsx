@@ -55,13 +55,12 @@ const MODULE_OPTIONS = [
  * Re-indexes all sections in a template to ensure global and internal orders are contiguous.
  */
 function reindexTemplate(sections: TemplateSection[]): TemplateSection[] {
-  // 1. Group items into "Units" (Standalone Section or a Group Name)
   const standaloneSections = sections.filter(s => !s.group);
   const uniqueGroupNames = Array.from(new Set(sections.filter(s => s.group).map(s => s.group as string)));
 
   type Unit = {
     type: 'section' | 'group';
-    name: string; // section id or group name
+    name: string;
     globalOrder: number;
     sections: TemplateSection[];
   };
@@ -87,10 +86,8 @@ function reindexTemplate(sections: TemplateSection[]): TemplateSection[] {
     });
   });
 
-  // 2. Sort units by their current global positions
   units.sort((a, b) => a.globalOrder - b.globalOrder);
 
-  // 3. Re-assign positions
   const reindexed: TemplateSection[] = [];
   units.forEach((unit, unitIdx) => {
     const newGlobalOrder = unitIdx + 1;
@@ -99,7 +96,7 @@ function reindexTemplate(sections: TemplateSection[]): TemplateSection[] {
       const updatedSection = { ...s };
       if (unit.type === 'group') {
         updatedSection.groupOrder = newGlobalOrder;
-        updatedSection.order = secIdx + 1; // Internal order starts from 1
+        updatedSection.order = secIdx + 1;
       } else {
         updatedSection.order = newGlobalOrder;
         updatedSection.group = undefined;
@@ -163,7 +160,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       return;
     }
 
-    // Validate sections
     const hasInvalidSections = currentTemplate.sections?.some(s => !s.name.trim());
     if (hasInvalidSections) {
       toast({ variant: 'destructive', title: 'Error', description: 'All sections must have a name.' });
@@ -555,7 +551,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 <div className="space-y-8">
                   {displayGroups.map((unit, uIdx) => (
                     <div key={uIdx} className={cn(unit.type === 'group' ? "bg-slate-100/50 p-6 rounded-[28px] border border-slate-200/60 shadow-inner" : "space-y-6")}>
-                      {unit.type === 'group' && (
+                      {unit.type === 'group' && unit.name && (
                         <div className="flex items-center justify-between mb-6 px-2">
                           <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-lg bg-[#3F51B5]/10 flex items-center justify-center">
@@ -570,7 +566,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                             <Button variant="ghost" size="sm" onClick={() => handleOpenGroupModal(unit.name)} className="h-8 rounded-lg text-slate-500 font-bold hover:bg-white">
                               <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Edit Group
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleRemoveGroup(unit.name!)} className="h-8 rounded-lg text-red-500 font-bold hover:bg-white">
+                            <Button variant="ghost" size="sm" onClick={() => handleRemoveGroup(unit.name)} className="h-8 rounded-lg text-red-500 font-bold hover:bg-white">
                               <X className="h-3.5 w-3.5 mr-1.5" /> Ungroup
                             </Button>
                           </div>
@@ -609,10 +605,10 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="RichText"><div className="flex items-center gap-2"><FileType className="h-3 w-3" /> Rich Text</div></SelectItem>
-                                    <SelectItem value="PlainText"><div className="flex items-center gap-2"><Type className="h-3 w-3" /> Plain Text</div></SelectItem>
-                                    <SelectItem value="Dropdown"><div className="flex items-center gap-2"><List className="h-3 w-3" /> Dropdown</div></SelectItem>
-                                    <SelectItem value="KeyValue"><div className="flex items-center gap-2"><TableIcon className="h-3 w-3" /> Structured Grid</div></SelectItem>
+                                    <FileTypeItem value="RichText" label="Rich Text" icon={FileType} />
+                                    <FileTypeItem value="PlainText" label="Plain Text" icon={Type} />
+                                    <FileTypeItem value="Dropdown" label="Dropdown" icon={List} />
+                                    <FileTypeItem value="KeyValue" label="Structured Grid" icon={TableIcon} />
                                   </SelectContent>
                                 </Select>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive rounded-lg" onClick={() => removeSection(section.id)}>
@@ -744,7 +740,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                       <Card key={col.id} className="p-3 border-slate-200 shadow-none bg-white rounded-xl">
                                         <div className="space-y-4">
                                           <div className="grid grid-cols-12 gap-4 items-end">
-                                            <div className="col-span-4 space-y-1.5">
+                                            <div className="col-span-5 space-y-1.5">
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Column Name</Label>
                                               <Input value={col.name} onChange={e => {
                                                 const cols = [...(section.columns || [])];
@@ -787,7 +783,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                               }} />
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Required</Label>
                                             </div>
-                                            <div className="col-span-2 flex justify-end pb-1">
+                                            <div className="col-span-1 flex justify-end pb-1">
                                               <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive rounded-lg" onClick={() => {
                                                 const cols = (section.columns || []).filter(c => c.id !== col.id);
                                                 updateSection(section.id, { columns: cols });
@@ -979,5 +975,16 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function FileTypeItem({ value, label, icon: Icon }: { value: string, label: string, icon: any }) {
+  return (
+    <SelectItem value={value}>
+      <div className="flex items-center gap-2">
+        <Icon className="h-3 w-3" /> 
+        {label}
+      </div>
+    </SelectItem>
   );
 }
