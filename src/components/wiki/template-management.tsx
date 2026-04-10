@@ -270,7 +270,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
             id: `col-${Date.now()}`,
             templateSectionId: sectionId,
             name: '',
-            inputType: 'TextBox',
+            inputType: 'Dropdown',
             isMulti: false,
             sortOrder: (s.columns?.length || 0) + 1,
             isRequired: false,
@@ -743,7 +743,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                       <Card key={col.id} className="p-3 border-slate-200 shadow-none bg-white rounded-xl">
                                         <div className="space-y-4">
                                           <div className="grid grid-cols-12 gap-4 items-end">
-                                            <div className="col-span-3 space-y-1.5">
+                                            <div className="col-span-6 space-y-1.5">
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Column Name</Label>
                                               <Input value={col.name} onChange={e => {
                                                 const cols = [...(section.columns || [])];
@@ -759,23 +759,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                                 updateSection(section.id, { columns: cols });
                                               }} className="h-8 rounded-lg" />
                                             </div>
-                                            <div className="col-span-2 space-y-1.5">
-                                              <Label className="text-[9px] font-black uppercase text-slate-400">Type</Label>
-                                              <Select value={col.inputType} onValueChange={v => {
-                                                const cols = [...(section.columns || [])];
-                                                cols[cIdx].inputType = v as any;
-                                                updateSection(section.id, { columns: cols });
-                                              }}>
-                                                <SelectTrigger className="h-8 rounded-lg bg-white text-xs font-bold">
-                                                  <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  <SelectItem value="TextBox">TextBox</SelectItem>
-                                                  <SelectItem value="Dropdown">Dropdown</SelectItem>
-                                                </SelectContent>
-                                              </Select>
-                                            </div>
-                                            <div className="col-span-2 pb-2 flex items-center gap-2">
+                                            <div className="col-span-3 pb-2 flex items-center gap-2">
                                               <Checkbox checked={col.isRequired} onCheckedChange={v => {
                                                 const cols = [...(section.columns || [])];
                                                 cols[cIdx].isRequired = !!v;
@@ -783,17 +767,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                               }} />
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Required</Label>
                                             </div>
-                                            {col.inputType === 'Dropdown' && (
-                                              <div className="col-span-2 pb-2 flex items-center gap-2">
-                                                <Checkbox checked={col.isMulti} onCheckedChange={v => {
-                                                  const cols = [...(section.columns || [])];
-                                                  cols[cIdx].isMulti = !!v;
-                                                  updateSection(section.id, { columns: cols });
-                                                }} />
-                                                <Label className="text-[9px] font-black uppercase text-slate-400">Multi</Label>
-                                              </div>
-                                            )}
-                                            <div className={cn("flex justify-end pb-1", col.inputType === 'Dropdown' ? "col-span-2" : "col-span-4")}>
+                                            <div className="col-span-2 flex justify-end pb-1">
                                               <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive rounded-lg" onClick={() => {
                                                 const cols = (section.columns || []).filter(c => c.id !== col.id);
                                                 updateSection(section.id, { columns: cols });
@@ -803,56 +777,54 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                             </div>
                                           </div>
 
-                                          {col.inputType === 'Dropdown' && (
-                                            <div className="ml-4 pl-4 border-l-2 border-slate-100 space-y-3">
-                                              <div className="flex items-center justify-between">
-                                                <Label className="text-[10px] font-black uppercase text-slate-500">Column Values</Label>
-                                                <Button variant="ghost" size="sm" className="h-6 text-[10px] font-bold text-[#3F51B5]" onClick={() => handleAddOption(section.id, col.id)}>
-                                                  <Plus className="h-3 w-3 mr-1" /> Add Value
-                                                </Button>
-                                              </div>
-                                              <div className="space-y-2">
-                                                {col.options?.map((opt, oIdx) => (
-                                                  <div key={opt.id} className="flex gap-2 items-center">
-                                                    <Input 
-                                                      value={opt.label} 
-                                                      className="h-7 rounded-lg flex-1 text-xs font-medium" 
-                                                      onChange={e => {
-                                                        const cols = [...(section.columns || [])];
-                                                        const opts = [...(cols[cIdx].options || [])];
-                                                        opts[oIdx].label = e.target.value;
-                                                        cols[cIdx].options = opts;
-                                                        updateSection(section.id, { columns: cols });
-                                                      }} 
-                                                    />
-                                                    <Input 
-                                                      value={opt.value} 
-                                                      className="h-7 rounded-lg flex-1 text-xs text-slate-500" 
-                                                      onChange={e => {
-                                                        const cols = [...(section.columns || [])];
-                                                        const opts = [...(cols[cIdx].options || [])];
-                                                        opts[oIdx].value = e.target.value;
-                                                        cols[cIdx].options = opts;
-                                                        updateSection(section.id, { columns: cols });
-                                                      }} 
-                                                    />
-                                                    <Button 
-                                                      variant="ghost" 
-                                                      size="icon" 
-                                                      className="h-7 w-7 text-slate-300 hover:text-destructive"
-                                                      onClick={() => {
-                                                        const cols = [...(section.columns || [])];
-                                                        cols[cIdx].options = (cols[cIdx].options || []).filter(o => o.id !== opt.id);
-                                                        updateSection(section.id, { columns: cols });
-                                                      }}
-                                                    >
-                                                      <X className="h-3 w-3" />
-                                                    </Button>
-                                                  </div>
-                                                ))}
-                                              </div>
+                                          <div className="ml-4 pl-4 border-l-2 border-slate-100 space-y-3">
+                                            <div className="flex items-center justify-between">
+                                              <Label className="text-[10px] font-black uppercase text-slate-500">Column Values (Dropdown)</Label>
+                                              <Button variant="ghost" size="sm" className="h-6 text-[10px] font-bold text-[#3F51B5]" onClick={() => handleAddOption(section.id, col.id)}>
+                                                <Plus className="h-3 w-3 mr-1" /> Add Value
+                                              </Button>
                                             </div>
-                                          )}
+                                            <div className="space-y-2">
+                                              {col.options?.map((opt, oIdx) => (
+                                                <div key={opt.id} className="flex gap-2 items-center">
+                                                  <Input 
+                                                    value={opt.label} 
+                                                    className="h-7 rounded-lg flex-1 text-xs font-medium" 
+                                                    onChange={e => {
+                                                      const cols = [...(section.columns || [])];
+                                                      const opts = [...(cols[cIdx].options || [])];
+                                                      opts[oIdx].label = e.target.value;
+                                                      cols[cIdx].options = opts;
+                                                      updateSection(section.id, { columns: cols });
+                                                    }} 
+                                                  />
+                                                  <Input 
+                                                    value={opt.value} 
+                                                    className="h-7 rounded-lg flex-1 text-xs text-slate-500" 
+                                                    onChange={e => {
+                                                      const cols = [...(section.columns || [])];
+                                                      const opts = [...(cols[cIdx].options || [])];
+                                                      opts[oIdx].value = e.target.value;
+                                                      cols[cIdx].options = opts;
+                                                      updateSection(section.id, { columns: cols });
+                                                    }} 
+                                                  />
+                                                  <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-7 w-7 text-slate-300 hover:text-destructive"
+                                                    onClick={() => {
+                                                      const cols = [...(section.columns || [])];
+                                                      cols[cIdx].options = (cols[cIdx].options || []).filter(o => o.id !== opt.id);
+                                                      updateSection(section.id, { columns: cols });
+                                                    }}
+                                                  >
+                                                    <X className="h-3 w-3" />
+                                                  </Button>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
                                         </div>
                                       </Card>
                                     ))}
