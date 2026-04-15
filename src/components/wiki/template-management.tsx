@@ -603,7 +603,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                       value={section.name} 
                                       onChange={e => updateSection(section.id, { name: e.target.value })}
                                       placeholder="Required"
-                                      className="bg-transparent border-none shadow-none font-bold text-slate-800 p-0 h-auto focus-visible:ring-0 max-w-sm"
+                                      className="bg-transparent border-none shadow-none font-bold text-slate-800 px-1 h-8 focus-visible:ring-0 max-w-sm"
                                     />
                                   </div>
                                 </div>
