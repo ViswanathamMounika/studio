@@ -597,13 +597,19 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                   {section.order}
                                 </Badge>
                                 <div className="flex flex-col flex-1 gap-1">
-                                  <div className="flex items-center gap-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Section Name <span className="text-red-500">*</span></Label>
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <Label 
+                                      htmlFor={`name-${section.id}`}
+                                      className="text-[10px] font-black uppercase text-slate-400 tracking-wider shrink-0"
+                                    >
+                                      Section Name <span className="text-red-500">*</span>
+                                    </Label>
                                     <Input 
+                                      id={`name-${section.id}`}
                                       value={section.name} 
                                       onChange={e => updateSection(section.id, { name: e.target.value })}
-                                      placeholder="Required"
-                                      className="bg-transparent border-none shadow-none font-bold text-slate-800 px-1 h-8 focus-visible:ring-0 max-w-sm"
+                                      placeholder="Enter section name..."
+                                      className="flex-1 bg-white/50 border border-slate-200 rounded-lg px-2 h-8 font-bold text-slate-800 focus-visible:ring-primary/20 max-w-sm"
                                     />
                                   </div>
                                 </div>
@@ -752,7 +758,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                     {section.columns?.map((col, cIdx) => (
                                       <Card key={col.id} className="p-4 border-slate-200 shadow-none bg-white rounded-xl">
                                         <div className="space-y-4">
-                                          {/* Header Metadata Row */}
                                           <div className="grid grid-cols-12 gap-4 items-end">
                                             <div className="col-span-8 space-y-1.5">
                                               <Label className="text-[9px] font-black uppercase text-slate-400">Column Name</Label>
@@ -788,7 +793,6 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                                             </div>
                                           </div>
 
-                                          {/* Value Row - Type & Options */}
                                           <div className="mt-4 p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center justify-between">
                                             <div className="flex items-center gap-6">
                                               <div className="flex flex-col gap-1">
