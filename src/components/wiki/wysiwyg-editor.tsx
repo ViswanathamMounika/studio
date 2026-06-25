@@ -138,10 +138,25 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     };
     
     const handleInsertCode = (lang: string = 'sql') => {
-        const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) return;
+        if (!editorRef.current) return;
+
+        let selection = window.getSelection();
+        let range: Range;
+
+        // CRITICAL FIX: Ensure the insertion happens inside the editor container.
+        // If the selection is lost or targeting an external node (like the menu),
+        // we refocus and append to the end of the documentation.
+        if (selection && selection.rangeCount > 0 && editorRef.current.contains(selection.anchorNode)) {
+            range = selection.getRangeAt(0);
+        } else {
+            editorRef.current.focus();
+            range = document.createRange();
+            range.selectNodeContents(editorRef.current);
+            range.collapse(false); // Move to the absolute end
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+        }
         
-        const range = selection.getRangeAt(0);
         const selectedText = range.toString();
         
         // Clear selection content to replace it with the new block
@@ -149,7 +164,6 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         
         const pre = document.createElement('pre');
         pre.className = `language-${lang}`;
-        // Ensure white-space style is inline if needed, but globals.css handles it
         
         const code = document.createElement('code');
         code.className = `language-${lang}`;
@@ -165,10 +179,10 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         code.textContent = selectedText || codePlaceholder;
         pre.appendChild(code);
         
-        // Insert the code block
+        // Insert the code block at the verified range
         range.insertNode(pre);
         
-        // CRITICAL: Always create a trailing paragraph to allow the user to "break out" of the code block
+        // Ensure a trailing paragraph exists so the user can "break out" of the code block
         const p = document.createElement('p');
         p.innerHTML = '<br>';
         pre.after(p);
@@ -177,21 +191,19 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         const newRange = document.createRange();
         newRange.setStart(p, 0);
         newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
+        selection?.removeAllRanges();
+        selection?.addRange(newRange);
 
         editorRef.current?.focus();
         
-        // Trigger Prism highlighting on the new element specifically
-        if (editorRef.current) {
-            // Tiny timeout to ensure DOM reconciliation before Prism pass
-            setTimeout(() => {
-                Prism.highlightElement(code);
-                if (editorRef.current) {
-                    handleInput({ currentTarget: editorRef.current } as React.FormEvent<HTMLDivElement>);
-                }
-            }, 0);
-        }
+        // Apply Prism highlighting to the newly created element
+        setTimeout(() => {
+            Prism.highlightElement(code);
+            if (editorRef.current) {
+                // Manually trigger change to save the highlighted HTML
+                onChange(editorRef.current.innerHTML);
+            }
+        }, 0);
     };
 
     const handleLink = () => {
@@ -218,7 +230,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
 
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Text Color">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Text Color" onMouseDown={(e) => e.preventDefault()}>
                             <div className="flex flex-col items-center">
                                 <Baseline className="h-4 w-4" />
                                 <div className="h-0.5 w-3 bg-primary mt-[-2px]" />
@@ -233,7 +245,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
 
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Highlight Color">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Highlight Color" onMouseDown={(e) => e.preventDefault()}>
                             <Highlighter className="h-4 w-4" />
                         </Button>
                     </PopoverTrigger>
@@ -247,7 +259,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 gap-1 text-xs px-2 rounded-lg hover:bg-accent font-bold">
+                        <Button variant="ghost" className="h-8 gap-1 text-xs px-2 rounded-lg hover:bg-accent font-bold" onMouseDown={(e) => e.preventDefault()}>
                             <Code className="h-4 w-4" />
                             Code
                             <ChevronDown className="h-3 w-3 opacity-50" />
@@ -264,7 +276,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 text-xs px-2 rounded-lg hover:bg-accent font-bold">Headers</Button>
+                        <Button variant="ghost" className="h-8 text-xs px-2 rounded-lg hover:bg-accent font-bold" onMouseDown={(e) => e.preventDefault()}>Headers</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                         <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); applyHeader('H1'); }}>Heading 1</DropdownMenuItem>
