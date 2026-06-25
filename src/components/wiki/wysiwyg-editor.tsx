@@ -1,7 +1,6 @@
-
 "use client"
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, AlignLeft, AlignCenter, AlignRight, Code, Baseline, Highlighter, ChevronDown } from "lucide-react"
 import { Button } from "../ui/button"
 import { Separator } from "../ui/separator"
@@ -15,7 +14,7 @@ import 'prismjs/components/prism-sql';
 import 'prismjs/components/prism-csharp';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-json';
-import 'prismjs/themes/prism-tomorrow.css';
+import 'prismjs/themes/prism.css'; // Switched to light theme for code blocks
 
 type WysiwygEditorProps = {
     value: string;
@@ -28,7 +27,7 @@ const ToolbarButton = ({ children, onClick, active, title }: { children: React.R
     <Button 
         variant={active ? "secondary" : "ghost"} 
         size="icon" 
-        className="h-8 w-8" 
+        className={cn("h-8 w-8 transition-colors", active && "bg-primary/10 text-primary hover:bg-primary/20")}
         onMouseDown={(e) => e.preventDefault()} 
         onClick={onClick}
         title={title}
@@ -70,18 +69,61 @@ const ColorPalette = ({ colors, onSelect }: { colors: string[], onSelect: (color
 
 export default function WysiwygEditor({ value, onChange, className, placeholder }: WysiwygEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
+    const [activeStyles, setActiveStyles] = useState({
+        bold: false,
+        italic: false,
+        underline: false,
+        strikethrough: false,
+        justifyLeft: false,
+        justifyCenter: false,
+        justifyRight: false,
+        insertUnorderedList: false,
+        insertOrderedList: false,
+    });
+
+    const updateActiveStyles = useCallback(() => {
+        if (typeof document === 'undefined') return;
+        setActiveStyles({
+            bold: document.queryCommandState('bold'),
+            italic: document.queryCommandState('italic'),
+            underline: document.queryCommandState('underline'),
+            strikethrough: document.queryCommandState('strikeThrough'),
+            justifyLeft: document.queryCommandState('justifyLeft'),
+            justifyCenter: document.queryCommandState('justifyCenter'),
+            justifyRight: document.queryCommandState('justifyRight'),
+            insertUnorderedList: document.queryCommandState('insertUnorderedList'),
+            insertOrderedList: document.queryCommandState('insertOrderedList'),
+        });
+    }, []);
 
     useEffect(() => {
         if (editorRef.current && value !== editorRef.current.innerHTML) {
             editorRef.current.innerHTML = value;
-            // Highlight blocks on initial load
             Prism.highlightAllUnder(editorRef.current);
         }
     }, [value]);
 
+    useEffect(() => {
+        const el = editorRef.current;
+        if (!el) return;
+
+        const handler = () => updateActiveStyles();
+        
+        el.addEventListener('mouseup', handler);
+        el.addEventListener('keyup', handler);
+        el.addEventListener('focus', handler);
+        
+        return () => {
+            el.removeEventListener('mouseup', handler);
+            el.removeEventListener('keyup', handler);
+            el.removeEventListener('focus', handler);
+        };
+    }, [updateActiveStyles]);
+
     const handleInput = (event: React.FormEvent<HTMLDivElement>) => {
         const content = event.currentTarget.innerHTML;
         onChange(content);
+        updateActiveStyles();
     };
 
     const execCommand = (command: string, value?: string) => {
@@ -90,6 +132,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         if (editorRef.current) {
             handleInput({ currentTarget: editorRef.current } as React.FormEvent<HTMLDivElement>);
         }
+        updateActiveStyles();
     };
     
     const handleInsertCode = (lang: string = 'sql') => {
@@ -149,10 +192,10 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         <div className="flex flex-col border rounded-xl bg-background overflow-hidden shadow-sm h-[600px]">
             {/* STATIC TOOLBAR */}
             <div className="p-2 border-b flex flex-wrap items-center gap-1 bg-white shrink-0 z-20">
-                <ToolbarButton onClick={() => execCommand('bold')} title="Bold"><Bold className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('italic')} title="Italic"><Italic className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('underline')} title="Underline"><Underline className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('strikethrough')} title="Strikethrough"><Strikethrough className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('bold')} active={activeStyles.bold} title="Bold"><Bold className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('italic')} active={activeStyles.italic} title="Italic"><Italic className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('underline')} active={activeStyles.underline} title="Underline"><Underline className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('strikeThrough')} active={activeStyles.strikethrough} title="Strikethrough"><Strikethrough className="h-4 w-4" /></ToolbarButton>
                 
                 <Separator orientation="vertical" className="h-6 mx-1" />
 
@@ -215,14 +258,14 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
-                <ToolbarButton onClick={() => execCommand('justifyLeft')} title="Align Left"><AlignLeft className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('justifyCenter')} title="Align Center"><AlignCenter className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('justifyRight')} title="Align Right"><AlignRight className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('justifyLeft')} active={activeStyles.justifyLeft} title="Align Left"><AlignLeft className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('justifyCenter')} active={activeStyles.justifyCenter} title="Align Center"><AlignCenter className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('justifyRight')} active={activeStyles.justifyRight} title="Align Right"><AlignRight className="h-4 w-4" /></ToolbarButton>
 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
-                <ToolbarButton onClick={() => execCommand('insertUnorderedList')} title="Bullet List"><List className="h-4 w-4" /></ToolbarButton>
-                <ToolbarButton onClick={() => execCommand('insertOrderedList')} title="Numbered List"><ListOrdered className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('insertUnorderedList')} active={activeStyles.insertUnorderedList} title="Bullet List"><List className="h-4 w-4" /></ToolbarButton>
+                <ToolbarButton onClick={() => execCommand('insertOrderedList')} active={activeStyles.insertOrderedList} title="Numbered List"><ListOrdered className="h-4 w-4" /></ToolbarButton>
                 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 

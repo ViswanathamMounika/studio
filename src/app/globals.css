@@ -87,13 +87,13 @@
 
 /* Custom styling for Prism code blocks in the editor/view */
 pre[class*="language-"] {
-  background: #1e1e1e !important; /* Force deep dark background for readability */
-  color: #d4d4d4 !important;      /* Force light text color */
+  background: #f8fafc !important; /* Light slate background for better document integration */
+  color: #1e293b !important;      /* Dark slate for primary text */
   padding: 1.5rem !important;
   overflow-x: auto !important;    /* Enable horizontal scroll bar if needed */
   white-space: pre-wrap !important; /* Wrap lines to avoid single-line blocks */
   word-break: break-word !important;
-  @apply rounded-xl border border-slate-800 shadow-2xl my-6 !important;
+  @apply rounded-xl border border-slate-200 shadow-sm my-6 !important;
 }
 
 code[class*="language-"] {
