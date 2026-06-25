@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -50,9 +51,6 @@ const MODULE_OPTIONS = [
   'Provider Network'
 ];
 
-/**
- * Re-indexes all sections in a template to ensure global and internal orders are contiguous.
- */
 function reindexTemplate(sections: TemplateSection[]): TemplateSection[] {
   const standaloneSections = sections.filter(s => !s.group);
   const uniqueGroupNames = Array.from(new Set(sections.filter(s => s.group).map(s => s.group as string)));
@@ -113,14 +111,10 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [currentTemplate, setCurrentTemplate] = useState<Partial<Template>>({});
   const [isEditing, setIsEditing] = useState(false);
-  
-  // Track original IDs to lock field types
   const [originalSectionIds, setOriginalSectionIds] = useState<Set<string>>(new Set());
   const [originalColumnIds, setOriginalColumnIds] = useState<Set<string>>(new Set());
-
   const [groupForm, setGroupForm] = useState<GroupForm>({ name: '', order: 1, sectionConfigs: [] });
   const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
-
   const { toast } = useToast();
 
   const handleCreateNew = () => {
@@ -142,23 +136,17 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   const handleEdit = (template: Template) => {
     setIsEditing(true);
     setCurrentTemplate({ ...template });
-    
-    // Store original IDs to enforce immutable field types
     setOriginalSectionIds(new Set(template.sections.map(s => s.id)));
     const colIds = new Set<string>();
     template.sections.forEach(s => s.columns?.forEach(c => colIds.add(c.id)));
     setOriginalColumnIds(colIds);
-    
     setIsModalOpen(true);
   };
 
   const handleDeleteTemplate = (id: string) => {
     const updatedTemplates = templates.filter(t => t.id !== id);
     onSaveTemplates(updatedTemplates);
-    toast({
-      title: "Template Deleted",
-      description: "The blueprint has been removed from the system.",
-    });
+    toast({ title: "Template Deleted", description: "The blueprint has been removed." });
   };
 
   const handleSaveTemplate = () => {
@@ -166,34 +154,18 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       toast({ variant: 'destructive', title: 'Error', description: 'Template Name is required.' });
       return;
     }
-
     if (!currentTemplate.module) {
       toast({ variant: 'destructive', title: 'Error', description: 'Module is required.' });
       return;
     }
-
-    const hasInvalidSections = currentTemplate.sections?.some(s => !s.name.trim());
-    if (hasInvalidSections) {
-      toast({ variant: 'destructive', title: 'Error', description: 'All sections must have a name.' });
-      return;
-    }
-
     const templateToSave = currentTemplate as Template;
-    let updatedTemplates: Template[];
-
-    if (isEditing) {
-      updatedTemplates = templates.map(t => t.id === templateToSave.id ? templateToSave : t);
-    } else {
-      updatedTemplates = [...templates, templateToSave];
-    }
-
+    let updatedTemplates = isEditing ? templates.map(t => t.id === templateToSave.id ? templateToSave : t) : [...templates, templateToSave];
     if (templateToSave.isDefault) {
       updatedTemplates = updatedTemplates.map(t => t.id === templateToSave.id ? t : { ...t, isDefault: false });
     }
-
     onSaveTemplates(updatedTemplates);
     setIsModalOpen(false);
-    toast({ title: 'Success', description: 'Template configuration saved.' });
+    toast({ title: 'Success', description: 'Template saved.' });
   };
 
   const handleAddSection = () => {
@@ -295,23 +267,11 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
   const handleOpenGroupModal = (groupToEdit?: string) => {
     const allSections = currentTemplate.sections || [];
-    const availableSections = allSections.filter(s => 
-      groupToEdit ? (s.group === groupToEdit || !s.group) : !s.group
-    );
-
-    const configs = availableSections.map(s => ({
-      sectionId: s.id,
-      order: s.order || 1,
-      included: s.group === groupToEdit
-    }));
-
+    const availableSections = allSections.filter(s => groupToEdit ? (s.group === groupToEdit || !s.group) : !s.group);
+    const configs = availableSections.map(s => ({ sectionId: s.id, order: s.order || 1, included: s.group === groupToEdit }));
     if (groupToEdit) {
       const firstSection = allSections.find(s => s.group === groupToEdit);
-      setGroupForm({ 
-        name: groupToEdit, 
-        order: firstSection?.groupOrder || 1,
-        sectionConfigs: configs 
-      });
+      setGroupForm({ name: groupToEdit, order: firstSection?.groupOrder || 1, sectionConfigs: configs });
       setEditingGroupName(groupToEdit);
     } else {
       setGroupForm({ name: '', order: 1, sectionConfigs: configs });
@@ -322,60 +282,36 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 
   const handleSaveGroup = () => {
     if (!groupForm.name.trim()) return;
-
     setCurrentTemplate(prev => {
       const sections = (prev.sections || []).map(s => {
         const config = groupForm.sectionConfigs.find(c => c.sectionId === s.id);
         const wasInEditingGroup = editingGroupName ? s.group === editingGroupName : false;
-
-        if (config?.included) {
-          return { ...s, group: groupForm.name, groupOrder: groupForm.order, order: config.order };
-        } else if (wasInEditingGroup) {
-          return { ...s, group: undefined, groupOrder: undefined };
-        }
+        if (config?.included) return { ...s, group: groupForm.name, groupOrder: groupForm.order, order: config.order };
+        else if (wasInEditingGroup) return { ...s, group: undefined, groupOrder: undefined };
         return s;
       });
-      
       return { ...prev, sections: reindexTemplate(sections) };
     });
-
     setIsGroupModalOpen(false);
-    toast({ title: 'Groups Updated', description: `Group "${groupForm.name}" has been configured.` });
   };
 
   const handleRemoveGroup = (groupName: string) => {
     setCurrentTemplate(prev => {
-      const sections = (prev.sections || []).map(s => 
-        s.group === groupName ? { ...s, group: undefined, groupOrder: undefined } : s
-      );
+      const sections = (prev.sections || []).map(s => s.group === groupName ? { ...s, group: undefined, groupOrder: undefined } : s);
       return { ...prev, sections: reindexTemplate(sections) };
     });
-    toast({ title: 'Group Deleted', description: `All sections from "${groupName}" have been ungrouped.` });
   };
 
   const displayGroups = useMemo(() => {
     const allSections = currentTemplate.sections || [];
-    
     const standaloneSections = allSections.filter(s => !s.group);
     const uniqueGroupNames = Array.from(new Set(allSections.filter(s => s.group).map(s => s.group as string)));
-
     const units: Array<{ type: 'section' | 'group', order: number, name?: string, sections: TemplateSection[] }> = [];
-
-    standaloneSections.forEach(s => {
-      units.push({ type: 'section', order: s.order, sections: [s] });
-    });
-
+    standaloneSections.forEach(s => units.push({ type: 'section', order: s.order, sections: [s] }));
     uniqueGroupNames.forEach(name => {
       const groupSections = allSections.filter(s => s.group === name);
-      const groupOrder = groupSections[0]?.groupOrder || 0;
-      units.push({ 
-        type: 'group', 
-        name, 
-        order: groupOrder, 
-        sections: groupSections.sort((a, b) => a.order - b.order) 
-      });
+      units.push({ type: 'group', name, order: groupSections[0]?.groupOrder || 0, sections: groupSections.sort((a, b) => a.order - b.order) });
     });
-
     return units.sort((a, b) => a.order - b.order);
   }, [currentTemplate.sections]);
 
@@ -386,7 +322,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Template Management</h1>
           <p className="text-muted-foreground font-medium">Define structured blueprints for documentation.</p>
         </div>
-        <Button onClick={handleCreateNew} className="rounded-xl bg-[#3F51B5] hover:bg-[#3F51B5]/90 px-6 font-bold shadow-md shadow-indigo-100">
+        <Button onClick={handleCreateNew} className="rounded-xl bg-[#3F51B5] hover:bg-[#3F51B5]/90 px-6 font-bold shadow-md">
           <Plus className="mr-2 h-4 w-4" />
           Create Template
         </Button>
@@ -396,16 +332,16 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-100 dark:bg-slate-900 border-none">
-                <TableHead className="py-4 px-6 font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Template Name</TableHead>
-                <TableHead className="font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Module</TableHead>
-                <TableHead className="font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Status</TableHead>
-                <TableHead className="text-right px-6 font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-slate-100">Actions</TableHead>
+              <TableRow className="bg-slate-100 border-none">
+                <TableHead className="py-4 px-6 font-black uppercase text-[11px] tracking-widest text-slate-900">Template Name</TableHead>
+                <TableHead className="font-black uppercase text-[11px] tracking-widest text-slate-900">Module</TableHead>
+                <TableHead className="font-black uppercase text-[11px] tracking-widest text-slate-900">Status</TableHead>
+                <TableHead className="text-right px-6 font-black uppercase text-[11px] tracking-widest text-slate-900">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {templates.map(template => (
-                <TableRow key={template.id} className="hover:bg-slate-50/50 transition-colors border-slate-100">
+                <TableRow key={template.id} className="hover:bg-slate-50 transition-colors border-slate-100">
                   <TableCell className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <p className="font-bold text-slate-900">{template.name}</p>
@@ -413,35 +349,14 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                     </div>
                     <p className="text-xs text-slate-500 line-clamp-1">{template.description}</p>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="font-bold border-slate-200 bg-slate-50 text-slate-600">{template.module}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={template.isActive ? 'success' : 'secondary'} className="font-bold">{template.isActive ? 'Active' : 'Inactive'}</Badge>
-                  </TableCell>
+                  <TableCell><Badge variant="outline" className="font-bold border-slate-200 bg-slate-50 text-slate-600">{template.module}</Badge></TableCell>
+                  <TableCell><Badge variant={template.isActive ? 'success' : 'secondary'} className="font-bold">{template.isActive ? 'Active' : 'Inactive'}</Badge></TableCell>
                   <TableCell className="text-right px-6">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary rounded-lg" onClick={() => handleEdit(template)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={() => handleEdit(template)}><Pencil className="h-4 w-4" /></Button>
                       <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive rounded-lg">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="rounded-2xl border-none p-8">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="text-2xl font-bold">Delete Template?</AlertDialogTitle>
-                            <AlertDialogDescription className="text-slate-500 text-sm">
-                              This action will remove the blueprint <strong>{template.name}</strong> from the management list.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter className="mt-8 gap-3">
-                            <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteTemplate(template.id)} className="rounded-xl bg-red-600 hover:bg-red-700 font-bold">Delete Blueprint</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
+                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-2xl border-none p-8"><AlertDialogHeader><AlertDialogTitle className="text-2xl font-bold">Delete Template?</AlertDialogTitle><AlertDialogDescription className="text-slate-500 text-sm">Action will remove <strong>{template.name}</strong>.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter className="mt-8 gap-3"><AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTemplate(template.id)} className="rounded-xl bg-red-600 font-bold">Delete Blueprint</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                       </AlertDialog>
                     </div>
                   </TableCell>
@@ -453,435 +368,80 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       </Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent 
-          className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden border-none rounded-[24px] shadow-2xl"
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
-        >
+        <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden border-none rounded-[24px] shadow-2xl">
           <div className="p-6 border-b bg-white sticky top-0 z-50 flex justify-between items-center shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <LayoutTemplate className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <DialogTitle className="text-xl font-bold tracking-tight">
-                  {isEditing ? 'Edit Template' : 'New Blueprint'}
-                </DialogTitle>
-                <p className="text-sm text-slate-500">Configure documentation structure and metadata validation.</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <DialogClose asChild>
-                <Button variant="outline" className="rounded-xl border-slate-200">Cancel</Button>
-              </DialogClose>
-              <Button onClick={handleSaveTemplate} className="rounded-xl bg-[#3F51B5] hover:bg-[#3F51B5]/90 shadow-md gap-2 font-bold px-6">
-                <Save className="h-4 w-4" />
-                Save Schema
-              </Button>
-            </div>
+            <div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center"><LayoutTemplate className="h-5 w-5 text-primary" /></div><div><DialogTitle className="text-xl font-bold">{isEditing ? 'Edit Template' : 'New Blueprint'}</DialogTitle><p className="text-sm text-slate-500">Configure documentation structure.</p></div></div>
+            <div className="flex gap-2"><DialogClose asChild><Button variant="outline" className="rounded-xl border-slate-200">Cancel</Button></DialogClose><Button onClick={handleSaveTemplate} className="rounded-xl bg-[#3F51B5] hover:bg-[#3F51B5]/90 gap-2 font-bold px-6"><Save className="h-4 w-4" />Save Schema</Button></div>
           </div>
-
           <ScrollArea className="flex-1 bg-slate-50/30">
             <div className="p-8 space-y-10 pb-32">
               <div className="space-y-6">
-                <div className="flex justify-end items-center gap-2">
-                  <Label htmlFor="is-active" className="text-[10px] font-black uppercase text-slate-400 tracking-widest cursor-pointer">Active Status</Label>
-                  <Switch 
-                    id="is-active" 
-                    checked={currentTemplate.isActive} 
-                    onCheckedChange={v => setCurrentTemplate(prev => ({ ...prev, isActive: v }))}
-                    className="scale-75"
-                  />
-                </div>
-
+                <div className="flex justify-end items-center gap-2"><Label htmlFor="is-active" className="text-[10px] font-black uppercase text-slate-400 tracking-widest cursor-pointer">Active Status</Label><Switch id="is-active" checked={currentTemplate.isActive} onCheckedChange={v => setCurrentTemplate(prev => ({ ...prev, isActive: v }))} className="scale-75" /></div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-                  <div className="md:col-span-2 space-y-2">
-                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Template Name <span className="text-red-500">*</span></Label>
-                    <Input 
-                      value={currentTemplate.name} 
-                      onChange={e => setCurrentTemplate(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g., Clinical Workflow Blueprint"
-                      className="rounded-xl border-slate-200 h-11 text-base font-bold focus-visible:ring-primary/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Module <span className="text-red-500">*</span></Label>
-                    <Select 
-                      value={currentTemplate.module} 
-                      onValueChange={v => setCurrentTemplate(prev => ({ ...prev, module: v }))}
-                    >
-                      <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white">
-                        <SelectValue placeholder="Select Module" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MODULE_OPTIONS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Configuration</Label>
-                    <div className="flex items-center gap-2 pt-2">
-                      <Checkbox 
-                        id="is-default" 
-                        checked={currentTemplate.isDefault} 
-                        onCheckedChange={v => setCurrentTemplate(prev => ({ ...prev, isDefault: !!v }))}
-                      />
-                      <Label htmlFor="is-default" className="text-sm font-bold text-slate-700 cursor-pointer">System Default</Label>
-                    </div>
-                  </div>
+                  <div className="md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Template Name <span className="text-red-500">*</span></Label><Input value={currentTemplate.name} onChange={e => setCurrentTemplate(prev => ({ ...prev, name: e.target.value }))} placeholder="e.g., Clinical Workflow Blueprint" className="rounded-xl border-slate-200 h-11 text-base font-bold" /></div>
+                  <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Module <span className="text-red-500">*</span></Label><Select value={currentTemplate.module} onValueChange={v => setCurrentTemplate(prev => ({ ...prev, module: v }))}><SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white"><SelectValue placeholder="Select Module" /></SelectTrigger><SelectContent>{MODULE_OPTIONS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Configuration</Label><div className="flex items-center gap-2 pt-2"><Checkbox id="is-default" checked={currentTemplate.isDefault} onCheckedChange={v => setCurrentTemplate(prev => ({ ...prev, isDefault: !!v }))} /><Label htmlFor="is-default" className="text-sm font-bold text-slate-700 cursor-pointer">System Default</Label></div></div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Description</Label>
-                  <Textarea 
-                    value={currentTemplate.description} 
-                    onChange={e => setCurrentTemplate(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe the purpose of this documentation blueprint..."
-                    className="rounded-xl border-slate-200 min-h-[80px]"
-                  />
-                </div>
+                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Description</Label><Textarea value={currentTemplate.description} onChange={e => setCurrentTemplate(prev => ({ ...prev, description: e.target.value }))} placeholder="Describe blueprint purpose..." className="rounded-xl border-slate-200 min-h-[80px]" /></div>
               </div>
-
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">Schema Architecture</h3>
-                    <p className="text-sm text-slate-500">Define the data capture sections for this blueprint.</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => handleOpenGroupModal()} className="rounded-xl border-slate-200 bg-white hover:bg-slate-50 shadow-sm gap-2 font-bold h-9">
-                      <FolderPlus className="h-4 w-4 text-[#3F51B5]" />
-                      Create Group
-                    </Button>
-                    <Button variant="outline" onClick={handleAddSection} className="rounded-xl border-slate-200 bg-white hover:bg-slate-50 shadow-sm gap-2 font-bold h-9">
-                      <Plus className="h-4 w-4 text-[#3F51B5]" />
-                      Add Section
-                    </Button>
-                  </div>
-                </div>
-
+                <div className="flex items-center justify-between"><div><h3 className="text-lg font-bold text-slate-900">Schema Architecture</h3><p className="text-sm text-slate-500">Define data capture sections.</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => handleOpenGroupModal()} className="rounded-xl bg-white gap-2 font-bold h-9"><FolderPlus className="h-4 w-4 text-[#3F51B5]" />Create Group</Button><Button variant="outline" onClick={handleAddSection} className="rounded-xl bg-white gap-2 font-bold h-9"><Plus className="h-4 w-4 text-[#3F51B5]" />Add Section</Button></div></div>
                 <div className="space-y-8">
                   {displayGroups.map((unit, uIdx) => (
-                    <div key={uIdx} className={cn(unit.type === 'group' ? "bg-slate-100/50 p-6 rounded-[28px] border border-slate-200/60 shadow-inner" : "space-y-6")}>
+                    <div key={uIdx} className={cn(unit.type === 'group' ? "bg-slate-100/50 p-6 rounded-[28px] border border-slate-200 shadow-inner" : "space-y-6")}>
                       {unit.type === 'group' && unit.name && (
-                        <div className="flex items-center justify-between mb-6 px-2">
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-lg bg-[#3F51B5]/10 flex items-center justify-center">
-                              <FolderTree className="h-4 w-4 text-[#3F51B5]" />
-                            </div>
-                            <div className="flex flex-col">
-                              <h4 className="text-base font-black text-slate-800 uppercase tracking-widest">{unit.name}</h4>
-                              <span className="text-[10px] font-bold text-slate-400">Global Index: {unit.order}</span>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => handleOpenGroupModal(unit.name)} className="h-8 rounded-lg text-slate-500 font-bold hover:bg-white">
-                              <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Edit Group
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleRemoveGroup(unit.name)} className="h-8 rounded-lg text-red-500 font-bold hover:bg-white">
-                              <X className="h-3.5 w-3.5 mr-1.5" /> Ungroup
-                            </Button>
-                          </div>
-                        </div>
+                        <div className="flex items-center justify-between mb-6 px-2"><div className="flex items-center gap-3"><div className="h-8 w-8 rounded-lg bg-[#3F51B5]/10 flex items-center justify-center"><FolderTree className="h-4 w-4 text-[#3F51B5]" /></div><div><h4 className="text-base font-black text-slate-800 uppercase tracking-widest">{unit.name}</h4><span className="text-[10px] font-bold text-slate-400">Global Index: {unit.order}</span></div></div><div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => handleOpenGroupModal(unit.name)} className="h-8 rounded-lg text-slate-500 font-bold hover:bg-white"><Settings2 className="h-3.5 w-3.5 mr-1.5" /> Edit Group</Button><Button variant="ghost" size="sm" onClick={() => handleRemoveGroup(unit.name)} className="h-8 rounded-lg text-red-500 font-bold hover:bg-white"><X className="h-3.5 w-3.5 mr-1.5" /> Ungroup</Button></div></div>
                       )}
-
                       <div className="space-y-6">
                         {unit.sections.map((section) => (
-                          <Card key={section.id} className={cn(
-                            "rounded-2xl border-slate-200 shadow-sm overflow-hidden group/section bg-white transition-all",
-                            unit.type === 'group' ? "border-l-4 border-l-[#3F51B5]" : "border-l-4 border-l-slate-200"
-                          )}>
+                          <Card key={section.id} className={cn("rounded-2xl border-slate-200 shadow-sm overflow-hidden bg-white", unit.type === 'group' ? "border-l-4 border-l-[#3F51B5]" : "border-l-4 border-l-slate-200")}>
                             <div className="p-4 bg-slate-50/50 border-b flex items-center justify-between">
                               <div className="flex items-center gap-3 flex-1">
-                                <Badge className={cn("text-white h-6 w-6 p-0 rounded-lg flex items-center justify-center font-bold text-[10px]", unit.type === 'group' ? "bg-[#3F51B5]" : "bg-slate-400")}>
-                                  {section.order}
-                                </Badge>
-                                <div className="flex flex-col flex-1 gap-1">
-                                  <div className="flex items-center gap-2 flex-1">
-                                    <Label 
-                                      htmlFor={`name-${section.id}`}
-                                      className="text-[10px] font-black uppercase text-slate-400 tracking-wider shrink-0"
-                                    >
-                                      Section Name <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input 
-                                      id={`name-${section.id}`}
-                                      value={section.name} 
-                                      onChange={e => updateSection(section.id, { name: e.target.value })}
-                                      placeholder="Enter section name..."
-                                      className="flex-1 bg-white/50 border border-slate-200 rounded-lg px-2 h-8 font-bold text-slate-800 focus-visible:ring-primary/20 max-w-sm"
-                                    />
-                                  </div>
+                                <Badge className={cn("text-white h-6 w-6 p-0 rounded-lg flex items-center justify-center font-bold text-[10px]", unit.type === 'group' ? "bg-[#3F51B5]" : "bg-slate-400")}>{section.order}</Badge>
+                                <div className="flex items-center gap-2 flex-1">
+                                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider shrink-0">Section Name <span className="text-red-500">*</span></Label>
+                                  <Input value={section.name} onChange={e => updateSection(section.id, { name: e.target.value })} placeholder="Enter section name..." className="flex-1 bg-white border border-slate-200 rounded-lg px-3 h-9 font-bold text-slate-800" />
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Select 
-                                  disabled={isEditing && originalSectionIds.has(section.id)}
-                                  value={section.fieldType} 
-                                  onValueChange={v => updateSection(section.id, { fieldType: v as any })}
-                                >
-                                  <SelectTrigger className="h-8 w-36 rounded-lg text-xs font-bold border-slate-200 bg-white">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <FileTypeItem value="RichText" label="Rich Text" icon={FileType} />
-                                    <FileTypeItem value="PlainText" label="Plain Text" icon={Type} />
-                                    <FileTypeItem value="Dropdown" label="Dropdown" icon={List} />
-                                    <FileTypeItem value="KeyValue" label="Structured Grid" icon={TableIcon} />
-                                  </SelectContent>
+                                <Select disabled={isEditing && originalSectionIds.has(section.id)} value={section.fieldType} onValueChange={v => updateSection(section.id, { fieldType: v as any })}>
+                                  <SelectTrigger className="h-8 w-36 rounded-lg text-xs font-bold bg-white"><SelectValue /></SelectTrigger>
+                                  <SelectContent><FileTypeItem value="RichText" label="Rich Text" icon={FileType} /><FileTypeItem value="PlainText" label="Plain Text" icon={Type} /><FileTypeItem value="Dropdown" label="Dropdown" icon={List} /><FileTypeItem value="KeyValue" label="Structured Grid" icon={TableIcon} /></SelectContent>
                                 </Select>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive rounded-lg" onClick={() => removeSection(section.id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive" onClick={() => removeSection(section.id)}><Trash2 className="h-4 w-4" /></Button>
                               </div>
                             </div>
-                            
                             <CardContent className="p-6 space-y-6">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Description (Optional)</Label>
-                                  <Input 
-                                    value={section.description || ''} 
-                                    onChange={e => updateSection(section.id, { description: e.target.value })}
-                                    placeholder="Provide context or guidelines for this section..."
-                                    className="h-9 rounded-xl border-slate-200"
-                                  />
-                                </div>
+                                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Description (Optional)</Label><Input value={section.description || ''} onChange={e => updateSection(section.id, { description: e.target.value })} placeholder="Provide guidelines..." className="h-9 rounded-xl" /></div>
                                 <div className="grid grid-cols-3 gap-4">
-                                  <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sequence</Label>
-                                    <Input 
-                                      type="number"
-                                      value={section.order || ''} 
-                                      onChange={e => updateSection(section.id, { order: parseInt(e.target.value) || 0 })}
-                                      className="h-9 rounded-xl border-slate-200 font-bold text-center"
-                                    />
-                                  </div>
-                                  <div className="flex items-center gap-2 pt-6">
-                                    <Checkbox id={`req-${section.id}`} checked={section.isRequired} onCheckedChange={v => updateSection(section.id, { isRequired: !!v })} />
-                                    <Label htmlFor={`req-${section.id}`} className="text-xs font-bold text-slate-600">Mandatory</Label>
-                                  </div>
-                                  {section.fieldType === 'Dropdown' && (
-                                    <div className="flex items-center gap-2 pt-6">
-                                      <Checkbox id={`multi-${section.id}`} checked={section.isMulti} onCheckedChange={v => updateSection(section.id, { isMulti: !!v })} />
-                                      <Label htmlFor={`multi-${section.id}`} className="text-xs font-bold text-slate-600">Multi-Select</Label>
-                                    </div>
-                                  )}
+                                  <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sequence</Label><Input type="number" value={section.order || ''} onChange={e => updateSection(section.id, { order: parseInt(e.target.value) || 0 })} className="h-9 rounded-xl font-bold text-center" /></div>
+                                  <div className="flex items-center gap-2 pt-6"><Checkbox id={`req-${section.id}`} checked={section.isRequired} onCheckedChange={v => updateSection(section.id, { isRequired: !!v })} /><Label htmlFor={`req-${section.id}`} className="text-xs font-bold text-slate-600">Mandatory</Label></div>
+                                  {section.fieldType === 'Dropdown' && <div className="flex items-center gap-2 pt-6"><Checkbox id={`multi-${section.id}`} checked={section.isMulti} onCheckedChange={v => updateSection(section.id, { isMulti: !!v })} /><Label htmlFor={`multi-${section.id}`} className="text-xs font-bold text-slate-600">Multi-Select</Label></div>}
                                 </div>
                               </div>
-
-                              {(section.fieldType === 'PlainText' || section.fieldType === 'RichText') && (
-                                <div className="w-1/4 space-y-1.5">
-                                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Max Character Length</Label>
-                                  <Input 
-                                    type="number"
-                                    value={section.maxLength || ''} 
-                                    onChange={e => updateSection(section.id, { maxLength: parseInt(e.target.value) || undefined })}
-                                    className="h-9 rounded-xl border-slate-200"
-                                  />
-                                </div>
-                              )}
-
-                              {section.fieldType === 'Dropdown' && (
-                                <div className="space-y-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500">Mapped Options</Label>
-                                    <Button variant="ghost" size="sm" className="h-7 text-xs font-bold text-[#3F51B5]" onClick={() => handleAddOption(section.id)}>
-                                      <Plus className="h-3 w-3 mr-1" /> Add Option
-                                    </Button>
-                                  </div>
-                                  <div className="space-y-2">
-                                    {section.options?.map((opt, oIdx) => (
-                                      <div key={opt.id} className="flex gap-2 items-center">
-                                        <Input 
-                                          value={opt.label} 
-                                          placeholder="Display Label" 
-                                          className="h-8 rounded-lg flex-1 font-medium" 
-                                          onChange={e => {
-                                            const opts = [...(section.options || [])];
-                                            opts[oIdx].label = e.target.value;
-                                            updateSection(section.id, { options: opts });
-                                          }} 
-                                        />
-                                        <Input 
-                                          value={opt.value} 
-                                          placeholder="Database Value" 
-                                          className="h-8 rounded-lg flex-1 text-slate-500" 
-                                          onChange={e => {
-                                            const opts = [...(section.options || [])];
-                                            opts[oIdx].value = e.target.value;
-                                            updateSection(section.id, { options: opts });
-                                          }} 
-                                        />
-                                        <div className="w-20">
-                                          <Input 
-                                            type="number"
-                                            value={opt.sortOrder} 
-                                            className="h-8 rounded-lg text-center" 
-                                            onChange={e => {
-                                              const opts = [...(section.options || [])];
-                                              opts[oIdx].sortOrder = parseInt(e.target.value) || 0;
-                                              updateSection(section.id, { options: opts });
-                                            }} 
-                                          />
-                                        </div>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="icon" 
-                                          className="h-8 w-8 text-slate-300 hover:text-destructive"
-                                          onClick={() => {
-                                            const opts = (section.options || []).filter(o => o.id !== opt.id);
-                                            updateSection(section.id, { options: opts });
-                                          }}
-                                        >
-                                          <X className="h-3.5 w-3.5" />
-                                        </Button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
                               {section.fieldType === 'KeyValue' && (
                                 <div className="space-y-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                      <TableIcon className="h-4 w-4 text-slate-400" />
-                                      <Label className="text-[11px] font-black uppercase text-slate-500">Grid Columns</Label>
-                                    </div>
-                                    <Button variant="ghost" size="sm" className="h-7 text-xs font-bold text-[#3F51B5]" onClick={() => handleAddColumn(section.id)}>
-                                      <Plus className="h-3 w-3 mr-1" /> Add Column
-                                    </Button>
-                                  </div>
-                                  
-                                  <div className="space-y-4">
-                                    {section.columns?.map((col, cIdx) => (
-                                      <Card key={col.id} className="p-4 border-slate-200 shadow-none bg-white rounded-xl">
+                                  <div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><TableIcon className="h-4 w-4 text-slate-400" /><Label className="text-[11px] font-black uppercase text-slate-500">Grid Columns</Label></div><Button variant="ghost" size="sm" className="h-7 text-xs font-bold text-[#3F51B5]" onClick={() => handleAddColumn(section.id)}><Plus className="h-3 w-3 mr-1" /> Add Column</Button></div>
+                                  <div className="space-y-4">{section.columns?.map((col, cIdx) => (
+                                      <Card key={col.id} className="p-4 border-slate-200 bg-white rounded-xl">
                                         <div className="space-y-4">
                                           <div className="grid grid-cols-12 gap-4 items-end">
-                                            <div className="col-span-8 space-y-1.5">
-                                              <Label className="text-[9px] font-black uppercase text-slate-400">Column Name</Label>
-                                              <Input value={col.name} onChange={e => {
-                                                const cols = [...(section.columns || [])];
-                                                cols[cIdx].name = e.target.value;
-                                                updateSection(section.id, { columns: cols });
-                                              }} className="h-8 rounded-lg font-bold" />
-                                            </div>
-                                            <div className="col-span-1 space-y-1.5">
-                                              <Label className="text-[9px] font-black uppercase text-slate-400 text-center">Index</Label>
-                                              <Input type="number" value={col.sortOrder} onChange={e => {
-                                                const cols = [...(section.columns || [])];
-                                                cols[cIdx].sortOrder = parseInt(e.target.value) || 0;
-                                                updateSection(section.id, { columns: cols });
-                                              }} className="h-8 rounded-lg text-center" />
-                                            </div>
-                                            <div className="col-span-2 pb-2 flex items-center gap-2 justify-center">
-                                              <Checkbox checked={col.isRequired} onCheckedChange={v => {
-                                                const cols = [...(section.columns || [])];
-                                                cols[cIdx].isRequired = !!v;
-                                                updateSection(section.id, { columns: cols });
-                                              }} />
-                                              <Label className="text-[9px] font-black uppercase text-slate-400">Required</Label>
-                                            </div>
-                                            <div className="col-span-1 flex justify-end pb-1">
-                                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive rounded-lg" onClick={() => {
-                                                const cols = (section.columns || []).filter(c => c.id !== col.id);
-                                                updateSection(section.id, { columns: cols });
-                                              }}>
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                              </Button>
-                                            </div>
+                                            <div className="col-span-8 space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400">Column Name</Label><Input value={col.name} onChange={e => { const cols = [...(section.columns || [])]; cols[cIdx].name = e.target.value; updateSection(section.id, { columns: cols }); }} className="h-8 rounded-lg font-bold" /></div>
+                                            <div className="col-span-1 space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 text-center">Index</Label><Input type="number" value={col.sortOrder} onChange={e => { const cols = [...(section.columns || [])]; cols[cIdx].sortOrder = parseInt(e.target.value) || 0; updateSection(section.id, { columns: cols }); }} className="h-8 rounded-lg text-center" /></div>
+                                            <div className="col-span-2 pb-2 flex items-center gap-2 justify-center"><Checkbox checked={col.isRequired} onCheckedChange={v => { const cols = [...(section.columns || [])]; cols[cIdx].isRequired = !!v; updateSection(section.id, { columns: cols }); }} /><Label className="text-[9px] font-black uppercase text-slate-400">Required</Label></div>
+                                            <div className="col-span-1 flex justify-end pb-1"><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive" onClick={() => { const cols = (section.columns || []).filter(c => c.id !== col.id); updateSection(section.id, { columns: cols }); }}><Trash2 className="h-3.5 w-3.5" /></Button></div>
                                           </div>
-
-                                          <div className="mt-4 p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center justify-between">
-                                            <div className="flex items-center gap-6">
-                                              <div className="flex flex-col gap-1">
-                                                <Label className="text-[10px] font-black uppercase text-slate-500 tracking-tight">Column Value</Label>
-                                              </div>
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-xs font-bold text-slate-600">Type:</span>
-                                                <Select 
-                                                  disabled={isEditing && originalColumnIds.has(col.id)}
-                                                  value={col.inputType} 
-                                                  onValueChange={v => {
-                                                    const cols = [...(section.columns || [])];
-                                                    cols[cIdx].inputType = v as any;
-                                                    updateSection(section.id, { columns: cols });
-                                                  }}
-                                                >
-                                                  <SelectTrigger className="h-7 w-32 rounded-lg bg-white border-slate-200 text-xs font-bold">
-                                                    <SelectValue />
-                                                  </SelectTrigger>
-                                                  <SelectContent>
-                                                    <SelectItem value="TextBox">Text Box</SelectItem>
-                                                    <SelectItem value="Dropdown">Drop Down</SelectItem>
-                                                  </SelectContent>
-                                                </Select>
-                                              </div>
-                                            </div>
-
-                                            {col.inputType === 'Dropdown' && (
-                                              <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                className="h-7 text-[10px] font-black uppercase tracking-wider text-primary hover:bg-white rounded-lg px-3"
-                                                onClick={() => handleAddOption(section.id, col.id)}
-                                              >
-                                                <Plus className="h-3 w-3 mr-1.5" /> Add Value
-                                              </Button>
-                                            )}
+                                          <div className="mt-4 p-3 bg-slate-50/50 rounded-xl flex items-center justify-between">
+                                            <div className="flex items-center gap-6"><div className="flex items-center gap-2"><span className="text-xs font-bold text-slate-600">Column Value Type:</span><Select disabled={isEditing && originalColumnIds.has(col.id)} value={col.inputType} onValueChange={v => { const cols = [...(section.columns || [])]; cols[cIdx].inputType = v as any; updateSection(section.id, { columns: cols }); }}><SelectTrigger className="h-7 w-32 bg-white text-xs font-bold"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="TextBox">Text Box</SelectItem><SelectItem value="Dropdown">Drop Down</SelectItem></SelectContent></Select></div></div>
+                                            {col.inputType === 'Dropdown' && <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-primary" onClick={() => handleAddOption(section.id, col.id)}><Plus className="h-3 w-3 mr-1.5" /> Add Value</Button>}
                                           </div>
-
-                                          {col.inputType === 'Dropdown' && (
-                                            <div className="ml-6 pl-4 border-l-2 border-slate-100 space-y-3">
-                                              <div className="space-y-2">
-                                                {col.options?.map((opt, oIdx) => (
-                                                  <div key={opt.id} className="flex gap-2 items-center">
-                                                    <Input 
-                                                      value={opt.label} 
-                                                      placeholder="Label"
-                                                      className="h-7 rounded-lg flex-1 text-xs font-medium" 
-                                                      onChange={e => {
-                                                        const cols = [...(section.columns || [])];
-                                                        const opts = [...(cols[cIdx].options || [])];
-                                                        opts[oIdx].label = e.target.value;
-                                                        cols[cIdx].options = opts;
-                                                        updateSection(section.id, { columns: cols });
-                                                      }} 
-                                                    />
-                                                    <Input 
-                                                      value={opt.value} 
-                                                      placeholder="Value"
-                                                      className="h-7 rounded-lg flex-1 text-xs text-slate-500" 
-                                                      onChange={e => {
-                                                        const cols = [...(section.columns || [])];
-                                                        const opts = [...(cols[cIdx].options || [])];
-                                                        opts[oIdx].value = e.target.value;
-                                                        cols[cIdx].options = opts;
-                                                        updateSection(section.id, { columns: cols });
-                                                      }} 
-                                                    />
-                                                    <Button 
-                                                      variant="ghost" 
-                                                      size="icon" 
-                                                      className="h-7 w-7 text-slate-300 hover:text-destructive"
-                                                      onClick={() => {
-                                                        const cols = [...(section.columns || [])];
-                                                        cols[cIdx].options = (cols[cIdx].options || []).filter(o => o.id !== opt.id);
-                                                        updateSection(section.id, { columns: cols });
-                                                      }}
-                                                    >
-                                                      <X className="h-3 w-3" />
-                                                    </Button>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          )}
+                                          {col.inputType === 'Dropdown' && <div className="ml-6 pl-4 border-l-2 border-slate-100 space-y-2">{col.options?.map((opt, oIdx) => (
+                                              <div key={opt.id} className="flex gap-2 items-center"><Input value={opt.label} placeholder="Label" className="h-7 rounded-lg flex-1 text-xs" onChange={e => { const cols = [...(section.columns || [])]; const opts = [...(cols[cIdx].options || [])]; opts[oIdx].label = e.target.value; cols[cIdx].options = opts; updateSection(section.id, { columns: cols }); }} /><Input value={opt.value} placeholder="Value" className="h-7 rounded-lg flex-1 text-xs text-slate-500" onChange={e => { const cols = [...(section.columns || [])]; const opts = [...(cols[cIdx].options || [])]; opts[oIdx].value = e.target.value; cols[cIdx].options = opts; updateSection(section.id, { columns: cols }); }} /><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300" onClick={() => { const cols = [...(section.columns || [])]; cols[cIdx].options = (cols[cIdx].options || []).filter(o => o.id !== opt.id); updateSection(section.id, { columns: cols }); }}><X className="h-3 w-3" /></Button></div>
+                                            ))}</div>}
                                         </div>
                                       </Card>
-                                    ))}
-                                  </div>
+                                    ))}</div>
                                 </div>
                               )}
                             </CardContent>
@@ -898,115 +458,19 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
       </Dialog>
 
       <Dialog open={isGroupModalOpen} onOpenChange={setIsGroupModalOpen}>
-        <DialogContent 
-          className="max-w-2xl border-none rounded-[24px] p-0 overflow-hidden shadow-2xl"
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
-        >
-          <div className="p-6 border-b bg-white">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                <FolderPlus className="h-5 w-5 text-[#3F51B5]" />
-              </div>
-              <div>
-                <DialogTitle className="text-lg font-bold">{editingGroupName ? 'Configure Group' : 'New Section Group'}</DialogTitle>
-                <p className="text-xs text-slate-500">Organize documentation sections into a logical cluster.</p>
-              </div>
-            </div>
-          </div>
-          
+        <DialogContent className="max-w-2xl border-none rounded-[24px] p-0 overflow-hidden shadow-2xl">
+          <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><FolderPlus className="h-5 w-5 text-[#3F51B5]" /></div><div><DialogTitle className="text-lg font-bold">{editingGroupName ? 'Configure Group' : 'New Group'}</DialogTitle><p className="text-xs text-slate-500">Organize documentation sections.</p></div></div></div>
           <div className="p-6 space-y-6 bg-slate-50/30">
             <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2 space-y-2">
-                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Group Heading</Label>
-                <Input 
-                  value={groupForm.name} 
-                  onChange={e => setGroupForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Utilization Management Parameters"
-                  className="rounded-xl border-slate-200 bg-white h-10 font-bold"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Global Index</Label>
-                <Input 
-                  type="number"
-                  value={groupForm.order} 
-                  onChange={e => setGroupForm(prev => ({ ...prev, order: parseInt(e.target.value) || 1 }))}
-                  className="rounded-xl border-slate-200 bg-white h-10 font-bold text-center"
-                />
-              </div>
+              <div className="col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Group Heading</Label><Input value={groupForm.name} onChange={e => setGroupForm(prev => ({ ...prev, name: e.target.value }))} placeholder="e.g., UM Parameters" className="rounded-xl bg-white h-10 font-bold" /></div>
+              <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Global Index</Label><Input type="number" value={groupForm.order} onChange={e => setGroupForm(prev => ({ ...prev, order: parseInt(e.target.value) || 1 }))} className="rounded-xl bg-white h-10 font-bold text-center" /></div>
             </div>
-
-            <div className="space-y-3">
-              <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Member Sections & Sequencing</Label>
-              <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
-                <ScrollArea className="h-[300px]">
-                  <Table>
-                    <TableHeader className="bg-slate-50 sticky top-0 z-10">
-                      <TableRow>
-                        <TableHead className="w-12 text-center font-black uppercase text-[10px]">Incl.</TableHead>
-                        <TableHead className="font-black uppercase text-[10px]">Section</TableHead>
-                        <TableHead className="w-24 text-center font-black uppercase text-[10px]">Internal Seq</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {groupForm.sectionConfigs.map((config, idx) => {
+            <div className="space-y-3"><Label className="text-[11px] font-black uppercase text-slate-500">Sections & Sequencing</Label><div className="border rounded-xl bg-white overflow-hidden"><ScrollArea className="h-[300px]"><Table><TableHeader className="bg-slate-50 sticky top-0 z-10"><TableRow><TableHead className="w-12 text-center font-black uppercase text-[10px]">Incl.</TableHead><TableHead className="font-black uppercase text-[10px]">Section</TableHead><TableHead className="w-24 text-center font-black uppercase text-[10px]">Seq</TableHead></TableRow></TableHeader><TableBody>{groupForm.sectionConfigs.map((config, idx) => {
                         const section = (currentTemplate.sections || []).find(s => s.id === config.sectionId);
-                        return (
-                          <TableRow key={config.sectionId} className={cn(config.included ? "bg-indigo-50/20" : "")}>
-                            <TableCell className="text-center">
-                              <Checkbox 
-                                checked={config.included} 
-                                onCheckedChange={(checked) => {
-                                  const newConfigs = [...groupForm.sectionConfigs];
-                                  newConfigs[idx].included = !!checked;
-                                  setGroupForm(prev => ({ ...prev, sectionConfigs: newConfigs }));
-                                }} 
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="text-sm font-bold text-slate-700">{section?.name || 'Unnamed Section'}</span>
-                                <span className="text-[10px] text-slate-400 uppercase font-bold">{section?.fieldType}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Input 
-                                type="number" 
-                                disabled={!config.included}
-                                value={config.order} 
-                                onChange={(e) => {
-                                  const newConfigs = [...groupForm.sectionConfigs];
-                                  newConfigs[idx].order = parseInt(e.target.value) || 0;
-                                  setGroupForm(prev => ({ ...prev, sectionConfigs: newConfigs }));
-                                }}
-                                className="h-8 rounded-lg text-center font-bold"
-                              />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              </div>
-            </div>
+                        return (<TableRow key={config.sectionId} className={cn(config.included ? "bg-indigo-50/20" : "")}><TableCell className="text-center"><Checkbox checked={config.included} onCheckedChange={(checked) => { const newConfigs = [...groupForm.sectionConfigs]; newConfigs[idx].included = !!checked; setGroupForm(prev => ({ ...prev, sectionConfigs: newConfigs })); }} /></TableCell><TableCell><div className="flex flex-col"><span className="text-sm font-bold text-slate-700">{section?.name || 'Unnamed'}</span><span className="text-[10px] text-slate-400 uppercase font-bold">{section?.fieldType}</span></div></TableCell><TableCell><Input type="number" disabled={!config.included} value={config.order} onChange={(e) => { const newConfigs = [...groupForm.sectionConfigs]; newConfigs[idx].order = parseInt(e.target.value) || 0; setGroupForm(prev => ({ ...prev, sectionConfigs: newConfigs })); }} className="h-8 rounded-lg text-center font-bold" /></TableCell></TableRow>);
+                      })}</TableBody></Table></ScrollArea></div></div>
           </div>
-
-          <DialogFooter className="p-4 bg-white border-t flex gap-2">
-            {editingGroupName && (
-              <Button variant="ghost" className="text-red-600 font-black uppercase text-[11px] tracking-wider" onClick={() => {
-                handleRemoveGroup(editingGroupName);
-                setIsGroupModalOpen(false);
-              }}>
-                Dissolve Group
-              </Button>
-            )}
-            <Button variant="outline" onClick={() => setIsGroupModalOpen(false)} className="rounded-xl font-bold">Cancel</Button>
-            <Button onClick={handleSaveGroup} className="rounded-xl bg-[#3F51B5] hover:bg-[#3F51B5]/90 font-bold shadow-sm px-8" disabled={!groupForm.name.trim()}>
-              Finalize Group
-            </Button>
-          </DialogFooter>
+          <DialogFooter className="p-4 bg-white border-t flex gap-2">{editingGroupName && <Button variant="ghost" className="text-red-600 font-black uppercase text-[11px]" onClick={() => { handleRemoveGroup(editingGroupName); setIsGroupModalOpen(false); }}>Dissolve Group</Button>}<Button variant="outline" onClick={() => setIsGroupModalOpen(false)} className="rounded-xl font-bold">Cancel</Button><Button onClick={handleSaveGroup} className="rounded-xl bg-[#3F51B5] font-bold px-8" disabled={!groupForm.name.trim()}>Finalize Group</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -1014,12 +478,5 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
 }
 
 function FileTypeItem({ value, label, icon: Icon }: { value: string, label: string, icon: any }) {
-  return (
-    <SelectItem value={value}>
-      <div className="flex items-center gap-2">
-        <Icon className="h-3 w-3" /> 
-        {label}
-      </div>
-    </SelectItem>
-  );
+  return (<SelectItem value={value}><div className="flex items-center gap-2"><Icon className="h-3 w-3" /> {label}</div></SelectItem>);
 }
