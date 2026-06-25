@@ -83,17 +83,6 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         onChange(content);
     };
 
-    const handlePaste = (e: React.ClipboardEvent) => {
-        e.preventDefault();
-        // Force paste as plain text to avoid browser injecting unwanted colors/styles/boldness
-        const text = e.clipboardData.getData('text/plain');
-        document.execCommand('insertText', false, text);
-        
-        if (editorRef.current) {
-            handleInput({ currentTarget: editorRef.current } as React.FormEvent<HTMLDivElement>);
-        }
-    };
-
     const execCommand = (command: string, value?: string) => {
         document.execCommand(command, false, value);
         editorRef.current?.focus();
@@ -111,7 +100,6 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         
         const pre = document.createElement('pre');
         pre.className = `language-${lang}`;
-        pre.style.whiteSpace = 'pre'; // Ensure horizontal scroll is enabled by default
         
         const code = document.createElement('code');
         code.className = `language-${lang}`;
@@ -247,7 +235,6 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                     ref={editorRef}
                     contentEditable
                     onInput={handleInput}
-                    onPaste={handlePaste}
                     dir="ltr"
                     className={cn(
                         "prose prose-sm max-w-none w-full min-h-[400px] p-8 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left font-normal",

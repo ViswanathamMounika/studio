@@ -90,8 +90,9 @@ pre[class*="language-"] {
   background: #1e1e1e !important; /* Force deep dark background for readability */
   color: #d4d4d4 !important;      /* Force light text color */
   padding: 1.5rem !important;
-  overflow-x: auto !important;    /* Enable horizontal scroll bar */
-  white-space: pre !important;    /* Keep code on one line to enable scrolling */
+  overflow-x: auto !important;    /* Enable horizontal scroll bar if needed */
+  white-space: pre-wrap !important; /* Wrap lines to avoid single-line blocks */
+  word-break: break-word !important;
   @apply rounded-xl border border-slate-800 shadow-2xl my-6 !important;
 }
 
