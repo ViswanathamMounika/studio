@@ -87,9 +87,16 @@
 
 /* Custom styling for Prism code blocks in the editor/view */
 pre[class*="language-"] {
+  background: #1e1e1e !important; /* Force deep dark background for readability */
+  color: #d4d4d4 !important;      /* Force light text color */
+  padding: 1.5rem !important;
+  overflow: auto !important;
   @apply rounded-xl border border-slate-800 shadow-2xl my-6 !important;
 }
 
 code[class*="language-"] {
+  background: transparent !important;
+  color: inherit !important;
+  text-shadow: none !important;
   @apply font-mono text-sm leading-relaxed !important;
 }

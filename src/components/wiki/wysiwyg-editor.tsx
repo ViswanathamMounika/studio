@@ -83,6 +83,17 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         onChange(content);
     };
 
+    const handlePaste = (e: React.ClipboardEvent) => {
+        e.preventDefault();
+        // Force paste as plain text to avoid browser injecting unwanted colors/styles
+        const text = e.clipboardData.getData('text/plain');
+        document.execCommand('insertText', false, text);
+        
+        if (editorRef.current) {
+            handleInput({ currentTarget: editorRef.current } as React.FormEvent<HTMLDivElement>);
+        }
+    };
+
     const execCommand = (command: string, value?: string) => {
         document.execCommand(command, false, value);
         editorRef.current?.focus();
@@ -99,15 +110,16 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         const selectedText = range.toString();
         
         const pre = document.createElement('pre');
+        pre.className = `language-${lang}`;
         const code = document.createElement('code');
         code.className = `language-${lang}`;
         
-        let placeholder = 'SELECT * FROM table_name;';
-        if (lang === 'csharp') placeholder = 'public class Program { }';
-        if (lang === 'javascript') placeholder = 'console.log("Hello");';
-        if (lang === 'json') placeholder = '{ "key": "value" }';
+        let codePlaceholder = 'SELECT * FROM table_name;';
+        if (lang === 'csharp') codePlaceholder = 'public class Program { }';
+        if (lang === 'javascript') codePlaceholder = 'console.log("Hello");';
+        if (lang === 'json') codePlaceholder = '{ "key": "value" }';
 
-        code.textContent = selectedText || placeholder;
+        code.textContent = selectedText || codePlaceholder;
         pre.appendChild(code);
         
         range.deleteContents();
@@ -125,6 +137,8 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
 
         editorRef.current?.focus();
         if (editorRef.current) {
+            // Trigger Prism highlighting for the new block immediately
+            Prism.highlightAllUnder(editorRef.current);
             handleInput({ currentTarget: editorRef.current } as React.FormEvent<HTMLDivElement>);
         }
     };
@@ -226,6 +240,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 ref={editorRef}
                 contentEditable
                 onInput={handleInput}
+                onPaste={handlePaste}
                 dir="ltr"
                 className={cn(
                     "prose prose-sm max-w-none w-full min-h-[400px] p-8 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left bg-background",
