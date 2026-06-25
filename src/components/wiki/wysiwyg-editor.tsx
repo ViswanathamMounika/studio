@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useRef, useEffect, useState, useCallback } from "react";
@@ -143,29 +144,36 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         const range = selection.getRangeAt(0);
         const selectedText = range.toString();
         
+        // Clear selection content to replace it with the new block
+        range.deleteContents();
+        
         const pre = document.createElement('pre');
         pre.className = `language-${lang}`;
+        // Ensure white-space style is inline if needed, but globals.css handles it
         
         const code = document.createElement('code');
         code.className = `language-${lang}`;
         code.style.fontWeight = '400';
         
         let codePlaceholder = 'SELECT * FROM table_name;';
-        if (lang === 'csharp') codePlaceholder = 'public class Program { \n  public static void Main() { \n    // Your code here \n  } \n}';
-        if (lang === 'javascript') codePlaceholder = 'function calculateTotal() {\n  return 100 * 1.08;\n}';
-        if (lang === 'json') codePlaceholder = '{ \n  "key": "value", \n  "array": [1, 2, 3] \n}';
-        if (lang === 'markup') codePlaceholder = '<html>\n  <body>\n    <h1>Hello World</h1>\n  </body>\n</html>';
+        if (lang === 'csharp') codePlaceholder = '// C# Snippet\npublic class Program {\n  public static void Main() {\n    // Code here\n  }\n}';
+        if (lang === 'javascript') codePlaceholder = '// JS Snippet\nfunction init() {\n  console.log("System Ready");\n}';
+        if (lang === 'json') codePlaceholder = '{\n  "status": "success",\n  "data": [1, 2, 3]\n}';
+        if (lang === 'markup') codePlaceholder = '<!-- HTML/XML Snippet -->\n<div class="container">\n  <h1>Documentation</h1>\n</div>';
 
+        // Set plain text content to avoid nested HTML from selection breaking Prism
         code.textContent = selectedText || codePlaceholder;
         pre.appendChild(code);
         
-        range.deleteContents();
+        // Insert the code block
         range.insertNode(pre);
         
+        // CRITICAL: Always create a trailing paragraph to allow the user to "break out" of the code block
         const p = document.createElement('p');
         p.innerHTML = '<br>';
         pre.after(p);
         
+        // Move selection to the start of the new paragraph
         const newRange = document.createRange();
         newRange.setStart(p, 0);
         newRange.collapse(true);
@@ -173,9 +181,16 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         selection.addRange(newRange);
 
         editorRef.current?.focus();
+        
+        // Trigger Prism highlighting on the new element specifically
         if (editorRef.current) {
-            Prism.highlightAllUnder(editorRef.current);
-            handleInput({ currentTarget: editorRef.current } as React.FormEvent<HTMLDivElement>);
+            // Tiny timeout to ensure DOM reconciliation before Prism pass
+            setTimeout(() => {
+                Prism.highlightElement(code);
+                if (editorRef.current) {
+                    handleInput({ currentTarget: editorRef.current } as React.FormEvent<HTMLDivElement>);
+                }
+            }, 0);
         }
     };
 
