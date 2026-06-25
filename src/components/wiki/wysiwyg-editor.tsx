@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useRef, useEffect } from "react";
@@ -103,7 +104,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         
         const code = document.createElement('code');
         code.className = `language-${lang}`;
-        code.style.fontWeight = '400'; // Prevent auto-bolding
+        code.style.fontWeight = '400';
         
         let codePlaceholder = 'SELECT * FROM table_name;';
         if (lang === 'csharp') codePlaceholder = 'public class Program { \n  public static void Main() { \n    // Your code here \n  } \n}';
@@ -116,7 +117,6 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         range.deleteContents();
         range.insertNode(pre);
         
-        // Add a paragraph after the code block to allow easy continuation of typing
         const p = document.createElement('p');
         p.innerHTML = '<br>';
         pre.after(p);
@@ -129,7 +129,6 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
 
         editorRef.current?.focus();
         if (editorRef.current) {
-            // Trigger Prism highlighting for the new block immediately
             Prism.highlightAllUnder(editorRef.current);
             handleInput({ currentTarget: editorRef.current } as React.FormEvent<HTMLDivElement>);
         }
@@ -147,9 +146,9 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     };
 
     return (
-        <div className="flex flex-col border rounded-xl bg-background overflow-hidden shadow-sm">
+        <div className="flex flex-col border rounded-xl bg-background overflow-hidden shadow-sm h-[600px]">
             {/* STATIC TOOLBAR */}
-            <div className="p-2 border-b flex flex-wrap items-center gap-1 bg-white z-10">
+            <div className="p-2 border-b flex flex-wrap items-center gap-1 bg-white shrink-0 z-20">
                 <ToolbarButton onClick={() => execCommand('bold')} title="Bold"><Bold className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('italic')} title="Italic"><Italic className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('underline')} title="Underline"><Underline className="h-4 w-4" /></ToolbarButton>
@@ -229,15 +228,16 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 
                 <ToolbarButton onClick={handleLink} title="Insert Link"><Link className="h-4 w-4" /></ToolbarButton>
             </div>
+            
             {/* SCROLLABLE CONTENT AREA */}
-            <div className="flex-1 overflow-y-auto max-h-[600px] bg-background">
+            <div className="flex-1 overflow-y-auto bg-background">
                 <div
                     ref={editorRef}
                     contentEditable
                     onInput={handleInput}
                     dir="ltr"
                     className={cn(
-                        "prose prose-sm max-w-none w-full min-h-[400px] p-8 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left font-normal",
+                        "prose prose-sm max-w-none w-full min-h-full p-8 focus:outline-none focus-visible:ring-0 text-left font-normal",
                         className
                     )}
                     placeholder={placeholder || "Enter technical documentation..."}
