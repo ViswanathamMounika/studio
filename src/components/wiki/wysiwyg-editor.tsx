@@ -1,12 +1,20 @@
 "use client"
 
 import React, { useRef, useEffect } from "react";
-import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, AlignLeft, AlignCenter, AlignRight, Code, Baseline, Highlighter } from "lucide-react"
+import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Link, AlignLeft, AlignCenter, AlignRight, Code, Baseline, Highlighter, ChevronDown } from "lucide-react"
 import { Button } from "../ui/button"
 import { Separator } from "../ui/separator"
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import Prism from 'prismjs';
+
+// Import Prism components for editor preview
+import 'prismjs/components/prism-sql';
+import 'prismjs/components/prism-csharp';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-json';
+import 'prismjs/themes/prism-tomorrow.css';
 
 type WysiwygEditorProps = {
     value: string;
@@ -65,6 +73,8 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     useEffect(() => {
         if (editorRef.current && value !== editorRef.current.innerHTML) {
             editorRef.current.innerHTML = value;
+            // Highlight blocks on initial load
+            Prism.highlightAllUnder(editorRef.current);
         }
     }, [value]);
 
@@ -81,20 +91,23 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         }
     };
     
-    const handleInsertCode = () => {
+    const handleInsertCode = (lang: string = 'sql') => {
         const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) {
-            execCommand('formatBlock', 'pre');
-            return;
-        }
+        if (!selection || selection.rangeCount === 0) return;
         
         const range = selection.getRangeAt(0);
         const selectedText = range.toString();
         
         const pre = document.createElement('pre');
         const code = document.createElement('code');
-        code.className = 'language-sql';
-        code.textContent = selectedText || 'SELECT * FROM table_name WHERE condition = 1;';
+        code.className = `language-${lang}`;
+        
+        let placeholder = 'SELECT * FROM table_name;';
+        if (lang === 'csharp') placeholder = 'public class Program { }';
+        if (lang === 'javascript') placeholder = 'console.log("Hello");';
+        if (lang === 'json') placeholder = '{ "key": "value" }';
+
+        code.textContent = selectedText || placeholder;
         pre.appendChild(code);
         
         range.deleteContents();
@@ -166,7 +179,21 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
 
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 
-                <ToolbarButton onClick={handleInsertCode} title="SQL Code Block"><Code className="h-4 w-4" /></ToolbarButton>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 gap-1 text-xs px-2 rounded-lg hover:bg-accent font-bold">
+                            <Code className="h-4 w-4" />
+                            Code
+                            <ChevronDown className="h-3 w-3 opacity-50" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); handleInsertCode('sql'); }}>SQL Snippet</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); handleInsertCode('csharp'); }}>C# Snippet</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); handleInsertCode('javascript'); }}>JavaScript Snippet</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); handleInsertCode('json'); }}>JSON Block</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -201,7 +228,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 onInput={handleInput}
                 dir="ltr"
                 className={cn(
-                    "prose prose-sm max-w-none w-full min-h-[300px] p-6 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left bg-background",
+                    "prose prose-sm max-w-none w-full min-h-[400px] p-8 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left bg-background",
                     className
                 )}
                 placeholder={placeholder || "Enter content..."}

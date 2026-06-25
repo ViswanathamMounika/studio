@@ -84,3 +84,12 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* Custom styling for Prism code blocks in the editor/view */
+pre[class*="language-"] {
+  @apply rounded-xl border border-slate-800 shadow-2xl my-6 !important;
+}
+
+code[class*="language-"] {
+  @apply font-mono text-sm leading-relaxed !important;
+}

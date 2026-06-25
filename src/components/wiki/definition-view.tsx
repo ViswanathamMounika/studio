@@ -3,7 +3,14 @@
 import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Prism from 'prismjs';
+
+// Prism Components
 import 'prismjs/components/prism-sql';
+import 'prismjs/components/prism-csharp';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-json';
+import 'prismjs/themes/prism-tomorrow.css';
+
 import type { Definition, Revision, Note, SectionValue, Template, TemplateSection } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -76,7 +83,9 @@ export default function DefinitionView({
     const { toast } = useToast();
 
     useEffect(() => {
-        const timer = setTimeout(() => { Prism.highlightAll(); }, 100);
+        const timer = setTimeout(() => { 
+            Prism.highlightAll(); 
+        }, 100);
         return () => clearTimeout(timer);
     }, [definition, activeTab]);
 
