@@ -80,7 +80,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-normal;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
@@ -90,7 +90,8 @@ pre[class*="language-"] {
   background: #1e1e1e !important; /* Force deep dark background for readability */
   color: #d4d4d4 !important;      /* Force light text color */
   padding: 1.5rem !important;
-  overflow: auto !important;
+  overflow-x: auto !important;    /* Enable horizontal scroll bar */
+  white-space: pre !important;    /* Keep code on one line to enable scrolling */
   @apply rounded-xl border border-slate-800 shadow-2xl my-6 !important;
 }
 
@@ -98,5 +99,12 @@ code[class*="language-"] {
   background: transparent !important;
   color: inherit !important;
   text-shadow: none !important;
-  @apply font-mono text-sm leading-relaxed !important;
+  @apply font-mono text-sm leading-relaxed font-normal !important;
+}
+
+/* Ensure editor placeholder is visible */
+[contenteditable]:empty:before {
+  content: attr(placeholder);
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
 }

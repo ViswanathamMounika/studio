@@ -85,7 +85,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
 
     const handlePaste = (e: React.ClipboardEvent) => {
         e.preventDefault();
-        // Force paste as plain text to avoid browser injecting unwanted colors/styles
+        // Force paste as plain text to avoid browser injecting unwanted colors/styles/boldness
         const text = e.clipboardData.getData('text/plain');
         document.execCommand('insertText', false, text);
         
@@ -111,13 +111,16 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         
         const pre = document.createElement('pre');
         pre.className = `language-${lang}`;
+        pre.style.whiteSpace = 'pre'; // Ensure horizontal scroll is enabled by default
+        
         const code = document.createElement('code');
         code.className = `language-${lang}`;
+        code.style.fontWeight = '400'; // Prevent auto-bolding
         
         let codePlaceholder = 'SELECT * FROM table_name;';
-        if (lang === 'csharp') codePlaceholder = 'public class Program { }';
-        if (lang === 'javascript') codePlaceholder = 'console.log("Hello");';
-        if (lang === 'json') codePlaceholder = '{ "key": "value" }';
+        if (lang === 'csharp') codePlaceholder = 'public class Program { \n  public static void Main() { \n    // Your code here \n  } \n}';
+        if (lang === 'javascript') codePlaceholder = 'console.log("Hello World");';
+        if (lang === 'json') codePlaceholder = '{ \n  "key": "value", \n  "array": [1, 2, 3] \n}';
 
         code.textContent = selectedText || codePlaceholder;
         pre.appendChild(code);
@@ -125,6 +128,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         range.deleteContents();
         range.insertNode(pre);
         
+        // Add a paragraph after the code block to allow easy continuation of typing
         const p = document.createElement('p');
         p.innerHTML = '<br>';
         pre.after(p);
@@ -155,8 +159,9 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
     };
 
     return (
-        <div className="border rounded-xl bg-background overflow-hidden shadow-sm">
-            <div className="p-2 border-b flex flex-wrap items-center gap-1 sticky top-0 bg-muted/10 z-10 backdrop-blur-sm">
+        <div className="flex flex-col border rounded-xl bg-background overflow-hidden shadow-sm">
+            {/* STATIC TOOLBAR */}
+            <div className="p-2 border-b flex flex-wrap items-center gap-1 bg-white z-10">
                 <ToolbarButton onClick={() => execCommand('bold')} title="Bold"><Bold className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('italic')} title="Italic"><Italic className="h-4 w-4" /></ToolbarButton>
                 <ToolbarButton onClick={() => execCommand('underline')} title="Underline"><Underline className="h-4 w-4" /></ToolbarButton>
@@ -236,19 +241,22 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                 
                 <ToolbarButton onClick={handleLink} title="Insert Link"><Link className="h-4 w-4" /></ToolbarButton>
             </div>
-            <div
-                ref={editorRef}
-                contentEditable
-                onInput={handleInput}
-                onPaste={handlePaste}
-                dir="ltr"
-                className={cn(
-                    "prose prose-sm max-w-none w-full min-h-[400px] p-8 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left bg-background",
-                    className
-                )}
-                placeholder={placeholder || "Enter content..."}
-                style={{ textAlign: 'left', direction: 'ltr', whiteSpace: 'pre-wrap' }}
-            />
+            {/* SCROLLABLE CONTENT AREA */}
+            <div className="flex-1 overflow-y-auto max-h-[600px] bg-background">
+                <div
+                    ref={editorRef}
+                    contentEditable
+                    onInput={handleInput}
+                    onPaste={handlePaste}
+                    dir="ltr"
+                    className={cn(
+                        "prose prose-sm max-w-none w-full min-h-[400px] p-8 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left font-normal",
+                        className
+                    )}
+                    placeholder={placeholder || "Enter technical documentation..."}
+                    style={{ textAlign: 'left', direction: 'ltr', fontWeight: '400' }}
+                />
+            </div>
         </div>
     )
 }
