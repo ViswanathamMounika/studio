@@ -14,7 +14,8 @@ import 'prismjs/components/prism-sql';
 import 'prismjs/components/prism-csharp';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-json';
-import 'prismjs/themes/prism.css'; // Switched to light theme for code blocks
+import 'prismjs/components/prism-markup'; // This handles HTML/XML
+import 'prismjs/themes/prism.css'; 
 
 type WysiwygEditorProps = {
     value: string;
@@ -151,8 +152,9 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
         
         let codePlaceholder = 'SELECT * FROM table_name;';
         if (lang === 'csharp') codePlaceholder = 'public class Program { \n  public static void Main() { \n    // Your code here \n  } \n}';
-        if (lang === 'javascript') codePlaceholder = 'console.log("Hello World");';
+        if (lang === 'javascript') codePlaceholder = 'function calculateTotal() {\n  return 100 * 1.08;\n}';
         if (lang === 'json') codePlaceholder = '{ \n  "key": "value", \n  "array": [1, 2, 3] \n}';
+        if (lang === 'markup') codePlaceholder = '<html>\n  <body>\n    <h1>Hello World</h1>\n  </body>\n</html>';
 
         code.textContent = selectedText || codePlaceholder;
         pre.appendChild(code);
@@ -241,6 +243,7 @@ export default function WysiwygEditor({ value, onChange, className, placeholder 
                         <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); handleInsertCode('csharp'); }}>C# Snippet</DropdownMenuItem>
                         <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); handleInsertCode('javascript'); }}>JavaScript Snippet</DropdownMenuItem>
                         <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); handleInsertCode('json'); }}>JSON Block</DropdownMenuItem>
+                        <DropdownMenuItem onMouseDown={(e) => { e.preventDefault(); handleInsertCode('markup'); }}>HTML/XML Snippet</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
                 

@@ -90,9 +90,9 @@ pre[class*="language-"] {
   background: #f8fafc !important; /* Light slate background for better document integration */
   color: #1e293b !important;      /* Dark slate for primary text */
   padding: 1.5rem !important;
-  overflow-x: auto !important;    /* Enable horizontal scroll bar if needed */
-  white-space: pre-wrap !important; /* Wrap lines to avoid single-line blocks */
-  word-break: break-word !important;
+  overflow-x: auto !important;    
+  white-space: pre-wrap !important; /* Cut lines and wrap properly */
+  word-break: break-word !important; /* Ensure no single line overflows */
   @apply rounded-xl border border-slate-200 shadow-sm my-6 !important;
 }
 
@@ -100,6 +100,8 @@ code[class*="language-"] {
   background: transparent !important;
   color: inherit !important;
   text-shadow: none !important;
+  white-space: pre-wrap !important; /* Ensure code tag also wraps */
+  word-break: break-word !important;
   @apply font-mono text-sm leading-relaxed font-normal !important;
 }
 

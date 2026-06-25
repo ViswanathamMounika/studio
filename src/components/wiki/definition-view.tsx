@@ -9,7 +9,8 @@ import 'prismjs/components/prism-sql';
 import 'prismjs/components/prism-csharp';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-json';
-import 'prismjs/themes/prism.css'; // Switched to light theme for high-visibility view
+import 'prismjs/components/prism-markup';
+import 'prismjs/themes/prism.css'; 
 
 import type { Definition, Revision, Note, SectionValue, Template, TemplateSection } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
