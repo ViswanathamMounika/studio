@@ -199,6 +199,41 @@ export const initialDefinitions: Definition[] = [
         revisions: [baselineRevision('Contracted Rates', 'Baseline logic.')],
         supportingTables: [],
         attachments: []
+      },
+      {
+        id: '2.1.2',
+        name: 'Adjudication Logic Framework',
+        module: 'Claims',
+        templateId: '1',
+        keywords: ['engine', 'logic', 'C#', 'SQL', 'automation'],
+        description: '<p>Standardized framework for professional claim adjudication.</p>',
+        shortDescription: 'Core engine logic for processing professional claims.',
+        isArchived: false,
+        isDraft: false,
+        revisions: [baselineRevision('Adjudication Logic Framework', 'Baseline processing architecture.')],
+        supportingTables: [],
+        attachments: [],
+        sectionValues: [
+          { 
+            sectionId: '1', 
+            raw: 'Core engine logic for processing professional claims.' 
+          },
+          { 
+            sectionId: '2', 
+            raw: 'This framework defines the automated steps taken to validate claim data against provider contracts and member benefits.', 
+            html: '<p>This framework defines the automated steps taken to validate claim data against provider contracts and member benefits.</p><h3>Data Retrieval Pattern</h3><p>The following SQL is used to identify claims that are ready for the adjudication batch:</p><pre class="language-sql"><code>SELECT \n  ClaimID, \n  Status, \n  ProviderID, \n  DateOfService \nFROM tbl_Claims \nWHERE AdjudicationDate IS NULL \nAND Status = \'PND\';</code></pre>' 
+          },
+          { 
+            sectionId: '3', 
+            raw: 'The engine is built on a C# service layer that implements the IAdjudicationStrategy interface.',
+            html: '<h3>Service Implementation</h3><p>The core logic is encapsulated within the <code>ClaimProcessor</code> service. Below is the simplified C# implementation for the validation strategy:</p><pre class="language-csharp"><code>public class ClaimProcessor : IAdjudicationStrategy {\n  public void ProcessClaim(int claimId) {\n    var claim = _repository.GetById(claimId);\n    if (claim.IsValid()) {\n      ApplyContractRates(claim);\n      claim.Status = "APP";\n    }\n    _repository.Update(claim);\n  }\n}</code></pre>'
+          },
+          {
+            sectionId: '8',
+            raw: 'EzCAP',
+            multiValues: ['EzCAP']
+          }
+        ]
       }
     ]
   },
