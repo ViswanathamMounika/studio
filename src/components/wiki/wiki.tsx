@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers, initialMasterData, initialSystemConfig } from '@/lib/data';
-import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog, MasterDataState, SystemConfigurationState } from '@/lib/types';
+import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog, MasterDataState, SystemConfigurationState, ActivityType } from '@/lib/types';
 import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark, UserCircle2, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -121,12 +121,12 @@ export default function Wiki() {
     }
   }, [debouncedSearchQuery]);
 
-  const logAction = useCallback((type: any, details?: string) => {
+  const logAction = useCallback((type: ActivityType, details?: string) => {
     const actorName = impersonatedUser ? `Super Admin (as ${impersonatedUser.name})` : currentUser.name;
     const newLog: ActivityLog = {
         id: `log_${Date.now()}`,
         userName: actorName,
-        definitionName: details?.includes('Definition') ? (details.split(': ')[1] || 'N/A') : 'System Governance',
+        definitionName: details?.includes('Definition') ? (details.split(': ')[1] || 'N/A') : (details?.includes('Template') ? 'Template Governance' : 'System Governance'),
         activityType: type,
         occurredDate: new Date().toISOString(),
         details
@@ -622,7 +622,7 @@ export default function Wiki() {
 
   const handleEditClick = () => {
     if (!selectedDefinitionId) return;
-    const sourceList = viewingMode === 'draft' ? drafts : definitions;
+    const sourceList = viewingMode snapshot list? drafts : definitions;
     const def = findDefinition(sourceList, selectedDefinitionId);
     if (!def) return;
 
@@ -702,7 +702,7 @@ export default function Wiki() {
   const renderContent = () => {
     switch (activeView) {
         case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} /></div>;
-        case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} masterData={masterData} /></div>;
+        case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
         case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} /></div>;
         case 'system-configuration': return <div className="p-6 h-full"><SystemConfiguration config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
         case 'user-management': return (

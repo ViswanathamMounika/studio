@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Pencil, Trash2, Save, Plus, X, LayoutTemplate, Type, FileType, List, AlignLeft, Hash, Table as TableIcon, Settings2, FolderPlus, FolderTree, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Template, TemplateSection, TemplateOption, TemplateColumn, MasterDataState } from '@/lib/types';
+import type { Template, TemplateSection, TemplateOption, TemplateColumn, MasterDataState, ActivityType } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils';
 type TemplateManagementProps = {
   templates: Template[];
   onSaveTemplates: (templates: Template[]) => void;
+  onLogAction?: (type: ActivityType, details?: string) => void;
   masterData?: MasterDataState;
 };
 
@@ -96,7 +97,7 @@ function reindexTemplate(sections: TemplateSection[]): TemplateSection[] {
   return reindexed;
 }
 
-export default function TemplateManagement({ templates, onSaveTemplates, masterData }: TemplateManagementProps) {
+export default function TemplateManagement({ templates, onSaveTemplates, onLogAction, masterData }: TemplateManagementProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [currentTemplate, setCurrentTemplate] = useState<Partial<Template>>({});
@@ -138,9 +139,20 @@ export default function TemplateManagement({ templates, onSaveTemplates, masterD
   };
 
   const handleDeleteTemplate = (id: string) => {
+    const templateToDelete = templates.find(t => t.id === id);
+    if (!templateToDelete) return;
+
     const updatedTemplates = templates.filter(t => t.id !== id);
     onSaveTemplates(updatedTemplates);
-    toast({ title: "Template Deleted", description: "The blueprint has been removed." });
+    
+    if (onLogAction) {
+      onLogAction('Template Deleted', `ID: ${id}, Name: ${templateToDelete.name}`);
+    }
+
+    toast({ 
+      title: "Template Deleted Permanently", 
+      description: `The "${templateToDelete.name}" blueprint and all associated versions have been fully removed from the system.` 
+    });
   };
 
   const handleSaveTemplate = () => {
@@ -158,8 +170,13 @@ export default function TemplateManagement({ templates, onSaveTemplates, masterD
       updatedTemplates = updatedTemplates.map(t => t.id === templateToSave.id ? t : { ...t, isDefault: false });
     }
     onSaveTemplates(updatedTemplates);
+
+    if (onLogAction) {
+      onLogAction(isEditing ? 'Template Updated' : 'Template Created', `Template: ${templateToSave.name}`);
+    }
+
     setIsModalOpen(false);
-    toast({ title: 'Success', description: 'Template saved.' });
+    toast({ title: 'Success', description: `Template ${isEditing ? 'updated' : 'created'} successfully.` });
   };
 
   const handleAddSection = () => {
@@ -349,8 +366,31 @@ export default function TemplateManagement({ templates, onSaveTemplates, masterD
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={() => handleEdit(template)}><Pencil className="h-4 w-4" /></Button>
                       <AlertDialog>
-                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
-                        <AlertDialogContent className="rounded-2xl border-none p-8"><AlertDialogHeader><AlertDialogTitle className="text-2xl font-bold">Delete Template?</AlertDialogTitle><AlertDialogDescription className="text-slate-500 text-sm">Action will remove <strong>{template.name}</strong>.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter className="mt-8 gap-3"><AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTemplate(template.id)} className="rounded-xl bg-red-600 font-bold">Delete Blueprint</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-[24px] border-none p-8 shadow-2xl">
+                            <AlertDialogHeader className="space-y-3">
+                                <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
+                                    <Trash2 className="h-6 w-6 text-red-600" />
+                                </div>
+                                <AlertDialogTitle className="text-2xl font-bold text-slate-900">Delete Template Permanently?</AlertDialogTitle>
+                                <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
+                                    You are about to permanently delete <strong>{template.name}</strong> and all of its associated version data. This action is non-reversible and the blueprint will be removed from all modules immediately.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="mt-8 gap-3 sm:justify-end">
+                                <AlertDialogCancel className="rounded-xl font-bold border-slate-200">Keep Template</AlertDialogCancel>
+                                <AlertDialogAction 
+                                    onClick={() => handleDeleteTemplate(template.id)} 
+                                    className="rounded-xl bg-red-600 hover:bg-red-700 font-bold px-6"
+                                >
+                                    Delete Permanently
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
                       </AlertDialog>
                     </div>
                   </TableCell>

@@ -224,7 +224,10 @@ export type ActivityType =
   | 'Master Data Updated'
   | 'Master Data Deleted'
   | 'Master Data Status Changed'
-  | 'System Configuration Updated';
+  | 'System Configuration Updated'
+  | 'Template Created'
+  | 'Template Updated'
+  | 'Template Deleted';
 
 export interface ActivityLog {
     id: string;
