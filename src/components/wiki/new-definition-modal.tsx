@@ -1,9 +1,8 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Attachment, Template, TemplateSection, SectionValue } from '@/lib/types';
+import type { Definition, Attachment, Template, TemplateSection, SectionValue, MasterDataState } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -36,11 +35,10 @@ type NewDefinitionModalProps = {
   initialData?: any;
   templates?: Template[];
   isAdmin: boolean;
+  masterData?: MasterDataState;
 };
 
-const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
-
-export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [], isAdmin }: NewDefinitionModalProps) {
+export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [], isAdmin, masterData }: NewDefinitionModalProps) {
   const [name, setName] = useState('');
   const [module, setModule] = useState('Core');
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -51,6 +49,10 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [sectionValues, setSectionValues] = useState<SectionValue[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const modules = useMemo(() => {
+    return masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Core'];
+  }, [masterData]);
 
   const selectedTemplate = useMemo(() => 
     templates.find(t => t.id === templateId) || templates.find(t => t.isDefault) || templates[0], 

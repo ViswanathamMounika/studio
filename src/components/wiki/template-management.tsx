@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -25,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Pencil, Trash2, Save, Plus, X, LayoutTemplate, Type, FileType, List, AlignLeft, Hash, Table as TableIcon, Settings2, FolderPlus, FolderTree, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Template, TemplateSection, TemplateOption, TemplateColumn } from '@/lib/types';
+import type { Template, TemplateSection, TemplateOption, TemplateColumn, MasterDataState } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -33,6 +32,7 @@ import { cn } from '@/lib/utils';
 type TemplateManagementProps = {
   templates: Template[];
   onSaveTemplates: (templates: Template[]) => void;
+  masterData?: MasterDataState;
 };
 
 interface GroupForm {
@@ -40,16 +40,6 @@ interface GroupForm {
   order: number;
   sectionConfigs: { sectionId: string; order: number; included: boolean }[];
 }
-
-const MODULE_OPTIONS = [
-  'Authorizations',
-  'Claims',
-  'Member',
-  'Provider',
-  'Core',
-  'Member Management',
-  'Provider Network'
-];
 
 function reindexTemplate(sections: TemplateSection[]): TemplateSection[] {
   const standaloneSections = sections.filter(s => !s.group);
@@ -106,7 +96,7 @@ function reindexTemplate(sections: TemplateSection[]): TemplateSection[] {
   return reindexed;
 }
 
-export default function TemplateManagement({ templates, onSaveTemplates }: TemplateManagementProps) {
+export default function TemplateManagement({ templates, onSaveTemplates, masterData }: TemplateManagementProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [currentTemplate, setCurrentTemplate] = useState<Partial<Template>>({});
@@ -116,6 +106,10 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
   const [groupForm, setGroupForm] = useState<GroupForm>({ name: '', order: 1, sectionConfigs: [] });
   const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const moduleOptions = useMemo(() => {
+    return masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Core'];
+  }, [masterData]);
 
   const handleCreateNew = () => {
     setIsEditing(false);
@@ -379,7 +373,7 @@ export default function TemplateManagement({ templates, onSaveTemplates }: Templ
                 <div className="flex justify-end items-center gap-2"><Label htmlFor="is-active" className="text-[10px] font-black uppercase text-slate-400 tracking-widest cursor-pointer">Active Status</Label><Switch id="is-active" checked={currentTemplate.isActive} onCheckedChange={v => setCurrentTemplate(prev => ({ ...prev, isActive: v }))} className="scale-75" /></div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
                   <div className="md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Template Name <span className="text-red-500">*</span></Label><Input value={currentTemplate.name} onChange={e => setCurrentTemplate(prev => ({ ...prev, name: e.target.value }))} placeholder="e.g., Clinical Workflow Blueprint" className="rounded-xl border-slate-200 h-11 text-base font-bold" /></div>
-                  <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Module <span className="text-red-500">*</span></Label><Select value={currentTemplate.module} onValueChange={v => setCurrentTemplate(prev => ({ ...prev, module: v }))}><SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white"><SelectValue placeholder="Select Module" /></SelectTrigger><SelectContent>{MODULE_OPTIONS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Module <span className="text-red-500">*</span></Label><Select value={currentTemplate.module} onValueChange={v => setCurrentTemplate(prev => ({ ...prev, module: v }))}><SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white"><SelectValue placeholder="Select Module" /></SelectTrigger><SelectContent>{moduleOptions.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select></div>
                   <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Configuration</Label><div className="flex items-center gap-2 pt-2"><Checkbox id="is-default" checked={currentTemplate.isDefault} onCheckedChange={v => setCurrentTemplate(prev => ({ ...prev, isDefault: !!v }))} /><Label htmlFor="is-default" className="text-sm font-bold text-slate-700 cursor-pointer">System Default</Label></div></div>
                 </div>
                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Description</Label><Textarea value={currentTemplate.description} onChange={e => setCurrentTemplate(prev => ({ ...prev, description: e.target.value }))} placeholder="Describe blueprint purpose..." className="rounded-xl border-slate-200 min-h-[80px]" /></div>

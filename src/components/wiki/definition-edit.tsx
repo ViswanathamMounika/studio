@@ -1,8 +1,7 @@
-
 "use client";
 import React, { useState, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Attachment, Template, SectionValue, TemplateSection } from '@/lib/types';
+import type { Definition, Attachment, Template, SectionValue, TemplateSection, MasterDataState } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,11 +31,10 @@ type DefinitionEditProps = {
   isAdmin: boolean;
   templates?: Template[];
   isNewBranch?: boolean; 
+  masterData?: MasterDataState;
 };
 
-const modules = ['Authorizations', 'Claims', 'Provider', 'Member', 'Core', 'Member Management', 'Provider Network'];
-
-export default function DefinitionEdit({ definition, liveVersion, onSave, onDiscard, onDelete, onAcceptLiveChanges, isAdmin, templates, isNewBranch }: DefinitionEditProps) {
+export default function DefinitionEdit({ definition, liveVersion, onSave, onDiscard, onDelete, onAcceptLiveChanges, isAdmin, templates, isNewBranch, masterData }: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
   const [module, setModule] = useState(definition.module);
   const [keywords, setKeywords] = useState<string[]>(definition.keywords || []);
@@ -45,6 +43,10 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
   const [sectionValues, setSectionValues] = useState<SectionValue[]>(definition.sectionValues || []);
   const [showConflictDiff, setShowConflictDiff] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const modules = useMemo(() => {
+    return masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Core'];
+  }, [masterData]);
 
   const selectedTemplate = useMemo(() => (templates || initialTemplates).find(t => t.id === definition.templateId) || (templates || initialTemplates)[0], [definition.templateId, templates]);
 

@@ -1,4 +1,4 @@
-import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry, UserAccount, Role, Permission } from './types';
+import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry, UserAccount, Role, Permission, MasterDataState } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
     id: 'auth-status-codes',
@@ -36,6 +36,43 @@ export const mpmSourceTypes: Record<string, SourceTypeMetadata[]> = {
     'Other': standardSourceTypes,
     'NetApps': standardSourceTypes,
     'AuditTables': standardSourceTypes,
+};
+
+export const initialMasterData: MasterDataState = {
+  modules: [
+    { id: 'm1', name: 'Authorizations', isActive: true, description: 'Core utilization management module.' },
+    { id: 'm2', name: 'Claims', isActive: true, description: 'Financial adjudication and processing.' },
+    { id: 'm3', name: 'Provider', isActive: true, description: 'Network and contract management.' },
+    { id: 'm4', name: 'Member', isActive: true, description: 'Eligibility and benefits.' },
+    { id: 'm5', name: 'Core', isActive: true, description: 'Cross-functional system reference.' },
+    { id: 'm6', name: 'Other', isActive: true },
+  ],
+  sourcesOfTruth: [
+    { id: 's1', name: 'EzCAP', isActive: true },
+    { id: 's2', name: 'SupportTbls', isActive: true },
+    { id: 's3', name: 'NetApps', isActive: true },
+    { id: 's4', name: 'AuditTables', isActive: true },
+    { id: 's5', name: 'Other', isActive: true },
+  ],
+  sourceTypes: [
+    { id: 'st1', name: 'View', isActive: true },
+    { id: 'st2', name: 'Table', isActive: true },
+    { id: 'st3', name: 'SQL Function', isActive: true },
+    { id: 'st4', name: 'SQL Stored Procedure', isActive: true },
+    { id: 'st5', name: 'None', isActive: true },
+  ],
+  definitionStatuses: [
+    { id: 'ds1', name: 'Draft', isActive: true },
+    { id: 'ds2', name: 'Pending Review', isActive: true },
+    { id: 'ds3', name: 'Published', isActive: true },
+    { id: 'ds4', name: 'Archived', isActive: true },
+    { id: 'ds5', name: 'Rejected', isActive: true },
+  ],
+  versionStatuses: [
+    { id: 'vs1', name: 'Current', isActive: true },
+    { id: 'vs2', name: 'Superseded', isActive: true },
+    { id: 'vs3', name: 'Deprecated', isActive: true },
+  ]
 };
 
 export const initialTemplates: Template[] = [

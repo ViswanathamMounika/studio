@@ -1,11 +1,10 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
-import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers } from '@/lib/data';
-import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog } from '@/lib/types';
+import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers, initialMasterData } from '@/lib/data';
+import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog, MasterDataState } from '@/lib/types';
 import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark, UserCircle2, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +38,7 @@ const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal')
 const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
 const ApprovalQueue = dynamic(() => import('@/components/wiki/approval-queue'), { ssr: false });
 const SecurityManagement = dynamic(() => import('@/components/wiki/user-management'), { ssr: false });
+const MasterDataManagement = dynamic(() => import('@/components/wiki/master-data-management'), { ssr: false });
 
 type ViewingMode = 'live' | 'draft';
 
@@ -62,6 +62,7 @@ export default function Wiki() {
   const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v19', initialApprovalHistory);
   const [users, setUsers] = useLocalStorage<UserAccount[]>('mpm_users_v1', initialUsers);
   const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activity_logs_v19', []);
+  const [masterData, setMasterData] = useLocalStorage<MasterDataState>('mpm_master_data_v1', initialMasterData);
   
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
@@ -97,9 +98,6 @@ export default function Wiki() {
   }, [impersonatedUser, originalAdminState]);
 
   const isSuperAdmin = useMemo(() => {
-    // Only the real account (not impersonated) can be the "true" super admin for triggering impersonation
-    // But the story says "As a Super Admin, I want to impersonate..."
-    // So we assume the baseline account is Super Admin if originalAdminState is true.
     return originalAdminState && !impersonatedUser;
   }, [originalAdminState, impersonatedUser]);
 
@@ -178,7 +176,7 @@ export default function Wiki() {
   }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    const needsAdmin = ['template-management', 'approval-workflow', 'user-management'].includes(view);
+    const needsAdmin = ['template-management', 'approval-workflow', 'user-management', 'master-data-management'].includes(view);
     if (needsAdmin && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
         return;
@@ -360,6 +358,8 @@ export default function Wiki() {
       if (originalId) {
         setSelectedDefinitionId(originalId);
         setViewingMode('live');
+        setIsEditing(false);
+        setIsNewBranch(false);
         updateUrl(originalId, activeTab);
       } else {
         setSelectedDefinitionId(null);
@@ -700,6 +700,7 @@ export default function Wiki() {
     switch (activeView) {
         case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
+        case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} /></div>;
         case 'user-management': return (
             <div className="p-6 h-full">
                 <SecurityManagement 
@@ -742,6 +743,7 @@ export default function Wiki() {
                         isAdmin={isAdmin} 
                         templates={templates}
                         isNewBranch={isNewBranch}
+                        masterData={masterData}
                       />
                   ) : selectedDef ? (
                       <div className="p-6">
@@ -890,7 +892,7 @@ export default function Wiki() {
         </div>
       </SidebarInset>
       <RecentViewsModal open={isRecentModalOpen} onOpenChange={setIsRecentModalOpen} onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')} />
-      <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={templates} isAdmin={isAdmin} />
+      <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={templates} isAdmin={isAdmin} masterData={masterData} />
       <TemplatesModal open={isTemplatesModalOpen} onOpenChange={setIsTemplatesModalOpen} onUseTemplate={handleUseTemplate} managedTemplates={templates} />
     </SidebarProvider>
   );

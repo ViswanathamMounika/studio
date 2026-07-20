@@ -183,7 +183,13 @@ export interface UserAccount {
   avatar?: string;
 }
 
-export type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow' | 'user-management';
+export type View = 
+  | 'definitions' 
+  | 'activity-logs' 
+  | 'template-management' 
+  | 'approval-workflow' 
+  | 'user-management' 
+  | 'master-data-management';
 
 export type ActivityType = 
   | 'Definition Created'
@@ -211,7 +217,11 @@ export type ActivityType =
   | 'Role Deleted'
   | 'Permission Created'
   | 'Permission Updated'
-  | 'Permission Deleted';
+  | 'Permission Deleted'
+  | 'Master Data Created'
+  | 'Master Data Updated'
+  | 'Master Data Deleted'
+  | 'Master Data Status Changed';
 
 export interface ActivityLog {
     id: string;
@@ -247,3 +257,20 @@ export interface SourceObjectMetadata {
     name: string;
     typeId: string;
 }
+
+export interface MasterDataItem {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface MasterDataState {
+  modules: MasterDataItem[];
+  sourcesOfTruth: MasterDataItem[];
+  sourceTypes: MasterDataItem[];
+  definitionStatuses: MasterDataItem[];
+  versionStatuses: MasterDataItem[];
+}
+
+export type MasterDataCategory = keyof MasterDataState;
