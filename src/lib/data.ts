@@ -1,6 +1,8 @@
 
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry, UserAccount, Role, Permission, MasterDataState, SystemConfigurationState } from './types';
 
+export const initialDrafts: Definition[] = [];
+
 export const authorizationStatusCodes: SupportingTable = {
     id: 'auth-status-codes',
     name: 'Authorization Status Codes',

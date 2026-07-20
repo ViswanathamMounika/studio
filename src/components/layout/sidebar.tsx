@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -21,7 +22,7 @@ import {
     ClipboardList,
     Library,
     ShieldAlert,
-    UserCircle2,
+    UserCircle,
     Database,
     Settings
 } from "lucide-react";
@@ -255,7 +256,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                     <div className="space-y-0.5">
                                         <div className="flex items-center gap-1.5">
                                             <p className="text-[11px] font-bold text-slate-900">Admin Mode</p>
-                                            {isImpersonating && <UserCircle2 className="h-3 w-3 text-indigo-500" />}
+                                            {isImpersonating && <UserCircle className="h-3 w-3 text-indigo-500" />}
                                         </div>
                                         <p className="text-[9px] font-medium text-slate-500 uppercase tracking-tighter">
                                             {isImpersonating ? 'Override Active' : 'Toggle Permissions'}

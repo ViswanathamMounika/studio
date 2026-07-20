@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -5,7 +6,7 @@ import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers, initialMasterData, initialSystemConfig } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog, MasterDataState, SystemConfigurationState, ActivityType } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark, UserCircle2, LogOut } from 'lucide-react';
+import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark, UserCircle, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -622,7 +623,7 @@ export default function Wiki() {
 
   const handleEditClick = () => {
     if (!selectedDefinitionId) return;
-    const sourceList = viewingMode snapshot list? drafts : definitions;
+    const sourceList = viewingMode === 'draft' ? drafts : definitions;
     const def = findDefinition(sourceList, selectedDefinitionId);
     if (!def) return;
 
@@ -801,7 +802,7 @@ export default function Wiki() {
               <div className="bg-indigo-600 px-6 py-2.5 flex items-center justify-between text-white shadow-lg animate-in slide-in-from-top-full duration-500 z-50">
                   <div className="flex items-center gap-4">
                       <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
-                          <UserCircle2 className="h-5 w-5" />
+                          <UserCircle className="h-5 w-5" />
                       </div>
                       <div className="flex flex-col">
                           <p className="text-[13px] font-bold leading-none">Impersonation Session Active</p>
