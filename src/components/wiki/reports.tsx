@@ -36,7 +36,8 @@ import {
     Timer,
     Database,
     FileSearch,
-    ShieldCheck
+    ShieldCheck,
+    XCircle
 } from 'lucide-react';
 import { format, isWithinInterval, startOfDay, endOfDay, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
