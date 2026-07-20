@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -42,7 +43,9 @@ import {
     Trash2,
     Lock,
     Key,
-    Shield
+    Shield,
+    UserCircle2,
+    Terminal
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -55,9 +58,11 @@ type SecurityManagementProps = {
   users: UserAccount[];
   onSaveUsers: (users: UserAccount[]) => void;
   currentUser: { name: string };
+  isSuperAdmin: boolean;
+  onImpersonate: (user: UserAccount | string) => void;
 };
 
-export default function SecurityManagement({ users, onSaveUsers, currentUser }: SecurityManagementProps) {
+export default function SecurityManagement({ users, onSaveUsers, currentUser, isSuperAdmin, onImpersonate }: SecurityManagementProps) {
     const [roles, setRoles] = useLocalStorage<Role[]>('mpm_roles_v1', initialRoles);
     const [permissions, setPermissions] = useLocalStorage<Permission[]>('mpm_permissions_v1', initialPermissions);
     const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activity_logs_v19', []);
@@ -184,9 +189,30 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser }: 
 
     return (
         <div className="space-y-6 h-full flex flex-col">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Security & Access</h1>
-                <p className="text-muted-foreground font-medium">Govern system access, roles, and functional permissions.</p>
+            <div className="flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">Security & Access</h1>
+                    <p className="text-muted-foreground font-medium">Govern system access, roles, and functional permissions.</p>
+                </div>
+                {isSuperAdmin && (
+                    <div className="p-1 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-1">
+                        <div className="px-3 py-1.5">
+                            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest block">Role Impersonation</span>
+                        </div>
+                        {['Admin', 'Approver', 'Standard User'].map(role => (
+                            <Button 
+                                key={role}
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 rounded-lg text-indigo-600 font-bold hover:bg-white hover:shadow-sm text-[11px]"
+                                onClick={() => onImpersonate(role)}
+                            >
+                                <Terminal className="h-3 w-3 mr-1.5" />
+                                {role}
+                            </Button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <Tabs defaultValue="users" className="flex-1 flex flex-col">
@@ -226,7 +252,20 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser }: 
                                             <Badge variant={user.status === 'Active' ? 'success' : 'secondary'} className="font-bold">{user.status}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right px-6">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={() => handleEditUser(user)}><Edit className="h-4 w-4" /></Button>
+                                            <div className="flex justify-end gap-2">
+                                                {isSuperAdmin && (
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        className="h-8 rounded-lg text-indigo-600 font-bold hover:bg-indigo-50"
+                                                        onClick={() => onImpersonate(user)}
+                                                    >
+                                                        <UserCircle2 className="h-4 w-4 mr-1.5" />
+                                                        Impersonate
+                                                    </Button>
+                                                )}
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={() => handleEditUser(user)}><Edit className="h-4 w-4" /></Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}

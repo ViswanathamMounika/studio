@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -14,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
-import type { Notification } from "@/lib/types";
+import type { Notification, UserAccount } from "@/lib/types";
 import Notifications from "../wiki/notifications";
 import { Badge } from "../ui/badge";
 import { SidebarTrigger } from "../ui/sidebar";
@@ -34,6 +35,7 @@ type AppHeaderProps = {
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
     onDefinitionClick: (id: string) => void;
     activeView: 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow' | 'user-management';
+    currentUser: Partial<UserAccount>;
 }
 
 export default function AppHeader({ 
@@ -44,7 +46,8 @@ export default function AppHeader({
     notifications,
     setNotifications,
     onDefinitionClick,
-    activeView
+    activeView,
+    currentUser
 }: AppHeaderProps) {
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -60,7 +63,7 @@ export default function AppHeader({
       case 'approval-workflow':
         return 'Approvals';
       case 'user-management':
-        return 'User Management';
+        return 'Security & Access';
       default:
         return 'MedPoint Wiki';
     }
@@ -133,11 +136,11 @@ export default function AppHeader({
                         </TooltipTrigger>
                         <TooltipContent side="bottom" align="end" className="p-3 w-48 rounded-xl shadow-xl">
                             <div className="space-y-1">
-                                <p className="font-bold text-sm text-slate-900">Dhilip Sagadevan</p>
+                                <p className="font-bold text-sm text-slate-900">{currentUser.name}</p>
                                 <div className="flex items-center gap-1.5">
-                                    <div className={`h-1.5 w-1.5 rounded-full ${isAdmin ? 'bg-indigo-50' : 'bg-emerald-50'}`} />
+                                    <div className={`h-1.5 w-1.5 rounded-full ${isAdmin ? 'bg-indigo-500' : 'bg-emerald-500'}`} />
                                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                                        {isAdmin ? 'Administrator' : 'Standard User'}
+                                        {currentUser.role}
                                     </p>
                                 </div>
                             </div>

@@ -1,11 +1,12 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers } from '@/lib/data';
-import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, Revision, UserAccount } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark } from 'lucide-react';
+import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog } from '@/lib/types';
+import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark, UserCircle2, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -60,6 +61,8 @@ export default function Wiki() {
   const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v19', initialTemplates);
   const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v19', initialApprovalHistory);
   const [users, setUsers] = useLocalStorage<UserAccount[]>('mpm_users_v1', initialUsers);
+  const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activity_logs_v19', []);
+  
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
@@ -73,7 +76,10 @@ export default function Wiki() {
   const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('mpm_user_role_admin_v19', true);
+  
+  const [originalAdminState, setOriginalAdminState] = useLocalStorage<boolean>('mpm_user_role_admin_v19', true);
+  const [impersonatedUser, setImpersonatedUser] = useLocalStorage<UserAccount | null>('mpm_impersonated_user_v1', null);
+  
   const [activeView, setActiveView] = useState<View>('definitions');
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v19', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
@@ -83,17 +89,50 @@ export default function Wiki() {
   const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  const currentUser = useMemo(() => ({
-    id: isAdmin ? "user_admin" : "user_std",
-    name: isAdmin ? "Administrator" : "Standard User",
-    avatar: isAdmin ? "https://picsum.photos/seed/admin/40/40" : "https://picsum.photos/seed/std/40/40"
-  }), [isAdmin]);
+  const isAdmin = useMemo(() => {
+    if (impersonatedUser) {
+        return impersonatedUser.role === 'Super Admin' || impersonatedUser.role === 'Admin';
+    }
+    return originalAdminState;
+  }, [impersonatedUser, originalAdminState]);
+
+  const isSuperAdmin = useMemo(() => {
+    // Only the real account (not impersonated) can be the "true" super admin for triggering impersonation
+    // But the story says "As a Super Admin, I want to impersonate..."
+    // So we assume the baseline account is Super Admin if originalAdminState is true.
+    return originalAdminState && !impersonatedUser;
+  }, [originalAdminState, impersonatedUser]);
+
+  const currentUser = useMemo(() => {
+    if (impersonatedUser) return impersonatedUser;
+    return {
+        id: originalAdminState ? "user_admin" : "user_std",
+        name: originalAdminState ? "Administrator" : "Standard User",
+        avatar: originalAdminState ? "https://picsum.photos/seed/admin/40/40" : "https://picsum.photos/seed/std/40/40",
+        role: originalAdminState ? 'Super Admin' : 'Standard User',
+        email: originalAdminState ? 'admin@medpoint.com' : 'user@medpoint.com',
+        status: 'Active' as const
+    };
+  }, [originalAdminState, impersonatedUser]);
 
   useEffect(() => {
     if (debouncedSearchQuery) {
       trackSearch(debouncedSearchQuery);
     }
   }, [debouncedSearchQuery]);
+
+  const logAction = useCallback((type: any, details?: string) => {
+    const actorName = impersonatedUser ? `Super Admin (as ${impersonatedUser.name})` : currentUser.name;
+    const newLog: ActivityLog = {
+        id: `log_${Date.now()}`,
+        userName: actorName,
+        definitionName: details?.includes('Definition') ? (details.split(': ')[1] || 'N/A') : 'System Governance',
+        activityType: type,
+        occurredDate: new Date().toISOString(),
+        details
+    };
+    setActivityLogs(prev => [newLog, ...(prev || [])]);
+  }, [currentUser.name, impersonatedUser, setActivityLogs]);
 
   const updateUrl = useCallback((definitionId: string, sectionId?: string, view?: View) => {
     if (typeof window === 'undefined') return;
@@ -139,7 +178,8 @@ export default function Wiki() {
   }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    if ((view === 'template-management' || view === 'approval-workflow' || view === 'user-management') && !isAdmin) {
+    const needsAdmin = ['template-management', 'approval-workflow', 'user-management'].includes(view);
+    if (needsAdmin && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
         return;
     }
@@ -199,6 +239,34 @@ export default function Wiki() {
     return () => { if (heartbeatInterval.current) clearInterval(heartbeatInterval.current); };
   }, [isEditing, selectedDefinitionId, viewingMode, setDrafts]);
 
+  const handleImpersonate = (user: UserAccount | string) => {
+    if (typeof user === 'string') {
+        // Impersonate a role
+        const roleUser: UserAccount = {
+            id: `role_proxy_${user.toLowerCase()}`,
+            name: `${user} Session`,
+            email: `${user.toLowerCase()}@proxy.medpoint.com`,
+            role: user,
+            status: 'Active' as const,
+            avatar: `https://picsum.photos/seed/${user}/40/40`
+        };
+        setImpersonatedUser(roleUser);
+        logAction('User Role Modified', `Started impersonating role: ${user}`);
+    } else {
+        setImpersonatedUser(user);
+        logAction('User Role Modified', `Started impersonating user: ${user.name}`);
+    }
+    handleNavigate('definitions');
+    toast({ title: "Impersonation Active", description: "Experiencing app as target user." });
+  };
+
+  const handleExitImpersonation = () => {
+    const targetName = impersonatedUser?.name;
+    setImpersonatedUser(null);
+    logAction('User Role Modified', `Ended impersonation session of ${targetName}`);
+    toast({ title: "Impersonation Ended", description: "Returned to Super Admin account." });
+  };
+
   const toggleSelectionForExport = (id: string, checked: boolean) => {
     setSelectedForExport(prev => checked ? [...prev, id] : prev.filter(i => i !== id));
   };
@@ -237,6 +305,10 @@ export default function Wiki() {
                 date: new Date().toISOString(),
                 read: false
             }, ...(prev || [])]);
+            
+            logAction('Definition Updated', `Submitted for Approval: ${updatedDefinition.name}`);
+        } else {
+            logAction('Definition Updated', `Draft Saved: ${updatedDefinition.name}`);
         }
         setViewingMode('draft');
     } else {
@@ -267,6 +339,7 @@ export default function Wiki() {
         setDrafts(prev => prev.filter(d => d.id !== updatedDefinition.id));
         setViewingMode('live');
         setSelectedDefinitionId(targetId);
+        logAction('Definition Updated', `Published: ${updatedDefinition.name}`);
     }
 
     setIsEditing(false);
@@ -300,12 +373,14 @@ export default function Wiki() {
   };
 
   const handleRetract = (id: string) => {
+    const draft = drafts.find(d => d.id === id);
     setDrafts(prev => prev.map(d => {
       if (d.id === id) {
         return { ...d, isPendingApproval: false, isDraft: true };
       }
       return d;
     }));
+    logAction('Definition Updated', `Submission Retracted: ${draft?.name}`);
     toast({ 
       title: "Submission Retracted", 
       description: "The definition has been returned to your drafts." 
@@ -333,6 +408,7 @@ export default function Wiki() {
         };
 
         setDrafts(prev => prev.map(d => d.id === draftId ? updatedDraft : d));
+        logAction('Definition Updated', `Draft Synced with Live: ${draft.name}`);
         toast({ 
             title: "Draft Synced", 
             description: "Your draft has been updated to match the latest published version." 
@@ -364,6 +440,7 @@ export default function Wiki() {
     setViewingMode('draft');
     setIsEditing(true);
     setIsNewBranch(true);
+    logAction('Definition Created', `New Draft: ${newDefinition.name}`);
   };
 
   const handleDuplicate = (id: string) => {
@@ -385,20 +462,26 @@ export default function Wiki() {
 
   const handleArchive = (id: string | string[], archive: boolean) => {
      const ids = Array.isArray(id) ? id : [id];
+     const targetNames: string[] = [];
      const updateArchiveStatus = (items: Definition[]): Definition[] => {
       return items.map(def => {
-        if (ids.includes(def.id)) return { ...def, isArchived: archive };
+        if (ids.includes(def.id)) {
+            targetNames.push(def.name);
+            return { ...def, isArchived: archive };
+        }
         if (def.children) return { ...def, children: updateArchiveStatus(def.children) };
         return def;
       });
     };
     setDefinitions(prev => updateArchiveStatus(prev || []));
+    logAction(archive ? 'Definition Archived' : 'Definition Unarchived', `Targets: ${targetNames.join(', ')}`);
     toast({ title: archive ? 'Definition Archived' : 'Definition Unarchived' });
   };
 
   const handleDelete = (id: string) => {
     const draft = drafts.find(d => d.id === id);
     const originalId = draft?.originalId;
+    const targetName = draft?.name || findDefinition(definitions, id)?.name;
 
     const remove = (items: Definition[]): Definition[] => {
       return items.filter(def => def.id !== id).map(def => def.children ? { ...def, children: remove(def.children) } : def);
@@ -420,6 +503,7 @@ export default function Wiki() {
       }
     }
     
+    logAction('Definition Notes Deleted', `Deleted: ${targetName}`);
     toast({ 
       title: draft ? "Draft Discarded" : "Definition Deleted",
       description: draft ? "Your private draft has been removed." : "Item permanently deleted from the library."
@@ -491,6 +575,7 @@ export default function Wiki() {
     setDrafts(prev => prev.filter(d => d.id !== draftId));
     setViewingMode('live');
     setSelectedDefinitionId(finalPublishedDef.id);
+    logAction('Definition Updated', `Approved & Published: ${draft.name}`);
     toast({ title: 'Published Successfully' });
   };
 
@@ -528,6 +613,7 @@ export default function Wiki() {
         comment
     }, ...(prev || [])]);
 
+    logAction('Definition Updated', `${isRejection ? 'Rejected' : 'Requested Changes'}: ${draft.name}`);
     toast({ title: isRejection ? 'Rejected' : 'Changes Requested' });
   };
 
@@ -571,6 +657,7 @@ export default function Wiki() {
     setIsEditing(true);
     setIsNewBranch(true); 
     updateUrl(draftId, activeTab);
+    logAction('Definition Updated', `Began Editing: ${def.name}`);
     toast({ title: "Drafting Started" });
   };
 
@@ -613,7 +700,17 @@ export default function Wiki() {
     switch (activeView) {
         case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
-        case 'user-management': return <div className="p-6 h-full"><SecurityManagement users={users} onSaveUsers={setUsers} currentUser={currentUser} /></div>;
+        case 'user-management': return (
+            <div className="p-6 h-full">
+                <SecurityManagement 
+                    users={users} 
+                    onSaveUsers={setUsers} 
+                    currentUser={currentUser}
+                    isSuperAdmin={isSuperAdmin}
+                    onImpersonate={handleImpersonate}
+                />
+            </div>
+        );
         case 'approval-workflow': return (
             <div className="h-full">
                 <ApprovalQueue 
@@ -684,9 +781,39 @@ export default function Wiki() {
 
   return (
     <SidebarProvider>
-      <AppSidebar activeView={activeView} onNavigate={handleNavigate} isAdmin={isAdmin} onToggleAdmin={setIsAdmin} />
+      <AppSidebar 
+        activeView={activeView} 
+        onNavigate={handleNavigate} 
+        isAdmin={isAdmin} 
+        onToggleAdmin={setOriginalAdminState} 
+        isImpersonating={!!impersonatedUser}
+      />
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background">
+          {impersonatedUser && (
+              <div className="bg-indigo-600 px-6 py-2.5 flex items-center justify-between text-white shadow-lg animate-in slide-in-from-top-full duration-500 z-50">
+                  <div className="flex items-center gap-4">
+                      <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
+                          <UserCircle2 className="h-5 w-5" />
+                      </div>
+                      <div className="flex flex-col">
+                          <p className="text-[13px] font-bold leading-none">Impersonation Session Active</p>
+                          <p className="text-[11px] font-medium text-white/80 mt-1">
+                              Experiencing app as <span className="underline font-bold">{impersonatedUser.name}</span> ({impersonatedUser.role})
+                          </p>
+                      </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 px-4 rounded-xl border-white/30 bg-white/10 hover:bg-white/20 text-white font-bold gap-2 transition-all active:scale-95"
+                    onClick={handleExitImpersonation}
+                  >
+                      <LogOut className="h-3.5 w-3.5" />
+                      Exit Session
+                  </Button>
+              </div>
+          )}
           <AppHeader
               onRecentClick={() => setIsRecentModalOpen(true)}
               onNewDefinitionClick={(type) => type === 'template' ? setIsTemplatesModalOpen(true) : setIsNewDefinitionModalOpen(true)}
@@ -695,6 +822,7 @@ export default function Wiki() {
               setNotifications={setNotifications}
               onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')}
               activeView={activeView}
+              currentUser={currentUser}
           />
           <main className="flex-1 flex overflow-hidden">
              {activeView === 'definitions' && (

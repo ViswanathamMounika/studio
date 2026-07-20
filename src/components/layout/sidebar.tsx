@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -20,7 +21,8 @@ import {
     Fingerprint,
     ClipboardList,
     Library,
-    ShieldAlert
+    ShieldAlert,
+    UserCircle2
 } from "lucide-react";
 import {
     Collapsible,
@@ -44,12 +46,14 @@ import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import type { View } from '@/lib/types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type AppSidebarProps = {
     activeView: View;
     onNavigate: (view: View) => void;
     isAdmin: boolean;
     onToggleAdmin: (isAdmin: boolean) => void;
+    isImpersonating?: boolean;
 };
 
 const topNavItems = [
@@ -57,7 +61,7 @@ const topNavItems = [
     { id: 'posts', label: 'Posts', icon: Newspaper },
 ];
 
-export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAdmin }: AppSidebarProps) {
+export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAdmin, isImpersonating }: AppSidebarProps) {
     const [isWikiOpen, setIsWikiOpen] = useState(true);
     const [isDefinitionsOpen, setIsDefinitionsOpen] = useState(true);
 
@@ -216,17 +220,37 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                         <Fingerprint className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Role Settings</span>
                     </div>
-                    <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-200 shadow-sm">
-                        <div className="space-y-0.5">
-                            <p className="text-[11px] font-bold text-slate-900">Admin Mode</p>
-                            <p className="text-[9px] font-medium text-slate-500 uppercase tracking-tighter">Toggle Permissions</p>
-                        </div>
-                        <Switch 
-                            checked={isAdmin} 
-                            onCheckedChange={onToggleAdmin}
-                            className="scale-75"
-                        />
-                    </div>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className={cn(
+                                    "flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-200 shadow-sm transition-all",
+                                    isImpersonating && "opacity-60 bg-slate-100"
+                                )}>
+                                    <div className="space-y-0.5">
+                                        <div className="flex items-center gap-1.5">
+                                            <p className="text-[11px] font-bold text-slate-900">Admin Mode</p>
+                                            {isImpersonating && <UserCircle2 className="h-3 w-3 text-indigo-500" />}
+                                        </div>
+                                        <p className="text-[9px] font-medium text-slate-500 uppercase tracking-tighter">
+                                            {isImpersonating ? 'Override Active' : 'Toggle Permissions'}
+                                        </p>
+                                    </div>
+                                    <Switch 
+                                        checked={isAdmin} 
+                                        onCheckedChange={onToggleAdmin}
+                                        disabled={isImpersonating}
+                                        className="scale-75"
+                                    />
+                                </div>
+                            </TooltipTrigger>
+                            {isImpersonating && (
+                                <TooltipContent side="top" className="max-w-[200px] text-xs font-medium">
+                                    Role toggle is disabled during an active impersonation session.
+                                </TooltipContent>
+                            )}
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
             </SidebarFooter>
         </Sidebar>
