@@ -24,7 +24,8 @@ import {
     UserCircle,
     Database,
     Settings,
-    LayoutDashboard
+    LayoutDashboard,
+    PieChart
 } from "lucide-react";
 import {
     Collapsible,
@@ -79,7 +80,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     ];
 
     const handleNavigate = (id: string) => {
-        const adminViews = ['dashboard', 'definitions', 'activity-logs', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration'];
+        const adminViews = ['dashboard', 'definitions', 'activity-logs', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration', 'reports'];
         if (adminViews.includes(id)) {
             onNavigate(id as View);
         } else {
@@ -100,6 +101,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
             <SidebarContent>
                 <SidebarMenu>
                      {isAdmin && (
+                        <>
                         <SidebarMenuItem>
                             <SidebarMenuButton
                                 isActive={activeView === 'dashboard'}
@@ -110,6 +112,17 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                 Admin Dashboard
                             </SidebarMenuButton>
                         </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton
+                                isActive={activeView === 'reports'}
+                                onClick={() => handleNavigate('reports')}
+                                className="font-bold text-primary"
+                            >
+                                <PieChart className="h-4 w-4" />
+                                Governance Reports
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        </>
                      )}
 
                      {topNavItems.map(item => (

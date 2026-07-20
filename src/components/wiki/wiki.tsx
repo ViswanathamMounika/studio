@@ -24,7 +24,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 // Dynamic imports for heavy components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
   ssr: false,
-  loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
+  loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
 });
 const DefinitionView = dynamic(() => import('@/components/wiki/definition-view'), { 
   ssr: false,
@@ -41,6 +41,7 @@ const SecurityManagement = dynamic(() => import('@/components/wiki/user-manageme
 const MasterDataManagement = dynamic(() => import('@/components/wiki/master-data-management'), { ssr: false });
 const SystemConfiguration = dynamic(() => import('@/components/wiki/system-configuration'), { ssr: false });
 const Dashboard = dynamic(() => import('@/components/wiki/dashboard'), { ssr: false });
+const ReportsDashboard = dynamic(() => import('@/components/wiki/reports'), { ssr: false });
 
 type ViewingMode = 'live' | 'draft';
 
@@ -186,7 +187,7 @@ export default function Wiki() {
   }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    const adminViews = ['dashboard', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration'];
+    const adminViews = ['dashboard', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration', 'reports'];
     const needsAdmin = adminViews.includes(view);
     if (needsAdmin && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
@@ -717,6 +718,19 @@ export default function Wiki() {
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
         case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} /></div>;
         case 'system-configuration': return <div className="p-6 h-full"><SystemConfiguration config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
+        case 'reports': return (
+            <div className="p-6 h-full">
+                <ReportsDashboard 
+                    users={users} 
+                    definitions={definitions} 
+                    drafts={drafts} 
+                    activityLogs={activityLogs} 
+                    approvalHistory={approvalHistory} 
+                    templates={templates}
+                    masterData={masterData}
+                />
+            </div>
+        );
         case 'user-management': return (
             <div className="p-6 h-full">
                 <SecurityManagement 

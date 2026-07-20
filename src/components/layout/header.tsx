@@ -33,7 +33,7 @@ type AppHeaderProps = {
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
     onDefinitionClick: (id: string) => void;
-    activeView: 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow' | 'user-management' | 'master-data-management' | 'system-configuration' | 'dashboard';
+    activeView: 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow' | 'user-management' | 'master-data-management' | 'system-configuration' | 'dashboard' | 'reports';
     currentUser: Partial<UserAccount>;
 }
 
@@ -55,6 +55,8 @@ export default function AppHeader({
     switch (activeView) {
       case 'dashboard':
         return 'Admin Dashboard';
+      case 'reports':
+        return 'Governance Analytics';
       case 'definitions':
         return 'MPM Data Definitions';
       case 'activity-logs':
@@ -143,7 +145,7 @@ export default function AppHeader({
                             <div className="space-y-1">
                                 <p className="font-bold text-sm text-slate-900">{currentUser.name}</p>
                                 <div className="flex items-center gap-1.5">
-                                    <div className={`h-1.5 w-1.5 rounded-full ${isAdmin ? 'bg-indigo-500' : 'bg-emerald-500'}`} />
+                                    <div className={`h-1.5 w-1.5 rounded-full ${isAdmin ? 'bg-indigo-50' : 'bg-emerald-50'}`} />
                                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
                                         {currentUser.role}
                                     </p>
