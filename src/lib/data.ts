@@ -1,3 +1,4 @@
+
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry, UserAccount, Role, Permission, MasterDataState, SystemConfigurationState } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
@@ -318,112 +319,36 @@ export const initialDefinitions: Definition[] = [
   }
 ];
 
-export const initialDrafts: Definition[] = [
-  {
-    id: 'draft_101',
-    originalId: '3', // Links to Provider module or item
-    authorId: 'user_123',
-    name: 'Provider Master Verification',
-    module: 'Provider',
-    templateId: '1',
-    keywords: ['master', 'verification', 'credentialing'],
-    description: '<p>Standard operating procedure for verifying provider master data against the CAQH portal.</p>',
-    shortDescription: 'SOP for provider data verification.',
-    isArchived: false,
-    isDraft: true,
-    isPendingApproval: true,
-    submittedBy: 'Dhilip Sagadevan',
-    submittedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    revisions: [],
-    discussions: [
-      {
-        id: 'd101',
-        authorId: 'admin_1',
-        author: 'Governance Admin',
-        avatar: 'https://picsum.photos/seed/admin/40/40',
-        date: new Date(Date.now() - 3600000 * 2).toISOString(),
-        content: 'Please ensure the step-by-step screenshots are updated to the 2024 UI version.',
-        type: 'comment'
-      }
-    ],
-    supportingTables: [],
-    attachments: [],
-    sectionValues: [
-      { sectionId: '1', raw: 'SOP for provider data verification.' },
-      { sectionId: '2', raw: '<p>Standard operating procedure for verifying provider master data against the CAQH portal.</p>', html: '<p>Standard operating procedure for verifying provider master data against the CAQH portal.</p>' }
-    ]
-  },
-  {
-    id: 'draft_102',
-    originalId: '1.1.1',
-    authorId: 'user_123',
-    name: 'Urgent Care TAT Rules',
-    module: 'Authorizations',
-    templateId: '1',
-    keywords: ['TAT', 'urgent', 'SLA'],
-    description: '<p>Updated turnaround time rules for Urgent Care centers in the Southern California region.</p>',
-    shortDescription: 'Regional TAT rules for Urgent Care.',
-    isArchived: false,
-    isDraft: true,
-    isPendingApproval: true,
-    submittedBy: 'Dhilip Sagadevan',
-    submittedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-    revisions: [],
-    discussions: [
-      {
-        id: 'd102',
-        authorId: 'admin_1',
-        author: 'Compliance Lead',
-        avatar: 'https://picsum.photos/seed/lead/40/40',
-        date: new Date(Date.now() - 3600000 * 12).toISOString(),
-        content: 'Does this include the new Saturday provision for San Diego clinics?',
-        type: 'change-request',
-        priority: 'High'
-      }
-    ],
-    supportingTables: [],
-    attachments: [],
-    sectionValues: [
-      { sectionId: '1', raw: 'Regional TAT rules for Urgent Care.' },
-      { sectionId: '2', raw: '<p>Updated turnaround time rules for Urgent Care centers in the Southern California region.</p>', html: '<p>Updated turnaround time rules for Urgent Care centers in the Southern California region.</p>' }
-    ]
-  },
-  {
-    id: 'draft_103',
-    authorId: 'user_123',
-    name: 'Claims Adjudication Logic v2',
-    module: 'Claims',
-    templateId: '1',
-    keywords: ['adjudication', 'v2', 'logic'],
-    description: '<p>Work-in-progress update for the adjudication engine logic. Focus on professional claims.</p>',
-    shortDescription: 'V2 update for claim adjudication.',
-    isArchived: false,
-    isDraft: true,
-    isPendingApproval: false,
-    revisions: [],
-    supportingTables: [],
-    attachments: [],
-    sectionValues: [
-      { sectionId: '1', raw: 'V2 update for claim adjudication.' },
-      { sectionId: '2', raw: '<p>Work-in-progress update for the adjudication engine logic. Focus on professional claims.</p>', html: '<p>Work-in-progress update for the adjudication engine logic. Focus on professional claims.</p>' }
-    ]
-  }
-];
-
 export const initialActivityLogs: ActivityLog[] = [
   {
     id: '1',
-    userName: 'Dhilip Sagadevan',
-    definitionName: 'Auth Decision Date',
-    activityType: 'Definition Updated',
-    occurredDate: new Date(Date.now() - 3600000 * 2).toISOString(),
+    userName: 'Administrator',
+    definitionName: 'System Configuration',
+    activityType: 'System Configuration Updated',
+    occurredDate: new Date(Date.now() - 3600000 * 1).toISOString(),
+    details: 'Updated maximum file upload size to 25MB and modified authorized file types.'
   },
   {
     id: '2',
+    userName: 'Administrator',
+    definitionName: 'Security Administration',
+    activityType: 'User Role Modified',
+    occurredDate: new Date(Date.now() - 3600000 * 5).toISOString(),
+    details: 'Assigned Standard User role to s.chen@medpoint.com.'
+  },
+  {
+    id: '3',
+    userName: 'Dhilip Sagadevan',
+    definitionName: 'Auth Decision Date',
+    activityType: 'Definition Updated',
+    occurredDate: new Date(Date.now() - 3600000 * 24).toISOString(),
+  },
+  {
+    id: '4',
     userName: 'Jane Smith',
     definitionName: 'Contracted Rates',
     activityType: 'Definition Viewed',
-    occurredDate: new Date(Date.now() - 3600000 * 24).toISOString(),
+    occurredDate: new Date(Date.now() - 3600000 * 48).toISOString(),
   }
 ];
 
@@ -433,7 +358,7 @@ export const initialApprovalHistory: ApprovalHistoryEntry[] = [
     definitionId: '1.1.1',
     definitionName: 'Auth Decision Date',
     action: 'Approved',
-    userName: 'Dhilip Sagadevan',
+    userName: 'Administrator',
     date: new Date(Date.now() - 3600000 * 24 * 5).toISOString(),
     comment: 'All metadata verified against EzCAP production schema.'
   }

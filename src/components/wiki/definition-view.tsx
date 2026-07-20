@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -149,6 +150,9 @@ export default function DefinitionView({
         onTabChange('notes');
     };
 
+    // UNRESTRICTED ACCESS: Admin can edit any non-archived item, regardless of approval status.
+    const isEditable = !definition.isArchived && (isAdmin || !definition.isPendingApproval);
+
   return (
     <TooltipProvider>
         <article className="max-w-none">
@@ -248,7 +252,7 @@ export default function DefinitionView({
                     <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/5 rounded-xl transition-all"><Share2 className="h-5 w-5" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => onToggleBookmark(definition.id)} className="text-primary hover:bg-primary/5 rounded-xl transition-all"><Bookmark className={cn("h-5 w-5", definition.isBookmarked && "fill-primary")} /></Button>
                     
-                    {!definition.isArchived && !definition.isPendingApproval && (
+                    {isEditable && (
                         <Button onClick={onEdit} className="bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white font-bold px-6 h-9 rounded-xl shadow-sm transition-all active:scale-95">Edit</Button>
                     )}
 
