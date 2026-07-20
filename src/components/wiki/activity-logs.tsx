@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths, subDays } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History, Eye } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History, Eye, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType } from '@/lib/types';
 import { initialActivityLogs } from '@/lib/data';
@@ -42,6 +42,8 @@ const activityTypes: ActivityType[] = [
   'Definition Shared',
   'Definition Searched',
   'Definition Attachment Downloaded',
+  'User Login',
+  'User Logout',
   'User Profile Updated',
   'User Status Changed',
   'User Role Modified',
@@ -56,10 +58,14 @@ const activityTypes: ActivityType[] = [
   'Master Data Updated',
   'Master Data Deleted',
   'Master Data Status Changed',
-  'System Configuration Updated'
+  'System Configuration Updated',
+  'Template Created',
+  'Template Updated',
+  'Template Deleted',
+  'Approval Decision'
 ];
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 15;
 
 type ActivityLogsProps = {
     isAdmin: boolean;
@@ -524,30 +530,39 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {paginatedLogs.map(log => (
-                                    <TableRow key={log.id} className="hover:bg-slate-50 transition-colors border-slate-100">
-                                        <TableCell className="px-6 py-5 font-bold text-slate-900">{log.userName}</TableCell>
-                                        <TableCell className="text-slate-600 font-medium">{log.definitionName}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className={cn(
-                                                "font-bold text-[10px] uppercase h-6 px-2.5",
-                                                log.activityType.includes('System') || log.activityType.includes('Security') || log.activityType.includes('User') || log.activityType === 'Definition Deleted'
-                                                    ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
-                                                    : "bg-slate-50 text-slate-600 border-slate-200"
-                                            )}>
-                                                {log.activityType}
-                                            </Badge>
-                                        </TableCell>
-                                        {isAdmin && (
-                                            <TableCell className="text-slate-500 text-xs italic max-w-xs truncate">
-                                                {log.details || '—'}
+                                {paginatedLogs.map(log => {
+                                    const isSecurityEvent = log.activityType.includes('System') || 
+                                                            log.activityType.includes('Security') || 
+                                                            log.activityType.includes('User') || 
+                                                            log.activityType.includes('Login') ||
+                                                            log.activityType.includes('Logout') ||
+                                                            log.activityType.includes('Role') ||
+                                                            log.activityType.includes('Permission');
+                                    return (
+                                        <TableRow key={log.id} className="hover:bg-slate-50 transition-colors border-slate-100">
+                                            <TableCell className="px-6 py-5 font-bold text-slate-900">{log.userName}</TableCell>
+                                            <TableCell className="text-slate-600 font-medium">{log.definitionName}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className={cn(
+                                                    "font-bold text-[10px] uppercase h-6 px-2.5",
+                                                    isSecurityEvent || log.activityType === 'Definition Deleted' || log.activityType === 'Approval Decision'
+                                                        ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
+                                                        : "bg-slate-50 text-slate-600 border-slate-200"
+                                                )}>
+                                                    {log.activityType}
+                                                </Badge>
                                             </TableCell>
-                                        )}
-                                        <TableCell className="text-right px-6 text-slate-400 font-bold tabular-nums text-[11px] uppercase whitespace-nowrap">
-                                            {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                            {isAdmin && (
+                                                <TableCell className="text-slate-500 text-xs italic max-w-xs truncate">
+                                                    {log.details || '—'}
+                                                </TableCell>
+                                            )}
+                                            <TableCell className="text-right px-6 text-slate-400 font-bold tabular-nums text-[11px] uppercase whitespace-nowrap">
+                                                {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                                 {paginatedLogs.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={isAdmin ? 5 : 4} className="h-64 text-center">

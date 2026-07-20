@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -254,9 +253,11 @@ export default function Wiki() {
         };
         setImpersonatedUser(roleUser);
         logAction('User Role Modified', `Started impersonating role: ${user}`);
+        logAction('User Login', `Super Admin began proxy session for role: ${user}`);
     } else {
         setImpersonatedUser(user);
         logAction('User Role Modified', `Started impersonating user: ${user.name}`);
+        logAction('User Login', `Super Admin began proxy session for user: ${user.name}`);
     }
     handleNavigate('definitions');
     toast({ title: "Impersonation Active", description: "Experiencing app as target user." });
@@ -266,6 +267,7 @@ export default function Wiki() {
     const targetName = impersonatedUser?.name;
     setImpersonatedUser(null);
     logAction('User Role Modified', `Ended impersonation session of ${targetName}`);
+    logAction('User Logout', `Ended proxy session for ${targetName}`);
     toast({ title: "Impersonation Ended", description: "Returned to Super Admin account." });
   };
 
@@ -579,7 +581,7 @@ export default function Wiki() {
     setDrafts(prev => prev.filter(d => d.id !== draftId));
     setViewingMode('live');
     setSelectedDefinitionId(finalPublishedDef.id);
-    logAction('Definition Updated', `Approved & Published: ${draft.name}`);
+    logAction('Approval Decision', `Approved & Published: ${draft.name}`);
     toast({ title: 'Published Successfully' });
   };
 
@@ -617,7 +619,7 @@ export default function Wiki() {
         comment
     }, ...(prev || [])]);
 
-    logAction('Definition Updated', `${isRejection ? 'Rejected' : 'Requested Changes'}: ${draft.name}`);
+    logAction('Approval Decision', `${isRejection ? 'Rejected' : 'Requested Changes'}: ${draft.name}`);
     toast({ title: isRejection ? 'Rejected' : 'Changes Requested' });
   };
 

@@ -210,6 +210,8 @@ export type ActivityType =
   | 'Definition Shared'
   | 'Definition Searched'
   | 'Definition Attachment Downloaded'
+  | 'User Login'
+  | 'User Logout'
   | 'User Profile Updated'
   | 'User Status Changed'
   | 'User Role Modified'
@@ -227,7 +229,8 @@ export type ActivityType =
   | 'System Configuration Updated'
   | 'Template Created'
   | 'Template Updated'
-  | 'Template Deleted';
+  | 'Template Deleted'
+  | 'Approval Decision';
 
 export interface ActivityLog {
     id: string;

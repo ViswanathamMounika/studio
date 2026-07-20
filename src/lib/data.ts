@@ -1,4 +1,3 @@
-
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry, UserAccount, Role, Permission, MasterDataState, SystemConfigurationState } from './types';
 
 export const initialDrafts: Definition[] = [];
@@ -351,6 +350,22 @@ export const initialActivityLogs: ActivityLog[] = [
     definitionName: 'Contracted Rates',
     activityType: 'Definition Viewed',
     occurredDate: new Date(Date.now() - 3600000 * 48).toISOString(),
+  },
+  {
+    id: '5',
+    userName: 'Sarah Chen',
+    definitionName: 'User Session',
+    activityType: 'User Login',
+    occurredDate: new Date(Date.now() - 3600000 * 2).toISOString(),
+    details: 'Logged in from 192.168.1.45'
+  },
+  {
+    id: '6',
+    userName: 'Administrator',
+    definitionName: 'Service Type Mapping',
+    activityType: 'Approval Decision',
+    occurredDate: new Date(Date.now() - 3600000 * 10).toISOString(),
+    details: 'Approved & Published: Service Type Mapping'
   }
 ];
 
