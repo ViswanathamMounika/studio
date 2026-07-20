@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -34,7 +33,7 @@ type AppHeaderProps = {
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
     onDefinitionClick: (id: string) => void;
-    activeView: 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow' | 'user-management';
+    activeView: 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow' | 'user-management' | 'master-data-management' | 'system-configuration' | 'dashboard';
     currentUser: Partial<UserAccount>;
 }
 
@@ -54,6 +53,8 @@ export default function AppHeader({
   
   const getTitle = () => {
     switch (activeView) {
+      case 'dashboard':
+        return 'Admin Dashboard';
       case 'definitions':
         return 'MPM Data Definitions';
       case 'activity-logs':
@@ -64,6 +65,10 @@ export default function AppHeader({
         return 'Approvals';
       case 'user-management':
         return 'Security & Access';
+      case 'master-data-management':
+        return 'Master Data';
+      case 'system-configuration':
+        return 'System Settings';
       default:
         return 'MedPoint Wiki';
     }

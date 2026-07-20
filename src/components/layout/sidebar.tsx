@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -24,7 +23,8 @@ import {
     ShieldAlert,
     UserCircle,
     Database,
-    Settings
+    Settings,
+    LayoutDashboard
 } from "lucide-react";
 import {
     Collapsible,
@@ -79,7 +79,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     ];
 
     const handleNavigate = (id: string) => {
-        const adminViews = ['definitions', 'activity-logs', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration'];
+        const adminViews = ['dashboard', 'definitions', 'activity-logs', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration'];
         if (adminViews.includes(id)) {
             onNavigate(id as View);
         } else {
@@ -99,6 +99,19 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
             </SidebarHeader>
             <SidebarContent>
                 <SidebarMenu>
+                     {isAdmin && (
+                        <SidebarMenuItem>
+                            <SidebarMenuButton
+                                isActive={activeView === 'dashboard'}
+                                onClick={() => handleNavigate('dashboard')}
+                                className="font-bold text-primary"
+                            >
+                                <LayoutDashboard className="h-4 w-4" />
+                                Admin Dashboard
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                     )}
+
                      {topNavItems.map(item => (
                         <SidebarMenuItem key={item.id}>
                             <SidebarMenuButton

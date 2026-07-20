@@ -190,7 +190,8 @@ export type View =
   | 'approval-workflow' 
   | 'user-management' 
   | 'master-data-management'
-  | 'system-configuration';
+  | 'system-configuration'
+  | 'dashboard';
 
 export type ActivityType = 
   | 'Definition Created'
