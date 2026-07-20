@@ -69,7 +69,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     ];
 
     const handleNavigate = (id: string) => {
-        if (id === 'definitions' || id === 'activity-logs' || id === 'template-management' || id === 'approval-workflow') {
+        if (id === 'definitions' || id === 'activity-logs' || id === 'template-management' || id === 'approval-workflow' || id === 'user-management') {
             onNavigate(id as View);
         } else {
             console.log(`Navigating to ${id}`);
@@ -120,7 +120,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                             <SidebarMenuButton 
                                                 className={cn(
                                                     "h-8",
-                                                    (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'activity-logs') && "text-primary font-bold"
+                                                    (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'activity-logs' || activeView === 'user-management') && "text-primary font-bold"
                                                 )}
                                             >
                                                 <KeyRound className="h-4 w-4" />
@@ -161,6 +161,16 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                             >
                                                                 <Settings2 className="h-3.5 w-3.5 mr-1" />
                                                                 Templates
+                                                            </SidebarMenuSubButton>
+                                                        </SidebarMenuSubItem>
+                                                        <SidebarMenuSubItem>
+                                                            <SidebarMenuSubButton 
+                                                                isActive={activeView === 'user-management'}
+                                                                onClick={() => handleNavigate('user-management')}
+                                                                className="h-7 text-[12px]"
+                                                            >
+                                                                <UserCog className="h-3.5 w-3.5 mr-1" />
+                                                                Users
                                                             </SidebarMenuSubButton>
                                                         </SidebarMenuSubItem>
                                                     </>

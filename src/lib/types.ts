@@ -159,7 +159,17 @@ export interface Notification {
     read: boolean;
 }
 
-export type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow';
+export interface UserAccount {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: 'Active' | 'Inactive';
+  lastLogin?: string;
+  avatar?: string;
+}
+
+export type View = 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow' | 'user-management';
 
 export type ActivityType = 
   | 'Definition Created'
@@ -177,7 +187,10 @@ export type ActivityType =
   | 'Definition Viewed'
   | 'Definition Shared'
   | 'Definition Searched'
-  | 'Definition Attachment Downloaded';
+  | 'Definition Attachment Downloaded'
+  | 'User Profile Updated'
+  | 'User Status Changed'
+  | 'User Role Modified';
 
 export interface ActivityLog {
     id: string;

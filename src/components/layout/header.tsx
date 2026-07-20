@@ -33,7 +33,7 @@ type AppHeaderProps = {
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
     onDefinitionClick: (id: string) => void;
-    activeView: 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow';
+    activeView: 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow' | 'user-management';
 }
 
 export default function AppHeader({ 
@@ -59,6 +59,8 @@ export default function AppHeader({
         return 'Template Management';
       case 'approval-workflow':
         return 'Approvals';
+      case 'user-management':
+        return 'User Management';
       default:
         return 'MedPoint Wiki';
     }
@@ -133,7 +135,7 @@ export default function AppHeader({
                             <div className="space-y-1">
                                 <p className="font-bold text-sm text-slate-900">Dhilip Sagadevan</p>
                                 <div className="flex items-center gap-1.5">
-                                    <div className={`h-1.5 w-1.5 rounded-full ${isAdmin ? 'bg-indigo-500' : 'bg-emerald-500'}`} />
+                                    <div className={`h-1.5 w-1.5 rounded-full ${isAdmin ? 'bg-indigo-50' : 'bg-emerald-50'}`} />
                                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
                                         {isAdmin ? 'Administrator' : 'Standard User'}
                                     </p>

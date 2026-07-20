@@ -1,11 +1,10 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
-import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts } from '@/lib/data';
-import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, Revision } from '@/lib/types';
+import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers } from '@/lib/data';
+import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, Revision, UserAccount } from '@/lib/types';
 import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,6 +37,7 @@ const NewDefinitionModal = dynamic(() => import('@/components/wiki/new-definitio
 const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal'), { ssr: false });
 const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
 const ApprovalQueue = dynamic(() => import('@/components/wiki/approval-queue'), { ssr: false });
+const UserManagement = dynamic(() => import('@/components/wiki/user-management'), { ssr: false });
 
 type ViewingMode = 'live' | 'draft';
 
@@ -59,6 +59,7 @@ export default function Wiki() {
   const [drafts, setDrafts] = useLocalStorage<Definition[]>('mpm_user_drafts_v19', initialDrafts);
   const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v19', initialTemplates);
   const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v19', initialApprovalHistory);
+  const [users, setUsers] = useLocalStorage<UserAccount[]>('mpm_users_v1', initialUsers);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
   const [isEditing, setIsEditing] = useState(false);
@@ -138,7 +139,7 @@ export default function Wiki() {
   }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    if ((view === 'template-management' || view === 'approval-workflow') && !isAdmin) {
+    if ((view === 'template-management' || view === 'approval-workflow' || view === 'user-management') && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
         return;
     }
@@ -612,6 +613,7 @@ export default function Wiki() {
     switch (activeView) {
         case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
+        case 'user-management': return <div className="p-6 h-full"><UserManagement users={users} onSaveUsers={setUsers} currentUser={currentUser} /></div>;
         case 'approval-workflow': return (
             <div className="h-full">
                 <ApprovalQueue 
