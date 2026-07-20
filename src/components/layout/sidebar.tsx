@@ -22,7 +22,8 @@ import {
     Library,
     ShieldAlert,
     UserCircle2,
-    Database
+    Database,
+    Settings
 } from "lucide-react";
 import {
     Collapsible,
@@ -45,7 +46,7 @@ import { cn } from '@/lib/utils';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
-import type { View } from '@/lib/types';
+import type { View, SystemConfigurationState } from '@/lib/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type AppSidebarProps = {
@@ -54,6 +55,7 @@ type AppSidebarProps = {
     isAdmin: boolean;
     onToggleAdmin: (isAdmin: boolean) => void;
     isImpersonating?: boolean;
+    systemConfig?: SystemConfigurationState;
 };
 
 const topNavItems = [
@@ -61,9 +63,11 @@ const topNavItems = [
     { id: 'posts', label: 'Posts', icon: Newspaper },
 ];
 
-export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAdmin, isImpersonating }: AppSidebarProps) {
+export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAdmin, isImpersonating, systemConfig }: AppSidebarProps) {
     const [isWikiOpen, setIsWikiOpen] = useState(true);
     const [isDefinitionsOpen, setIsDefinitionsOpen] = useState(true);
+
+    const appName = systemConfig?.settings.appName || 'MedPOINT';
 
     const wikiNavItems = [
         { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
@@ -74,7 +78,8 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     ];
 
     const handleNavigate = (id: string) => {
-        if (id === 'definitions' || id === 'activity-logs' || id === 'template-management' || id === 'approval-workflow' || id === 'user-management' || id === 'master-data-management') {
+        const adminViews = ['definitions', 'activity-logs', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration'];
+        if (adminViews.includes(id)) {
             onNavigate(id as View);
         } else {
             console.log(`Navigating to ${id}`);
@@ -86,7 +91,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
             <SidebarHeader className="border-b">
                  <div className="flex items-center justify-between p-2">
                     <div className="flex flex-col">
-                        <h1 className="text-lg font-bold tracking-tight text-primary leading-none">MedPOINT</h1>
+                        <h1 className="text-lg font-bold tracking-tight text-primary leading-none">{appName}</h1>
                         <p className='text-[10px] font-black tracking-[0.2em] text-muted-foreground mt-0.5'>MANAGEMENT</p>
                     </div>
                 </div>
@@ -125,7 +130,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                             <SidebarMenuButton 
                                                 className={cn(
                                                     "h-8",
-                                                    (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'user-management' || activeView === 'activity-logs' || activeView === 'master-data-management') && "text-primary font-bold"
+                                                    (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'user-management' || activeView === 'activity-logs' || activeView === 'master-data-management' || activeView === 'system-configuration') && "text-primary font-bold"
                                                 )}
                                             >
                                                 <KeyRound className="h-4 w-4" />
@@ -186,6 +191,16 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                             >
                                                                 <ShieldAlert className="h-3.5 w-3.5 mr-1" />
                                                                 Security & Access
+                                                            </SidebarMenuSubButton>
+                                                        </SidebarMenuSubItem>
+                                                        <SidebarMenuSubItem>
+                                                            <SidebarMenuSubButton 
+                                                                isActive={activeView === 'system-configuration'}
+                                                                onClick={() => handleNavigate('system-configuration')}
+                                                                className="h-7 text-[12px]"
+                                                            >
+                                                                <Settings className="h-3.5 w-3.5 mr-1" />
+                                                                System Settings
                                                             </SidebarMenuSubButton>
                                                         </SidebarMenuSubItem>
                                                     </>

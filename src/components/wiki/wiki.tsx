@@ -3,8 +3,8 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
-import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers, initialMasterData } from '@/lib/data';
-import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog, MasterDataState } from '@/lib/types';
+import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers, initialMasterData, initialSystemConfig } from '@/lib/data';
+import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog, MasterDataState, SystemConfigurationState } from '@/lib/types';
 import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark, UserCircle2, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +39,7 @@ const TemplateManagement = dynamic(() => import('@/components/wiki/template-mana
 const ApprovalQueue = dynamic(() => import('@/components/wiki/approval-queue'), { ssr: false });
 const SecurityManagement = dynamic(() => import('@/components/wiki/user-management'), { ssr: false });
 const MasterDataManagement = dynamic(() => import('@/components/wiki/master-data-management'), { ssr: false });
+const SystemConfiguration = dynamic(() => import('@/components/wiki/system-configuration'), { ssr: false });
 
 type ViewingMode = 'live' | 'draft';
 
@@ -63,6 +64,7 @@ export default function Wiki() {
   const [users, setUsers] = useLocalStorage<UserAccount[]>('mpm_users_v1', initialUsers);
   const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activity_logs_v19', []);
   const [masterData, setMasterData] = useLocalStorage<MasterDataState>('mpm_master_data_v1', initialMasterData);
+  const [systemConfig, setSystemConfig] = useLocalStorage<SystemConfigurationState>('mpm_system_config_v1', initialSystemConfig);
   
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
@@ -176,7 +178,8 @@ export default function Wiki() {
   }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    const needsAdmin = ['template-management', 'approval-workflow', 'user-management', 'master-data-management'].includes(view);
+    const adminViews = ['template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration'];
+    const needsAdmin = adminViews.includes(view);
     if (needsAdmin && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
         return;
@@ -699,8 +702,9 @@ export default function Wiki() {
   const renderContent = () => {
     switch (activeView) {
         case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} /></div>;
-        case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
+        case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} masterData={masterData} /></div>;
         case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} /></div>;
+        case 'system-configuration': return <div className="p-6 h-full"><SystemConfiguration config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
         case 'user-management': return (
             <div className="p-6 h-full">
                 <SecurityManagement 
@@ -789,6 +793,7 @@ export default function Wiki() {
         isAdmin={isAdmin} 
         onToggleAdmin={setOriginalAdminState} 
         isImpersonating={!!impersonatedUser}
+        systemConfig={systemConfig}
       />
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background">
@@ -892,7 +897,7 @@ export default function Wiki() {
         </div>
       </SidebarInset>
       <RecentViewsModal open={isRecentModalOpen} onOpenChange={setIsRecentModalOpen} onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')} />
-      <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={templates} isAdmin={isAdmin} masterData={masterData} />
+      <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={templates} isAdmin={isAdmin} masterData={masterData} systemConfig={systemConfig} />
       <TemplatesModal open={isTemplatesModalOpen} onOpenChange={setIsTemplatesModalOpen} onUseTemplate={handleUseTemplate} managedTemplates={templates} />
     </SidebarProvider>
   );

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Attachment, Template, TemplateSection, SectionValue, MasterDataState } from '@/lib/types';
+import type { Definition, Attachment, Template, TemplateSection, SectionValue, MasterDataState, SystemConfigurationState } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,7 @@ import { Textarea } from '../ui/textarea';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useToast } from '@/hooks/use-toast';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -36,9 +37,10 @@ type NewDefinitionModalProps = {
   templates?: Template[];
   isAdmin: boolean;
   masterData?: MasterDataState;
+  systemConfig?: SystemConfigurationState;
 };
 
-export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [], isAdmin, masterData }: NewDefinitionModalProps) {
+export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [], isAdmin, masterData, systemConfig }: NewDefinitionModalProps) {
   const [name, setName] = useState('');
   const [module, setModule] = useState('Core');
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -49,6 +51,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [sectionValues, setSectionValues] = useState<SectionValue[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const modules = useMemo(() => {
     return masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Core'];
@@ -125,6 +128,21 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
+      
+      // CONFIG CHECK: Allowed File Types & Size
+      const config = systemConfig?.settings;
+      if (config) {
+        const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
+        if (!config.allowedFileTypes.includes(fileExt)) {
+          toast({ variant: 'destructive', title: "File Type Restricted", description: `The system only allows: ${config.allowedFileTypes.join(', ')}` });
+          return;
+        }
+        if (file.size > config.maxFileUploadSizeMb * 1024 * 1024) {
+          toast({ variant: 'destructive', title: "File Too Large", description: `The maximum allowed size is ${config.maxFileUploadSizeMb}MB.` });
+          return;
+        }
+      }
+
       const newAttachment: Attachment = {
         name: file.name,
         url: URL.createObjectURL(file),
@@ -253,8 +271,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                         <Card key={section.id} className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
                           <CardHeader className="py-3 bg-white border-b px-6 flex flex-row items-center justify-between">
                             <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
-                              {section.name}
-                              {section.isRequired && <span className="text-red-500 font-bold">*</span>}
+                              {section.name}{section.isRequired && <span className="text-red-500 font-bold">*</span>}
                               {section.description && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>

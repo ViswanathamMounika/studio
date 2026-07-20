@@ -189,7 +189,8 @@ export type View =
   | 'template-management' 
   | 'approval-workflow' 
   | 'user-management' 
-  | 'master-data-management';
+  | 'master-data-management'
+  | 'system-configuration';
 
 export type ActivityType = 
   | 'Definition Created'
@@ -221,7 +222,8 @@ export type ActivityType =
   | 'Master Data Created'
   | 'Master Data Updated'
   | 'Master Data Deleted'
-  | 'Master Data Status Changed';
+  | 'Master Data Status Changed'
+  | 'System Configuration Updated';
 
 export interface ActivityLog {
     id: string;
@@ -274,3 +276,28 @@ export interface MasterDataState {
 }
 
 export type MasterDataCategory = keyof MasterDataState;
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  variables: string[];
+}
+
+export interface SystemSettings {
+  appName: string;
+  appDescription: string;
+  logoUrl?: string;
+  maxFileUploadSizeMb: number;
+  allowedFileTypes: string[];
+  sessionTimeoutMinutes: number;
+  dateFormat: string;
+  timeZone: string;
+  language: string;
+}
+
+export interface SystemConfigurationState {
+  settings: SystemSettings;
+  emailTemplates: EmailTemplate[];
+}

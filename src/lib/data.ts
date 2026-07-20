@@ -1,4 +1,4 @@
-import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry, UserAccount, Role, Permission, MasterDataState } from './types';
+import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry, UserAccount, Role, Permission, MasterDataState, SystemConfigurationState } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
     id: 'auth-status-codes',
@@ -72,6 +72,35 @@ export const initialMasterData: MasterDataState = {
     { id: 'vs1', name: 'Current', isActive: true },
     { id: 'vs2', name: 'Superseded', isActive: true },
     { id: 'vs3', name: 'Deprecated', isActive: true },
+  ]
+};
+
+export const initialSystemConfig: SystemConfigurationState = {
+  settings: {
+    appName: 'MedPOINT Wiki',
+    appDescription: 'Centralized Healthcare Knowledge Management System',
+    maxFileUploadSizeMb: 10,
+    allowedFileTypes: ['.pdf', '.docx', '.xlsx', '.json', '.sql', '.txt'],
+    sessionTimeoutMinutes: 60,
+    dateFormat: 'MM/DD/YYYY',
+    timeZone: 'America/Los_Angeles',
+    language: 'English (US)'
+  },
+  emailTemplates: [
+    {
+      id: 'et1',
+      name: 'Approval Requested',
+      subject: 'Action Required: Definition Approval Request - {{definitionName}}',
+      body: 'Hello {{recipientName}},\n\nA new definition "{{definitionName}}" has been submitted for approval by {{authorName}}.\n\nPlease review it at: {{definitionUrl}}',
+      variables: ['{{definitionName}}', '{{recipientName}}', '{{authorName}}', '{{definitionUrl}}']
+    },
+    {
+      id: 'et2',
+      name: 'Revision Requested',
+      subject: 'Changes Requested: {{definitionName}}',
+      body: 'Hello {{authorName}},\n\nThe governance team has requested changes for "{{definitionName}}".\n\nFeedback: {{feedback}}\n\nYou can update your draft here: {{draftUrl}}',
+      variables: ['{{definitionName}}', '{{authorName}}', '{{feedback}}', '{{draftUrl}}']
+    }
   ]
 };
 
