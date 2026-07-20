@@ -10,6 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { 
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     LineChart, Line, PieChart, Pie, Cell, Legend
 } from 'recharts';
@@ -29,7 +35,8 @@ import {
     TrendingUp,
     Timer,
     Database,
-    FileSearch
+    FileSearch,
+    ShieldCheck
 } from 'lucide-react';
 import { format, isWithinInterval, startOfDay, endOfDay, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -392,5 +399,3 @@ function MetricCard({ title, value, subValue, icon: Icon, color }: any) {
         </Card>
     );
 }
-
-import { ShieldCheck } from 'lucide-react';
