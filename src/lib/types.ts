@@ -199,6 +199,7 @@ export type ActivityType =
   | 'Definition Archived'
   | 'Definition Unarchived'
   | 'Definition Duplicate'
+  | 'Definition Deleted'
   | 'Definition Export'
   | 'Definition Notes Added'
   | 'Definition Notes Updated'

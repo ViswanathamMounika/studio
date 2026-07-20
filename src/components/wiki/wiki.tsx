@@ -491,7 +491,7 @@ export default function Wiki() {
     };
 
     setDefinitions(prev => remove(prev || []));
-    setDrafts(prev => prev.filter(d => d.id !== id));
+    setDrafts(prev => prev.filter(d => d.id !== id && d.originalId !== id));
 
     if (selectedDefinitionId === id) {
       if (originalId) {
@@ -506,7 +506,7 @@ export default function Wiki() {
       }
     }
     
-    logAction('Definition Notes Deleted', `Deleted: ${targetName}`);
+    logAction('Definition Deleted', `ID: ${id}, Name: ${targetName}`);
     toast({ 
       title: draft ? "Draft Discarded" : "Definition Deleted",
       description: draft ? "Your private draft has been removed." : "Item permanently deleted from the library."

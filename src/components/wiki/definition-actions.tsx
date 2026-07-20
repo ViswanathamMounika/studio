@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -12,8 +11,19 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Archive, Bookmark, Copy, Download, MoreVertical, Pencil, Undo2 } from "lucide-react";
+import { Archive, Bookmark, Copy, Download, MoreVertical, Pencil, Trash2, Undo2 } from "lucide-react";
 import type { Definition } from "@/lib/types";
 
 type DefinitionActionsProps = {
@@ -21,11 +31,12 @@ type DefinitionActionsProps = {
   onEdit: () => void;
   onDuplicate: (id: string) => void;
   onArchive: (id: string, archive: boolean) => void;
+  onDelete: (id: string) => void;
   onToggleBookmark: (id: string) => void;
   isAdmin: boolean;
 };
 
-export default function DefinitionActions({ definition, onEdit, onDuplicate, onArchive, onToggleBookmark, isAdmin }: DefinitionActionsProps) {
+export default function DefinitionActions({ definition, onEdit, onDuplicate, onArchive, onDelete, onToggleBookmark, isAdmin }: DefinitionActionsProps) {
   
   const handleJsonExport = () => {
     const exportData = {
@@ -110,68 +121,105 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
   const isEditable = !definition.isPendingApproval && (isAdmin || definition.isDraft);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {isEditable && (
-          <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
-            <Pencil className="mr-2 h-4 w-4" />
-            <span>Edit</span>
-          </DropdownMenuItem>
-        )}
-        
-        {isAdmin && (
+    <div className="flex items-center">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {isEditable && (
+            <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
+              <Pencil className="mr-2 h-4 w-4" />
+              <span>Edit</span>
+            </DropdownMenuItem>
+          )}
+          
+          {isAdmin && (
+            <DropdownMenuItem 
+              onClick={() => onDuplicate(definition.id)} 
+              className="cursor-pointer"
+              disabled={definition.isDraft}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              <span>Duplicate</span>
+            </DropdownMenuItem>
+          )}
+          
           <DropdownMenuItem 
-            onClick={() => onDuplicate(definition.id)} 
+            onClick={() => onToggleBookmark(definition.id)} 
             className="cursor-pointer"
             disabled={definition.isDraft}
           >
-            <Copy className="mr-2 h-4 w-4" />
-            <span>Duplicate</span>
+              <Bookmark className="mr-2 h-4 w-4" />
+              <span>{definition.isBookmarked ? 'Remove Bookmark' : 'Bookmark'}</span>
           </DropdownMenuItem>
-        )}
-        
-        <DropdownMenuItem 
-          onClick={() => onToggleBookmark(definition.id)} 
-          className="cursor-pointer"
-          disabled={definition.isDraft}
-        >
-            <Bookmark className="mr-2 h-4 w-4" />
-            <span>{definition.isBookmarked ? 'Remove Bookmark' : 'Bookmark'}</span>
-        </DropdownMenuItem>
-        
-        {isAdmin && (
-          <DropdownMenuItem 
-            onClick={() => onArchive(definition.id, !definition.isArchived)} 
-            className="cursor-pointer"
-            disabled={definition.isDraft}
-          >
-            <Archive className="mr-2 h-4 w-4" />
-            <span>{definition.isArchived ? 'Unarchive' : 'Archive'}</span>
-          </DropdownMenuItem>
-        )}
+          
+          {isAdmin && (
+            <DropdownMenuItem 
+              onClick={() => onArchive(definition.id, !definition.isArchived)} 
+              className="cursor-pointer"
+              disabled={definition.isDraft}
+            >
+              <Archive className="mr-2 h-4 w-4" />
+              <span>{definition.isArchived ? 'Unarchive' : 'Archive'}</span>
+            </DropdownMenuItem>
+          )}
 
-        <DropdownMenuSeparator />
+          <DropdownMenuSeparator />
 
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger className="cursor-pointer">
-            <Download className="mr-2 h-4 w-4" />
-            <span>Export As</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent>
-              <DropdownMenuItem onClick={handleJsonExport} className="cursor-pointer">JSON</DropdownMenuItem>
-              <DropdownMenuItem onClick={handlePdfExport} className="cursor-pointer">PDF</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExcelExport} className="cursor-pointer">Excel (XLSX)</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleHtmlExport} className="cursor-pointer">HTML</DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="cursor-pointer">
+              <Download className="mr-2 h-4 w-4" />
+              <span>Export As</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={handleJsonExport} className="cursor-pointer">JSON</DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePdfExport} className="cursor-pointer">PDF</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExcelExport} className="cursor-pointer">Excel (XLSX)</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleHtmlExport} className="cursor-pointer">HTML</DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
+
+          {isAdmin && !definition.isDraft && (
+              <>
+                <DropdownMenuSeparator />
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Delete Permanently</span>
+                        </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-[24px] border-none p-8">
+                        <AlertDialogHeader>
+                            <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
+                                <Trash2 className="h-6 w-6 text-red-600" />
+                            </div>
+                            <AlertDialogTitle className="text-2xl font-bold">Delete Permanently?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
+                                You are about to permanently delete <strong>{definition.name}</strong> and all of its associated version snapshots. 
+                                This action cannot be reversed and the definition will be removed for all users.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="mt-8 gap-3">
+                            <AlertDialogCancel className="rounded-xl font-bold">Keep Definition</AlertDialogCancel>
+                            <AlertDialogAction 
+                                onClick={() => onDelete(definition.id)} 
+                                className="rounded-xl bg-red-600 hover:bg-red-700 font-bold px-6"
+                            >
+                                Delete Everything
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+              </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }

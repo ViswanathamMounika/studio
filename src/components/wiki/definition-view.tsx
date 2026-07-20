@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -38,7 +37,7 @@ import { cn } from '@/lib/utils';
 import AttachmentList from './attachments';
 import { Textarea } from '../ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/checkbox"; // Note: Adjusted based on typical ShadCN pathing or standard relative pathing in project
 import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import RelatedDefinitions from './related-definitions';
@@ -261,6 +260,7 @@ export default function DefinitionView({
                         onEdit={onEdit} 
                         onDuplicate={() => onDuplicate(definition.id)} 
                         onArchive={onArchive} 
+                        onDelete={onDelete}
                         onToggleBookmark={onToggleBookmark} 
                         isAdmin={isAdmin} 
                     />

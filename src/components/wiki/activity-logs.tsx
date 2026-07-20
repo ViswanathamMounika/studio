@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -28,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 const activityTypes: ActivityType[] = [
   'Definition Created',
   'Definition Updated',
+  'Definition Deleted',
   'Definition Bookmarked',
   'Definition Archived',
   'Definition Unarchived',
@@ -531,7 +531,7 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
                                         <TableCell>
                                             <Badge variant="outline" className={cn(
                                                 "font-bold text-[10px] uppercase h-6 px-2.5",
-                                                log.activityType.includes('System') || log.activityType.includes('Security') || log.activityType.includes('User') 
+                                                log.activityType.includes('System') || log.activityType.includes('Security') || log.activityType.includes('User') || log.activityType === 'Definition Deleted'
                                                     ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
                                                     : "bg-slate-50 text-slate-600 border-slate-200"
                                             )}>
