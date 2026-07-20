@@ -159,11 +159,25 @@ export interface Notification {
     read: boolean;
 }
 
+export interface Permission {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  status: 'Active' | 'Inactive';
+  permissions: string[]; // Array of Permission IDs
+}
+
 export interface UserAccount {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: string; // The role name or ID
   status: 'Active' | 'Inactive';
   lastLogin?: string;
   avatar?: string;
@@ -190,7 +204,14 @@ export type ActivityType =
   | 'Definition Attachment Downloaded'
   | 'User Profile Updated'
   | 'User Status Changed'
-  | 'User Role Modified';
+  | 'User Role Modified'
+  | 'Role Created'
+  | 'Role Updated'
+  | 'Role Status Changed'
+  | 'Role Deleted'
+  | 'Permission Created'
+  | 'Permission Updated'
+  | 'Permission Deleted';
 
 export interface ActivityLog {
     id: string;

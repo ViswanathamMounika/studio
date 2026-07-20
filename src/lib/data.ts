@@ -1,4 +1,4 @@
-import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry, UserAccount } from './types';
+import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry, UserAccount, Role, Permission } from './types';
 
 export const authorizationStatusCodes: SupportingTable = {
     id: 'auth-status-codes',
@@ -379,6 +379,23 @@ export const initialUsers: UserAccount[] = [
   { id: 'u3', name: 'Mark Wilson', email: 'm.wilson@medpoint.com', role: 'Viewer', status: 'Active', lastLogin: new Date(Date.now() - 3600000 * 24).toISOString(), avatar: 'https://picsum.photos/seed/mark/40/40' },
   { id: 'u4', name: 'Elena Rodriguez', email: 'e.rodriguez@medpoint.com', role: 'Editor', status: 'Inactive', lastLogin: new Date(Date.now() - 3600000 * 24 * 3).toISOString(), avatar: 'https://picsum.photos/seed/elena/40/40' },
   { id: 'u5', name: 'James T. Kirk', email: 'j.kirk@medpoint.com', role: 'Viewer', status: 'Active', lastLogin: new Date(Date.now() - 3600000 * 2).toISOString(), avatar: 'https://picsum.photos/seed/kirk/40/40' },
+];
+
+export const initialPermissions: Permission[] = [
+  { id: 'p1', name: 'View Definitions', description: 'Can read published definitions.' },
+  { id: 'p2', name: 'Create Drafts', description: 'Can create and save private drafts.' },
+  { id: 'p3', name: 'Submit for Approval', description: 'Can submit definitions for governance review.' },
+  { id: 'p4', name: 'Approve Definitions', description: 'Can publish definitions to the live library.' },
+  { id: 'p5', name: 'Manage Users', description: 'Can edit accounts and assign roles.' },
+  { id: 'p6', name: 'Manage Security', description: 'Can create and edit roles/permissions.' },
+  { id: 'p7', name: 'Manage Templates', description: 'Can define documentation blueprints.' },
+];
+
+export const initialRoles: Role[] = [
+  { id: 'r1', name: 'Super Admin', description: 'Full system access.', status: 'Active', permissions: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'] },
+  { id: 'r2', name: 'Admin', description: 'Administrative access for library management.', status: 'Active', permissions: ['p1', 'p2', 'p3', 'p4', 'p7'] },
+  { id: 'r3', name: 'Approver', description: 'Governance focused role for reviews.', status: 'Active', permissions: ['p1', 'p4'] },
+  { id: 'r4', name: 'Standard User', description: 'Standard viewer and contributor access.', status: 'Active', permissions: ['p1', 'p2', 'p3'] },
 ];
 
 export const defDataTable = {

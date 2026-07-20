@@ -24,7 +24,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 // Dynamic imports for heavy components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
   ssr: false,
-  loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
+  loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
 });
 const DefinitionView = dynamic(() => import('@/components/wiki/definition-view'), { 
   ssr: false,
@@ -37,7 +37,7 @@ const NewDefinitionModal = dynamic(() => import('@/components/wiki/new-definitio
 const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal'), { ssr: false });
 const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
 const ApprovalQueue = dynamic(() => import('@/components/wiki/approval-queue'), { ssr: false });
-const UserManagement = dynamic(() => import('@/components/wiki/user-management'), { ssr: false });
+const SecurityManagement = dynamic(() => import('@/components/wiki/user-management'), { ssr: false });
 
 type ViewingMode = 'live' | 'draft';
 
@@ -613,7 +613,7 @@ export default function Wiki() {
     switch (activeView) {
         case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} /></div>;
-        case 'user-management': return <div className="p-6 h-full"><UserManagement users={users} onSaveUsers={setUsers} currentUser={currentUser} /></div>;
+        case 'user-management': return <div className="p-6 h-full"><SecurityManagement users={users} onSaveUsers={setUsers} currentUser={currentUser} /></div>;
         case 'approval-workflow': return (
             <div className="h-full">
                 <ApprovalQueue 

@@ -19,7 +19,8 @@ import {
     ClipboardCheck,
     Fingerprint,
     ClipboardList,
-    Library
+    Library,
+    ShieldAlert
 } from "lucide-react";
 import {
     Collapsible,
@@ -120,7 +121,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                             <SidebarMenuButton 
                                                 className={cn(
                                                     "h-8",
-                                                    (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'activity-logs' || activeView === 'user-management') && "text-primary font-bold"
+                                                    (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'user-management' || activeView === 'activity-logs') && "text-primary font-bold"
                                                 )}
                                             >
                                                 <KeyRound className="h-4 w-4" />
@@ -169,8 +170,8 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                                 onClick={() => handleNavigate('user-management')}
                                                                 className="h-7 text-[12px]"
                                                             >
-                                                                <UserCog className="h-3.5 w-3.5 mr-1" />
-                                                                Users
+                                                                <ShieldAlert className="h-3.5 w-3.5 mr-1" />
+                                                                Security & Access
                                                             </SidebarMenuSubButton>
                                                         </SidebarMenuSubItem>
                                                     </>
