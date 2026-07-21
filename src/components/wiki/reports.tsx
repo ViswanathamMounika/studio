@@ -315,7 +315,14 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="end">
-                                <Calendar mode="range" selected={dateRange as any} onSelect={setDateRange as any} initialFocus numberOfMonths={2} />
+                                <Calendar 
+                                    mode="range" 
+                                    selected={dateRange as any} 
+                                    onSelect={setDateRange as any} 
+                                    initialFocus 
+                                    numberOfMonths={2} 
+                                    disabled={{ after: new Date() }}
+                                />
                             </PopoverContent>
                         </Popover>
                     </div>
