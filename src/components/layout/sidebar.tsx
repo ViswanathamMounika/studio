@@ -100,19 +100,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
             </SidebarHeader>
             <SidebarContent>
                 <SidebarMenu>
-                     {isAdmin && (
-                        <SidebarMenuItem>
-                            <SidebarMenuButton
-                                isActive={activeView === 'dashboard'}
-                                onClick={() => handleNavigate('dashboard')}
-                                className="font-bold text-primary"
-                            >
-                                <LayoutDashboard className="h-4 w-4" />
-                                Admin Dashboard
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                     )}
-
                      {topNavItems.map(item => (
                         <SidebarMenuItem key={item.id}>
                             <SidebarMenuButton
@@ -145,7 +132,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                             <SidebarMenuButton 
                                                 className={cn(
                                                     "h-8",
-                                                    (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'user-management' || activeView === 'activity-logs' || activeView === 'master-data-management' || activeView === 'system-configuration' || activeView === 'reports') && "text-primary font-bold"
+                                                    (activeView === 'dashboard' || activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'user-management' || activeView === 'activity-logs' || activeView === 'master-data-management' || activeView === 'system-configuration' || activeView === 'reports') && "text-primary font-bold"
                                                 )}
                                             >
                                                 <KeyRound className="h-4 w-4" />
@@ -155,6 +142,19 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                         </CollapsibleTrigger>
                                         <CollapsibleContent>
                                             <SidebarMenuSub className="pl-4 border-l ml-2 space-y-0.5 mt-1">
+                                                {isAdmin && (
+                                                    <SidebarMenuSubItem>
+                                                        <SidebarMenuSubButton 
+                                                            isActive={activeView === 'dashboard'}
+                                                            onClick={() => handleNavigate('dashboard')}
+                                                            className="h-7 text-[12px] font-bold"
+                                                        >
+                                                            <LayoutDashboard className="h-3.5 w-3.5 mr-1" />
+                                                            Admin Dashboard
+                                                        </SidebarMenuSubButton>
+                                                    </SidebarMenuSubItem>
+                                                )}
+                                                
                                                 <SidebarMenuSubItem>
                                                     <SidebarMenuSubButton 
                                                         isActive={activeView === 'definitions'}
