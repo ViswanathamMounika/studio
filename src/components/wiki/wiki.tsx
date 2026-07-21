@@ -118,10 +118,10 @@ export default function Wiki() {
     };
   }, [originalAdminState, impersonatedUser]);
 
-  // Initial routing for Admins to Admin Portal
+  // Initial routing for Admins to MPM Definitions
   useEffect(() => {
     if (isMounted && isAdmin && !window.location.search) {
-        setActiveView('admin-portal');
+        setActiveView('definitions');
     }
   }, [isMounted, isAdmin]);
 
@@ -218,7 +218,7 @@ export default function Wiki() {
         const isDraftId = definitionIdFromUrl.startsWith('draft_');
         handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, isDraftId ? 'draft' : 'live', false);
     } else {
-        setActiveView(isAdmin ? 'admin-portal' : 'definitions');
+        setActiveView('definitions');
         handleSelectDefinition('1.1.1', undefined, 'live', false);
     }
   }, [isMounted, isAdmin, handleNavigate, handleSelectDefinition]);
@@ -269,7 +269,7 @@ export default function Wiki() {
         logAction('User Role Modified', `Started impersonating user: ${user.name}`);
         logAction('User Login', `Super Admin began proxy session for user: ${user.name}`);
     }
-    handleNavigate('admin-portal');
+    handleNavigate('definitions');
     toast({ title: "Impersonation Active", description: "Experiencing app as target user." });
   };
 

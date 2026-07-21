@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -157,16 +156,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                 </SidebarMenuSubItem>
                                                 <SidebarMenuSubItem>
                                                     <SidebarMenuSubButton 
-                                                        isActive={activeView === 'admin-portal'}
-                                                        onClick={() => handleNavigate('admin-portal')}
-                                                        className="h-7 text-[12px] font-bold"
-                                                    >
-                                                        <KeyRound className="h-3.5 w-3.5 mr-1" />
-                                                        Admin Portal Hub
-                                                    </SidebarMenuSubButton>
-                                                </SidebarMenuSubItem>
-                                                <SidebarMenuSubItem>
-                                                    <SidebarMenuSubButton 
                                                         isActive={activeView === 'approval-workflow'}
                                                         onClick={() => handleNavigate('approval-workflow')}
                                                         className="h-7 text-[12px]"
@@ -196,7 +185,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
 
-                                                {/* NESTED GOVERNANCE TOOLS */}
+                                                {/* NESTED ADMIN CONSOLE */}
                                                 <Collapsible open={isGovernanceOpen} onOpenChange={setIsGovernanceOpen} className="mt-1">
                                                     <SidebarMenuItem>
                                                         <CollapsibleTrigger asChild>
@@ -207,7 +196,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                                 )}
                                                             >
                                                                 <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
-                                                                Governance Tools
+                                                                Admin Console
                                                                 <ChevronDown className={cn("ml-auto h-3 w-3 transition-transform", isGovernanceOpen && "rotate-180")} />
                                                             </SidebarMenuSubButton>
                                                         </CollapsibleTrigger>

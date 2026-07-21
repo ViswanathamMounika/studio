@@ -53,8 +53,6 @@ export default function AppHeader({
   
   const getTitle = () => {
     switch (activeView) {
-      case 'admin-portal':
-        return 'Admin Portal';
       case 'dashboard':
         return 'Admin Dashboard';
       case 'reports':
