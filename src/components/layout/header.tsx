@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import AppearanceSettings from "@/components/wiki/appearance-settings";
-import type { Notification, UserAccount } from "@/lib/types";
+import type { Notification, UserAccount, View } from "@/lib/types";
 import Notifications from "../wiki/notifications";
 import { Badge } from "../ui/badge";
 import { SidebarTrigger } from "../ui/sidebar";
@@ -33,7 +33,7 @@ type AppHeaderProps = {
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
     onDefinitionClick: (id: string) => void;
-    activeView: 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow' | 'user-management' | 'master-data-management' | 'system-configuration' | 'dashboard' | 'reports' | 'admin-portal';
+    activeView: View;
     currentUser: Partial<UserAccount>;
 }
 
