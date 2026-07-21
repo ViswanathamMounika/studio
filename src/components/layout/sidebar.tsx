@@ -66,7 +66,7 @@ const topNavItems = [
 export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAdmin, isImpersonating, systemConfig }: AppSidebarProps) {
     const [isWikiOpen, setIsWikiOpen] = useState(true);
     const [isDefinitionsOpen, setIsDefinitionsOpen] = useState(true);
-    const [isAdminPortalOpen, setIsAdminPortalOpen] = useState(true);
+    const [isGovernanceOpen, setIsGovernanceOpen] = useState(false);
 
     const appName = systemConfig?.settings.appName || 'MedPOINT';
 
@@ -135,8 +135,8 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                         <SidebarMenuItem>
                                             <CollapsibleTrigger asChild>
                                                 <SidebarMenuButton 
-                                                    isActive={activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs'}
-                                                    className={cn("font-semibold", (activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs') && "text-primary")}
+                                                    isActive={activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs' || isAdminViewActive(activeView)}
+                                                    className={cn("font-semibold", (activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs' || isAdminViewActive(activeView)) && "text-primary")}
                                                 >
                                                     <Library className="h-4 w-4" />
                                                     <span>MPM Data Definitions</span>
@@ -185,6 +185,88 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                         Activity Logs
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
+
+                                                {/* NESTED GOVERNANCE TOOLS */}
+                                                <Collapsible open={isGovernanceOpen} onOpenChange={setIsGovernanceOpen} className="mt-1">
+                                                    <SidebarMenuItem>
+                                                        <CollapsibleTrigger asChild>
+                                                            <SidebarMenuSubButton 
+                                                                className={cn(
+                                                                    "h-7 text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-primary",
+                                                                    isAdminViewActive(activeView) && "text-primary"
+                                                                )}
+                                                            >
+                                                                <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
+                                                                Governance Tools
+                                                                <ChevronDown className={cn("ml-auto h-3 w-3 transition-transform", isGovernanceOpen && "rotate-180")} />
+                                                            </SidebarMenuSubButton>
+                                                        </CollapsibleTrigger>
+                                                    </SidebarMenuItem>
+                                                    <CollapsibleContent>
+                                                        <SidebarMenuSub className="pl-4 border-l ml-3.5 space-y-0.5 mt-1 border-slate-100">
+                                                            <SidebarMenuSubItem>
+                                                                <SidebarMenuSubButton 
+                                                                    isActive={activeView === 'dashboard'}
+                                                                    onClick={() => handleNavigate('dashboard')}
+                                                                    className="h-7 text-[11px]"
+                                                                >
+                                                                    <LayoutDashboard className="h-3 w-3 mr-1.5" />
+                                                                    Dashboard
+                                                                </SidebarMenuSubButton>
+                                                            </SidebarMenuSubItem>
+                                                            <SidebarMenuSubItem>
+                                                                <SidebarMenuSubButton 
+                                                                    isActive={activeView === 'reports'}
+                                                                    onClick={() => handleNavigate('reports')}
+                                                                    className="h-7 text-[11px]"
+                                                                >
+                                                                    <PieChart className="h-3 w-3 mr-1.5" />
+                                                                    Reports
+                                                                </SidebarMenuSubButton>
+                                                            </SidebarMenuSubItem>
+                                                            <SidebarMenuSubItem>
+                                                                <SidebarMenuSubButton 
+                                                                    isActive={activeView === 'template-management'}
+                                                                    onClick={() => handleNavigate('template-management')}
+                                                                    className="h-7 text-[11px]"
+                                                                >
+                                                                    <Settings2 className="h-3 w-3 mr-1.5" />
+                                                                    Templates
+                                                                </SidebarMenuSubButton>
+                                                            </SidebarMenuSubItem>
+                                                            <SidebarMenuSubItem>
+                                                                <SidebarMenuSubButton 
+                                                                    isActive={activeView === 'master-data-management'}
+                                                                    onClick={() => handleNavigate('master-data-management')}
+                                                                    className="h-7 text-[11px]"
+                                                                >
+                                                                    <Database className="h-3 w-3 mr-1.5" />
+                                                                    Master Data
+                                                                </SidebarMenuSubButton>
+                                                            </SidebarMenuSubItem>
+                                                            <SidebarMenuSubItem>
+                                                                <SidebarMenuSubButton 
+                                                                    isActive={activeView === 'user-management'}
+                                                                    onClick={() => handleNavigate('user-management')}
+                                                                    className="h-7 text-[11px]"
+                                                                >
+                                                                    <ShieldAlert className="h-3 w-3 mr-1.5" />
+                                                                    Security & Access
+                                                                </SidebarMenuSubButton>
+                                                            </SidebarMenuSubItem>
+                                                            <SidebarMenuSubItem>
+                                                                <SidebarMenuSubButton 
+                                                                    isActive={activeView === 'system-configuration'}
+                                                                    onClick={() => handleNavigate('system-configuration')}
+                                                                    className="h-7 text-[11px]"
+                                                                >
+                                                                    <Settings className="h-3 w-3 mr-1.5" />
+                                                                    System Settings
+                                                                </SidebarMenuSubButton>
+                                                            </SidebarMenuSubItem>
+                                                        </SidebarMenuSub>
+                                                    </CollapsibleContent>
+                                                </Collapsible>
                                             </SidebarMenuSub>
                                         </CollapsibleContent>
                                     </Collapsible>
@@ -217,97 +299,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                             </SidebarMenu>
                         </CollapsibleContent>
                     </Collapsible>
-
-                    {/* ADMIN TOOLS SECTION - REMAINING CONTROLS */}
-                    {isAdmin && (
-                        <Collapsible open={isAdminPortalOpen} onOpenChange={setIsAdminPortalOpen}>
-                            <SidebarMenuItem>
-                                <CollapsibleTrigger asChild>
-                                    <SidebarMenuButton 
-                                        className={cn(
-                                            "font-semibold",
-                                            isAdminViewActive(activeView) && "text-primary bg-primary/5"
-                                        )}
-                                    >
-                                        <ShieldCheck className="h-4 w-4" />
-                                        <span>Governance Tools</span>
-                                        <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isAdminPortalOpen && "rotate-180")} />
-                                    </SidebarMenuButton>
-                                </CollapsibleTrigger>
-                            </SidebarMenuItem>
-                            <CollapsibleContent className="py-1">
-                                <SidebarMenu className="pl-4">
-                                    <SidebarMenuSub className="pl-4 border-l ml-2 space-y-0.5 mt-1">
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton 
-                                                isActive={activeView === 'dashboard'}
-                                                onClick={() => handleNavigate('dashboard')}
-                                                className="h-7 text-[12px]"
-                                            >
-                                                <LayoutDashboard className="h-3.5 w-3.5 mr-1" />
-                                                Dashboard
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton 
-                                                isActive={activeView === 'reports'}
-                                                onClick={() => handleNavigate('reports')}
-                                                className="h-7 text-[12px]"
-                                            >
-                                                <PieChart className="h-3.5 w-3.5 mr-1" />
-                                                Reports
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton 
-                                                isActive={activeView === 'template-management'}
-                                                onClick={() => handleNavigate('template-management')}
-                                                className="h-7 text-[12px]"
-                                            >
-                                                <Settings2 className="h-3.5 w-3.5 mr-1" />
-                                                Templates
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton 
-                                                isActive={activeView === 'master-data-management'}
-                                                onClick={() => handleNavigate('master-data-management')}
-                                                className="h-7 text-[12px]"
-                                            >
-                                                <Database className="h-3.5 w-3.5 mr-1" />
-                                                Master Data
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton 
-                                                isActive={activeView === 'user-management'}
-                                                onClick={() => handleNavigate('user-management')}
-                                                className="h-7 text-[12px]"
-                                            >
-                                                <ShieldAlert className="h-3.5 w-3.5 mr-1" />
-                                                Security & Access
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton 
-                                                isActive={activeView === 'system-configuration'}
-                                                onClick={() => handleNavigate('system-configuration')}
-                                                className="h-7 text-[12px]"
-                                            >
-                                                <Settings className="h-3.5 w-3.5 mr-1" />
-                                                System Settings
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                    </SidebarMenuSub>
-                                </SidebarMenu>
-                            </CollapsibleContent>
-                        </Collapsible>
-                    )}
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter className="p-4 bg-slate-50/50 border-t">
