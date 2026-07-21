@@ -338,11 +338,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
                 <TabsList className="bg-slate-100 p-1 w-fit rounded-2xl mb-6">
-                    <TabsTrigger value="user-engagement" className="rounded-xl px-6 font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"><Users className="h-4 w-4" />User Engagement</TabsTrigger>
-                    <TabsTrigger value="definition-insights" className="rounded-xl px-6 font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"><FileEdit className="h-4 w-4" />Library Assets</TabsTrigger>
-                    <TabsTrigger value="workflow-analysis" className="rounded-xl px-6 font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"><Timer className="h-4 w-4" />Workflow Performance</TabsTrigger>
-                    <TabsTrigger value="template-stats" className="rounded-xl px-6 font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"><LayoutTemplate className="h-4 w-4" />Templates</TabsTrigger>
-                    <TabsTrigger value="system-usage" className="rounded-xl px-6 font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"><TrendingUp className="h-4 w-4" />System Usage</TabsTrigger>
+                    <TabsTrigger value="user-engagement" className="rounded-xl px-6 font-bold gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"><Users className="h-4 w-4" />User Engagement</TabsTrigger>
+                    <TabsTrigger value="definition-insights" className="rounded-xl px-6 font-bold gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"><FileEdit className="h-4 w-4" />Library Definitions</TabsTrigger>
+                    <TabsTrigger value="workflow-analysis" className="rounded-xl px-6 font-bold gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"><Timer className="h-4 w-4" />Workflow Performance</TabsTrigger>
+                    <TabsTrigger value="template-stats" className="rounded-xl px-6 font-bold gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"><LayoutTemplate className="h-4 w-4" />Templates</TabsTrigger>
+                    <TabsTrigger value="system-usage" className="rounded-xl px-6 font-bold gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"><TrendingUp className="h-4 w-4" />System Usage</TabsTrigger>
                 </TabsList>
 
                 {/* --- 1. USER ENGAGEMENT REPORT --- */}
