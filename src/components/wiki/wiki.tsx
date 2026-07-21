@@ -42,6 +42,7 @@ const MasterDataManagement = dynamic(() => import('@/components/wiki/master-data
 const SystemConfiguration = dynamic(() => import('@/components/wiki/system-configuration'), { ssr: false });
 const Dashboard = dynamic(() => import('@/components/wiki/dashboard'), { ssr: false });
 const ReportsDashboard = dynamic(() => import('@/components/wiki/reports'), { ssr: false });
+const AdminPortal = dynamic(() => import('@/components/wiki/admin-portal'), { ssr: false });
 
 type ViewingMode = 'live' | 'draft';
 
@@ -117,10 +118,10 @@ export default function Wiki() {
     };
   }, [originalAdminState, impersonatedUser]);
 
-  // Initial routing for Admins to Dashboard
+  // Initial routing for Admins to Admin Portal
   useEffect(() => {
     if (isMounted && isAdmin && !window.location.search) {
-        setActiveView('dashboard');
+        setActiveView('admin-portal');
     }
   }, [isMounted, isAdmin]);
 
@@ -187,7 +188,7 @@ export default function Wiki() {
   }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    const adminViews = ['dashboard', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration', 'reports'];
+    const adminViews = ['admin-portal', 'dashboard', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration', 'reports', 'activity-logs'];
     const needsAdmin = adminViews.includes(view);
     if (needsAdmin && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
@@ -217,7 +218,7 @@ export default function Wiki() {
         const isDraftId = definitionIdFromUrl.startsWith('draft_');
         handleSelectDefinition(definitionIdFromUrl, sectionFromUrl || undefined, isDraftId ? 'draft' : 'live', false);
     } else {
-        setActiveView(isAdmin ? 'dashboard' : 'definitions');
+        setActiveView(isAdmin ? 'admin-portal' : 'definitions');
         handleSelectDefinition('1.1.1', undefined, 'live', false);
     }
   }, [isMounted, isAdmin, handleNavigate, handleSelectDefinition]);
@@ -268,7 +269,7 @@ export default function Wiki() {
         logAction('User Role Modified', `Started impersonating user: ${user.name}`);
         logAction('User Login', `Super Admin began proxy session for user: ${user.name}`);
     }
-    handleNavigate('dashboard');
+    handleNavigate('admin-portal');
     toast({ title: "Impersonation Active", description: "Experiencing app as target user." });
   };
 
@@ -713,6 +714,7 @@ export default function Wiki() {
 
   const renderContent = () => {
     switch (activeView) {
+        case 'admin-portal': return <AdminPortal onNavigate={handleNavigate} />;
         case 'dashboard': return <Dashboard definitions={definitions} drafts={drafts} users={users} templates={templates} onNavigate={handleNavigate} />;
         case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;

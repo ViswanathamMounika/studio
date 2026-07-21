@@ -33,7 +33,7 @@ type AppHeaderProps = {
     notifications: Notification[];
     setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
     onDefinitionClick: (id: string) => void;
-    activeView: 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow' | 'user-management' | 'master-data-management' | 'system-configuration' | 'dashboard' | 'reports';
+    activeView: 'definitions' | 'activity-logs' | 'template-management' | 'approval-workflow' | 'user-management' | 'master-data-management' | 'system-configuration' | 'dashboard' | 'reports' | 'admin-portal';
     currentUser: Partial<UserAccount>;
 }
 
@@ -53,6 +53,8 @@ export default function AppHeader({
   
   const getTitle = () => {
     switch (activeView) {
+      case 'admin-portal':
+        return 'Admin Portal';
       case 'dashboard':
         return 'Admin Dashboard';
       case 'reports':
