@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -87,7 +88,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     }
 
     const isAdminViewActive = (view: View) => {
-        return ['admin-portal', 'dashboard', 'reports', 'approval-workflow', 'template-management', 'master-data-management', 'user-management', 'system-configuration', 'activity-logs'].includes(view);
+        return ['dashboard', 'reports', 'template-management', 'master-data-management', 'user-management', 'system-configuration'].includes(view);
     };
 
     return (
@@ -128,16 +129,77 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
 
                         <CollapsibleContent className="py-1">
                             <SidebarMenu className='pl-4'>
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton 
-                                        isActive={activeView === 'definitions'}
-                                        onClick={() => handleNavigate('definitions')}
-                                        className={cn(activeView === 'definitions' && "text-primary font-bold")}
-                                    >
-                                        <Library className="h-4 w-4" />
-                                        <span>MPM Data Definitions</span>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
+                                {/* MPM DATA DEFINITIONS - COLLAPSIBLE FOR ADMINS */}
+                                {isAdmin ? (
+                                    <Collapsible open={isDefinitionsOpen} onOpenChange={setIsDefinitionsOpen}>
+                                        <SidebarMenuItem>
+                                            <CollapsibleTrigger asChild>
+                                                <SidebarMenuButton 
+                                                    isActive={activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs'}
+                                                    className={cn("font-semibold", (activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs') && "text-primary")}
+                                                >
+                                                    <Library className="h-4 w-4" />
+                                                    <span>MPM Data Definitions</span>
+                                                    <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isDefinitionsOpen && "rotate-180")} />
+                                                </SidebarMenuButton>
+                                            </CollapsibleTrigger>
+                                        </SidebarMenuItem>
+                                        <CollapsibleContent>
+                                            <SidebarMenuSub className="pl-4 border-l ml-2 space-y-0.5 mt-1">
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton 
+                                                        isActive={activeView === 'definitions'}
+                                                        onClick={() => handleNavigate('definitions')}
+                                                        className="h-7 text-[12px]"
+                                                    >
+                                                        Library View
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton 
+                                                        isActive={activeView === 'admin-portal'}
+                                                        onClick={() => handleNavigate('admin-portal')}
+                                                        className="h-7 text-[12px] font-bold"
+                                                    >
+                                                        <KeyRound className="h-3.5 w-3.5 mr-1" />
+                                                        Admin Portal Hub
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton 
+                                                        isActive={activeView === 'approval-workflow'}
+                                                        onClick={() => handleNavigate('approval-workflow')}
+                                                        className="h-7 text-[12px]"
+                                                    >
+                                                        <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
+                                                        Approvals
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton 
+                                                        isActive={activeView === 'activity-logs'}
+                                                        onClick={() => handleNavigate('activity-logs')}
+                                                        className="h-7 text-[12px]"
+                                                    >
+                                                        <History className="h-3.5 w-3.5 mr-1" />
+                                                        Activity Logs
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            </SidebarMenuSub>
+                                        </CollapsibleContent>
+                                    </Collapsible>
+                                ) : (
+                                    <SidebarMenuItem>
+                                        <SidebarMenuButton 
+                                            isActive={activeView === 'definitions'}
+                                            onClick={() => handleNavigate('definitions')}
+                                            className={cn(activeView === 'definitions' && "text-primary font-bold")}
+                                        >
+                                            <Library className="h-4 w-4" />
+                                            <span>MPM Data Definitions</span>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                )}
 
                                 {/* Remaining Wiki Items */}
                                 {wikiNavItems.map(item => (
@@ -156,7 +218,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                         </CollapsibleContent>
                     </Collapsible>
 
-                    {/* ADMIN PORTAL SECTION - ONLY FOR ADMINS */}
+                    {/* ADMIN TOOLS SECTION - REMAINING CONTROLS */}
                     {isAdmin && (
                         <Collapsible open={isAdminPortalOpen} onOpenChange={setIsAdminPortalOpen}>
                             <SidebarMenuItem>
@@ -168,7 +230,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                         )}
                                     >
                                         <ShieldCheck className="h-4 w-4" />
-                                        <span>Admin Portal</span>
+                                        <span>Governance Tools</span>
                                         <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isAdminPortalOpen && "rotate-180")} />
                                     </SidebarMenuButton>
                                 </CollapsibleTrigger>
@@ -176,17 +238,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                             <CollapsibleContent className="py-1">
                                 <SidebarMenu className="pl-4">
                                     <SidebarMenuSub className="pl-4 border-l ml-2 space-y-0.5 mt-1">
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton 
-                                                isActive={activeView === 'admin-portal'}
-                                                onClick={() => handleNavigate('admin-portal')}
-                                                className="h-7 text-[12px] font-bold"
-                                            >
-                                                <KeyRound className="h-3.5 w-3.5 mr-1" />
-                                                Portal Home
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                        
                                         <SidebarMenuSubItem>
                                             <SidebarMenuSubButton 
                                                 isActive={activeView === 'dashboard'}
@@ -206,17 +257,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                             >
                                                 <PieChart className="h-3.5 w-3.5 mr-1" />
                                                 Reports
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton 
-                                                isActive={activeView === 'approval-workflow'}
-                                                onClick={() => handleNavigate('approval-workflow')}
-                                                className="h-7 text-[12px]"
-                                            >
-                                                <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
-                                                Approvals
                                             </SidebarMenuSubButton>
                                         </SidebarMenuSubItem>
 
@@ -261,17 +301,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                             >
                                                 <Settings className="h-3.5 w-3.5 mr-1" />
                                                 System Settings
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton 
-                                                isActive={activeView === 'activity-logs'}
-                                                onClick={() => handleNavigate('activity-logs')}
-                                                className="h-7 text-[12px]"
-                                            >
-                                                <History className="h-3.5 w-3.5 mr-1" />
-                                                Activity Logs
                                             </SidebarMenuSubButton>
                                         </SidebarMenuSubItem>
                                     </SidebarMenuSub>
