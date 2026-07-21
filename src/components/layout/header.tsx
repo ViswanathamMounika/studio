@@ -56,7 +56,7 @@ export default function AppHeader({
       case 'dashboard':
         return 'Admin Dashboard';
       case 'reports':
-        return 'Governance Analytics';
+        return 'Reports';
       case 'definitions':
         return 'MPM Data Definitions';
       case 'activity-logs':

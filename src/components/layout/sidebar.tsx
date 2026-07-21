@@ -101,7 +101,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
             <SidebarContent>
                 <SidebarMenu>
                      {isAdmin && (
-                        <>
                         <SidebarMenuItem>
                             <SidebarMenuButton
                                 isActive={activeView === 'dashboard'}
@@ -112,17 +111,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                 Admin Dashboard
                             </SidebarMenuButton>
                         </SidebarMenuItem>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton
-                                isActive={activeView === 'reports'}
-                                onClick={() => handleNavigate('reports')}
-                                className="font-bold text-primary"
-                            >
-                                <PieChart className="h-4 w-4" />
-                                Governance Reports
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                        </>
                      )}
 
                      {topNavItems.map(item => (
@@ -157,7 +145,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                             <SidebarMenuButton 
                                                 className={cn(
                                                     "h-8",
-                                                    (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'user-management' || activeView === 'activity-logs' || activeView === 'master-data-management' || activeView === 'system-configuration') && "text-primary font-bold"
+                                                    (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'user-management' || activeView === 'activity-logs' || activeView === 'master-data-management' || activeView === 'system-configuration' || activeView === 'reports') && "text-primary font-bold"
                                                 )}
                                             >
                                                 <KeyRound className="h-4 w-4" />
@@ -180,6 +168,16 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                 
                                                 {isAdmin && (
                                                     <>
+                                                        <SidebarMenuSubItem>
+                                                            <SidebarMenuSubButton 
+                                                                isActive={activeView === 'reports'}
+                                                                onClick={() => handleNavigate('reports')}
+                                                                className="h-7 text-[12px]"
+                                                            >
+                                                                <PieChart className="h-3.5 w-3.5 mr-1" />
+                                                                Reports
+                                                            </SidebarMenuSubButton>
+                                                        </SidebarMenuSubItem>
                                                         <SidebarMenuSubItem>
                                                             <SidebarMenuSubButton 
                                                                 isActive={activeView === 'approval-workflow'}
