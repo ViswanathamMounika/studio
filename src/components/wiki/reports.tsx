@@ -42,7 +42,8 @@ import {
     Activity,
     UserCheck,
     ChevronRight,
-    AlertCircle
+    AlertCircle,
+    Plus
 } from 'lucide-react';
 import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
