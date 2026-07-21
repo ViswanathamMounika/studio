@@ -88,7 +88,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     }
 
     const isAdminViewActive = (view: View) => {
-        return ['dashboard', 'reports', 'template-management', 'master-data-management', 'user-management', 'system-configuration'].includes(view);
+        return ['dashboard', 'reports', 'master-data-management', 'user-management', 'system-configuration'].includes(view);
     };
 
     return (
@@ -135,8 +135,8 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                         <SidebarMenuItem>
                                             <CollapsibleTrigger asChild>
                                                 <SidebarMenuButton 
-                                                    isActive={activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs' || isAdminViewActive(activeView)}
-                                                    className={cn("font-semibold", (activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs' || isAdminViewActive(activeView)) && "text-primary")}
+                                                    isActive={activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs' || activeView === 'template-management' || isAdminViewActive(activeView)}
+                                                    className={cn("font-semibold", (activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs' || activeView === 'template-management' || isAdminViewActive(activeView)) && "text-primary")}
                                                 >
                                                     <Library className="h-4 w-4" />
                                                     <span>MPM Data Definitions</span>
@@ -152,7 +152,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                         onClick={() => handleNavigate('definitions')}
                                                         className="h-7 text-[12px]"
                                                     >
-                                                        Library View
+                                                        MPM Definitions
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                                 <SidebarMenuSubItem>
@@ -183,6 +183,16 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                     >
                                                         <History className="h-3.5 w-3.5 mr-1" />
                                                         Activity Logs
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton 
+                                                        isActive={activeView === 'template-management'}
+                                                        onClick={() => handleNavigate('template-management')}
+                                                        className="h-7 text-[12px]"
+                                                    >
+                                                        <Settings2 className="h-3.5 w-3.5 mr-1" />
+                                                        Templates
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
 
@@ -222,16 +232,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                                 >
                                                                     <PieChart className="h-3 w-3 mr-1.5" />
                                                                     Reports
-                                                                </SidebarMenuSubButton>
-                                                            </SidebarMenuSubItem>
-                                                            <SidebarMenuSubItem>
-                                                                <SidebarMenuSubButton 
-                                                                    isActive={activeView === 'template-management'}
-                                                                    onClick={() => handleNavigate('template-management')}
-                                                                    className="h-7 text-[11px]"
-                                                                >
-                                                                    <Settings2 className="h-3 w-3 mr-1.5" />
-                                                                    Templates
                                                                 </SidebarMenuSubButton>
                                                             </SidebarMenuSubItem>
                                                             <SidebarMenuSubItem>
