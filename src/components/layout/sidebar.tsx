@@ -151,6 +151,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                         onClick={() => handleNavigate('definitions')}
                                                         className="h-7 text-[12px]"
                                                     >
+                                                        <Library className="h-3.5 w-3.5 mr-1" />
                                                         MPM Definitions
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
