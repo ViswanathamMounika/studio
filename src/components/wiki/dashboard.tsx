@@ -91,7 +91,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     </Card>
   );
 
-  const SubMetricCard = ({ label, value, icon: Icon, colorClass, status }: any) => (
+  const SubMetricCard = ({ label, value, icon: Icon, colorClass }: any) => (
     <Card className="rounded-2xl p-5 bg-white border-slate-200 shadow-sm flex items-center justify-between group hover:border-primary/10 transition-all">
         <div className="flex items-center gap-3">
             <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center bg-slate-50 border", colorClass)}>
@@ -102,7 +102,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <p className="text-2xl font-bold text-slate-900 leading-none">{value}</p>
             </div>
         </div>
-        {status && <Badge variant="outline" className="bg-slate-50 text-[9px] font-black uppercase border-slate-200">{status}</Badge>}
     </Card>
   );
 
@@ -110,8 +109,8 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     <div className="p-8 space-y-10 max-w-7xl mx-auto pb-32">
       <div className="flex justify-between items-end px-2">
         <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
-            <p className="text-muted-foreground font-medium italic">High-level operational overview of application definitions, users, and templates.</p>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
+            <p className="text-muted-foreground font-medium italic">High-level operational overview of application users, templates, and definitions.</p>
         </div>
         <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-bold gap-1.5 h-8 px-4 rounded-xl">
             <Activity className="h-3.5 w-3.5" />
@@ -119,7 +118,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         </Badge>
       </div>
 
-      {/* --- USER MANAGEMENT --- */}
+      {/* --- 1. USER MANAGEMENT (USERS AND ROLES) --- */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 px-2">
             <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
@@ -172,7 +171,43 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         </div>
       </div>
 
-      {/* --- DOCUMENTATION DEFINITIONS --- */}
+      {/* --- 2. DOCUMENTATION TEMPLATES --- */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 px-2">
+            <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
+                <LayoutTemplate className="h-4 w-4 text-indigo-600" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900">Documentation Templates</h2>
+            <div className="h-px bg-slate-200 flex-1" />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
+                <SummaryCard 
+                    title="Template Catalog" 
+                    value={totalTemplates} 
+                    label="Managed Blueprints"
+                    icon={LayoutTemplate} 
+                    color="text-indigo-600 bg-indigo-50"
+                    onClick={() => onNavigate('template-management')}
+                />
+            </div>
+            <div className="flex items-center lg:col-span-2">
+                <Card className="rounded-[24px] border-slate-200 bg-white shadow-sm flex items-center p-6 gap-6 w-full group hover:border-emerald-100 transition-all">
+                    <div className="h-14 w-14 rounded-2xl bg-emerald-50 flex items-center justify-center border border-emerald-100 group-hover:bg-emerald-100 transition-colors">
+                        <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Template Health</p>
+                        <div className="text-2xl font-bold text-slate-900 mt-0.5">{activeTemplates} Active Templates</div>
+                        <p className="text-[11px] text-slate-500 font-medium mt-1">Available for new documentation</p>
+                    </div>
+                </Card>
+            </div>
+        </div>
+      </div>
+
+      {/* --- 3. DOCUMENTATION DEFINITIONS --- */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 px-2">
             <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center border border-emerald-100">
@@ -223,42 +258,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             color="text-red-600 bg-red-50"
             onClick={() => onNavigate('definitions')}
           />
-        </div>
-      </div>
-
-      {/* --- DOCUMENTATION TEMPLATES --- */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3 px-2">
-            <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
-                <LayoutTemplate className="h-4 w-4 text-indigo-600" />
-            </div>
-            <h2 className="text-lg font-bold text-slate-900">Documentation Templates</h2>
-            <div className="h-px bg-slate-200 flex-1" />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="space-y-4">
-                <SummaryCard 
-                    title="Template Catalog" 
-                    value={totalTemplates} 
-                    label="Managed Blueprints"
-                    icon={LayoutTemplate} 
-                    color="text-indigo-600 bg-indigo-50"
-                    onClick={() => onNavigate('template-management')}
-                />
-            </div>
-            <div className="flex items-center">
-                <Card className="rounded-[24px] border-slate-200 bg-white shadow-sm flex items-center p-6 gap-6 w-full group hover:border-emerald-100 transition-all">
-                    <div className="h-14 w-14 rounded-2xl bg-emerald-50 flex items-center justify-center border border-emerald-100 group-hover:bg-emerald-100 transition-colors">
-                        <CheckCircle2 className="h-7 w-7 text-emerald-600" />
-                    </div>
-                    <div className="flex-1">
-                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Template Health</p>
-                        <div className="text-2xl font-bold text-slate-900 mt-0.5">{activeTemplates} Active Templates</div>
-                        <p className="text-[11px] text-slate-500 font-medium mt-1">Available for new documentation</p>
-                    </div>
-                </Card>
-            </div>
         </div>
       </div>
     </div>
