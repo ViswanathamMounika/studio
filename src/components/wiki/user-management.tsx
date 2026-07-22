@@ -89,8 +89,8 @@ const SECURITY_AREAS: Record<SecurityArea, { label: string; icon: any; descripti
 };
 
 export default function SecurityManagement({ users, onSaveUsers, currentUser, isSuperAdmin, onImpersonate }: SecurityManagementProps) {
-    const [roles, setRoles] = useLocalStorage<Role[]>('mpm_roles_v1', initialRoles);
-    const [permissions, setPermissions] = useLocalStorage<Permission[]>('mpm_permissions_v1', initialPermissions);
+    const [roles, setRoles] = useLocalStorage<Role[]>('mpm_roles_v2', initialRoles);
+    const [permissions, setPermissions] = useLocalStorage<Permission[]>('mpm_permissions_v2', initialPermissions);
     const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activity_logs_v19', []);
     
     const [activeArea, setActiveArea] = useState<SecurityArea>('users');

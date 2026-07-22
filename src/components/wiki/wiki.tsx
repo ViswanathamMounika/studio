@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -63,7 +64,7 @@ export default function Wiki() {
   const [drafts, setDrafts] = useLocalStorage<Definition[]>('mpm_user_drafts_v19', initialDrafts);
   const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v19', initialTemplates);
   const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v19', initialApprovalHistory);
-  const [users, setUsers] = useLocalStorage<UserAccount[]>('mpm_users_v1', initialUsers);
+  const [users, setUsers] = useLocalStorage<UserAccount[]>('mpm_users_v2', initialUsers);
   const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activity_logs_v19', initialActivityLogs);
   const [masterData, setMasterData] = useLocalStorage<MasterDataState>('mpm_master_data_v1', initialMasterData);
   const [systemConfig, setSystemConfig] = useLocalStorage<SystemConfigurationState>('mpm_system_config_v1', initialSystemConfig);
