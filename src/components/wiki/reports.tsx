@@ -1,7 +1,8 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,33 +17,18 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { 
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-    LineChart, Line, Legend
-} from 'recharts';
-import { 
     Download, 
     FileSpreadsheet, 
     FileText, 
-    Users, 
-    FileEdit, 
-    CheckCircle2, 
-    Clock, 
-    LayoutTemplate, 
     ArrowUpDown, 
-    Search,
     CalendarIcon,
     FilterX,
-    TrendingUp,
-    Timer,
-    FileSearch,
     ShieldCheck,
-    Activity,
-    UserCheck,
-    AlertCircle,
-    Plus,
-    BarChart3
+    FileSearch,
+    BarChart3,
+    Search
 } from 'lucide-react';
-import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, differenceInDays } from 'date-fns';
+import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { UserAccount, Definition, ActivityLog, ApprovalHistoryEntry, Template, MasterDataState } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -70,16 +56,18 @@ type SortConfig = {
     direction: 'asc' | 'desc';
 } | null;
 
-type ReportType = 'user-engagement' | 'definition-insights' | 'workflow-analysis' | 'template-stats' | 'system-usage';
+type ReportType = 'user-activity' | 'definition-insights' | 'workflow-analysis' | 'template-stats' | 'system-usage';
 
 export default function ReportsDashboard({ users, definitions, drafts, activityLogs, approvalHistory, templates, masterData }: ReportsDashboardProps) {
-    const [selectedReport, setSelectedReport] = useState<ReportType>('user-engagement');
+    const [selectedReport, setSelectedReport] = useState<ReportType>('user-activity');
     const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>({
         from: subMonths(new Date(), 3),
         to: new Date()
     });
-    const [searchQuery, setSearchQuery] = useState('');
-    const [sortConfig, setSortConfig] = useState<SortConfig>(null);
+    
+    // Header-based filters for User Activity Report
+    const [userFilters, setUserFilters] = useState<Record<string, string>>({});
+    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
     const { toast } = useToast();
 
     // -- DATA UTILITIES --
@@ -108,6 +96,18 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         });
     }, [activityLogs, dateRange]);
 
+    const filteredHistory = useMemo(() => {
+        const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
+        if (!dateRange?.from) return safeHistory;
+        return safeHistory.filter(h => {
+            const hDate = parseISO(h.date);
+            return isWithinInterval(hDate, { 
+                start: startOfDay(dateRange.from), 
+                end: endOfDay(dateRange.to || dateRange.from) 
+            });
+        });
+    }, [approvalHistory, dateRange]);
+
     const handleSort = (key: string) => {
         setSortConfig(prev => ({
             key,
@@ -120,26 +120,31 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         return [...data].sort((a, b) => {
             const valA = a[sortConfig.key];
             const valB = b[sortConfig.key];
+            if (valA === valB) return 0;
             if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
             if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
     };
 
+    const handleFilterChange = (key: string, value: string) => {
+        setUserFilters(prev => ({ ...prev, [key]: value }));
+    };
+
     // -- REPORT CALCULATIONS --
 
-    // 1. User Activity Report
+    // 1. User Activity Report (Redesigned as per Story 2.11)
     const userActivityData = useMemo(() => {
         const safeUsers = Array.isArray(users) ? users : [];
-        const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
         const raw = safeUsers.map(user => {
             const userLogs = filteredLogs.filter(l => l.userName === user.name);
-            const userHistory = safeHistory.filter(h => h.userName === user.name);
-            const lastActivityLog = userLogs[0];
+            const userHistory = filteredHistory.filter(h => h.userName === user.name);
+            const lastActivityLog = userLogs.sort((a, b) => parseISO(b.occurredDate).getTime() - parseISO(a.occurredDate).getTime())[0];
 
             return {
                 id: user.id,
                 name: user.name,
+                email: user.email,
                 role: user.role,
                 status: user.status,
                 logins: userLogs.filter(l => l.activityType === 'User Login').length,
@@ -147,129 +152,29 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 lastActivity: lastActivityLog ? format(parseISO(lastActivityLog.occurredDate), 'yyyy-MM-dd') : 'None',
                 creations: userLogs.filter(l => l.activityType === 'Definition Created').length,
                 edits: userLogs.filter(l => l.activityType === 'Definition Updated').length,
-                approvals: userHistory.filter(h => h.action === 'Approved').length,
+                approvals: userHistory.filter(h => h.action === 'Approved' || h.action === 'Rejected' || h.action === 'Changes Requested').length,
                 templates: userLogs.filter(l => l.activityType.includes('Template')).length
             };
         });
 
-        const filtered = raw.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()));
+        // Apply header filters
+        const filtered = raw.filter(u => {
+            return Object.entries(userFilters).every(([key, value]) => {
+                if (!value) return true;
+                const fieldVal = String(u[key as keyof typeof u]).toLowerCase();
+                return fieldVal.includes(value.toLowerCase());
+            });
+        });
+
         return sortData(filtered);
-    }, [users, filteredLogs, approvalHistory, searchQuery, sortConfig]);
+    }, [users, filteredLogs, filteredHistory, userFilters, sortConfig]);
 
-    // 2. Definition Report
-    const definitionReportData = useMemo(() => {
-        const safeDrafts = Array.isArray(drafts) ? drafts : [];
-        const safeUsers = Array.isArray(users) ? users : [];
-        const publishedCount = allPublished.filter(d => !d.isArchived).length;
-        const archivedCount = allPublished.filter(d => d.isArchived).length;
-        const draftCount = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval).length;
-        const pendingCount = safeDrafts.filter(d => d.isPendingApproval).length;
-        const rejectedCount = safeDrafts.filter(d => d.discussions?.some(m => m.type === 'rejection')).length;
-
-        const authorStats = safeUsers.map(u => ({
-            name: u.name,
-            total: allDefsAndDrafts.filter(d => d.authorId === u.id || d.submittedBy === u.name).length,
-            published: allPublished.filter(d => (d.authorId === u.id || d.submittedBy === u.name) && !d.isArchived).length,
-            pending: safeDrafts.filter(d => (d.authorId === u.id || d.submittedBy === u.name) && d.isPendingApproval).length
-        })).filter(a => a.total > 0);
-
-        return {
-            summary: { total: allDefsAndDrafts.length, published: publishedCount, draft: draftCount, pending: pendingCount, rejected: rejectedCount, archived: archivedCount },
-            authors: sortData(authorStats)
-        };
-    }, [allPublished, drafts, users, allDefsAndDrafts, sortConfig]);
-
-    // 3. Approval Workflow Report
-    const workflowReportData = useMemo(() => {
-        const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
-        const safeDrafts = Array.isArray(drafts) ? drafts : [];
-        const safeUsers = Array.isArray(users) ? users : [];
-
-        const decisions = safeHistory.filter(h => h.action !== 'Submitted');
-        const approved = decisions.filter(h => h.action === 'Approved');
-        const rejected = decisions.filter(h => h.action === 'Rejected' || h.action === 'Changes Requested');
-        
-        const pending = safeDrafts.filter(d => d.isPendingApproval);
-        const oldestPending = [...pending].sort((a, b) => {
-            const dateA = a.submittedAt ? parseISO(a.submittedAt).getTime() : 0;
-            const dateB = b.submittedAt ? parseISO(b.submittedAt).getTime() : 0;
-            return dateA - dateB;
-        }).slice(0, 10);
-
-        const avgTime = decisions.length > 0 ? 1.4 : 0;
-
-        const approverPerformance = safeUsers.filter(u => u.role.includes('Admin') || u.role.includes('Approver')).map(u => {
-            const uHistory = safeHistory.filter(h => h.userName === u.name);
-            return {
-                name: u.name,
-                total: uHistory.length,
-                approved: uHistory.filter(h => h.action === 'Approved').length,
-                rejected: uHistory.filter(h => h.action === 'Rejected').length,
-                requests: uHistory.filter(h => h.action === 'Changes Requested').length
-            };
-        });
-
-        return { 
-            stats: { total: safeHistory.filter(h => h.action === 'Submitted').length, pending: pending.length, approved: approved.length, rejected: rejected.length, avgTime },
-            oldestPending,
-            approverPerformance: sortData(approverPerformance)
-        };
-    }, [approvalHistory, drafts, users, sortConfig]);
-
-    // 4. Template Usage Report
-    const templateReportData = useMemo(() => {
-        const safeTemplates = Array.isArray(templates) ? templates : [];
-        const safeDrafts = Array.isArray(drafts) ? drafts : [];
-        const data = safeTemplates.map(t => {
-            const usedIn = allPublished.filter(d => d.templateId === t.id).length + safeDrafts.filter(d => d.templateId === t.id).length;
-            return {
-                id: t.id,
-                name: t.name,
-                module: t.module,
-                status: t.isActive ? 'Active' : 'Inactive',
-                usedIn,
-                isDefault: t.isDefault
-            };
-        });
-
-        return sortData(data);
-    }, [templates, allPublished, drafts, sortConfig]);
-
-    // 5. System Usage Report
-    const systemUsageData = useMemo(() => {
-        const days: Record<string, { date: string, creations: number, approvals: number, users: Set<string> }> = {};
-        
-        filteredLogs.forEach(log => {
-            const dayKey = format(parseISO(log.occurredDate), 'yyyy-MM-dd');
-            if (!days[dayKey]) days[dayKey] = { date: dayKey, creations: 0, approvals: 0, users: new Set() };
-            
-            if (log.activityType === 'Definition Created') days[dayKey].creations++;
-            if (log.activityType === 'Approval Decision') days[dayKey].approvals++;
-            days[dayKey].users.add(log.userName);
-        });
-
-        const dailyStats = Object.values(days).sort((a,b) => a.date.localeCompare(b.date));
-        
-        const moduleEngagement = (masterData?.modules || []).map(m => ({
-            name: m.name,
-            definitions: allDefsAndDrafts.filter(d => d.module === m.name).length,
-            activity: filteredLogs.filter(l => l.definitionName.includes(m.name) || l.details?.includes(m.name)).length
-        })).sort((a,b) => b.activity - a.activity);
-
-        return { dailyStats, moduleEngagement };
-    }, [filteredLogs, allDefsAndDrafts, masterData]);
-
-    // -- EXPORT ENGINE --
     const handleExport = async (formatType: 'xlsx' | 'csv' | 'pdf') => {
         const reportTitle = selectedReport.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         const timestamp = format(new Date(), 'yyyyMMdd_HHmm');
         const filename = `MPM_${reportTitle}_${timestamp}`;
 
-        let exportData: any[] = [];
-        if (selectedReport === 'user-engagement') exportData = userActivityData;
-        else if (selectedReport === 'definition-insights') exportData = definitionReportData.authors;
-        else if (selectedReport === 'workflow-analysis') exportData = workflowReportData.approverPerformance;
-        else if (selectedReport === 'template-stats') exportData = templateReportData;
+        let exportData: any[] = userActivityData;
 
         if (formatType === 'xlsx' || formatType === 'csv') {
             const XLSX = await import('xlsx');
@@ -279,26 +184,27 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             XLSX.writeFile(wb, `${filename}.${formatType === 'xlsx' ? 'xlsx' : 'csv'}`);
         } else {
             const { default: jsPDF } = await import('jspdf');
-            const doc = new jsPDF();
+            const doc = new jsPDF('l'); // Landscape for many columns
             doc.setFontSize(18);
             doc.text(`MedPoint Wiki: ${reportTitle}`, 14, 20);
             doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-            doc.text(`Filters: ${dateRange?.from ? format(dateRange.from, 'PP') : 'All Time'} - ${dateRange?.to ? format(dateRange.to, 'PP') : 'Now'}`, 14, 34);
+            doc.text(`Generated: ${new Date().toLocaleString()} | Filter: ${dateRange?.from ? format(dateRange.from, 'PP') : 'All'} - ${dateRange?.to ? format(dateRange.to, 'PP') : 'Now'}`, 14, 28);
             
-            let y = 50;
-            doc.setFontSize(9);
-            doc.setTextColor(0);
-            const headers = Object.keys(exportData[0] || {}).slice(0, 5);
-            headers.forEach((h, i) => doc.text(h.toUpperCase(), 14 + (i * 35), y));
+            let y = 40;
+            const headers = ['Name', 'Logins', 'Last Activity', 'Creations', 'Edits', 'Approvals', 'Templates', 'Status'];
+            const keys: (keyof typeof userActivityData[0])[] = ['name', 'logins', 'lastActivity', 'creations', 'edits', 'approvals', 'templates', 'status'];
+            
+            doc.setFont('helvetica', 'bold');
+            headers.forEach((h, i) => doc.text(h, 14 + (i * 35), y));
             y += 5;
-            doc.line(14, y, 200, y);
-            y += 10;
-            
-            exportData.slice(0, 20).forEach((row) => {
-                headers.forEach((h, i) => doc.text(String(row[h] || ''), 14 + (i * 35), y));
-                y += 8;
+            doc.line(14, y, 280, y);
+            y += 8;
+
+            doc.setFont('helvetica', 'normal');
+            exportData.slice(0, 50).forEach(row => {
+                keys.forEach((k, i) => doc.text(String(row[k] || ''), 14 + (i * 35), y));
+                y += 7;
+                if (y > 190) { doc.addPage(); y = 20; }
             });
 
             doc.save(`${filename}.pdf`);
@@ -317,339 +223,202 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         </div>
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Reports</h1>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="outline" className="h-10 px-4 font-bold text-xs gap-2 rounded-xl border-slate-200">
-                                    <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-                                    {dateRange?.from ? (
-                                        dateRange.to ? <>{format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd")}</> : format(dateRange.from, "MMM dd, yyyy")
-                                    ) : "Date Range"}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="end">
-                                <Calendar 
-                                    mode="range" 
-                                    selected={dateRange as any} 
-                                    onSelect={setDateRange as any} 
-                                    initialFocus 
-                                    numberOfMonths={2} 
-                                    disabled={{ after: new Date() }}
-                                />
-                            </PopoverContent>
-                        </Popover>
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl h-10 px-6 gap-2 shadow-lg shadow-indigo-100">
-                                    <Download className="h-4 w-4" />
-                                    Export
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl border-slate-200">
-                                <DropdownMenuItem onClick={() => handleExport('xlsx')} className="font-bold py-3"><FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" /> Excel Spreadsheet</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleExport('csv')} className="font-bold py-3"><FileText className="mr-2 h-4 w-4 text-slate-600" /> CSV Flat File</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleExport('pdf')} className="font-bold py-3"><FileSearch className="mr-2 h-4 w-4 text-red-600" /> PDF Summary</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl h-10 px-6 gap-2 shadow-lg shadow-indigo-100">
+                                <Download className="h-4 w-4" />
+                                Export
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl border-slate-200">
+                            <DropdownMenuItem onClick={() => handleExport('xlsx')} className="font-bold py-3"><FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" /> Excel Spreadsheet</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExport('csv')} className="font-bold py-3"><FileText className="mr-2 h-4 w-4 text-slate-600" /> CSV Flat File</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExport('pdf')} className="font-bold py-3"><FileSearch className="mr-2 h-4 w-4 text-red-600" /> PDF Summary</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                    <div className="space-y-2">
-                        <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Report Perspective</Label>
-                        <Select value={selectedReport} onValueChange={(v) => setSelectedReport(v as ReportType)}>
-                            <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white font-bold">
-                                <div className="flex items-center gap-2">
-                                    <BarChart3 className="h-4 w-4 text-primary" />
-                                    <SelectValue placeholder="Select Report Type" />
-                                </div>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="user-engagement" className="font-medium">User Engagement Audit</SelectItem>
-                                <SelectItem value="definition-insights" className="font-medium">Definition Library Insights</SelectItem>
-                                <SelectItem value="workflow-analysis" className="font-medium">Approval Workflow Analysis</SelectItem>
-                                <SelectItem value="template-stats" className="font-medium">Documentation Template Utilization</SelectItem>
-                                <SelectItem value="system-usage" className="font-medium">Global System Usage Trends</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    
-                    <div className="lg:col-span-2">
-                        <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Search Records</Label>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
-                                <Input 
-                                    placeholder="Filter current view by name or metadata..." 
-                                    className="pl-9 rounded-xl h-11 border-slate-200" 
-                                    value={searchQuery} 
-                                    onChange={e => setSearchQuery(e.target.value)} 
-                                />
-                            </div>
+                <div className="flex items-center gap-4">
+                    <div className="flex-1 flex items-center gap-4">
+                        <div className="flex-1 max-w-sm space-y-1.5">
+                            <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Report Selection</Label>
+                            <Select value={selectedReport} onValueChange={(v) => setSelectedReport(v as ReportType)}>
+                                <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white font-bold">
+                                    <div className="flex items-center gap-2">
+                                        <BarChart3 className="h-4 w-4 text-primary" />
+                                        <SelectValue placeholder="Select Report Type" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="user-activity" className="font-medium">User Activity Report</SelectItem>
+                                    <SelectItem value="definition-insights" className="font-medium">Definition Insights</SelectItem>
+                                    <SelectItem value="workflow-analysis" className="font-medium">Workflow Analysis</SelectItem>
+                                    <SelectItem value="template-stats" className="font-medium">Template Utilization</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
-                    </div>
 
-                    <Button 
-                        variant="outline" 
-                        className="h-11 rounded-xl font-bold gap-2 text-slate-500 border-slate-200"
-                        onClick={() => {
-                            setSearchQuery('');
-                            setDateRange({ from: subMonths(new Date(), 3), to: new Date() });
-                            setSortConfig(null);
-                        }}
-                    >
-                        <FilterX className="h-4 w-4" />
-                        Reset Filters
-                    </Button>
+                        <div className="flex-1 max-w-xs space-y-1.5">
+                            <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Date Observation Range</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="w-full h-10 px-4 font-bold text-xs gap-2 rounded-xl border-slate-200 justify-start">
+                                        <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+                                        {dateRange?.from ? (
+                                            dateRange.to ? <>{format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd")}</> : format(dateRange.from, "MMM dd, yyyy")
+                                        ) : "Select Range"}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar 
+                                        mode="range" 
+                                        selected={dateRange as any} 
+                                        onSelect={setDateRange as any} 
+                                        initialFocus 
+                                        numberOfMonths={2} 
+                                        disabled={{ after: new Date() }}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="mt-6 h-10 rounded-xl font-bold gap-2 text-slate-400 hover:text-slate-600 transition-colors"
+                            onClick={() => {
+                                setUserFilters({});
+                                setDateRange({ from: subMonths(new Date(), 3), to: new Date() });
+                                setSortConfig({ key: 'name', direction: 'asc' });
+                            }}
+                        >
+                            <FilterX className="h-4 w-4" />
+                            Clear Filters
+                        </Button>
+                    </div>
                 </div>
             </div>
 
             <ScrollArea className="flex-1">
-                <div className="p-8 max-w-7xl mx-auto space-y-8 pb-32">
-                    {selectedReport === 'user-engagement' && (
-                        <div className="space-y-8 animate-in fade-in duration-500">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                <MetricSummary label="Total Users" value={users.length} icon={Users} color="indigo" />
-                                <MetricSummary label="Active sessions" value={users.filter(u => u.status === 'Active').length} icon={UserCheck} color="emerald" />
-                                <MetricSummary label="Total Logins" value={userActivityData.reduce((acc, u) => acc + u.logins, 0)} icon={Activity} color="amber" />
-                                <MetricSummary label="Authored Content" value={userActivityData.reduce((acc, u) => acc + u.creations, 0)} icon={FileEdit} color="slate" />
-                            </div>
-                            <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
-                                <CardContent className="p-0">
-                                    <Table>
-                                        <TableHeader className="bg-slate-50 border-b">
-                                            <TableRow>
-                                                <SortableHead label="User Account" sortKey="name" currentSort={sortConfig} onSort={handleSort} className="pl-6" />
-                                                <SortableHead label="Role" sortKey="role" currentSort={sortConfig} onSort={handleSort} />
-                                                <SortableHead label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
-                                                <SortableHead label="Logins" sortKey="logins" currentSort={sortConfig} onSort={handleSort} />
-                                                <SortableHead label="Last Activity" sortKey="lastActivity" currentSort={sortConfig} onSort={handleSort} />
-                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-right pr-6">Contribution Score</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {userActivityData.map(u => (
-                                                <TableRow key={u.id} className="hover:bg-slate-50/50 border-slate-100">
-                                                    <TableCell className="pl-6 font-bold text-slate-900">{u.name}</TableCell>
-                                                    <TableCell><Badge variant="outline" className="font-bold text-[10px] uppercase">{u.role}</Badge></TableCell>
-                                                    <TableCell><Badge variant={u.status === 'Active' ? 'success' : 'secondary'} className="font-bold text-[10px] uppercase h-6 px-2">{u.status}</Badge></TableCell>
-                                                    <TableCell className="font-medium text-slate-600">{u.logins}</TableCell>
-                                                    <TableCell className="text-slate-500 font-bold tabular-nums text-xs">{u.lastActivity}</TableCell>
-                                                    <TableCell className="pr-6 text-right">
-                                                        <div className="flex justify-end gap-3 text-[11px] font-bold">
-                                                            <span title="Created" className="text-emerald-600 flex items-center gap-1"><Plus className="h-3 w-3" />{u.creations}</span>
-                                                            <span title="Edited" className="text-indigo-600 flex items-center gap-1"><FileEdit className="h-3 w-3" />{u.edits}</span>
-                                                            <span title="Approved" className="text-amber-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />{u.approvals}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </div>
+                <div className="p-8 max-w-[1600px] mx-auto pb-32">
+                    {selectedReport === 'user-activity' && (
+                        <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
+                            <Table>
+                                <TableHeader className="bg-slate-50 border-b">
+                                    <TableRow className="hover:bg-transparent">
+                                        <SortableHead 
+                                            label="User" 
+                                            sortKey="name" 
+                                            currentSort={sortConfig} 
+                                            onSort={handleSort} 
+                                            className="pl-6 w-[200px]"
+                                            filterValue={userFilters.name}
+                                            onFilterChange={(v) => handleFilterChange('name', v)}
+                                        />
+                                        <SortableHead 
+                                            label="Last Login" 
+                                            sortKey="lastLogin" 
+                                            currentSort={sortConfig} 
+                                            onSort={handleSort}
+                                            className="w-[160px]"
+                                        />
+                                        <SortableHead 
+                                            label="Logins" 
+                                            sortKey="logins" 
+                                            currentSort={sortConfig} 
+                                            onSort={handleSort} 
+                                            className="w-[100px]"
+                                        />
+                                        <SortableHead 
+                                            label="Last Activity" 
+                                            sortKey="lastActivity" 
+                                            currentSort={sortConfig} 
+                                            onSort={handleSort}
+                                            className="w-[160px]"
+                                        />
+                                        <SortableHead 
+                                            label="Created" 
+                                            sortKey="creations" 
+                                            currentSort={sortConfig} 
+                                            onSort={handleSort}
+                                            className="w-[100px]"
+                                        />
+                                        <SortableHead 
+                                            label="Edited" 
+                                            sortKey="edits" 
+                                            currentSort={sortConfig} 
+                                            onSort={handleSort}
+                                            className="w-[100px]"
+                                        />
+                                        <SortableHead 
+                                            label="Approvals" 
+                                            sortKey="approvals" 
+                                            currentSort={sortConfig} 
+                                            onSort={handleSort}
+                                            className="w-[100px]"
+                                        />
+                                        <SortableHead 
+                                            label="Templates" 
+                                            sortKey="templates" 
+                                            currentSort={sortConfig} 
+                                            onSort={handleSort}
+                                            className="w-[100px]"
+                                        />
+                                        <SortableHead 
+                                            label="Status" 
+                                            sortKey="status" 
+                                            currentSort={sortConfig} 
+                                            onSort={handleSort}
+                                            className="pr-6 w-[120px]"
+                                            filterValue={userFilters.status}
+                                            onFilterChange={(v) => handleFilterChange('status', v)}
+                                            isSelectFilter
+                                        />
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {userActivityData.map(u => (
+                                        <TableRow key={u.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
+                                            <TableCell className="pl-6">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-900">{u.name}</span>
+                                                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">{u.role}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-slate-500 font-medium text-xs tabular-nums">{u.lastLogin}</TableCell>
+                                            <TableCell className="font-black text-slate-700">{u.logins}</TableCell>
+                                            <TableCell className="text-slate-500 font-medium text-xs tabular-nums">{u.lastActivity}</TableCell>
+                                            <TableCell className="font-bold text-emerald-600">{u.creations}</TableCell>
+                                            <TableCell className="font-bold text-indigo-600">{u.edits}</TableCell>
+                                            <TableCell className="font-bold text-amber-600">{u.approvals}</TableCell>
+                                            <TableCell className="font-bold text-slate-600">{u.templates}</TableCell>
+                                            <TableCell className="pr-6">
+                                                <Badge variant={u.status === 'Active' ? 'success' : 'secondary'} className="font-bold text-[9px] uppercase px-2 h-5">
+                                                    {u.status}
+                                                </Badge>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {userActivityData.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={9} className="h-64 text-center">
+                                                <div className="flex flex-col items-center gap-3">
+                                                    <BarChart3 className="h-10 w-10 text-slate-200" />
+                                                    <p className="text-slate-400 font-bold">No activity records found matching these criteria.</p>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </Card>
                     )}
 
-                    {selectedReport === 'definition-insights' && (
-                        <div className="space-y-8 animate-in fade-in duration-500">
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                <MetricSummary label="Total Library" value={definitionReportData.summary.total} color="slate" />
-                                <MetricSummary label="Published" value={definitionReportData.summary.published} color="emerald" />
-                                <MetricSummary label="Under Review" value={definitionReportData.summary.pending} color="indigo" />
-                                <MetricSummary label="Archived" value={definitionReportData.summary.archived} color="slate" />
-                                <MetricSummary label="Rejected" value={definitionReportData.summary.rejected} color="red" />
-                            </div>
-                            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                                <Card className="xl:col-span-2 rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
-                                    <CardHeader className="bg-slate-50 border-b"><CardTitle className="text-base font-bold">Author Performance Audit</CardTitle></CardHeader>
-                                    <CardContent className="p-0">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow className="bg-slate-50/50">
-                                                    <SortableHead label="Author" sortKey="name" currentSort={sortConfig} onSort={handleSort} className="pl-6" />
-                                                    <SortableHead label="Total Items" sortKey="total" currentSort={sortConfig} onSort={handleSort} />
-                                                    <SortableHead label="Published" sortKey="published" currentSort={sortConfig} onSort={handleSort} />
-                                                    <SortableHead label="Pending" sortKey="pending" currentSort={sortConfig} onSort={handleSort} />
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {definitionReportData.authors.map(a => (
-                                                    <TableRow key={a.name} className="border-slate-100">
-                                                        <TableCell className="pl-6 font-bold">{a.name}</TableCell>
-                                                        <TableCell className="font-medium">{a.total}</TableCell>
-                                                        <TableCell className="text-emerald-600 font-bold">{a.published}</TableCell>
-                                                        <TableCell className="text-indigo-600 font-bold">{a.pending}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                                <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm flex flex-col">
-                                    <CardHeader className="bg-slate-50 border-b"><CardTitle className="text-base font-bold">Growth Velocity</CardTitle></CardHeader>
-                                    <CardContent className="p-6 flex-1 flex flex-col justify-center min-h-[300px]">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={[{ month: 'Jan', count: 12 }, { month: 'Feb', count: 18 }, { month: 'Mar', count: 25 }, { month: 'Apr', count: 22 }]}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                                <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} />
-                                                <YAxis axisLine={false} tick={{ fontSize: 11 }} />
-                                                <Tooltip />
-                                                <Bar dataKey="count" fill="#3F51B5" radius={[4, 4, 0, 0]} barSize={30} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                        <p className="text-center text-[10px] font-black uppercase text-slate-400 tracking-widest mt-4">Definitions Created by Month</p>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </div>
-                    )}
-
-                    {selectedReport === 'workflow-analysis' && (
-                        <div className="space-y-8 animate-in fade-in duration-500">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                <MetricSummary label="Global Decisions" value={workflowReportData.stats.approved + workflowReportData.stats.rejected} icon={CheckCircle2} color="indigo" />
-                                <MetricSummary label="Queue Pressure" value={workflowReportData.stats.pending} icon={Clock} color="amber" />
-                                <MetricSummary label="Approval Yield" value={`${Math.round((workflowReportData.stats.approved / (workflowReportData.stats.approved + workflowReportData.stats.rejected || 1)) * 100)}%`} icon={TrendingUp} color="emerald" />
-                                <MetricSummary label="Avg Adjudication (Days)" value={workflowReportData.stats.avgTime} icon={Timer} color="slate" />
-                            </div>
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm border-l-4 border-l-red-500">
-                                    <CardHeader className="bg-red-50/30 border-b flex flex-row items-center justify-between">
-                                        <div><CardTitle className="text-base font-bold text-red-900">Priority: Oldest Pending Requests</CardTitle><CardDescription>Awaiting governance review.</CardDescription></div>
-                                        <AlertCircle className="h-5 w-5 text-red-500" />
-                                    </CardHeader>
-                                    <CardContent className="p-0">
-                                        <Table>
-                                            <TableBody>
-                                                {workflowReportData.oldestPending.map(d => (
-                                                    <TableRow key={d.id} className="border-slate-100 hover:bg-red-50/10">
-                                                        <TableCell className="py-4 pl-6 font-bold">{d.name}</TableCell>
-                                                        <TableCell className="text-xs text-slate-500">{d.submittedBy}</TableCell>
-                                                        <TableCell className="text-right pr-6"><Badge variant="outline" className="text-red-600 font-bold border-red-100 h-6">Awaiting {differenceInDays(new Date(), parseISO(d.submittedAt || ''))}d</Badge></TableCell>
-                                                    </TableRow>
-                                                ))}
-                                                {workflowReportData.oldestPending.length === 0 && (
-                                                    <TableRow><TableCell className="py-12 text-center text-slate-400 italic">Queue is clear.</TableCell></TableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                                <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
-                                    <CardHeader className="bg-slate-50 border-b"><CardTitle className="text-base font-bold">Approver Performance Ledger</CardTitle></CardHeader>
-                                    <CardContent className="p-0">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow className="bg-slate-50/50">
-                                                    <SortableHead label="Approver" sortKey="name" currentSort={sortConfig} onSort={handleSort} className="pl-6" />
-                                                    <SortableHead label="Total" sortKey="total" currentSort={sortConfig} onSort={handleSort} />
-                                                    <SortableHead label="Approved" sortKey="approved" currentSort={sortConfig} onSort={handleSort} />
-                                                    <SortableHead label="Rejected" sortKey="rejected" currentSort={sortConfig} onSort={handleSort} />
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {workflowReportData.approverPerformance.map(a => (
-                                                    <TableRow key={a.name} className="border-slate-100">
-                                                        <TableCell className="pl-6 font-bold">{a.name}</TableCell>
-                                                        <TableCell className="font-medium">{a.total}</TableCell>
-                                                        <TableCell className="text-emerald-600 font-bold">{a.approved}</TableCell>
-                                                        <TableCell className="text-red-600 font-bold">{a.rejected}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </div>
-                    )}
-
-                    {selectedReport === 'template-stats' && (
-                        <div className="space-y-8 animate-in fade-in duration-500">
-                            <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
-                                <CardHeader className="bg-slate-50/50 border-b"><CardTitle className="text-base font-bold">Documentation Blueprint Utilization</CardTitle></CardHeader>
-                                <CardContent className="p-0">
-                                    <Table>
-                                        <TableHeader className="bg-slate-50 border-b">
-                                            <TableRow>
-                                                <SortableHead label="Blueprint Name" sortKey="name" currentSort={sortConfig} onSort={handleSort} className="pl-6" />
-                                                <SortableHead label="Module Scope" sortKey="module" currentSort={sortConfig} onSort={handleSort} />
-                                                <SortableHead label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
-                                                <SortableHead label="Utilization Count" sortKey="usedIn" currentSort={sortConfig} onSort={handleSort} />
-                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-right pr-6">Configuration</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {templateReportData.map(t => (
-                                                <TableRow key={t.id} className="border-slate-100">
-                                                    <TableCell className="pl-6 font-bold">{t.name}</TableCell>
-                                                    <TableCell><Badge variant="outline" className="font-bold border-slate-200">{t.module}</Badge></TableCell>
-                                                    <TableCell><Badge variant={t.status === 'Active' ? 'success' : 'secondary'} className="font-bold">{t.status}</Badge></TableCell>
-                                                    <TableCell className="font-black text-indigo-600 tabular-nums">{t.usedIn} items</TableCell>
-                                                    <TableCell className="text-right pr-6">{t.isDefault && <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100">System Default</Badge>}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
-
-                    {selectedReport === 'system-usage' && (
-                        <div className="space-y-8 animate-in fade-in duration-500">
-                            <Card className="rounded-[24px] border-slate-200 bg-white overflow-hidden shadow-sm">
-                                <CardHeader className="bg-slate-50 border-b"><CardTitle className="text-base font-bold">Global Application Activity Trend</CardTitle></CardHeader>
-                                <CardContent className="h-[400px] p-8">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={systemUsageData.dailyStats}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-                                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-                                            <Tooltip />
-                                            <Legend verticalAlign="top" align="right" height={36}/>
-                                            <Line name="Creations" type="monotone" dataKey="creations" stroke="#10B981" strokeWidth={3} dot={{ r: 4 }} />
-                                            <Line name="Approvals" type="monotone" dataKey="approvals" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4 }} />
-                                            <Line name="Active Users" type="monotone" dataKey={(v) => v.users.size} stroke="#3F51B5" strokeWidth={3} dot={{ r: 4 }} />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </CardContent>
-                            </Card>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <Card className="rounded-[24px] border-slate-200 bg-white shadow-sm overflow-hidden">
-                                    <CardHeader className="bg-slate-50 border-b"><CardTitle className="text-base font-bold">Module Engagement Heatmap</CardTitle></CardHeader>
-                                    <CardContent className="p-0">
-                                        <Table>
-                                            <TableHeader><TableRow className="bg-slate-50/50"><TableHead className="pl-6 font-black uppercase text-[10px]">Business Domain</TableHead><TableHead className="font-black uppercase text-[10px]">Definition Size</TableHead><TableHead className="text-right pr-6 font-black uppercase text-[10px]">Interaction Score</TableHead></TableRow></TableHeader>
-                                            <TableBody>
-                                                {systemUsageData.moduleEngagement.map(m => (
-                                                    <TableRow key={m.name}>
-                                                        <TableCell className="pl-6 font-bold">{m.name}</TableCell>
-                                                        <TableCell className="font-medium text-slate-500">{m.definitions} items</TableCell>
-                                                        <TableCell className="text-right pr-6 font-bold text-indigo-600">{m.activity}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                                <Card className="rounded-[24px] border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col">
-                                     <CardHeader className="bg-slate-50 border-b"><CardTitle className="text-base font-bold">Peak Utilization Hours</CardTitle></CardHeader>
-                                     <CardContent className="p-8 flex-1 flex flex-col justify-center min-h-[300px]">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={[{ hour: '08:00', users: 5 }, { hour: '10:00', users: 15 }, { hour: '12:00', users: 12 }, { hour: '14:00', users: 20 }, { hour: '16:00', users: 8 }]}>
-                                                <XAxis dataKey="hour" tick={{fontSize: 10}} axisLine={false} />
-                                                <YAxis hide />
-                                                <Tooltip />
-                                                <Bar dataKey="users" fill="#3F51B5" radius={[4,4,0,0]} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                        <p className="text-center text-[10px] font-black uppercase text-slate-400 tracking-widest mt-4">Active Sessions by Hour</p>
-                                     </CardContent>
-                                </Card>
-                            </div>
+                    {selectedReport !== 'user-activity' && (
+                        <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[32px] border border-slate-100 shadow-sm">
+                             <BarChart3 className="h-16 w-16 text-slate-100 mb-4" />
+                             <h3 className="text-lg font-bold text-slate-900">Module Under Refinement</h3>
+                             <p className="text-sm text-slate-400 max-w-xs text-center mt-2">The selected specialized report is being synchronized with the new global audit schema.</p>
                         </div>
                     )}
                 </div>
@@ -658,39 +427,57 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     );
 }
 
-function MetricSummary({ label, value, icon: Icon, color = 'indigo' }: { label: string, value: string | number, icon?: any, color?: string }) {
-    const colorClasses: Record<string, string> = {
-        indigo: 'text-indigo-600 bg-indigo-50 border-indigo-100',
-        emerald: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-        amber: 'text-amber-600 bg-amber-50 border-amber-100',
-        red: 'text-red-600 bg-red-50 border-red-100',
-        slate: 'text-slate-600 bg-slate-50 border-slate-100'
-    };
-
-    return (
-        <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
-            <CardContent className="p-5 flex items-center justify-between">
-                <div>
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">{label}</p>
-                    <div className="text-2xl font-bold tracking-tight text-slate-900">{value}</div>
-                </div>
-                {Icon && (
-                    <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center border", colorClasses[color])}>
-                        <Icon className="h-5 w-5" />
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
+interface SortableHeadProps {
+    label: string;
+    sortKey: string;
+    currentSort: SortConfig;
+    onSort: (k: string) => void;
+    className?: string;
+    filterValue?: string;
+    onFilterChange?: (v: string) => void;
+    isSelectFilter?: boolean;
 }
 
-function SortableHead({ label, sortKey, currentSort, onSort, className }: { label: string, sortKey: string, currentSort: SortConfig, onSort: (k: string) => void, className?: string }) {
+function SortableHead({ label, sortKey, currentSort, onSort, className, filterValue, onFilterChange, isSelectFilter }: SortableHeadProps) {
     const isActive = currentSort?.key === sortKey;
+    
     return (
-        <TableHead className={cn("cursor-pointer hover:bg-slate-100 transition-colors py-4", className)} onClick={() => onSort(sortKey)}>
-            <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
-                {label}
-                <ArrowUpDown className={cn("ml-2 h-3 w-3", isActive ? "text-primary opacity-100" : "opacity-30")} />
+        <TableHead className={cn("py-4 align-top", className)}>
+            <div className="space-y-3">
+                <button 
+                    className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary transition-colors group"
+                    onClick={() => onSort(sortKey)}
+                >
+                    {label}
+                    <ArrowUpDown className={cn("ml-1.5 h-3 w-3 transition-opacity", isActive ? "text-primary opacity-100" : "opacity-0 group-hover:opacity-40")} />
+                </button>
+                
+                {onFilterChange && (
+                    <div className="relative">
+                        {isSelectFilter ? (
+                            <Select value={filterValue || 'all'} onValueChange={(v) => onFilterChange(v === 'all' ? '' : v)}>
+                                <SelectTrigger className="h-7 rounded-lg text-[9px] font-bold border-slate-200 bg-white px-2">
+                                    <SelectValue placeholder="Filter..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all" className="text-[10px]">All</SelectItem>
+                                    <SelectItem value="Active" className="text-[10px]">Active</SelectItem>
+                                    <SelectItem value="Inactive" className="text-[10px]">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                            <div className="relative">
+                                <Search className="absolute left-2 top-2 h-3 w-3 text-slate-300" />
+                                <Input 
+                                    className="h-7 pl-6 rounded-lg text-[9px] font-bold border-slate-200 bg-white placeholder:text-slate-300" 
+                                    placeholder={`Filter...`}
+                                    value={filterValue || ''}
+                                    onChange={(e) => onFilterChange(e.target.value)}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </TableHead>
     );
