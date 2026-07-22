@@ -119,11 +119,14 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         const safeLogs = Array.isArray(activityLogs) ? activityLogs : [];
         if (!appliedFilters?.dateRange?.from) return safeLogs;
         return safeLogs.filter(log => {
-            const logDate = parseISO(log.occurredDate);
-            return isWithinInterval(logDate, { 
-                start: startOfDay(appliedFilters.dateRange!.from), 
-                end: endOfDay(appliedFilters.dateRange!.to || appliedFilters.dateRange!.from) 
-            });
+            if (!log || !log.occurredDate) return false;
+            try {
+              const logDate = parseISO(log.occurredDate);
+              return isWithinInterval(logDate, { 
+                  start: startOfDay(appliedFilters.dateRange!.from), 
+                  end: endOfDay(appliedFilters.dateRange!.to || appliedFilters.dateRange!.from) 
+              });
+            } catch (e) { return false; }
         });
     }, [activityLogs, appliedFilters]);
 
@@ -133,16 +136,19 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         
         if (appliedFilters?.dateRange?.from) {
             result = result.filter(h => {
-                const hDate = parseISO(h.date);
-                return isWithinInterval(hDate, { 
-                    start: startOfDay(appliedFilters.dateRange!.from), 
-                    end: endOfDay(appliedFilters.dateRange!.to || appliedFilters.dateRange!.from) 
-                });
+                if (!h || !h.date) return false;
+                try {
+                  const hDate = parseISO(h.date);
+                  return isWithinInterval(hDate, { 
+                      start: startOfDay(appliedFilters.dateRange!.from), 
+                      end: endOfDay(appliedFilters.dateRange!.to || appliedFilters.dateRange!.from) 
+                  });
+                } catch (e) { return false; }
             });
         }
         
         if (appliedFilters?.approverFilter && appliedFilters.approverFilter !== 'all') {
-            result = result.filter(h => h.userName === appliedFilters.approverFilter);
+            result = result.filter(h => h && h.userName === appliedFilters.approverFilter);
         }
         
         return result;
@@ -152,8 +158,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         if (!appliedFilters || appliedFilters.reportType !== 'user-activity') return [];
         const safeUsers = Array.isArray(users) ? users : [];
         return safeUsers.map(user => {
-            const userLogs = filteredLogs.filter(l => l.userName === user.name);
-            const userHistory = filteredHistory.filter(h => h.userName === user.name);
+            const userLogs = filteredLogs.filter(l => l && l.userName === user.name);
+            const userHistory = filteredHistory.filter(h => h && h.userName === user.name);
             const lastActivityLog = [...userLogs].sort((a, b) => parseISO(b.occurredDate).getTime() - parseISO(a.occurredDate).getTime())[0];
 
             return {
@@ -181,12 +187,12 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         const countPublished = (items: Definition[]): { total: number, archived: number } => {
             let total = 0;
             let archived = 0;
-            items.forEach(item => {
-                if (item.description || item.shortDescription) {
+            (items || []).forEach(item => {
+                if (item && (item.description || item.shortDescription)) {
                     total++;
                     if (item.isArchived) archived++;
                 }
-                if (item.children) {
+                if (item && item.children) {
                     const childStats = countPublished(item.children);
                     total += childStats.total;
                     archived += childStats.archived;
@@ -196,11 +202,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         };
 
         const pubStats = countPublished(safeDefs);
-        const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval);
-        const pendingOnly = safeDrafts.filter(d => d.isPendingApproval);
-        const rejectedOnly = safeDrafts.filter(d => (d.discussions || []).some(m => m.type === 'rejection'));
+        const draftOnly = safeDrafts.filter(d => d && d.isDraft && !d.isPendingApproval);
+        const pendingOnly = safeDrafts.filter(d => d && d.isPendingApproval);
+        const rejectedOnly = safeDrafts.filter(d => d && (d.discussions || []).some(m => m.type === 'rejection'));
 
-        const creationLogs = filteredLogs.filter(l => l.activityType === 'Definition Created');
+        const creationLogs = filteredLogs.filter(l => l && l.activityType === 'Definition Created');
         const byUserMap: Record<string, number> = {};
         creationLogs.forEach(l => {
             byUserMap[l.userName] = (byUserMap[l.userName] || 0) + 1;
@@ -239,15 +245,15 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         
         const approved = filteredHistory.filter(h => h.action === 'Approved');
         const rejected = filteredHistory.filter(h => h.action === 'Rejected' || h.action === 'Changes Requested');
-        const pending = safeDrafts.filter(d => d.isPendingApproval);
+        const pending = safeDrafts.filter(d => d && d.isPendingApproval);
 
         let totalMinutes = 0;
         let countWithTime = 0;
         
         filteredHistory.forEach(h => {
-            if (h.action === 'Approved' || h.action === 'Rejected' || h.action === 'Changes Requested') {
+            if (h && (h.action === 'Approved' || h.action === 'Rejected' || h.action === 'Changes Requested')) {
                 const submission = safeHistory.find(s => 
-                    s.definitionId === h.definitionId && 
+                    s && s.definitionId === h.definitionId && 
                     s.action === 'Submitted' && 
                     parseISO(s.date).getTime() < parseISO(h.date).getTime()
                 );
@@ -263,7 +269,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
         const approverMap: Record<string, { approved: number, rejected: number }> = {};
         filteredHistory.forEach(h => {
-            if (h.action === 'Submitted') return;
+            if (!h || h.action === 'Submitted') return;
             if (!approverMap[h.userName]) approverMap[h.userName] = { approved: 0, rejected: 0 };
             if (h.action === 'Approved') approverMap[h.userName].approved++;
             else approverMap[h.userName].rejected++;
@@ -276,7 +282,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         })).sort((a, b) => b.total - a.total);
 
         const oldestPending = [...pending]
-            .filter(d => d.submittedAt)
+            .filter(d => d && d.submittedAt)
             .sort((a, b) => parseISO(a.submittedAt!).getTime() - parseISO(b.submittedAt!).getTime())
             .slice(0, 5);
 
@@ -301,11 +307,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
         const usageMap: Record<string, number> = {};
         const countUsage = (items: Definition[]) => {
-            items.forEach(item => {
-                if (item.templateId) {
+            (items || []).forEach(item => {
+                if (item && item.templateId) {
                     usageMap[item.templateId] = (usageMap[item.templateId] || 0) + 1;
                 }
-                if (item.children) countUsage(item.children);
+                if (item && item.children) countUsage(item.children);
             });
         };
         countUsage(safeDefinitions);
@@ -319,7 +325,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         })).sort((a, b) => b.usage - a.usage);
 
         const modificationLogs = filteredLogs.filter(l => 
-            l.activityType === 'Template Created' || l.activityType === 'Template Updated'
+            l && (l.activityType === 'Template Created' || l.activityType === 'Template Updated')
         );
         
         const recentlyModified = Array.from(new Set(modificationLogs.map(l => {
@@ -349,7 +355,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         const getShortDate = (iso: string) => format(parseISO(iso), 'yyyy-MM-dd');
 
         const creationsMap: Record<string, number> = {};
-        filteredLogs.filter(l => l.activityType === 'Definition Created').forEach(l => {
+        filteredLogs.filter(l => l && l.activityType === 'Definition Created').forEach(l => {
             const d = getShortDate(l.occurredDate);
             creationsMap[d] = (creationsMap[d] || 0) + 1;
         });
@@ -358,7 +364,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             .sort((a, b) => b.date.localeCompare(a.date));
 
         const approvalsMap: Record<string, number> = {};
-        filteredHistory.filter(h => h.action !== 'Submitted').forEach(h => {
+        filteredHistory.filter(h => h && h.action !== 'Submitted').forEach(h => {
             const d = getShortDate(h.date);
             approvalsMap[d] = (approvalsMap[d] || 0) + 1;
         });
@@ -368,6 +374,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
         const activeUsersMap: Record<string, Set<string>> = {};
         filteredLogs.forEach(l => {
+            if (!l) return;
             const d = getShortDate(l.occurredDate);
             if (!activeUsersMap[d]) activeUsersMap[d] = new Set();
             activeUsersMap[d].add(l.userName);
@@ -377,7 +384,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             .sort((a, b) => b.date.localeCompare(a.date));
 
         const hoursMap: Record<number, number> = {};
-        filteredLogs.filter(l => l.activityType === 'User Login').forEach(l => {
+        filteredLogs.filter(l => l && l.activityType === 'User Login').forEach(l => {
             const hour = parseISO(l.occurredDate).getHours();
             hoursMap[hour] = (hoursMap[hour] || 0) + 1;
         });
@@ -390,10 +397,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         const safeDrafts = Array.isArray(drafts) ? drafts : [];
 
         filteredLogs.forEach(log => {
+            if (!log) return;
             if (log.definitionName === 'System Governance' || log.definitionName === 'Template Governance' || log.definitionName === 'Security Administration') return;
             
-            let def = (Array.isArray(safeDefs) ? safeDefs : []).find(d => d.name === log.definitionName);
-            if (!def) def = (Array.isArray(safeDrafts) ? safeDrafts : []).find(d => d.name === log.definitionName);
+            let def = safeDefs.find(d => d && d.name === log.definitionName);
+            if (!def) def = safeDrafts.find(d => d && d.name === log.definitionName);
             
             const moduleName = def?.module || 'Core';
             moduleActivityMap[moduleName] = (moduleActivityMap[moduleName] || 0) + 1;
@@ -414,7 +422,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
     const uniqueApprovers = useMemo(() => {
         const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
-        const names = Array.from(new Set(safeHistory.filter(h => h.action !== 'Submitted').map(h => h.userName)));
+        const names = Array.from(new Set(safeHistory.filter(h => h && h.action !== 'Submitted').map(h => h.userName)));
         return names.sort();
     }, [approvalHistory]);
 
@@ -679,7 +687,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 <Table>
                                     <TableHeader className="bg-slate-50 border-b">
                                         <TableRow>
-                                            <ReportHeader label="User Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 flex-1 min-w-[200px]" />
+                                            <ReportHeader label="User Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 min-w-[200px]" />
                                             <ReportHeader label="Last Login" id="lastLogin" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastLogin} onFilterChange={handleFilterChange} className="min-w-[160px]" />
                                             <ReportHeader label="Logins" id="logins" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.logins} onFilterChange={handleFilterChange} className="min-w-[100px]" />
                                             <ReportHeader label="Last Activity" id="lastActivity" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastActivity} onFilterChange={handleFilterChange} className="min-w-[140px]" />

@@ -8,7 +8,6 @@ import {
     FileText, 
     LayoutTemplate, 
     Activity,
-    CheckCircle2,
     Users2,
     BarChart3
 } from 'lucide-react';
@@ -37,45 +36,52 @@ type DashboardProps = {
   onNavigate: (view: View) => void;
 };
 
+// Helper moved outside to prevent re-definition on render and add robustness
+const countPublishedDefinitions = (items: Definition[]): number => {
+  if (!Array.isArray(items)) return 0;
+  let count = 0;
+  items.forEach(item => {
+    if (item && (item.description || item.shortDescription)) {
+      if (!item.isArchived) count++;
+    }
+    if (item && item.children && item.children.length > 0) {
+      count += countPublishedDefinitions(item.children);
+    }
+  });
+  return count;
+};
+
 export default function Dashboard({ definitions, drafts, users, templates, onNavigate }: DashboardProps) {
   
   // -- DATA PROCESSING --
   
-  const countPublishedDefinitions = (items: Definition[]): number => {
-    let count = 0;
-    items.forEach(item => {
-      if (item.description || item.shortDescription) {
-        if (!item.isArchived) count++;
-      }
-      if (item.children) {
-        count += countPublishedDefinitions(item.children);
-      }
-    });
-    return count;
-  };
-
   const metrics = useMemo(() => {
-    const published = countPublishedDefinitions(definitions);
-    const pending = drafts.filter(d => d.isPendingApproval).length;
-    const draft = drafts.filter(d => d.isDraft && !d.isPendingApproval).length;
-    const rejected = drafts.filter(d => (d.discussions || []).some(m => m.type === 'rejection')).length;
+    const safeDefinitions = Array.isArray(definitions) ? definitions : [];
+    const safeDrafts = Array.isArray(drafts) ? drafts : [];
+    const safeUsers = Array.isArray(users) ? users : [];
+    const safeTemplates = Array.isArray(templates) ? templates : [];
+
+    const published = countPublishedDefinitions(safeDefinitions);
+    const pending = safeDrafts.filter(d => d?.isPendingApproval).length;
+    const draft = safeDrafts.filter(d => d?.isDraft && !d?.isPendingApproval).length;
+    const rejected = safeDrafts.filter(d => (d?.discussions || []).some(m => m.type === 'rejection')).length;
     
     return {
         // User Metrics
-        totalUsers: users.length,
-        activeUsers: users.filter(u => u.status === 'Active').length,
-        inactiveUsers: users.filter(u => u.status === 'Inactive').length,
+        totalUsers: safeUsers.length,
+        activeUsers: safeUsers.filter(u => u.status === 'Active').length,
+        inactiveUsers: safeUsers.filter(u => u.status === 'Inactive').length,
         
         // Definition Metrics
-        totalDefinitions: published + drafts.length,
+        totalDefinitions: published + safeDrafts.length,
         publishedDefinitions: published,
         draftDefinitions: draft,
         pendingApprovals: pending,
         rejectedDefinitions: rejected,
 
         // Template Metrics
-        totalTemplates: templates.length,
-        activeTemplates: templates.filter(t => t.isActive).length
+        totalTemplates: safeTemplates.length,
+        activeTemplates: safeTemplates.filter(t => t.isActive).length
     };
   }, [definitions, drafts, users, templates]);
 
@@ -90,7 +96,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
   // Data for Template Bar Chart
   const templateStatusData = useMemo(() => [
     { name: 'Active Templates', count: metrics.activeTemplates, color: '#6366f1' },
-    { name: 'Inactive Templates', count: metrics.totalTemplates - metrics.activeTemplates, color: '#cbd5e1' }
+    { name: 'Inactive Templates', count: Math.max(0, metrics.totalTemplates - metrics.activeTemplates), color: '#cbd5e1' }
   ], [metrics]);
 
   // -- COMPONENTS --
@@ -124,7 +130,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         </Badge>
       </div>
 
-      {/* --- USERS SECTION (Row/Table format) --- */}
+      {/* --- USERS SECTION --- */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 px-2">
             <Users2 className="h-4 w-4 text-slate-400" />
@@ -138,7 +144,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* --- DEFINITIONS SECTION (Pie Chart) --- */}
+        {/* --- DEFINITIONS SECTION --- */}
         <div className="space-y-4">
             <div className="flex items-center gap-2 px-2">
                 <FileText className="h-4 w-4 text-slate-400" />
@@ -185,7 +191,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             </Card>
         </div>
 
-        {/* --- TEMPLATES SECTION (Bar Chart) --- */}
+        {/* --- TEMPLATES SECTION --- */}
         <div className="space-y-4">
             <div className="flex items-center gap-2 px-2">
                 <LayoutTemplate className="h-4 w-4 text-slate-400" />
@@ -237,7 +243,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="h-3 w-3 rounded-full bg-[#cbd5e1]" />
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">Inactive: {metrics.totalTemplates - metrics.activeTemplates}</span>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">Inactive: {Math.max(0, metrics.totalTemplates - metrics.activeTemplates)}</span>
                         </div>
                     </div>
                 </CardContent>
@@ -247,4 +253,3 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     </div>
   );
 }
-
