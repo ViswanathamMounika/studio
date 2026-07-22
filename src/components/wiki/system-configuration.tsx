@@ -21,7 +21,8 @@ import {
     Globe, 
     Clock, 
     HardDrive,
-    MessageSquare
+    MessageSquare,
+    X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SystemConfigurationState, EmailTemplate } from '@/lib/types';
@@ -93,7 +94,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                 </TabsList>
 
                 <ScrollArea className="flex-1 -mx-2 px-2">
-                    {/* GENERAL SETTINGS */}
                     <TabsContent value="general" className="m-0 space-y-6">
                         <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
                             <CardHeader className="bg-slate-50/50 border-b">
@@ -132,7 +132,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                         </Card>
                     </TabsContent>
 
-                    {/* EMAIL TEMPLATES */}
                     <TabsContent value="email" className="m-0 space-y-6">
                         <div className="grid grid-cols-1 gap-6">
                             {localConfig.emailTemplates.map(template => (
@@ -173,7 +172,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                         </div>
                     </TabsContent>
 
-                    {/* LOCALIZATION */}
                     <TabsContent value="localization" className="m-0 space-y-6">
                         <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
                             <CardHeader className="bg-slate-50/50 border-b">
@@ -228,7 +226,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                         </Card>
                     </TabsContent>
 
-                    {/* SECURITY & FILES */}
                     <TabsContent value="security" className="m-0 space-y-6">
                         <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
                             <CardHeader className="bg-slate-50/50 border-b">
@@ -313,5 +310,3 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         </div>
     );
 }
-
-import { X } from 'lucide-react';

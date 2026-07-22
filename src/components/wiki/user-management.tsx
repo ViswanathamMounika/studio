@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -22,6 +21,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,7 +42,6 @@ import {
     UserCog, 
     Edit, 
     ShieldCheck, 
-    ArrowUpDown, 
     Plus, 
     Trash2, 
     UserCircle2, 
@@ -76,22 +85,27 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
 
     const { toast } = useToast();
 
+    // -- DEFENSIVE DATA ACCESS --
+    const safeUsers = useMemo(() => Array.isArray(users) ? users : [], [users]);
+    const safeRoles = useMemo(() => Array.isArray(roles) ? roles : [], [roles]);
+    const safePermissions = useMemo(() => Array.isArray(permissions) ? permissions : [], [permissions]);
+
     // -- USER LOGIC --
     const filteredUsers = useMemo(() => {
-        return users.filter(user => 
+        return safeUsers.filter(user => 
             user.name.toLowerCase().includes(userSearch.toLowerCase()) ||
             user.email.toLowerCase().includes(userSearch.toLowerCase()) ||
             user.role.toLowerCase().includes(userSearch.toLowerCase())
         );
-    }, [users, userSearch]);
+    }, [safeUsers, userSearch]);
 
     // -- PERMISSION LOGIC --
     const filteredPermissions = useMemo(() => {
-        return permissions.filter(p => 
+        return safePermissions.filter(p => 
             p.name.toLowerCase().includes(userSearch.toLowerCase()) ||
             p.description.toLowerCase().includes(userSearch.toLowerCase())
         );
-    }, [permissions, userSearch]);
+    }, [safePermissions, userSearch]);
 
     const totalPermPages = Math.ceil(filteredPermissions.length / permPageSize);
     const paginatedPermissions = useMemo(() => {
@@ -106,7 +120,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
 
     const handleSaveUser = () => {
         if (!editingUser) return;
-        const original = users.find(u => u.id === editingUser.id);
+        const original = safeUsers.find(u => u.id === editingUser.id);
         if (!original) return;
 
         if (original.role !== editingUser.role) {
@@ -116,7 +130,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
             logAction('User Status Changed', `${editingUser.name} status updated to ${editingUser.status}`);
         }
 
-        onSaveUsers(users.map(u => u.id === editingUser.id ? editingUser : u));
+        onSaveUsers(safeUsers.map(u => u.id === editingUser.id ? editingUser : u));
         setIsEditUserModalOpen(false);
         toast({ title: "Account Updated" });
     };
@@ -134,24 +148,24 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
 
     const handleSaveRole = () => {
         if (!editingRole?.name) return;
-        const isNew = !roles.find(r => r.id === editingRole.id);
-        const newRoles = isNew ? [...roles, editingRole as Role] : roles.map(r => r.id === editingRole.id ? (editingRole as Role) : r);
+        const isNew = !safeRoles.find(r => r.id === editingRole.id);
+        const newRoles = isNew ? [...safeRoles, editingRole as Role] : safeRoles.map(r => r.id === editingRole.id ? (editingRole as Role) : r);
         
         setRoles(newRoles);
         logAction(isNew ? 'Role Created' : 'Role Updated', `Role: ${editingRole.name}`);
         setIsRoleModalOpen(false);
-        toast({ title: isNew ? "Role Created" : "Role Saved" });
+        toast({ title: iisNew ? "Role Created" : "Role Saved" });
     };
 
     const handleDeleteRole = (id: string) => {
-        const role = roles.find(r => r.id === id);
+        const role = safeRoles.find(r => r.id === id);
         if (!role) return;
-        const usersWithRole = users.filter(u => u.role === role.name);
+        const usersWithRole = safeUsers.filter(u => u.role === role.name);
         if (usersWithRole.length > 0) {
             toast({ variant: 'destructive', title: "Cannot Delete", description: "This role is assigned to users." });
             return;
         }
-        setRoles(roles.filter(r => r.id !== id));
+        setRoles(safeRoles.filter(r => r.id !== id));
         logAction('Role Deleted', `Role: ${role.name}`);
         toast({ title: "Role Removed" });
     };
@@ -165,9 +179,8 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
     const handleSavePermission = () => {
         if (!editingPermission?.name?.trim()) return;
 
-        // Validation: Prevent duplicate names (case-insensitive)
         const normalizedName = editingPermission.name.trim().toLowerCase();
-        const duplicate = permissions.find(p => 
+        const duplicate = safePermissions.find(p => 
             p.id !== editingPermission.id && 
             p.name.trim().toLowerCase() === normalizedName
         );
@@ -181,8 +194,8 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
             return;
         }
 
-        const isNew = !permissions.find(p => p.id === editingPermission.id);
-        const newPermissions = isNew ? [...permissions, editingPermission as Permission] : permissions.map(p => p.id === editingPermission.id ? (editingPermission as Permission) : p);
+        const isNew = !safePermissions.find(p => p.id === editingPermission.id);
+        const newPermissions = isNew ? [...safePermissions, editingPermission as Permission] : safePermissions.map(p => p.id === editingPermission.id ? (editingPermission as Permission) : p);
         
         setPermissions(newPermissions);
         logAction(isNew ? 'Permission Created' : 'Permission Updated', `Permission: ${editingPermission.name}`);
@@ -191,14 +204,14 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
     };
 
     const handleDeletePermission = (id: string) => {
-        const perm = permissions.find(p => p.id === id);
+        const perm = safePermissions.find(p => p.id === id);
         if (!perm) return;
-        const rolesWithPerm = roles.filter(r => r.permissions.includes(id));
+        const rolesWithPerm = safeRoles.filter(r => r.permissions.includes(id));
         if (rolesWithPerm.length > 0) {
             toast({ variant: 'destructive', title: "Cannot Delete", description: "Permission is assigned to existing roles." });
             return;
         }
-        setPermissions(permissions.filter(p => p.id !== id));
+        setPermissions(safePermissions.filter(p => p.id !== id));
         logAction('Permission Deleted', `Permission: ${perm.name}`);
         toast({ title: "Permission Removed" });
     };
@@ -212,7 +225,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
             occurredDate: new Date().toISOString(),
             details
         };
-        setActivityLogs(prev => [newLog, ...(prev || [])]);
+        setActivityLogs(prev => [newLog, ...(Array.isArray(prev) ? prev : [])]);
     };
 
     return (
@@ -250,7 +263,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                     <TabsTrigger value="permissions" className="rounded-lg px-6 font-bold">Permissions (Securables)</TabsTrigger>
                 </TabsList>
 
-                {/* --- USERS TAB --- */}
                 <TabsContent value="users" className="flex-1 m-0 space-y-4 px-2 pb-6">
                     <div className="flex justify-between items-center">
                         <div className="relative w-72">
@@ -303,7 +315,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                     </Card>
                 </TabsContent>
 
-                {/* --- ROLES TAB --- */}
                 <TabsContent value="roles" className="flex-1 m-0 space-y-4 px-2 pb-6">
                     <div className="flex justify-end">
                         <Button onClick={handleAddRole} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-6 shadow-md shadow-indigo-100 h-10">
@@ -323,12 +334,12 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {roles.map(role => (
+                                {safeRoles.map(role => (
                                     <TableRow key={role.id} className="hover:bg-slate-50/50 border-slate-100">
                                         <TableCell className="px-6 font-bold text-slate-900">{role.name}</TableCell>
                                         <TableCell className="text-slate-500 text-xs italic max-w-md truncate">{role.description || '—'}</TableCell>
                                         <TableCell>
-                                            <Badge variant="outline" className="font-bold text-[10px] uppercase text-indigo-600 bg-indigo-50 border-indigo-100">{role.permissions.length} Permissions</Badge>
+                                            <Badge variant="outline" className="font-bold text-[10px] uppercase text-indigo-600 bg-indigo-50 border-indigo-100">{Array.isArray(role.permissions) ? role.permissions.length : 0} Permissions</Badge>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant={role.status === 'Active' ? 'success' : 'secondary'} className="font-bold text-[10px] uppercase">{role.status}</Badge>
@@ -346,7 +357,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                     </Card>
                 </TabsContent>
 
-                {/* --- PERMISSIONS TAB --- */}
                 <TabsContent value="permissions" className="flex-1 m-0 space-y-6 flex flex-col px-2 pb-6">
                     <div className="flex justify-between items-center">
                         <div className="relative w-72">
@@ -426,13 +436,13 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                                     <KeyRound className="h-10 w-10 text-slate-200" />
                                                     <p className="text-slate-400 font-bold text-sm">No securables match your criteria.</p>
                                                 </div>
-                                            </TableRow>
-                                        )}
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
 
-                        {/* Pagination Footer */}
                         {filteredPermissions.length > 0 && (
                             <div className="flex items-center justify-between p-6 bg-slate-50/50 border-t">
                                 <div className="flex items-center gap-6">
@@ -485,9 +495,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                 </TabsContent>
             </Tabs>
 
-            {/* MODALS */}
-            
-            {/* User Edit */}
             <Dialog open={isEditUserModalOpen} onOpenChange={setIsEditUserModalOpen}>
                 <DialogContent className="max-w-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><UserCog className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">Edit Account</DialogTitle></div></div>
@@ -497,7 +504,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                             <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">System Role</Label>
                                 <Select value={editingUser?.role} onValueChange={v => setEditingUser(p => p ? ({ ...p, role: v }) : null)}>
                                     <SelectTrigger className="rounded-xl h-11 font-bold bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                                    <SelectContent>{roles.filter(r => r.status === 'Active').map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
+                                    <SelectContent>{safeRoles.filter(r => r.status === 'Active').map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                             <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200">
@@ -510,10 +517,9 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                 </DialogContent>
             </Dialog>
 
-            {/* Role Edit */}
             <Dialog open={isRoleModalOpen} onOpenChange={setIsRoleModalOpen}>
                 <DialogContent className="max-w-2xl rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
-                    <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><ShieldCheck className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">{!roles.find(r => r.id === editingRole?.id) ? 'Create' : 'Edit'} Security Role</DialogTitle></div></div>
+                    <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><ShieldCheck className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">{!safeRoles.find(r => r.id === editingRole?.id) ? 'Create' : 'Edit'} Security Role</DialogTitle></div></div>
                     <div className="p-8 space-y-6 bg-slate-50/30">
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Role Name</Label><Input value={editingRole?.name || ''} onChange={e => setEditingRole(p => p ? ({ ...p, name: e.target.value }) : null)} className="rounded-xl border-slate-200 h-11 font-bold bg-white" /></div>
@@ -529,7 +535,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                         <div className="space-y-3">
                             <Label className="text-[11px] font-black uppercase text-slate-500">Functional Permissions</Label>
                             <div className="grid grid-cols-2 gap-2 bg-white p-4 rounded-xl border border-slate-200">
-                                {permissions.map(p => (
+                                {safePermissions.map(p => (
                                     <div key={p.id} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg group transition-colors">
                                         <Checkbox 
                                             id={`p-${p.id}`} 
@@ -550,14 +556,13 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                 </DialogContent>
             </Dialog>
 
-            {/* Permission Edit */}
             <Dialog open={isPermissionModalOpen} onOpenChange={setIsPermissionModalOpen}>
                 <DialogContent className="max-w-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><KeyRound className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">Securable Permission</DialogTitle></div></div>
                     <div className="p-8 space-y-6 bg-slate-50/30">
                         <div className="space-y-4">
                             <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Permission Name</Label><Input value={editingPermission?.name || ''} onChange={e => setEditingPermission(p => p ? ({ ...p, name: e.target.value }) : null)} className="rounded-xl border-slate-200 h-11 font-bold bg-white" /></div>
-                            <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Guideline / Scope</Label><Textarea value={editingPermission?.description || ''} onChange={e => setEditingPermission(p => p ? ({ ...p, description: e.target.value }) : null)} className="rounded-xl border-slate-200 min-h-[80px] bg-white" /></div>
+                            <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Guideline / Scope</Label><Textarea value={editingPermission?.description || ''} onChange={e => setEditingPermission(p => p ? ({ ...p, description: e.target.value }) : null)} className="rounded-xl border-slate-200 min-h-[100px] bg-white" /></div>
                         </div>
                     </div>
                     <DialogFooter className="p-4 bg-white border-t gap-2"><DialogClose asChild><Button variant="outline" className="rounded-xl font-bold border-slate-200">Cancel</Button></DialogClose><Button onClick={handleSavePermission} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-8 shadow-md">Save Securable</Button></DialogFooter>
@@ -566,15 +571,3 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         </div>
     );
 }
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";

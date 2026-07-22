@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -78,7 +79,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     ];
 
     const handleNavigate = (id: string) => {
-        const adminViews = ['admin-portal', 'dashboard', 'definitions', 'activity-logs', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration', 'reports'];
+        const adminViews = ['dashboard', 'definitions', 'activity-logs', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration', 'reports'];
         if (adminViews.includes(id)) {
             onNavigate(id as View);
         } else {
@@ -134,8 +135,8 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                         <SidebarMenuItem>
                                             <CollapsibleTrigger asChild>
                                                 <SidebarMenuButton 
-                                                    isActive={activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs' || activeView === 'template-management' || isAdminViewActive(activeView)}
-                                                    className={cn("font-semibold", (activeView === 'definitions' || activeView === 'admin-portal' || activeView === 'approval-workflow' || activeView === 'activity-logs' || activeView === 'template-management' || isAdminViewActive(activeView)) && "text-primary")}
+                                                    isActive={activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'activity-logs' || activeView === 'template-management' || isAdminViewActive(activeView)}
+                                                    className={cn("font-semibold", (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'activity-logs' || activeView === 'template-management' || isAdminViewActive(activeView)) && "text-primary")}
                                                 >
                                                     <Library className="h-4 w-4" />
                                                     <span>MPM Data Definitions</span>
@@ -333,3 +334,4 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
         </Sidebar>
     );
 }
+

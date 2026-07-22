@@ -13,8 +13,18 @@ import {
   DialogTitle,
   DialogFooter,
   DialogClose,
-  DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,7 +42,6 @@ import {
     CheckCircle2,
     XCircle,
     Info,
-    ArrowUpDown,
     FilterX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -124,7 +133,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
 
     return (
         <div className="space-y-6 h-full flex flex-col">
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-end px-2">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900">Master Data Management</h1>
                     <p className="text-muted-foreground font-medium">Govern application constants and reference categories globally.</p>
@@ -248,7 +257,6 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                 </Card>
             </Tabs>
 
-            {/* CREATE/EDIT MODAL */}
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogContent className="max-w-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b bg-white">
@@ -310,15 +318,3 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         </div>
     );
 }
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";

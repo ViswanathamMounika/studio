@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -140,7 +141,7 @@ export default function Wiki() {
         occurredDate: new Date().toISOString(),
         details
     };
-    setActivityLogs(prev => [newLog, ...(prev || [])]);
+    setActivityLogs(prev => [newLog, ...(Array.isArray(prev) ? prev : [])]);
   }, [currentUser.name, impersonatedUser, setActivityLogs]);
 
   const updateUrl = useCallback((definitionId: string, sectionId?: string, view?: View) => {
@@ -175,7 +176,7 @@ export default function Wiki() {
     setIsEditing(false);
     setIsNewBranch(false);
     
-    const sourceList = mode === 'draft' ? drafts : definitions;
+    const sourceList = mode === 'draft' ? (Array.isArray(drafts) ? drafts : []) : (Array.isArray(definitions) ? definitions : []);
     const def = findDefinition(sourceList, id);
     if (def) {
         trackView(id, def.name, def.module, def.isArchived ? 'Archived' : mode === 'live' ? 'Published' : (def.isPendingApproval ? 'Pending Review' : 'Draft'));
@@ -234,7 +235,8 @@ export default function Wiki() {
     if (isEditing && selectedDefinitionId && viewingMode === 'draft') {
       heartbeatInterval.current = setInterval(() => {
         setDrafts(prev => {
-          return prev.map(def => {
+          const safeDrafts = Array.isArray(prev) ? prev : [];
+          return safeDrafts.map(def => {
             if (def.id === selectedDefinitionId) {
               const newExpireAt = new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString();
               return { ...def, lock: def.lock ? { ...def.lock, expireAt: newExpireAt } : undefined };
@@ -249,29 +251,6 @@ export default function Wiki() {
     return () => { if (heartbeatInterval.current) clearInterval(heartbeatInterval.current); };
   }, [isEditing, selectedDefinitionId, viewingMode, setDrafts]);
 
-  const handleImpersonate = (user: UserAccount | string) => {
-    if (typeof user === 'string') {
-        // Impersonate a role
-        const roleUser: UserAccount = {
-            id: `role_proxy_${user.toLowerCase()}`,
-            name: `${user} Session`,
-            email: `${user.toLowerCase()}@proxy.medpoint.com`,
-            role: user,
-            status: 'Active' as const,
-            avatar: `https://picsum.photos/seed/${user}/40/40`
-        };
-        setImpersonatedUser(roleUser);
-        logAction('User Role Modified', `Started impersonating role: ${user}`);
-        logAction('User Login', `Super Admin began proxy session for role: ${user}`);
-    } else {
-        setImpersonatedUser(user);
-        logAction('User Role Modified', `Started impersonating user: ${user.name}`);
-        logAction('User Login', `Super Admin began proxy session for user: ${user.name}`);
-    }
-    handleNavigate('definitions');
-    toast({ title: "Impersonation Active", description: "Experiencing app as target user." });
-  };
-
   const handleExitImpersonation = () => {
     const targetName = impersonatedUser?.name;
     setImpersonatedUser(null);
@@ -280,24 +259,21 @@ export default function Wiki() {
     toast({ title: "Impersonation Ended", description: "Returned to Super Admin account." });
   };
 
-  const toggleSelectionForExport = (id: string, checked: boolean) => {
-    setSelectedForExport(prev => checked ? [...prev, id] : prev.filter(i => i !== id));
-  };
-
   const handleSave = (updatedDefinition: Definition) => {
     const isNowPending = updatedDefinition.isPendingApproval && !updatedDefinition.isDraft;
     
     if (updatedDefinition.isDraft || updatedDefinition.isPendingApproval) {
         setDrafts(prev => {
-            const exists = prev.some(d => d.id === updatedDefinition.id);
+            const safeDrafts = Array.isArray(prev) ? prev : [];
+            const exists = safeDrafts.some(d => d.id === updatedDefinition.id);
             const savedDraft = {
               ...updatedDefinition,
               authorId: updatedDefinition.authorId || currentUser.id,
               submittedBy: isNowPending ? currentUser.name : updatedDefinition.submittedBy,
               submittedAt: isNowPending ? new Date().toISOString() : updatedDefinition.submittedAt
             };
-            if (exists) return prev.map(d => d.id === updatedDefinition.id ? savedDraft : d);
-            return [...prev, savedDraft];
+            if (exists) return safeDrafts.map(d => d.id === updatedDefinition.id ? savedDraft : d);
+            return [...safeDrafts, savedDraft];
         });
 
         if (isNowPending) {
@@ -308,7 +284,7 @@ export default function Wiki() {
                 action: 'Submitted',
                 userName: currentUser.name,
                 date: new Date().toISOString()
-            }, ...(prev || [])]);
+            }, ...(Array.isArray(prev) ? prev : [])]);
 
             setNotifications(prev => [{
                 id: `notif_${Date.now()}`,
@@ -317,7 +293,7 @@ export default function Wiki() {
                 message: `${currentUser.name} submitted a definition for approval.`,
                 date: new Date().toISOString(),
                 read: false
-            }, ...(prev || [])]);
+            }, ...(Array.isArray(prev) ? prev : [])]);
             
             logAction('Definition Updated', `Submitted for Approval: ${updatedDefinition.name}`);
         } else {
@@ -341,15 +317,15 @@ export default function Wiki() {
         };
 
         const updateTree = (items: Definition[]): Definition[] => {
-            return items.map(item => {
+            return (Array.isArray(items) ? items : []).map(item => {
                 if (item.id === targetId) return finalDef;
                 if (item.children) return { ...item, children: updateTree(item.children) };
                 return item;
             });
         };
 
-        setDefinitions(prev => updateTree(prev || []));
-        setDrafts(prev => prev.filter(d => d.id !== updatedDefinition.id));
+        setDefinitions(prev => updateTree(Array.isArray(prev) ? prev : []));
+        setDrafts(prev => (Array.isArray(prev) ? prev : []).filter(d => d.id !== updatedDefinition.id));
         setViewingMode('live');
         setSelectedDefinitionId(targetId);
         logAction('Definition Updated', `Published: ${updatedDefinition.name}`);
@@ -364,11 +340,12 @@ export default function Wiki() {
   };
 
   const handleDiscardDraft = (id: string) => {
-    const draft = drafts.find(d => d.id === id);
+    const safeDrafts = Array.isArray(drafts) ? drafts : [];
+    const draft = safeDrafts.find(d => d.id === id);
     const originalId = draft?.originalId;
 
     if (isNewBranch) {
-      setDrafts(prev => prev.filter(d => d.id !== id));
+      setDrafts(prev => (Array.isArray(prev) ? prev : []).filter(d => d.id !== id));
       
       if (originalId) {
         setSelectedDefinitionId(originalId);
@@ -388,8 +365,9 @@ export default function Wiki() {
   };
 
   const handleRetract = (id: string) => {
-    const draft = drafts.find(d => d.id === id);
-    setDrafts(prev => prev.map(d => {
+    const safeDrafts = Array.isArray(drafts) ? drafts : [];
+    const draft = safeDrafts.find(d => d.id === id);
+    setDrafts(prev => (Array.isArray(prev) ? prev : []).map(d => {
       if (d.id === id) {
         return { ...d, isPendingApproval: false, isDraft: true };
       }
@@ -403,8 +381,9 @@ export default function Wiki() {
   };
 
   const handleAcceptLiveChanges = (draftId: string) => {
-    const draft = drafts.find(d => d.id === draftId);
-    const live = draft?.originalId ? findDefinition(definitions, draft.originalId) : null;
+    const safeDrafts = Array.isArray(drafts) ? drafts : [];
+    const draft = safeDrafts.find(d => d.id === draftId);
+    const live = draft?.originalId ? findDefinition(Array.isArray(definitions) ? definitions : [], draft.originalId) : null;
     
     if (draft && live) {
         const { revisions, children, notes, discussions, publishedSnapshot, ...snapshot } = live;
@@ -422,7 +401,7 @@ export default function Wiki() {
             discussions: draft.discussions
         };
 
-        setDrafts(prev => prev.map(d => d.id === draftId ? updatedDraft : d));
+        setDrafts(prev => (Array.isArray(prev) ? prev : []).map(d => d.id === draftId ? updatedDraft : d));
         logAction('Definition Updated', `Draft Synced with Live: ${draft.name}`);
         toast({ 
             title: "Draft Synced", 
@@ -448,7 +427,7 @@ export default function Wiki() {
         lock: { userId: currentUser.id, userName: currentUser.name, expireAt: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString() }
     };
 
-    setDrafts(prev => [...prev, newDefinition]);
+    setDrafts(prev => [...(Array.isArray(prev) ? prev : []), newDefinition]);
     setIsNewDefinitionModalOpen(false);
     setIsTemplatesModalOpen(false);
     setSelectedDefinitionId(tempId);
@@ -459,7 +438,7 @@ export default function Wiki() {
   };
 
   const handleDuplicate = (id: string) => {
-    const sourceList = viewingMode === 'draft' ? drafts : definitions;
+    const sourceList = viewingMode === 'draft' ? (Array.isArray(drafts) ? drafts : []) : (Array.isArray(definitions) ? definitions : []);
     const original = findDefinition(sourceList, id);
     if (!original) return;
     
@@ -479,7 +458,7 @@ export default function Wiki() {
      const ids = Array.isArray(id) ? id : [id];
      const targetNames: string[] = [];
      const updateArchiveStatus = (items: Definition[]): Definition[] => {
-      return items.map(def => {
+      return (Array.isArray(items) ? items : []).map(def => {
         if (ids.includes(def.id)) {
             targetNames.push(def.name);
             return { ...def, isArchived: archive };
@@ -488,22 +467,23 @@ export default function Wiki() {
         return def;
       });
     };
-    setDefinitions(prev => updateArchiveStatus(prev || []));
+    setDefinitions(prev => updateArchiveStatus(Array.isArray(prev) ? prev : []));
     logAction(archive ? 'Definition Archived' : 'Definition Unarchived', `Targets: ${targetNames.join(', ')}`);
     toast({ title: archive ? 'Definition Archived' : 'Definition Unarchived' });
   };
 
   const handleDelete = (id: string) => {
-    const draft = drafts.find(d => d.id === id);
+    const safeDrafts = Array.isArray(drafts) ? drafts : [];
+    const draft = safeDrafts.find(d => d.id === id);
     const originalId = draft?.originalId;
-    const targetName = draft?.name || findDefinition(definitions, id)?.name;
+    const targetName = draft?.name || findDefinition(Array.isArray(definitions) ? definitions : [], id)?.name;
 
     const remove = (items: Definition[]): Definition[] => {
-      return items.filter(def => def.id !== id).map(def => def.children ? { ...def, children: remove(def.children) } : def);
+      return (Array.isArray(items) ? items : []).filter(def => def.id !== id).map(def => def.children ? { ...def, children: remove(def.children) } : def);
     };
 
-    setDefinitions(prev => remove(prev || []));
-    setDrafts(prev => prev.filter(d => d.id !== id && d.originalId !== id));
+    setDefinitions(prev => remove(Array.isArray(prev) ? prev : []));
+    setDrafts(prev => (Array.isArray(prev) ? prev : []).filter(d => d.id !== id && d.originalId !== id));
 
     if (selectedDefinitionId === id) {
       if (originalId) {
@@ -527,7 +507,8 @@ export default function Wiki() {
 
   const handlePublish = (draftId: string) => {
     if (!isAdmin) return;
-    const draft = drafts.find(d => d.id === draftId);
+    const safeDrafts = Array.isArray(drafts) ? drafts : [];
+    const draft = safeDrafts.find(d => d.id === draftId);
     if (!draft) return;
 
     const newRevision: Revision = {
@@ -556,11 +537,11 @@ export default function Wiki() {
         action: 'Approved',
         userName: currentUser.name,
         date: new Date().toISOString()
-    }, ...(prev || [])]);
+    }, ...(Array.isArray(prev) ? prev : [])]);
 
     const updateTreeRecursive = (items: Definition[]): { items: Definition[], found: boolean } => {
         let found = false;
-        const newItems = items.map(item => {
+        const newItems = (Array.isArray(items) ? items : []).map(item => {
             if (item.id === targetId) {
                 found = true;
                 return finalPublishedDef;
@@ -578,7 +559,7 @@ export default function Wiki() {
     };
 
     setDefinitions(prev => {
-        const { items, found } = updateTreeRecursive(prev || []);
+        const { items, found } = updateTreeRecursive(Array.isArray(prev) ? prev : []);
         if (found) return items;
 
         const moduleExists = items.find(m => m.name === draft.module);
@@ -587,7 +568,7 @@ export default function Wiki() {
         return [...items, { id: `mod-${Date.now()}`, name: draft.module, module: draft.module, revisions: [], isArchived: false, children: [finalPublishedDef], attachments: [], keywords: [], description: '', supportingTables: [] }];
     });
 
-    setDrafts(prev => prev.filter(d => d.id !== draftId));
+    setDrafts(prev => (Array.isArray(prev) ? prev : []).filter(d => d.id !== draftId));
     setViewingMode('live');
     setSelectedDefinitionId(finalPublishedDef.id);
     logAction('Approval Decision', `Approved & Published: ${draft.name}`);
@@ -596,7 +577,8 @@ export default function Wiki() {
 
   const handleReject = (draftId: string, comment: string, isRejection: boolean = true) => {
     if (!isAdmin) return;
-    const draft = drafts.find(d => d.id === draftId);
+    const safeDrafts = Array.isArray(drafts) ? drafts : [];
+    const draft = safeDrafts.find(d => d.id === draftId);
     if (!draft) return;
 
     const newMessage: DiscussionMessage = {
@@ -617,7 +599,7 @@ export default function Wiki() {
         lock: undefined
     };
 
-    setDrafts(prev => prev.map(d => d.id === draftId ? updatedDraft : d));
+    setDrafts(prev => (Array.isArray(prev) ? prev : []).map(d => d.id === draftId ? updatedDraft : d));
     setApprovalHistory(prev => [{
         id: Date.now().toString(),
         definitionId: draft.originalId || draft.id,
@@ -626,7 +608,7 @@ export default function Wiki() {
         userName: currentUser.name,
         date: new Date().toISOString(),
         comment
-    }, ...(prev || [])]);
+    }, ...(Array.isArray(prev) ? prev : [])]);
 
     logAction('Approval Decision', `${isRejection ? 'Rejected' : 'Requested Changes'}: ${draft.name}`);
     toast({ title: isRejection ? 'Rejected' : 'Changes Requested' });
@@ -634,7 +616,7 @@ export default function Wiki() {
 
   const handleEditClick = () => {
     if (!selectedDefinitionId) return;
-    const sourceList = viewingMode === 'draft' ? drafts : definitions;
+    const sourceList = viewingMode === 'draft' ? (Array.isArray(drafts) ? drafts : []) : (Array.isArray(definitions) ? definitions : []);
     const def = findDefinition(sourceList, selectedDefinitionId);
     if (!def) return;
 
@@ -644,7 +626,8 @@ export default function Wiki() {
         return;
     }
 
-    const existingDraft = drafts.find(d => d.originalId === def.id && d.authorId === currentUser.id);
+    const safeDrafts = Array.isArray(drafts) ? drafts : [];
+    const existingDraft = safeDrafts.find(d => d.originalId === def.id && d.authorId === currentUser.id);
     if (existingDraft) {
         handleSelectDefinition(existingDraft.id, undefined, 'draft');
         setIsEditing(true);
@@ -666,7 +649,7 @@ export default function Wiki() {
         baseVersionId: def.revisions[0]?.ticketId 
     };
 
-    setDrafts(prev => [...prev, newDraft]);
+    setDrafts(prev => [...(Array.isArray(prev) ? prev : []), newDraft]);
     setViewingMode('draft');
     setSelectedDefinitionId(draftId);
     setIsEditing(true);
@@ -684,9 +667,11 @@ export default function Wiki() {
 
   const categorizedDefinitions = useMemo(() => {
     const hasFeedbackFunc = (d: Definition) => (d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection');
+    const safeDrafts = Array.isArray(drafts) ? drafts : [];
+    const safeDefs = Array.isArray(definitions) ? definitions : [];
 
     const filterPublishedTree = (items: Definition[]): Definition[] => {
-        return items.reduce((acc: Definition[], item) => {
+        return (Array.isArray(items) ? items : []).reduce((acc: Definition[], item) => {
             const children = filterPublishedTree(item.children || []);
             const isMatch = children.length > 0 || (!item.isDraft && !item.isPendingApproval);
             if (isMatch) {
@@ -700,33 +685,37 @@ export default function Wiki() {
     };
 
     return {
-        userDrafts: drafts.filter(d => {
-            // CRITICAL: Suppress drafts that are currently in a fresh "Edit" branch from sidebar
+        userDrafts: safeDrafts.filter(d => {
             if (isEditing && isNewBranch && d.id === selectedDefinitionId) return false;
             return d.authorId === currentUser.id && d.isDraft && !d.isPendingApproval && !hasFeedbackFunc(d);
         }),
-        userPending: drafts.filter(d => d.authorId === currentUser.id && (d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d)))),
-        allPending: drafts.filter(d => d.isPendingApproval),
-        published: filterPublishedTree(definitions)
+        userPending: safeDrafts.filter(d => d.authorId === currentUser.id && (d.isPendingApproval || (d.isDraft && hasFeedbackFunc(d)))),
+        allPending: safeDrafts.filter(d => d.isPendingApproval),
+        published: filterPublishedTree(safeDefs)
     };
   }, [definitions, drafts, showArchived, showBookmarked, isBookmarked, currentUser.id, isEditing, isNewBranch, selectedDefinitionId]);
 
   const renderContent = () => {
+    const safeDefs = Array.isArray(definitions) ? definitions : [];
+    const safeDrafts = Array.isArray(drafts) ? drafts : [];
+    const safeTemplates = Array.isArray(templates) ? templates : [];
+    const safeUsers = Array.isArray(users) ? users : [];
+
     switch (activeView) {
-        case 'dashboard': return <Dashboard definitions={definitions} drafts={drafts} users={users} templates={templates} onNavigate={handleNavigate} />;
+        case 'dashboard': return <Dashboard definitions={safeDefs} drafts={safeDrafts} users={safeUsers} templates={safeTemplates} onNavigate={handleNavigate} />;
         case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} /></div>;
-        case 'template-management': return <div className="p-6"><TemplateManagement templates={templates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
+        case 'template-management': return <div className="p-6"><TemplateManagement templates={safeTemplates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
         case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} /></div>;
         case 'system-configuration': return <div className="p-6 h-full"><SystemConfiguration config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
         case 'reports': return (
             <div className="p-6 h-full">
                 <ReportsDashboard 
-                    users={users} 
-                    definitions={definitions} 
-                    drafts={drafts} 
-                    activityLogs={activityLogs} 
-                    approvalHistory={approvalHistory} 
-                    templates={templates}
+                    users={safeUsers} 
+                    definitions={safeDefs} 
+                    drafts={safeDrafts} 
+                    activityLogs={Array.isArray(activityLogs) ? activityLogs : []} 
+                    approvalHistory={Array.isArray(approvalHistory) ? approvalHistory : []} 
+                    templates={safeTemplates}
                     masterData={masterData}
                 />
             </div>
@@ -734,7 +723,7 @@ export default function Wiki() {
         case 'user-management': return (
             <div className="p-6 h-full">
                 <SecurityManagement 
-                    users={users} 
+                    users={safeUsers} 
                     onSaveUsers={setUsers} 
                     currentUser={currentUser}
                     isSuperAdmin={isSuperAdmin}
@@ -746,19 +735,19 @@ export default function Wiki() {
             <div className="h-full">
                 <ApprovalQueue 
                     pendingDefinitions={categorizedDefinitions.allPending} 
-                    history={approvalHistory}
-                    allDefinitions={definitions}
-                    drafts={drafts}
-                    templates={templates}
+                    history={Array.isArray(approvalHistory) ? approvalHistory : []}
+                    allDefinitions={safeDefs}
+                    drafts={safeDrafts}
+                    templates={safeTemplates}
                     onApprove={handlePublish} 
                     onReject={handleReject} 
                 />
             </div>
         );
         default: {
-            const defSource = viewingMode === 'draft' ? drafts : definitions;
+            const defSource = viewingMode === 'draft' ? safeDrafts : safeDefs;
             const selectedDef = findDefinition(defSource, selectedDefinitionId || '');
-            const liveDef = selectedDef?.originalId ? findDefinition(definitions, selectedDef.originalId) : null;
+            const liveDef = selectedDef?.originalId ? findDefinition(safeDefs, selectedDef.originalId) : null;
 
             return (
                 <div className="relative h-full">
@@ -771,7 +760,7 @@ export default function Wiki() {
                         onDelete={handleDelete}
                         onAcceptLiveChanges={handleAcceptLiveChanges}
                         isAdmin={isAdmin} 
-                        templates={templates}
+                        templates={safeTemplates}
                         isNewBranch={isNewBranch}
                         masterData={masterData}
                       />
@@ -779,8 +768,8 @@ export default function Wiki() {
                       <div className="p-6">
                         <DefinitionView 
                           definition={selectedDef} 
-                          allDefinitions={definitions}
-                          templates={templates}
+                          allDefinitions={safeDefs}
+                          templates={safeTemplates}
                           liveVersion={liveDef}
                           onEdit={handleEditClick} 
                           onDuplicate={handleDuplicate} 
@@ -840,7 +829,7 @@ export default function Wiki() {
                     variant="outline" 
                     size="sm" 
                     className="h-8 px-4 rounded-xl border-white/30 bg-white/10 hover:bg-white/20 text-white font-bold gap-2 transition-all active:scale-95"
-                    onClick={handleExitImpersonation}
+                    onClick={handleImpersonate.bind(null, '')} // Reset proxy back to Super Admin via simplified logic if needed, but here we exit
                   >
                       <LogOut className="h-3.5 w-3.5" />
                       Exit Session
@@ -851,7 +840,7 @@ export default function Wiki() {
               onRecentClick={() => setIsRecentModalOpen(true)}
               onNewDefinitionClick={(type) => type === 'template' ? setIsTemplatesModalOpen(true) : setIsNewDefinitionModalOpen(true)}
               isAdmin={isAdmin}
-              notifications={notifications}
+              notifications={Array.isArray(notifications) ? notifications : []}
               setNotifications={setNotifications}
               onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')}
               activeView={activeView}
@@ -923,8 +912,9 @@ export default function Wiki() {
         </div>
       </SidebarInset>
       <RecentViewsModal open={isRecentModalOpen} onOpenChange={setIsRecentModalOpen} onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')} />
-      <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={templates} isAdmin={isAdmin} masterData={masterData} systemConfig={systemConfig} />
-      <TemplatesModal open={isTemplatesModalOpen} onOpenChange={setIsTemplatesModalOpen} onUseTemplate={handleUseTemplate} managedTemplates={templates} />
+      <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={Array.isArray(templates) ? templates : []} isAdmin={isAdmin} masterData={masterData} systemConfig={systemConfig} />
+      <TemplatesModal open={isTemplatesModalOpen} onOpenChange={setIsTemplatesModalOpen} onUseTemplate={handleUseTemplate} managedTemplates={Array.isArray(templates) ? templates : []} />
     </SidebarProvider>
   );
 }
+
