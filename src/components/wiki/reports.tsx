@@ -80,7 +80,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         to: new Date()
     });
     
-    // Filtering and Pagination State
     const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
     const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
     const [currentPage, setCurrentPage] = useState(1);
@@ -89,8 +88,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     
     const { toast } = useToast();
 
-    // -- SHARED DATA CALCULATIONS --
-    
     const filteredLogs = useMemo(() => {
         const safeLogs = Array.isArray(activityLogs) ? activityLogs : [];
         if (!dateRange?.from) return safeLogs;
@@ -124,7 +121,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         return result;
     }, [approvalHistory, dateRange, approverFilter]);
 
-    // -- USER ACTIVITY REPORT LOGIC --
     const processedUserStats = useMemo(() => {
         const safeUsers = Array.isArray(users) ? users : [];
         return safeUsers.map(user => {
@@ -149,7 +145,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         });
     }, [users, filteredLogs, filteredHistory]);
 
-    // -- DEFINITION REPORT LOGIC --
     const definitionReportStats = useMemo(() => {
         const safeDefs = Array.isArray(definitions) ? definitions : [];
         const safeDrafts = Array.isArray(drafts) ? drafts : [];
@@ -208,7 +203,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         };
     }, [definitions, drafts, filteredLogs]);
 
-    // -- APPROVAL REPORT LOGIC --
     const approvalReportStats = useMemo(() => {
         const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
         const safeDrafts = Array.isArray(drafts) ? drafts : [];
@@ -217,7 +211,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         const rejected = filteredHistory.filter(h => h.action === 'Rejected' || h.action === 'Changes Requested');
         const pending = safeDrafts.filter(d => d.isPendingApproval);
 
-        // Calculate Average Decision Time
         let totalMinutes = 0;
         let countWithTime = 0;
         
@@ -270,13 +263,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         };
     }, [approvalHistory, filteredHistory, drafts]);
 
-    // -- TEMPLATE REPORT LOGIC --
     const templateReportStats = useMemo(() => {
         const safeTemplates = Array.isArray(templates) ? templates : [];
         const safeDefinitions = Array.isArray(definitions) ? definitions : [];
         const safeDrafts = Array.isArray(drafts) ? drafts : [];
 
-        // Count usage across tree
         const usageMap: Record<string, number> = {};
         const countUsage = (items: Definition[]) => {
             items.forEach(item => {
@@ -296,7 +287,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             usage: usageMap[t.id] || 0
         })).sort((a, b) => b.usage - a.usage);
 
-        // Track modifications from logs
         const modificationLogs = filteredLogs.filter(l => 
             l.activityType === 'Template Created' || l.activityType === 'Template Updated'
         );
@@ -323,12 +313,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         };
     }, [templates, definitions, drafts, filteredLogs]);
 
-    // -- SYSTEM USAGE REPORT LOGIC --
     const systemUsageStats = useMemo(() => {
-        // Helper to get short date string
         const getShortDate = (iso: string) => format(parseISO(iso), 'yyyy-MM-dd');
 
-        // 1. Definitions Created Per Day
         const creationsMap: Record<string, number> = {};
         filteredLogs.filter(l => l.activityType === 'Definition Created').forEach(l => {
             const d = getShortDate(l.occurredDate);
@@ -338,7 +325,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             .map(([date, count]) => ({ date, count }))
             .sort((a, b) => b.date.localeCompare(a.date));
 
-        // 2. Approvals Per Day
         const approvalsMap: Record<string, number> = {};
         filteredHistory.filter(h => h.action !== 'Submitted').forEach(h => {
             const d = getShortDate(h.date);
@@ -348,7 +334,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             .map(([date, count]) => ({ date, count }))
             .sort((a, b) => b.date.localeCompare(a.date));
 
-        // 3. Active Users Per Day
         const activeUsersMap: Record<string, Set<string>> = {};
         filteredLogs.forEach(l => {
             const d = getShortDate(l.occurredDate);
@@ -359,7 +344,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             .map(([date, users]) => ({ date, count: users.size }))
             .sort((a, b) => b.date.localeCompare(a.date));
 
-        // 4. Peak Login Hours
         const hoursMap: Record<number, number> = {};
         filteredLogs.filter(l => l.activityType === 'User Login').forEach(l => {
             const hour = parseISO(l.occurredDate).getHours();
@@ -369,16 +353,13 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             .map(([hour, count]) => ({ hour: parseInt(hour), count }))
             .sort((a, b) => b.count - a.count);
 
-        // 5. Most Active Modules
-        // We calculate this by checking activity logs related to definitions and looking up their module
         const moduleActivityMap: Record<string, number> = {};
         const safeDefs = Array.isArray(definitions) ? definitions : [];
         const safeDrafts = Array.isArray(drafts) ? drafts : [];
 
         filteredLogs.forEach(log => {
-            if (log.definitionName === 'System Governance' || log.definitionName === 'Template Governance') return;
+            if (log.definitionName === 'System Governance' || log.definitionName === 'Template Governance' || log.definitionName === 'Security Administration') return;
             
-            // Try to find module for this definition
             let def = (Array.isArray(safeDefs) ? safeDefs : []).find(d => d.name === log.definitionName);
             if (!def) def = (Array.isArray(safeDrafts) ? safeDrafts : []).find(d => d.name === log.definitionName);
             
@@ -716,7 +697,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         </div>
                     ) : selectedReport === 'template-report' ? (
                         <div className="space-y-10 animate-in fade-in duration-500">
-                            {/* Architecture Summary */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 px-2"><LayoutTemplate className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Template Architecture Summary</h3></div>
                                 <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
@@ -735,7 +715,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                {/* Adoption Tracking */}
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 px-2"><Activity className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Library Adoption Tracking</h3></div>
                                     <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
@@ -760,7 +739,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                     </Card>
                                 </div>
 
-                                {/* Modification History */}
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 px-2"><Clock className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Governance Evolution Audit</h3></div>
                                     <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
@@ -791,87 +769,152 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         </div>
                     ) : (
                         <div className="space-y-10 animate-in fade-in duration-500">
-                             {/* Daily Volume Trends */}
                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2 px-2"><Zap className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Definition Growth Velocity</h3></div>
+                                    <div className="flex items-center gap-2 px-2">
+                                        <Zap className="h-4 w-4 text-primary" />
+                                        <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Definition Creation Velocity</h3>
+                                    </div>
                                     <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow><TableHead className="px-6">Date</TableHead><TableHead className="text-right px-6">Created</TableHead></TableRow>
+                                                <TableRow>
+                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase">Calendar Date</TableHead>
+                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase">Creations</TableHead>
+                                                </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {systemUsageStats.creationsPerDay.slice(0, 7).map((row, i) => (
+                                                {systemUsageStats.creationsPerDay.map((row, i) => (
                                                     <TableRow key={i} className="h-12 border-slate-100 hover:bg-slate-50/50">
                                                         <TableCell className="px-6 font-mono text-xs">{row.date}</TableCell>
-                                                        <TableCell className="px-6 text-right font-black text-indigo-600">{row.count}</TableCell>
+                                                        <TableCell className="px-6 text-right font-black text-indigo-600 tabular-nums">{row.count}</TableCell>
                                                     </TableRow>
                                                 ))}
                                                 {systemUsageStats.creationsPerDay.length === 0 && (
-                                                    <TableRow><TableCell colSpan={2} className="h-24 text-center text-slate-400 italic">No creation data for period.</TableCell></TableRow>
+                                                    <TableRow><TableCell colSpan={2} className="h-24 text-center text-slate-400 italic">No creation data for selected period.</TableCell></TableRow>
                                                 )}
                                             </TableBody>
                                         </Table>
                                     </Card>
                                 </div>
+
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2 px-2"><Users className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Daily Active Users (DAU)</h3></div>
+                                    <div className="flex items-center gap-2 px-2">
+                                        <ClipboardCheck className="h-4 w-4 text-primary" />
+                                        <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Governance Throughput (Approvals)</h3>
+                                    </div>
                                     <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow><TableHead className="px-6">Date</TableHead><TableHead className="text-right px-6">Unique Users</TableHead></TableRow>
+                                                <TableRow>
+                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase">Calendar Date</TableHead>
+                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase">Decisions</TableHead>
+                                                </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {systemUsageStats.activeUsersPerDay.slice(0, 7).map((row, i) => (
+                                                {systemUsageStats.approvalsPerDay.map((row, i) => (
                                                     <TableRow key={i} className="h-12 border-slate-100 hover:bg-slate-50/50">
                                                         <TableCell className="px-6 font-mono text-xs">{row.date}</TableCell>
-                                                        <TableCell className="px-6 text-right font-black text-emerald-600">{row.count}</TableCell>
+                                                        <TableCell className="px-6 text-right font-black text-emerald-600 tabular-nums">{row.count}</TableCell>
                                                     </TableRow>
                                                 ))}
+                                                {systemUsageStats.approvalsPerDay.length === 0 && (
+                                                    <TableRow><TableCell colSpan={2} className="h-24 text-center text-slate-400 italic">No approval data for selected period.</TableCell></TableRow>
+                                                )}
                                             </TableBody>
                                         </Table>
                                     </Card>
                                 </div>
                              </div>
 
-                             {/* Pattern Analysis */}
                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2 px-2"><Timer className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Peak System Access Hours</h3></div>
+                                    <div className="flex items-center gap-2 px-2">
+                                        <Users className="h-4 w-4 text-primary" />
+                                        <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Daily Active Users (DAU)</h3>
+                                    </div>
                                     <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow><TableHead className="px-6">Hour (24h)</TableHead><TableHead className="text-right px-6">Login Volume</TableHead></TableRow>
+                                                <TableRow>
+                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase">Calendar Date</TableHead>
+                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase">Unique Users</TableHead>
+                                                </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {systemUsageStats.peakHours.slice(0, 5).map((row, i) => (
+                                                {systemUsageStats.activeUsersPerDay.map((row, i) => (
                                                     <TableRow key={i} className="h-12 border-slate-100 hover:bg-slate-50/50">
-                                                        <TableCell className="px-6 font-bold">{row.hour}:00 - {row.hour}:59</TableCell>
-                                                        <TableCell className="px-6 text-right font-black text-indigo-600">{row.count}</TableCell>
+                                                        <TableCell className="px-6 font-mono text-xs">{row.date}</TableCell>
+                                                        <TableCell className="px-6 text-right font-black text-primary tabular-nums">{row.count}</TableCell>
                                                     </TableRow>
                                                 ))}
+                                                {systemUsageStats.activeUsersPerDay.length === 0 && (
+                                                    <TableRow><TableCell colSpan={2} className="h-24 text-center text-slate-400 italic">No engagement data recorded.</TableCell></TableRow>
+                                                )}
                                             </TableBody>
                                         </Table>
                                     </Card>
                                 </div>
+
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2 px-2"><ShieldCheck className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Most Active Business Modules</h3></div>
+                                    <div className="flex items-center gap-2 px-2">
+                                        <Timer className="h-4 w-4 text-primary" />
+                                        <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Peak System Access Hours</h3>
+                                    </div>
                                     <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow><TableHead className="px-6">Business Module</TableHead><TableHead className="text-right px-6">Activity Volume</TableHead></TableRow>
+                                                <TableRow>
+                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase">Hour Block (24h)</TableHead>
+                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase">Login Volume</TableHead>
+                                                </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {systemUsageStats.activeModules.slice(0, 5).map((row, i) => (
+                                                {systemUsageStats.peakHours.map((row, i) => (
                                                     <TableRow key={i} className="h-12 border-slate-100 hover:bg-slate-50/50">
-                                                        <TableCell className="px-6 font-bold">{row.name}</TableCell>
-                                                        <TableCell className="px-6 text-right font-black text-primary">{row.count}</TableCell>
+                                                        <TableCell className="px-6 font-bold text-slate-700">{row.hour}:00 - {row.hour}:59</TableCell>
+                                                        <TableCell className="px-6 text-right font-black text-indigo-600 tabular-nums">{row.count}</TableCell>
                                                     </TableRow>
                                                 ))}
+                                                {systemUsageStats.peakHours.length === 0 && (
+                                                    <TableRow><TableCell colSpan={2} className="h-24 text-center text-slate-400 italic">No login data for period.</TableCell></TableRow>
+                                                )}
                                             </TableBody>
                                         </Table>
                                     </Card>
                                 </div>
+                             </div>
+
+                             <div className="space-y-4">
+                                <div className="flex items-center gap-2 px-2">
+                                    <ShieldCheck className="h-4 w-4 text-primary" />
+                                    <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Module Engagement Intensity</h3>
+                                </div>
+                                <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
+                                    <Table>
+                                        <TableHeader className="bg-slate-50 border-b">
+                                            <TableRow>
+                                                <TableHead className="px-6 h-12 text-[10px] font-black uppercase">Business Module</TableHead>
+                                                <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase">System Interaction Count</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {systemUsageStats.activeModules.map((row, i) => (
+                                                <TableRow key={i} className="h-14 border-slate-100 hover:bg-slate-50/50">
+                                                    <TableCell className="px-6 font-bold text-slate-900">{row.name}</TableCell>
+                                                    <TableCell className="px-6 text-right">
+                                                        <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100 font-black text-sm px-4 h-8 tabular-nums">
+                                                            {row.count}
+                                                        </Badge>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            {systemUsageStats.activeModules.length === 0 && (
+                                                <TableRow><TableCell colSpan={2} className="h-32 text-center text-slate-400 italic">No module interactions detected.</TableCell></TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </Card>
                              </div>
                         </div>
                     )}
