@@ -286,7 +286,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                 <CardContent className="p-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
                         <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Target / Context</Label>
+                            <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Definition Name</Label>
                             <div className="relative" ref={searchRef}>
                                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                                 <Input 
@@ -419,7 +419,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                                     </TableHead>
                                     <TableHead className="cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('definitionName')}>
                                         <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-slate-500">
-                                            Target
+                                            Definition Name
                                             <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'definitionName' ? "text-primary opacity-100" : "opacity-30")} />
                                         </div>
                                     </TableHead>
