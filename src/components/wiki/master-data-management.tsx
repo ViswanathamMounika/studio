@@ -199,15 +199,15 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                     </Button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Sidebar / Selector */}
-                    <div className="lg:col-span-4 space-y-6">
-                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
-                            <CardHeader className="bg-slate-50/50 border-b py-4 px-6">
-                                <CardTitle className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Data Perspective</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-6 space-y-6">
-                                <div className="space-y-2">
+                <div className="space-y-8">
+                    {/* Vertical Step 1: Category Selector (One by One Layout) */}
+                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden w-full">
+                        <CardHeader className="bg-slate-50/50 border-b py-4 px-6">
+                            <CardTitle className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Configuration Panel</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-8">
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end">
+                                <div className="md:col-span-4 space-y-2">
                                     <Label className="text-[11px] font-bold text-slate-500">Master Data Category</Label>
                                     <Select value={activeCategory} onValueChange={(v) => { setActiveCategory(v as MasterDataCategory); setSearchQuery(''); }}>
                                         <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold text-slate-900 shadow-sm focus:ring-primary/10">
@@ -229,146 +229,143 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                     </Select>
                                 </div>
 
-                                <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50 space-y-2">
-                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600">
-                                        <Info className="h-3 w-3" />
-                                        Category Scope
+                                <div className="md:col-span-5 space-y-2">
+                                    <Label className="text-[11px] font-bold text-slate-500">Global Guidelines</Label>
+                                    <div className="h-12 flex items-center px-4 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
+                                        <p className="text-[13px] text-indigo-900/70 font-medium truncate">
+                                            {activeLabelConfig.description}
+                                        </p>
                                     </div>
-                                    <p className="text-[13px] text-indigo-900/70 leading-relaxed font-medium">
-                                        {activeLabelConfig.description}
-                                    </p>
                                 </div>
 
-                                <div className="space-y-2 pt-2">
+                                <div className="md:col-span-3 space-y-2">
                                     <Label className="text-[11px] font-bold text-slate-500">Search Records</Label>
                                     <div className="relative">
-                                        <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                                        <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                                         <Input 
                                             placeholder="Filter entries..." 
-                                            className="pl-9 rounded-xl border-slate-200 h-10 bg-white" 
+                                            className="pl-10 rounded-xl border-slate-200 h-12 bg-white" 
                                             value={searchQuery} 
                                             onChange={e => setSearchQuery(e.target.value)} 
                                         />
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                    {/* Main Ledger */}
-                    <div className="lg:col-span-8">
-                        <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white min-h-[500px] flex flex-col">
-                            <CardHeader className="bg-white border-b py-5 px-8 flex flex-row items-center justify-between shrink-0">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                                        <ActiveIcon className="h-4.5 w-4.5 text-primary" />
-                                    </div>
-                                    <CardTitle className="text-xl font-bold text-slate-900">{activeLabelConfig.label}</CardTitle>
+                    {/* Vertical Step 2: Data Ledger (One by One Layout) */}
+                    <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white min-h-[400px] flex flex-col w-full">
+                        <CardHeader className="bg-white border-b py-5 px-8 flex flex-row items-center justify-between shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                                    <ActiveIcon className="h-4.5 w-4.5 text-primary" />
                                 </div>
-                                <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200">
-                                    {filteredItems.length} Total Records
-                                </Badge>
-                            </CardHeader>
-                            <CardContent className="p-0 flex-1">
-                                <Table>
-                                    <TableHeader className="bg-slate-50 border-b">
-                                        <TableRow className="hover:bg-transparent">
-                                            <TableHead className="py-4 px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Record Identity</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Guidelines</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Status</TableHead>
-                                            <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {filteredItems.map(item => {
-                                            const referred = isItemReferred(item, activeCategory);
-                                            return (
-                                                <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 transition-colors h-16">
-                                                    <TableCell className="px-8 font-bold text-slate-900">
-                                                        <div className="flex items-center gap-2">
-                                                            {item.name}
-                                                            {referred && (
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <Lock className="h-3 w-3 text-amber-500" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent className="rounded-lg shadow-xl border-none p-2 bg-slate-900 text-white">
-                                                                        <p className="text-[10px] font-bold">LOCKED: RECORD IN USE</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-500 text-xs italic max-w-xs truncate">
-                                                        {item.description || '—'}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge 
-                                                            className={cn(
-                                                                "font-black text-[9px] px-2 h-6 uppercase rounded-md tracking-wider border", 
-                                                                item.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-slate-50 text-slate-400 border-slate-200"
-                                                            )}
+                                <CardTitle className="text-xl font-bold text-slate-900">{activeLabelConfig.label} Registry</CardTitle>
+                            </div>
+                            <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200">
+                                {filteredItems.length} Total Records
+                            </Badge>
+                        </CardHeader>
+                        <CardContent className="p-0 flex-1">
+                            <Table>
+                                <TableHeader className="bg-slate-50 border-b">
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableHead className="py-4 px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Record Identity</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Scope / Guidelines</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Status</TableHead>
+                                        <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredItems.map(item => {
+                                        const referred = isItemReferred(item, activeCategory);
+                                        return (
+                                            <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 transition-colors h-16">
+                                                <TableCell className="px-8 font-bold text-slate-900">
+                                                    <div className="flex items-center gap-2">
+                                                        {item.name}
+                                                        {referred && (
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Lock className="h-3 w-3 text-amber-500" />
+                                                                </TooltipTrigger>
+                                                                <TooltipContent className="rounded-lg shadow-xl border-none p-2 bg-slate-900 text-white">
+                                                                    <p className="text-[10px] font-bold">LOCKED: RECORD IN USE</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-slate-500 text-xs italic max-w-lg truncate">
+                                                    {item.description || '—'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge 
+                                                        className={cn(
+                                                            "font-black text-[9px] px-2 h-6 uppercase rounded-md tracking-wider border", 
+                                                            item.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-slate-50 text-slate-400 border-slate-200"
+                                                        )}
+                                                    >
+                                                        {item.isActive ? 'Active' : 'Inactive'}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right px-8">
+                                                    <div className="flex justify-end gap-1">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => handleEditItem(item)}>
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            className={cn("h-8 w-8 transition-all", item.isActive ? "text-slate-300 hover:text-amber-600 hover:bg-amber-50" : "text-emerald-300 hover:text-emerald-600 hover:bg-emerald-50")}
+                                                            onClick={() => handleToggleStatus(item.id, item.isActive)}
                                                         >
-                                                            {item.isActive ? 'Active' : 'Inactive'}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-right px-8">
-                                                        <div className="flex justify-end gap-1">
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => handleEditItem(item)}>
-                                                                <Edit className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className={cn("h-8 w-8 transition-all", item.isActive ? "text-slate-300 hover:text-amber-600 hover:bg-amber-50" : "text-emerald-300 hover:text-emerald-600 hover:bg-emerald-50")}
-                                                                onClick={() => handleToggleStatus(item.id, item.isActive)}
-                                                            >
-                                                                {item.isActive ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-                                                            </Button>
-                                                            <AlertDialog>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-red-50 transition-all">
-                                                                        <Trash2 className="h-4 w-4" />
-                                                                    </Button>
-                                                                </AlertDialogTrigger>
-                                                                <AlertDialogContent className="rounded-[32px] border-none p-10 shadow-2xl">
-                                                                    <AlertDialogHeader className="space-y-4">
-                                                                        <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
-                                                                            <Trash2 className="h-8 w-8 text-red-600" />
-                                                                        </div>
-                                                                        <AlertDialogTitle className="text-2xl font-bold text-slate-900">Confirm Deletion</AlertDialogTitle>
-                                                                        <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
-                                                                            Are you sure you want to permanently remove <strong>{item.name}</strong> from the system metadata? This action cannot be reversed.
-                                                                        </AlertDialogDescription>
-                                                                    </AlertDialogHeader>
-                                                                    <AlertDialogFooter className="mt-10 gap-3">
-                                                                        <AlertDialogCancel className="rounded-xl font-bold h-11 px-8 border-slate-200">Cancel</AlertDialogCancel>
-                                                                        <AlertDialogAction onClick={() => handleDeleteItem(item.id)} className="rounded-xl bg-red-600 hover:bg-red-700 font-bold h-11 px-8">Delete Record</AlertDialogAction>
-                                                                    </AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                        {filteredItems.length === 0 && (
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="h-64 text-center">
-                                                    <div className="flex flex-col items-center justify-center gap-3">
-                                                        <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center">
-                                                            <Database className="h-6 w-6 text-slate-200" />
-                                                        </div>
-                                                        <p className="text-slate-400 font-bold text-sm italic">No records match your search criteria.</p>
+                                                            {item.isActive ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                                                        </Button>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-red-50 transition-all">
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent className="rounded-[32px] border-none p-10 shadow-2xl">
+                                                                <AlertDialogHeader className="space-y-4">
+                                                                    <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
+                                                                        <Trash2 className="h-8 w-8 text-red-600" />
+                                                                    </div>
+                                                                    <AlertDialogTitle className="text-2xl font-bold text-slate-900">Confirm Deletion</AlertDialogTitle>
+                                                                    <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
+                                                                        Are you sure you want to permanently remove <strong>{item.name}</strong> from the system metadata? This action cannot be reversed.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter className="mt-10 gap-3">
+                                                                    <AlertDialogCancel className="rounded-xl font-bold h-11 px-8 border-slate-200">Cancel</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => handleDeleteItem(item.id)} className="rounded-xl bg-red-600 hover:bg-red-700 font-bold h-11 px-8">Delete Record</AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                    </div>
+                                        );
+                                    })}
+                                    {filteredItems.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-64 text-center">
+                                                <div className="flex flex-col items-center justify-center gap-3">
+                                                    <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
+                                                        <Database className="h-6 w-6 text-slate-300" />
+                                                    </div>
+                                                    <p className="text-slate-400 font-bold text-sm italic">No records match your search criteria.</p>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
