@@ -346,8 +346,8 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                         </CardContent>
                     </Card>
 
-                    {/* DYNAMIC CONTENT AREA */}
-                    <div className="flex-1 min-h-0">
+                    {/* DYNAMIC CONTENT AREA - Height increased via flex-1 and min-h */}
+                    <div className="flex-1 min-h-[600px]">
                         {activeArea === 'users' && (
                             <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white h-full flex flex-col">
                                 <CardHeader className="bg-white border-b py-5 px-8 flex flex-row items-center gap-3">
@@ -368,7 +368,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                         </TableHeader>
                                         <TableBody>
                                             {filteredUsers.map(user => (
-                                                <TableRow key={user.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
+                                                <TableRow key={user.id} className="hover:bg-slate-50/50 border-slate-100 h-20">
                                                     <TableCell className="px-8">
                                                         <div className="flex flex-col">
                                                             <span className="font-bold text-slate-900">{user.name}</span>
@@ -434,7 +434,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                         </TableHeader>
                                         <TableBody>
                                             {safeRoles.map(role => (
-                                                <TableRow key={role.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
+                                                <TableRow key={role.id} className="hover:bg-slate-50/50 border-slate-100 h-20">
                                                     <TableCell className="px-8 font-bold text-slate-900">{role.name}</TableCell>
                                                     <TableCell>
                                                         <Badge variant="outline" className="font-bold text-[10px] uppercase text-indigo-600 bg-indigo-50 border-indigo-100">
@@ -484,7 +484,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                             </TableHeader>
                                             <TableBody>
                                                 {paginatedPermissions.map(perm => (
-                                                    <TableRow key={perm.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
+                                                    <TableRow key={perm.id} className="hover:bg-slate-50/50 border-slate-100 h-20">
                                                         <TableCell className="px-8">
                                                             <div className="flex items-center gap-2">
                                                                 <code className="text-[11px] bg-slate-100 px-2 py-0.5 rounded font-mono text-slate-600">{perm.id}</code>
