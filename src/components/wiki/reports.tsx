@@ -40,7 +40,8 @@ import {
     Activity,
     Settings2,
     Zap,
-    Timer
+    Timer,
+    Play
 } from 'lucide-react';
 import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, differenceInMinutes, differenceInHours } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -72,57 +73,83 @@ type SortConfig = {
 
 type ReportType = 'user-activity' | 'definition-report' | 'approval-report' | 'template-report' | 'system-usage';
 
+type AppliedFilters = {
+    reportType: ReportType;
+    dateRange: { from: Date; to: Date } | undefined;
+    approverFilter: string;
+};
+
 export default function ReportsDashboard({ users, definitions, drafts, activityLogs, approvalHistory, templates, masterData }: ReportsDashboardProps) {
+    // Input States (Pending)
     const [selectedReport, setSelectedReport] = useState<ReportType>('user-activity');
     const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>({
         from: subMonths(new Date(), 12),
         to: new Date()
     });
+    const [approverFilter, setApproverFilter] = useState<string>('all');
+
+    // Committed States (Data Trigger)
+    const [appliedFilters, setAppliedFilters] = useState<AppliedFilters | null>(null);
     
+    // UI Table States
     const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
     const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [approverFilter, setApproverFilter] = useState<string>('all');
     
     const { toast } = useToast();
 
-    // -- DATA PROCESSING LOGIC --
+    const handleRunReport = () => {
+        setAppliedFilters({
+            reportType: selectedReport,
+            dateRange,
+            approverFilter
+        });
+        setCurrentPage(1);
+        setColumnFilters({});
+        toast({
+            title: "Report Generated",
+            description: `Data retrieved for ${selectedReport.replace('-', ' ')}.`,
+        });
+    };
+
+    // -- DATA PROCESSING LOGIC (COMMITTED) --
 
     const filteredLogs = useMemo(() => {
         const safeLogs = Array.isArray(activityLogs) ? activityLogs : [];
-        if (!dateRange?.from) return safeLogs;
+        if (!appliedFilters?.dateRange?.from) return safeLogs;
         return safeLogs.filter(log => {
             const logDate = parseISO(log.occurredDate);
             return isWithinInterval(logDate, { 
-                start: startOfDay(dateRange.from), 
-                end: endOfDay(dateRange.to || dateRange.from) 
+                start: startOfDay(appliedFilters.dateRange!.from), 
+                end: endOfDay(appliedFilters.dateRange!.to || appliedFilters.dateRange!.from) 
             });
         });
-    }, [activityLogs, dateRange]);
+    }, [activityLogs, appliedFilters]);
 
     const filteredHistory = useMemo(() => {
         const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
         let result = safeHistory;
         
-        if (dateRange?.from) {
+        if (appliedFilters?.dateRange?.from) {
             result = result.filter(h => {
                 const hDate = parseISO(h.date);
                 return isWithinInterval(hDate, { 
-                    start: startOfDay(dateRange.from), 
-                    end: endOfDay(dateRange.to || dateRange.from) 
+                    start: startOfDay(appliedFilters.dateRange!.from), 
+                    end: endOfDay(appliedFilters.dateRange!.to || appliedFilters.dateRange!.from) 
                 });
             });
         }
         
-        if (approverFilter !== 'all') {
-            result = result.filter(h => h.userName === approverFilter);
+        if (appliedFilters?.approverFilter && appliedFilters.approverFilter !== 'all') {
+            result = result.filter(h => h.userName === appliedFilters.approverFilter);
         }
         
         return result;
-    }, [approvalHistory, dateRange, approverFilter]);
+    }, [approvalHistory, appliedFilters]);
 
     const processedUserStats = useMemo(() => {
+        if (!appliedFilters || appliedFilters.reportType !== 'user-activity') return [];
         const safeUsers = Array.isArray(users) ? users : [];
         return safeUsers.map(user => {
             const userLogs = filteredLogs.filter(l => l.userName === user.name);
@@ -144,9 +171,10 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 templates: userLogs.filter(l => l.activityType.includes('Template')).length
             };
         });
-    }, [users, filteredLogs, filteredHistory]);
+    }, [users, filteredLogs, filteredHistory, appliedFilters]);
 
     const definitionReportStats = useMemo(() => {
+        if (!appliedFilters || appliedFilters.reportType !== 'definition-report') return null;
         const safeDefs = Array.isArray(definitions) ? definitions : [];
         const safeDrafts = Array.isArray(drafts) ? drafts : [];
         
@@ -202,9 +230,10 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             creationsByUser,
             creationsByMonth
         };
-    }, [definitions, drafts, filteredLogs]);
+    }, [definitions, drafts, filteredLogs, appliedFilters]);
 
     const approvalReportStats = useMemo(() => {
+        if (!appliedFilters || appliedFilters.reportType !== 'approval-report') return null;
         const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
         const safeDrafts = Array.isArray(drafts) ? drafts : [];
         
@@ -262,9 +291,10 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             byApprover,
             oldestPending
         };
-    }, [approvalHistory, filteredHistory, drafts]);
+    }, [approvalHistory, filteredHistory, drafts, appliedFilters]);
 
     const templateReportStats = useMemo(() => {
+        if (!appliedFilters || appliedFilters.reportType !== 'template-report') return null;
         const safeTemplates = Array.isArray(templates) ? templates : [];
         const safeDefinitions = Array.isArray(definitions) ? definitions : [];
         const safeDrafts = Array.isArray(drafts) ? drafts : [];
@@ -312,9 +342,10 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             mostUsed,
             recentlyModified
         };
-    }, [templates, definitions, drafts, filteredLogs]);
+    }, [templates, definitions, drafts, filteredLogs, appliedFilters]);
 
     const systemUsageStats = useMemo(() => {
+        if (!appliedFilters || appliedFilters.reportType !== 'system-usage') return null;
         const getShortDate = (iso: string) => format(parseISO(iso), 'yyyy-MM-dd');
 
         const creationsMap: Record<string, number> = {};
@@ -379,7 +410,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             peakHours,
             activeModules
         };
-    }, [filteredLogs, filteredHistory, definitions, drafts]);
+    }, [filteredLogs, filteredHistory, definitions, drafts, appliedFilters]);
 
     const uniqueApprovers = useMemo(() => {
         const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
@@ -389,13 +420,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
     // -- TABLE CONTROLS --
 
-    const currentDataSource = useMemo(() => {
-        if (selectedReport === 'user-activity') return processedUserStats;
-        return [];
-    }, [selectedReport, processedUserStats]);
-
     const filteredAndSortedData = useMemo(() => {
-        let result = [...currentDataSource];
+        let result = [...processedUserStats];
         Object.entries(columnFilters).forEach(([key, value]) => {
             if (!value) return;
             const lowerValue = value.toLowerCase();
@@ -413,7 +439,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             });
         }
         return result;
-    }, [currentDataSource, columnFilters, sortConfig]);
+    }, [processedUserStats, columnFilters, sortConfig]);
 
     const totalPages = Math.ceil(filteredAndSortedData.length / pageSize);
     const paginatedData = useMemo(() => {
@@ -436,16 +462,22 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         setSortConfig({ key: 'name', direction: 'asc' });
         setCurrentPage(1);
         setApproverFilter('all');
+        setAppliedFilters(null);
     };
 
     const handleExport = async (formatType: 'xlsx' | 'csv' | 'pdf') => {
+        if (!appliedFilters) {
+            toast({ variant: 'destructive', title: "No Data", description: "Please generate a report before exporting." });
+            return;
+        }
+
         const timestamp = format(new Date(), 'yyyyMMdd_HHmm');
-        const filename = `MPM_Report_${selectedReport.replace('-', '_')}_${timestamp}`;
+        const filename = `MPM_Report_${appliedFilters.reportType.replace('-', '_')}_${timestamp}`;
         
         const XLSX = await import('xlsx');
         const wb = XLSX.utils.book_new();
 
-        if (selectedReport === 'user-activity') {
+        if (appliedFilters.reportType === 'user-activity') {
             const exportData = filteredAndSortedData.map(u => ({
                 'User Name': u.name,
                 'Email': u.email,
@@ -461,7 +493,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             }));
             const ws = XLSX.utils.json_to_sheet(exportData);
             XLSX.utils.book_append_sheet(wb, ws, "User Activity");
-        } else if (selectedReport === 'definition-report') {
+        } else if (appliedFilters.reportType === 'definition-report' && definitionReportStats) {
             const summary = [
                 { Category: 'Total Definitions', Count: definitionReportStats.counts.total },
                 { Category: 'Published', Count: definitionReportStats.counts.published },
@@ -473,7 +505,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Library Summary");
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(definitionReportStats.creationsByUser), "By Author");
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(definitionReportStats.creationsByMonth), "By Month");
-        } else if (selectedReport === 'approval-report') {
+        } else if (appliedFilters.reportType === 'approval-report' && approvalReportStats) {
             const metrics = [
                 { Metric: 'Total Requests', Value: approvalReportStats.metrics.totalRequests },
                 { Metric: 'Pending', Value: approvalReportStats.metrics.pendingCount },
@@ -488,11 +520,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 Author: p.submittedBy,
                 Submitted: p.submittedAt
             }))), "Oldest Pending");
-        } else if (selectedReport === 'template-report') {
+        } else if (appliedFilters.reportType === 'template-report' && templateReportStats) {
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([templateReportStats.counts]), "Architecture Overview");
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(templateReportStats.mostUsed), "Template Adoption");
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(templateReportStats.recentlyModified), "Modification Audit");
-        } else if (selectedReport === 'system-usage') {
+        } else if (appliedFilters.reportType === 'system-usage' && systemUsageStats) {
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.creationsPerDay), "Creation Velocity");
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.approvalsPerDay), "Governance Throughput");
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.activeUsersPerDay), "Daily Active Users");
@@ -516,12 +548,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             const { default: jsPDF } = await import('jspdf');
             const doc = new jsPDF('l', 'mm', 'a4');
             doc.setFontSize(18);
-            doc.text(`MedPoint Wiki: ${selectedReport.replace('-', ' ').toUpperCase()}`, 14, 20);
+            doc.text(`MedPoint Wiki: ${appliedFilters.reportType.replace('-', ' ').toUpperCase()}`, 14, 20);
             doc.setFontSize(10);
             doc.text(`Exported on: ${format(new Date(), 'PPP p')}`, 14, 28);
             doc.save(`${filename}.pdf`);
         }
-        toast({ title: "Export Success", description: `Report generated as ${formatType.toUpperCase()}.` });
     };
 
     return (
@@ -538,7 +569,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl h-10 px-6 gap-2 shadow-lg shadow-indigo-100">
+                            <Button disabled={!appliedFilters} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl h-10 px-6 gap-2 shadow-lg shadow-indigo-100 transition-all active:scale-95">
                                 <Download className="h-4 w-4" />
                                 Export Results
                             </Button>
@@ -554,7 +585,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 <div className="flex flex-wrap items-center gap-6">
                     <div className="flex-1 min-w-[240px] max-w-sm space-y-1.5">
                         <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Report Selection</Label>
-                        <Select value={selectedReport} onValueChange={(v) => { setSelectedReport(v as ReportType); clearAllFilters(); }}>
+                        <Select value={selectedReport} onValueChange={(v) => setSelectedReport(v as ReportType)}>
                             <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white font-bold">
                                 <div className="flex items-center gap-2">
                                     <BarChart3 className="h-4 w-4 text-primary" />
@@ -608,7 +639,14 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         </Popover>
                     </div>
 
-                    <div className="pt-6">
+                    <div className="pt-6 flex gap-2">
+                        <Button 
+                            className="h-10 rounded-xl font-bold gap-2 px-8 bg-primary hover:bg-primary/90 text-white shadow-md shadow-indigo-100 transition-all active:scale-95" 
+                            onClick={handleRunReport}
+                        >
+                            <Play className="h-4 w-4 fill-current" />
+                            Run Report
+                        </Button>
                         <Button variant="ghost" className="h-10 rounded-xl font-bold gap-2 text-slate-400 hover:bg-slate-50" onClick={clearAllFilters}>
                             <FilterX className="h-4 w-4" /> 
                             Reset
@@ -619,7 +657,19 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
             <ScrollArea className="flex-1">
                 <div className="p-8 max-w-[1600px] mx-auto pb-32">
-                    {selectedReport === 'user-activity' ? (
+                    {!appliedFilters ? (
+                        <div className="h-[500px] flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                            <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center">
+                                <Settings2 className="h-10 w-10 text-slate-300" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-bold text-slate-900">Report Configuration Required</h3>
+                                <p className="text-sm text-slate-500 max-w-sm font-medium leading-relaxed">
+                                    Please select your report type and observation period in the header above, then click <strong>Run Report</strong> to generate the audit data.
+                                </p>
+                            </div>
+                        </div>
+                    ) : appliedFilters.reportType === 'user-activity' ? (
                         <div className="space-y-4 animate-in fade-in duration-500">
                             <div className="flex items-center gap-2 px-2">
                                 <Users className="h-4 w-4 text-primary" />
@@ -629,7 +679,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 <Table>
                                     <TableHeader className="bg-slate-50 border-b">
                                         <TableRow>
-                                            <ReportHeader label="User Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 min-w-[200px]" />
+                                            <ReportHeader label="User Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 flex-1 min-w-[200px]" />
                                             <ReportHeader label="Last Login" id="lastLogin" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastLogin} onFilterChange={handleFilterChange} className="min-w-[160px]" />
                                             <ReportHeader label="Logins" id="logins" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.logins} onFilterChange={handleFilterChange} className="min-w-[100px]" />
                                             <ReportHeader label="Last Activity" id="lastActivity" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastActivity} onFilterChange={handleFilterChange} className="min-w-[140px]" />
@@ -673,7 +723,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </Card>
                             <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
                         </div>
-                    ) : selectedReport === 'definition-report' ? (
+                    ) : appliedFilters.reportType === 'definition-report' && definitionReportStats ? (
                         <div className="space-y-10 animate-in fade-in duration-500">
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 px-2"><FilePieChart className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Library Summary Ledger</h3></div>
@@ -708,7 +758,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 </div>
                             </div>
                         </div>
-                    ) : selectedReport === 'approval-report' ? (
+                    ) : appliedFilters.reportType === 'approval-report' && approvalReportStats ? (
                         <div className="space-y-10 animate-in fade-in duration-500">
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 px-2"><ClipboardCheck className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Approval Workflow Performance</h3></div>
@@ -778,7 +828,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 </div>
                             </div>
                         </div>
-                    ) : selectedReport === 'template-report' ? (
+                    ) : appliedFilters.reportType === 'template-report' && templateReportStats ? (
                         <div className="space-y-10 animate-in fade-in duration-500">
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 px-2"><LayoutTemplate className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Template Architecture Summary</h3></div>
@@ -850,7 +900,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 </div>
                             </div>
                         </div>
-                    ) : (
+                    ) : appliedFilters.reportType === 'system-usage' && systemUsageStats ? (
                         <div className="space-y-10 animate-in fade-in duration-500">
                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                                 <div className="space-y-4">
@@ -999,6 +1049,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                     </Table>
                                 </Card>
                              </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-40">
+                            <Activity className="h-12 w-12 text-slate-200 mb-4" />
+                            <p className="text-slate-400 font-medium">Ready to analyze system data.</p>
                         </div>
                     )}
                 </div>
