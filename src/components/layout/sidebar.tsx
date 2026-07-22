@@ -71,6 +71,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     const appName = systemConfig?.settings.appName || 'MedPOINT';
 
     const wikiNavItems = [
+        { id: 'activity-logs', label: 'Activity Logs', icon: History },
         { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
         { id: 'acronyms', label: 'Healthcare Acronyms', icon: GanttChart },
         { id: 'clients', label: 'Clients', icon: Users },
@@ -135,8 +136,8 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                         <SidebarMenuItem>
                                             <CollapsibleTrigger asChild>
                                                 <SidebarMenuButton 
-                                                    isActive={activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'activity-logs' || activeView === 'template-management' || isAdminViewActive(activeView)}
-                                                    className={cn("font-semibold", (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'activity-logs' || activeView === 'template-management' || isAdminViewActive(activeView)) && "text-primary")}
+                                                    isActive={activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || isAdminViewActive(activeView)}
+                                                    className={cn("font-semibold", (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || isAdminViewActive(activeView)) && "text-primary")}
                                                 >
                                                     <Library className="h-4 w-4" />
                                                     <span>MPM Data Definitions</span>
@@ -164,16 +165,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                     >
                                                         <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
                                                         Approvals
-                                                    </SidebarMenuSubButton>
-                                                </SidebarMenuSubItem>
-                                                <SidebarMenuSubItem>
-                                                    <SidebarMenuSubButton 
-                                                        isActive={activeView === 'activity-logs'}
-                                                        onClick={() => handleNavigate('activity-logs')}
-                                                        className="h-7 text-[12px]"
-                                                    >
-                                                        <History className="h-3.5 w-3.5 mr-1" />
-                                                        Activity Logs
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                                 <SidebarMenuSubItem>
@@ -334,4 +325,3 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
         </Sidebar>
     );
 }
-

@@ -195,7 +195,7 @@ export default function Wiki() {
   }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    const adminViews = ['dashboard', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration', 'reports', 'activity-logs'];
+    const adminViews = ['dashboard', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration', 'reports'];
     const needsAdmin = adminViews.includes(view);
     if (needsAdmin && !isAdmin) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
