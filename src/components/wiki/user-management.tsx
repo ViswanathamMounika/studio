@@ -14,7 +14,6 @@ import {
   DialogTitle,
   DialogFooter,
   DialogClose,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -45,7 +44,10 @@ import {
     Key,
     Shield,
     UserCircle2,
-    Terminal
+    Terminal,
+    ChevronLeft,
+    ChevronRight,
+    KeyRound
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -77,6 +79,10 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
     const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
     const [editingPermission, setEditingPermission] = useState<Partial<Permission> | null>(null);
 
+    // Permission Pagination State
+    const [permPage, setPermPage] = useState(1);
+    const [permPageSize, setPermPageSize] = useState(6);
+
     const { toast } = useToast();
 
     // -- USER LOGIC --
@@ -87,6 +93,20 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
             user.role.toLowerCase().includes(userSearch.toLowerCase())
         );
     }, [users, userSearch]);
+
+    // -- PERMISSION LOGIC --
+    const filteredPermissions = useMemo(() => {
+        return permissions.filter(p => 
+            p.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+            p.description.toLowerCase().includes(userSearch.toLowerCase())
+        );
+    }, [permissions, userSearch]);
+
+    const totalPermPages = Math.ceil(filteredPermissions.length / permPageSize);
+    const paginatedPermissions = useMemo(() => {
+        const start = (permPage - 1) * permPageSize;
+        return filteredPermissions.slice(start, start + permPageSize);
+    }, [filteredPermissions, permPage, permPageSize]);
 
     const handleEditUser = (user: UserAccount) => {
         setEditingUser({ ...user });
@@ -145,7 +165,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         toast({ title: "Role Removed" });
     };
 
-    // -- PERMISSION LOGIC --
+    // -- PERMISSION MUTATION LOGIC --
     const handleAddPermission = () => {
         setEditingPermission({ id: `p_${Date.now()}`, name: '', description: '' });
         setIsPermissionModalOpen(true);
@@ -222,6 +242,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                     <TabsTrigger value="permissions" className="rounded-lg px-6 font-bold">Permissions (Securables)</TabsTrigger>
                 </TabsList>
 
+                {/* --- USERS TAB --- */}
                 <TabsContent value="users" className="flex-1 m-0 space-y-4">
                     <div className="flex justify-between items-center">
                         <div className="relative w-72">
@@ -274,6 +295,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                     </Card>
                 </TabsContent>
 
+                {/* --- ROLES TAB --- */}
                 <TabsContent value="roles" className="flex-1 m-0 space-y-4">
                     <div className="flex justify-end">
                         <Button onClick={handleAddRole} className="bg-indigo-600 font-bold rounded-xl px-6"><Plus className="mr-2 h-4 w-4" />Create Role</Button>
@@ -313,35 +335,134 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="permissions" className="flex-1 m-0 space-y-4">
-                    <div className="flex justify-end">
-                        <Button onClick={handleAddPermission} className="bg-indigo-600 font-bold rounded-xl px-6"><Plus className="mr-2 h-4 w-4" />Add Permission</Button>
+                {/* --- PERMISSIONS GRID TAB --- */}
+                <TabsContent value="permissions" className="flex-1 m-0 space-y-6 flex flex-col">
+                    <div className="flex justify-between items-center">
+                        <div className="relative w-72">
+                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Input 
+                                placeholder="Search permissions..." 
+                                className="pl-9 rounded-xl" 
+                                value={userSearch} 
+                                onChange={e => {
+                                    setUserSearch(e.target.value);
+                                    setPermPage(1);
+                                }} 
+                            />
+                        </div>
+                        <Button onClick={handleAddPermission} className="bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl px-6 shadow-md shadow-indigo-100">
+                            <Plus className="mr-2 h-4 w-4" />
+                            New Permission
+                        </Button>
                     </div>
-                    <Card className="rounded-2xl border-slate-200 overflow-hidden shadow-sm">
-                        <Table>
-                            <TableHeader className="bg-slate-50 border-b">
-                                <TableRow>
-                                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-4 px-6">Permission Name</TableHead>
-                                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Description</TableHead>
-                                    <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-500">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {permissions.map(perm => (
-                                    <TableRow key={perm.id} className="hover:bg-slate-50/50">
-                                        <TableCell className="px-6 font-bold text-slate-900">{perm.name}</TableCell>
-                                        <TableCell className="text-slate-500 text-xs">{perm.description}</TableCell>
-                                        <TableCell className="text-right px-6">
-                                            <div className="flex justify-end gap-1">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={() => { setEditingPermission({ ...perm }); setIsPermissionModalOpen(true); }}><Edit className="h-4 w-4" /></Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive" onClick={() => handleDeletePermission(perm.id)}><Trash2 className="h-4 w-4" /></Button>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 content-start">
+                        {paginatedPermissions.map(perm => (
+                            <Card key={perm.id} className="rounded-2xl border-slate-200 hover:border-primary/20 hover:shadow-md transition-all group bg-white overflow-hidden">
+                                <div className="p-5">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-9 w-9 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 group-hover:bg-indigo-600 group-hover:border-indigo-600 transition-colors">
+                                                <KeyRound className="h-4.5 w-4.5 text-indigo-600 group-hover:text-white transition-colors" />
                                             </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </Card>
+                                            <div>
+                                                <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{perm.name}</h3>
+                                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-0.5">ID: {perm.id}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-indigo-600" onClick={() => { setEditingPermission({ ...perm }); setIsPermissionModalOpen(true); }}>
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent className="rounded-[24px] border-none p-8">
+                                                    <AlertDialogHeader>
+                                                        <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
+                                                            <Trash2 className="h-6 w-6 text-red-600" />
+                                                        </div>
+                                                        <AlertDialogTitle className="text-2xl font-bold">Delete Permission?</AlertDialogTitle>
+                                                        <AlertDialogDescription className="text-slate-500 text-sm">
+                                                            Are you sure you want to delete the <strong>{perm.name}</strong> securable? This cannot be undone if it is already in use by active roles.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter className="mt-8 gap-3">
+                                                        <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeletePermission(perm.id)} className="rounded-xl bg-red-600 font-bold px-6">Confirm Delete</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-slate-50">
+                                        <p className="text-xs text-slate-500 leading-relaxed min-h-[40px]">
+                                            {perm.description || <span className="italic text-slate-300">No guideline provided.</span>}
+                                        </p>
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                        {filteredPermissions.length === 0 && (
+                            <div className="col-span-full h-64 flex flex-col items-center justify-center bg-slate-50/50 rounded-[32px] border-2 border-dashed border-slate-200">
+                                <KeyRound className="h-10 w-10 text-slate-200 mb-2" />
+                                <p className="text-sm font-bold text-slate-400">No securables match your criteria.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Permission Pagination Controls */}
+                    {filteredPermissions.length > 0 && (
+                        <div className="flex items-center justify-between p-6 bg-white border border-slate-200 rounded-2xl shadow-sm mt-auto">
+                            <div className="flex items-center gap-4">
+                                <div className="text-[11px] font-black uppercase text-slate-400 tracking-widest">
+                                    Showing {(permPage - 1) * permPageSize + 1} to {Math.min(permPage * permPageSize, filteredPermissions.length)} of {filteredPermissions.length} securables
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Items per page:</span>
+                                    <Select value={String(permPageSize)} onValueChange={(v) => { setPermPageSize(Number(v)); setPermPage(1); }}>
+                                        <SelectTrigger className="h-8 w-16 rounded-lg text-xs font-bold border-slate-200">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="6">6</SelectItem>
+                                            <SelectItem value="12">12</SelectItem>
+                                            <SelectItem value="24">24</SelectItem>
+                                            <SelectItem value="48">48</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="rounded-xl h-9 px-4 font-bold border-slate-200"
+                                    onClick={() => setPermPage(p => Math.max(1, p - 1))}
+                                    disabled={permPage === 1}
+                                >
+                                    <ChevronLeft className="h-4 w-4 mr-1.5" />
+                                    Prev
+                                </Button>
+                                <div className="flex items-center justify-center min-w-[3rem] h-9 rounded-xl bg-slate-50 border border-slate-200 text-sm font-black text-indigo-600">
+                                    {permPage} / {totalPermPages || 1}
+                                </div>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="rounded-xl h-9 px-4 font-bold border-slate-200"
+                                    onClick={() => setPermPage(p => Math.min(totalPermPages, p + 1))}
+                                    disabled={permPage >= totalPermPages}
+                                >
+                                    Next
+                                    <ChevronRight className="h-4 w-4 ml-1.5" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </TabsContent>
             </Tabs>
 
@@ -416,7 +537,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                     <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><Key className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">Securable Permission</DialogTitle></div></div>
                     <div className="p-8 space-y-6 bg-slate-50/30">
                         <div className="space-y-4">
-                            <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Internal Name</Label><Input value={editingPermission?.name || ''} onChange={e => setEditingPermission(p => p ? ({ ...p, name: e.target.value }) : null)} className="rounded-xl h-11 font-bold" /></div>
+                            <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Internal Name</Label><Input value={editingPermission?.name || ''} onChange={e => setEditingPermission(p => p ? ({ ...p, name: e.target.value }) : null)} className="rounded-xl border-slate-200 h-11 font-bold" /></div>
                             <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Guideline / Scope</Label><Textarea value={editingPermission?.description || ''} onChange={e => setEditingPermission(p => p ? ({ ...p, description: e.target.value }) : null)} className="rounded-xl min-h-[80px]" /></div>
                         </div>
                     </div>
@@ -426,3 +547,15 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         </div>
     );
 }
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
