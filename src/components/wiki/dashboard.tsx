@@ -16,7 +16,11 @@ import {
     Activity,
     PieChart as PieChartIcon,
     BarChart3,
-    ArrowUpRight
+    ArrowUpRight,
+    UserCheck,
+    UserX,
+    FileCheck,
+    AlertCircle
 } from 'lucide-react';
 import { 
     PieChart, 
@@ -48,95 +52,84 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
   
   // -- DATA PROCESSING --
   
-  const countDefinitions = (items: Definition[]): { published: number, archived: number } => {
-    let published = 0;
-    let archived = 0;
+  const countPublishedDefinitions = (items: Definition[]): number => {
+    let count = 0;
     items.forEach(item => {
       if (item.description || item.shortDescription) {
-        if (item.isArchived) archived++;
-        else published++;
+        if (!item.isArchived) count++;
       }
       if (item.children) {
-        const childCounts = countDefinitions(item.children);
-        published += childCounts.published;
-        archived += childCounts.archived;
+        count += countPublishedDefinitions(item.children);
       }
     });
-    return { published, archived };
+    return count;
   };
 
-  const stats = useMemo(() => {
-    const pubStats = countDefinitions(definitions);
+  const metrics = useMemo(() => {
+    const published = countPublishedDefinitions(definitions);
     const pending = drafts.filter(d => d.isPendingApproval).length;
-    const draftOnly = drafts.filter(d => d.isDraft && !d.isPendingApproval).length;
+    const draft = drafts.filter(d => d.isDraft && !d.isPendingApproval).length;
     const rejected = drafts.filter(d => (d.discussions || []).some(m => m.type === 'rejection')).length;
     
     return {
-        published: pubStats.published,
-        archived: pubStats.archived,
-        pending,
-        draft: draftOnly,
-        rejected,
-        total: pubStats.published + pubStats.archived + drafts.length
+        // User Metrics
+        totalUsers: users.length,
+        activeUsers: users.filter(u => u.status === 'Active').length,
+        inactiveUsers: users.filter(u => u.status === 'Inactive').length,
+        
+        // Definition Metrics
+        totalDefinitions: published + drafts.length,
+        publishedDefinitions: published,
+        draftDefinitions: draft,
+        pendingApprovals: pending,
+        rejectedDefinitions: rejected,
+
+        // Template Metrics
+        totalTemplates: templates.length,
+        activeTemplates: templates.filter(t => t.isActive).length
     };
-  }, [definitions, drafts]);
+  }, [definitions, drafts, users, templates]);
 
-  const definitionStatusData = useMemo(() => [
-    { name: 'Published', value: stats.published, color: '#10b981' }, // emerald-500
-    { name: 'Pending Review', value: stats.pending, color: '#3b82f6' }, // blue-500
-    { name: 'Drafts', value: stats.draft, color: '#f59e0b' }, // amber-500
-    { name: 'Rejected', value: stats.rejected, color: '#ef4444' }, // red-500
-    { name: 'Archived', value: stats.archived, color: '#94a3b8' }, // slate-400
-  ].filter(d => d.value > 0), [stats]);
+  const definitionChartData = useMemo(() => [
+    { name: 'Published Definitions', value: metrics.publishedDefinitions, color: '#10b981' }, 
+    { name: 'Pending Approvals', value: metrics.pendingApprovals, color: '#3b82f6' }, 
+    { name: 'Draft Definitions', value: metrics.draftDefinitions, color: '#f59e0b' }, 
+    { name: 'Rejected Definitions', value: metrics.rejectedDefinitions, color: '#ef4444' }, 
+  ].filter(d => d.value > 0), [metrics]);
 
-  const userRoleData = useMemo(() => {
-    const roles = ['Super Admin', 'Admin', 'Approver', 'Standard User'];
-    return roles.map(role => ({
-        name: role,
-        count: users.filter(u => u.role === role).length
-    }));
-  }, [users]);
+  const userStatusData = useMemo(() => [
+    { name: 'Active Users', count: metrics.activeUsers, color: '#10b981' },
+    { name: 'Inactive Users', count: metrics.inactiveUsers, color: '#94a3b8' }
+  ], [metrics]);
 
-  const templateUsageData = useMemo(() => {
-    const usageMap: Record<string, number> = {};
-    const countUsage = (items: Definition[]) => {
-        items.forEach(item => {
-            if (item.templateId) usageMap[item.templateId] = (usageMap[item.templateId] || 0) + 1;
-            if (item.children) countUsage(item.children);
-        });
-    };
-    countUsage(definitions);
-    countUsage(drafts);
-
-    return templates.map(t => ({
-        name: t.name,
-        usage: usageMap[t.id] || 0
-    })).sort((a, b) => b.usage - a.usage).slice(0, 5);
-  }, [definitions, drafts, templates]);
+  const templateStatusData = useMemo(() => [
+    { name: 'Active Templates', value: metrics.activeTemplates, color: '#6366f1' },
+    { name: 'Inactive Templates', value: metrics.totalTemplates - metrics.activeTemplates, color: '#e2e8f0' }
+  ], [metrics]);
 
   // -- COMPONENTS --
 
-  const SummaryCard = ({ title, value, icon: Icon, colorClass, onClick }: any) => (
-    <Card 
-        className="rounded-2xl border-slate-200 shadow-sm hover:shadow-md hover:border-primary/20 transition-all cursor-pointer bg-white group overflow-hidden"
-        onClick={onClick}
-    >
-      <div className={cn("h-1.5 w-full", colorClass)} />
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start mb-4">
-            <div className={cn("p-2.5 rounded-xl transition-colors bg-slate-50 border border-slate-100 group-hover:border-primary/20 group-hover:bg-primary/5")}>
-                <Icon className={cn("h-5 w-5", colorClass.replace('bg-', 'text-'))} />
-            </div>
-            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                <ArrowUpRight className="h-4 w-4 text-slate-400" />
-            </Button>
+  const MetricGroup = ({ title, icon: Icon, children }: any) => (
+    <div className="space-y-4">
+        <div className="flex items-center gap-2 px-2">
+            <Icon className="h-4 w-4 text-slate-400" />
+            <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-widest">{title}</h3>
         </div>
-        <div className="space-y-1">
-            <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest leading-none">
-                {title}
-            </p>
-            <div className="text-3xl font-black tracking-tight text-slate-900">{value}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {children}
         </div>
+    </div>
+  );
+
+  const SummaryCard = ({ label, value, colorClass }: any) => (
+    <Card className="rounded-2xl border-slate-200 shadow-sm bg-white overflow-hidden">
+      <CardContent className="p-5 flex flex-col items-center text-center space-y-1">
+        <div className={cn("text-2xl font-black tracking-tight", colorClass || "text-slate-900")}>
+            {value}
+        </div>
+        <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+            {label}
+        </p>
       </CardContent>
     </Card>
   );
@@ -146,7 +139,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
       <div className="flex justify-between items-end px-2">
         <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
-            <p className="text-muted-foreground font-medium italic">High-level operational overview of application health and library metrics.</p>
+            <p className="text-muted-foreground font-medium italic">Operational overview of users, definitions, and templates.</p>
         </div>
         <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100 font-bold gap-1.5 h-8 px-4 rounded-xl">
             <Activity className="h-3.5 w-3.5" />
@@ -154,59 +147,72 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         </Badge>
       </div>
 
-      {/* --- TOP SUMMARY ROW --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <SummaryCard 
-            title="User Directory" 
-            value={users.length} 
-            icon={Users} 
-            colorClass="bg-indigo-500"
-            onClick={() => onNavigate('user-management')}
-          />
-          <SummaryCard 
-            title="Live Definitions" 
-            value={stats.published} 
-            icon={CheckCircle2} 
-            colorClass="bg-emerald-500"
-            onClick={() => onNavigate('definitions')}
-          />
-          <SummaryCard 
-            title="Pending Review" 
-            value={stats.pending} 
-            icon={Clock} 
-            colorClass="bg-blue-500"
-            onClick={() => onNavigate('approval-workflow')}
-          />
-          <SummaryCard 
-            title="Total Blueprints" 
-            value={templates.length} 
-            icon={LayoutTemplate} 
-            colorClass="bg-violet-500"
-            onClick={() => onNavigate('template-management')}
-          />
+      {/* --- USERS SECTION --- */}
+      <div className="space-y-6">
+        <MetricGroup title="User Management" icon={Users}>
+            <SummaryCard label="Total Users" value={metrics.totalUsers} colorClass="text-indigo-600" />
+            <SummaryCard label="Active Users" value={metrics.activeUsers} colorClass="text-emerald-600" />
+            <SummaryCard label="Inactive Users" value={metrics.inactiveUsers} colorClass="text-slate-400" />
+        </MetricGroup>
+
+        <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b py-4 px-8">
+                <CardTitle className="text-sm font-bold text-slate-800">User Status Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent className="p-8">
+                <div className="h-[200px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={userStatusData} layout="vertical" margin={{ left: 40, right: 40 }}>
+                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                            <XAxis type="number" hide />
+                            <YAxis 
+                                dataKey="name" 
+                                type="category" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }}
+                                width={120}
+                            />
+                            <RechartsTooltip 
+                                cursor={{ fill: '#f8fafc' }}
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                            />
+                            <Bar 
+                                dataKey="count" 
+                                radius={[0, 8, 8, 0]} 
+                                barSize={32}
+                            >
+                                {userStatusData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </CardContent>
+        </Card>
       </div>
 
-      {/* --- CHARTS ROW 1: CONTENT & ROLES --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Definition Status Breakdown (Pie) */}
-          <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden flex flex-col">
-              <CardHeader className="bg-slate-50/50 border-b py-5 px-8 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <PieChartIcon className="h-4.5 w-4.5 text-primary" />
-                    </div>
-                    <div>
-                        <CardTitle className="text-lg font-bold text-slate-900">Library Lifecycle</CardTitle>
-                        <CardDescription className="text-xs">Definition status distribution</CardDescription>
-                    </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-8 flex-1">
+      {/* --- DEFINITIONS SECTION --- */}
+      <div className="space-y-6">
+        <MetricGroup title="Definition Library" icon={FileText}>
+            <SummaryCard label="Total Definitions" value={metrics.totalDefinitions} colorClass="text-slate-900" />
+            <SummaryCard label="Published Definitions" value={metrics.publishedDefinitions} colorClass="text-emerald-600" />
+            <SummaryCard label="Draft Definitions" value={metrics.draftDefinitions} colorClass="text-amber-500" />
+            <SummaryCard label="Pending Approvals" value={metrics.pendingApprovals} colorClass="text-blue-600" />
+            <SummaryCard label="Rejected Definitions" value={metrics.rejectedDefinitions} colorClass="text-red-600" />
+        </MetricGroup>
+
+        <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b py-4 px-8">
+                <CardTitle className="text-sm font-bold text-slate-800">Definition Lifecycle distribution</CardTitle>
+            </CardHeader>
+            <CardContent className="p-8">
                 <div className="h-[350px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
-                                data={definitionStatusData}
+                                data={definitionChartData}
                                 cx="50%"
                                 cy="50%"
                                 innerRadius={80}
@@ -214,7 +220,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                                 paddingAngle={5}
                                 dataKey="value"
                             >
-                                {definitionStatusData.map((entry, index) => (
+                                {definitionChartData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>
@@ -225,136 +231,51 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                                 verticalAlign="bottom" 
                                 height={36} 
                                 iconType="circle"
-                                formatter={(value) => <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">{value}</span>}
+                                formatter={(value) => <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{value}</span>}
                             />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
-              </CardContent>
-          </Card>
+            </CardContent>
+        </Card>
+      </div>
 
-          {/* User Role Breakdown (Bar) */}
-          <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden flex flex-col">
-              <CardHeader className="bg-slate-50/50 border-b py-5 px-8 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-indigo-100 flex items-center justify-center">
-                        <Users2 className="h-4.5 w-4.5 text-indigo-600" />
-                    </div>
-                    <div>
-                        <CardTitle className="text-lg font-bold text-slate-900">User Population</CardTitle>
-                        <CardDescription className="text-xs">Active accounts by system role</CardDescription>
-                    </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-8 flex-1">
-                <div className="h-[350px] w-full">
+      {/* --- TEMPLATES SECTION --- */}
+      <div className="space-y-6">
+        <MetricGroup title="Templates Architecture" icon={LayoutTemplate}>
+            <SummaryCard label="Total Templates" value={metrics.totalTemplates} colorClass="text-violet-600" />
+            <SummaryCard label="Active Templates" value={metrics.activeTemplates} colorClass="text-indigo-600" />
+        </MetricGroup>
+
+        <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b py-4 px-8">
+                <CardTitle className="text-sm font-bold text-slate-800">Active vs Inactive Templates</CardTitle>
+            </CardHeader>
+            <CardContent className="p-10">
+                <div className="h-[120px] w-full max-w-2xl mx-auto">
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={userRoleData} layout="vertical" margin={{ left: 20, right: 40 }}>
-                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                        <BarChart data={templateStatusData} layout="vertical" barGap={0}>
                             <XAxis type="number" hide />
-                            <YAxis 
-                                dataKey="name" 
-                                type="category" 
-                                axisLine={false} 
-                                tickLine={false} 
-                                tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }}
-                                width={100}
-                            />
-                            <RechartsTooltip 
-                                cursor={{ fill: '#f8fafc' }}
-                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                            />
-                            <Bar 
-                                dataKey="count" 
-                                fill="#6366f1" 
-                                radius={[0, 8, 8, 0]} 
-                                barSize={32}
-                            />
+                            <YAxis dataKey="name" type="category" hide />
+                            <RechartsTooltip cursor={{ fill: 'transparent' }} />
+                            <Bar dataKey="value" stackId="a" radius={[10, 10, 10, 10]} barSize={40}>
+                                {templateStatusData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Bar>
                         </BarChart>
                     </ResponsiveContainer>
-                </div>
-              </CardContent>
-          </Card>
-      </div>
-
-      {/* --- CHARTS ROW 2: TEMPLATE ADOPTION --- */}
-      <div className="grid grid-cols-1 gap-8">
-          <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden flex flex-col">
-                <CardHeader className="bg-white border-b py-5 px-8 flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-violet-100 flex items-center justify-center">
-                            <BarChart3 className="h-4.5 w-4.5 text-violet-600" />
-                        </div>
-                        <div>
-                            <CardTitle className="text-lg font-bold text-slate-900">Blueprint Adoption</CardTitle>
-                            <CardDescription className="text-xs">Top 5 templates by documentation volume</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-10 flex-1">
-                    <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={templateUsageData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis 
-                                    dataKey="name" 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }}
-                                />
-                                <YAxis 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{ fontSize: 11, fontWeight: 600, fill: '#64748b' }}
-                                />
-                                <RechartsTooltip 
-                                    cursor={{ fill: '#f8fafc' }}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                />
-                                <Bar 
-                                    dataKey="usage" 
-                                    fill="#8b5cf6" 
-                                    radius={[8, 8, 0, 0]} 
-                                    barSize={60}
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </CardContent>
-          </Card>
-      </div>
-
-      {/* --- QUICK ACTION SECTION --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="rounded-[28px] border-slate-200 bg-white p-8 group hover:border-primary/20 transition-all border-dashed border-2">
-                <div className="flex items-center gap-6">
-                    <div className="h-14 w-14 rounded-2xl bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-300 shadow-inner">
-                        <ShieldCheck className="h-7 w-7 text-indigo-600 group-hover:text-white transition-colors" />
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="text-xl font-bold text-slate-900">Security Audit</h3>
-                        <p className="text-sm text-slate-500 mt-1 leading-relaxed">Review and refine functional system permissions and role mappings.</p>
-                        <Button variant="link" className="p-0 h-auto mt-3 text-indigo-600 font-bold" onClick={() => onNavigate('user-management')}>
-                            Manage Access Control <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-                        </Button>
+                    <div className="flex justify-center gap-10 mt-4">
+                        {templateStatusData.map(item => (
+                            <div key={item.name} className="flex items-center gap-2">
+                                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{item.name}: {item.value}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
-            </Card>
-
-            <Card className="rounded-[28px] border-slate-200 bg-white p-8 group hover:border-primary/20 transition-all border-dashed border-2">
-                <div className="flex items-center gap-6">
-                    <div className="h-14 w-14 rounded-2xl bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-600 group-hover:scale-110 transition-all duration-300 shadow-inner">
-                        <FileText className="h-7 w-7 text-emerald-600 group-hover:text-white transition-colors" />
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="text-xl font-bold text-slate-900">Master Data Registry</h3>
-                        <p className="text-sm text-slate-500 mt-1 leading-relaxed">Govern global system constants, modules, and reference categories.</p>
-                        <Button variant="link" className="p-0 h-auto mt-3 text-emerald-600 font-bold" onClick={() => onNavigate('master-data-management')}>
-                            Configure Master Data <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-                        </Button>
-                    </div>
-                </div>
-            </Card>
+            </CardContent>
+        </Card>
       </div>
     </div>
   );
