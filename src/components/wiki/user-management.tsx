@@ -346,7 +346,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                         </CardContent>
                     </Card>
 
-                    {/* DYNAMIC CONTENT AREA - Height increased via flex-1 and min-h */}
+                    {/* DYNAMIC CONTENT AREA */}
                     <div className="flex-1 min-h-[600px]">
                         {activeArea === 'users' && (
                             <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white h-full flex flex-col">
@@ -361,7 +361,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                         <TableHeader className="bg-slate-50 border-b">
                                             <TableRow>
                                                 <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-500 h-14">Identity</TableHead>
-                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Access Key / Role</TableHead>
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Role</TableHead>
                                                 <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Status</TableHead>
                                                 <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Actions</TableHead>
                                             </TableRow>
