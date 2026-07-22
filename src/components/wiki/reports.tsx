@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { 
@@ -406,10 +407,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
             <ScrollArea className="flex-1">
                 <div className="p-8 max-w-7xl mx-auto space-y-8 pb-32">
-                    {/* --- REPORT CONTENT RENDERING --- */}
                     {selectedReport === 'user-engagement' && (
                         <div className="space-y-8 animate-in fade-in duration-500">
-                            <div className="grid grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <MetricSummary label="Total Users" value={users.length} icon={Users} color="indigo" />
                                 <MetricSummary label="Active sessions" value={users.filter(u => u.status === 'Active').length} icon={UserCheck} color="emerald" />
                                 <MetricSummary label="Total Logins" value={userActivityData.reduce((acc, u) => acc + u.logins, 0)} icon={Activity} color="amber" />
@@ -454,7 +454,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
                     {selectedReport === 'definition-insights' && (
                         <div className="space-y-8 animate-in fade-in duration-500">
-                            <div className="grid grid-cols-5 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                 <MetricSummary label="Total Library" value={definitionReportData.summary.total} color="slate" />
                                 <MetricSummary label="Published" value={definitionReportData.summary.published} color="emerald" />
                                 <MetricSummary label="Under Review" value={definitionReportData.summary.pending} color="indigo" />
@@ -508,7 +508,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
                     {selectedReport === 'workflow-analysis' && (
                         <div className="space-y-8 animate-in fade-in duration-500">
-                            <div className="grid grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <MetricSummary label="Global Decisions" value={workflowReportData.stats.approved + workflowReportData.stats.rejected} icon={CheckCircle2} color="indigo" />
                                 <MetricSummary label="Queue Pressure" value={workflowReportData.stats.pending} icon={Clock} color="amber" />
                                 <MetricSummary label="Approval Yield" value={`${Math.round((workflowReportData.stats.approved / (workflowReportData.stats.approved + workflowReportData.stats.rejected || 1)) * 100)}%`} icon={TrendingUp} color="emerald" />
@@ -617,7 +617,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                     </ResponsiveContainer>
                                 </CardContent>
                             </Card>
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <Card className="rounded-[24px] border-slate-200 bg-white shadow-sm overflow-hidden">
                                     <CardHeader className="bg-slate-50 border-b"><CardTitle className="text-base font-bold">Module Engagement Heatmap</CardTitle></CardHeader>
                                     <CardContent className="p-0">
