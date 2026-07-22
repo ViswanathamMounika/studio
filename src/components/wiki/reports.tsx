@@ -32,9 +32,13 @@ import {
     ChevronRight,
     FilePieChart,
     Users,
-    TrendingUp
+    TrendingUp,
+    ClipboardCheck,
+    Clock,
+    UserCheck,
+    AlertCircle
 } from 'lucide-react';
-import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, startOfMonth } from 'date-fns';
+import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, differenceInMinutes, differenceInHours } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { UserAccount, Definition, ActivityLog, ApprovalHistoryEntry, Template, MasterDataState } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -62,7 +66,7 @@ type SortConfig = {
     direction: 'asc' | 'desc';
 } | null;
 
-type ReportType = 'user-activity' | 'definition-report' | 'workflow-analysis' | 'template-stats';
+type ReportType = 'user-activity' | 'definition-report' | 'approval-report' | 'workflow-analysis' | 'template-stats';
 
 export default function ReportsDashboard({ users, definitions, drafts, activityLogs, approvalHistory }: ReportsDashboardProps) {
     const [selectedReport, setSelectedReport] = useState<ReportType>('user-activity');
@@ -76,6 +80,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [approverFilter, setApproverFilter] = useState<string>('all');
     
     const { toast } = useToast();
 
@@ -95,15 +100,24 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
     const filteredHistory = useMemo(() => {
         const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
-        if (!dateRange?.from) return safeHistory;
-        return safeHistory.filter(h => {
-            const hDate = parseISO(h.date);
-            return isWithinInterval(hDate, { 
-                start: startOfDay(dateRange.from), 
-                end: endOfDay(dateRange.to || dateRange.from) 
+        let result = safeHistory;
+        
+        if (dateRange?.from) {
+            result = result.filter(h => {
+                const hDate = parseISO(h.date);
+                return isWithinInterval(hDate, { 
+                    start: startOfDay(dateRange.from), 
+                    end: endOfDay(dateRange.to || dateRange.from) 
+                });
             });
-        });
-    }, [approvalHistory, dateRange]);
+        }
+        
+        if (approverFilter !== 'all') {
+            result = result.filter(h => h.userName === approverFilter);
+        }
+        
+        return result;
+    }, [approvalHistory, dateRange, approverFilter]);
 
     // -- USER ACTIVITY REPORT LOGIC --
     const processedUserStats = useMemo(() => {
@@ -135,7 +149,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         const safeDefs = Array.isArray(definitions) ? definitions : [];
         const safeDrafts = Array.isArray(drafts) ? drafts : [];
         
-        // Recursive count for published items
         const countPublished = (items: Definition[]): { total: number, archived: number } => {
             let total = 0;
             let archived = 0;
@@ -158,7 +171,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         const pendingOnly = safeDrafts.filter(d => d.isPendingApproval);
         const rejectedOnly = safeDrafts.filter(d => (d.discussions || []).some(m => m.type === 'rejection'));
 
-        // Group creations by user from logs
         const creationLogs = filteredLogs.filter(l => l.activityType === 'Definition Created');
         const byUserMap: Record<string, number> = {};
         creationLogs.forEach(l => {
@@ -168,7 +180,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
 
-        // Group creations by month from logs
         const byMonthMap: Record<string, number> = {};
         creationLogs.forEach(l => {
             const monthKey = format(parseISO(l.occurredDate), 'yyyy-MM');
@@ -192,18 +203,94 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         };
     }, [definitions, drafts, filteredLogs]);
 
-    // Apply Header Filters and Sorting for the main table (User Activity)
+    // -- APPROVAL REPORT LOGIC --
+    const approvalReportStats = useMemo(() => {
+        const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
+        const safeDrafts = Array.isArray(drafts) ? drafts : [];
+        
+        const approved = filteredHistory.filter(h => h.action === 'Approved');
+        const rejected = filteredHistory.filter(h => h.action === 'Rejected' || h.action === 'Changes Requested');
+        const pending = safeDrafts.filter(d => d.isPendingApproval);
+
+        // Calculate Average Decision Time (Only for Approved/Rejected items in current filter)
+        let totalMinutes = 0;
+        let countWithTime = 0;
+        
+        filteredHistory.forEach(h => {
+            if (h.action === 'Approved' || h.action === 'Rejected' || h.action === 'Changes Requested') {
+                // Look for most recent 'Submitted' for this definition before this action
+                const submission = safeHistory.find(s => 
+                    s.definitionId === h.definitionId && 
+                    s.action === 'Submitted' && 
+                    parseISO(s.date).getTime() < parseISO(h.date).getTime()
+                );
+                
+                if (submission) {
+                    totalMinutes += differenceInMinutes(parseISO(h.date), parseISO(submission.date));
+                    countWithTime++;
+                }
+            }
+        });
+
+        const avgHours = countWithTime > 0 ? (totalMinutes / countWithTime / 60).toFixed(1) : '—';
+
+        // Breakdown by Approver
+        const approverMap: Record<string, { approved: number, rejected: number }> = {};
+        filteredHistory.forEach(h => {
+            if (h.action === 'Submitted') return;
+            if (!approverMap[h.userName]) approverMap[h.userName] = { approved: 0, rejected: 0 };
+            if (h.action === 'Approved') approverMap[h.userName].approved++;
+            else approverMap[h.userName].rejected++;
+        });
+
+        const byApprover = Object.entries(approverMap).map(([name, stats]) => ({
+            name,
+            ...stats,
+            total: stats.approved + stats.rejected
+        })).sort((a, b) => b.total - a.total);
+
+        // Oldest Pending
+        const oldestPending = [...pending]
+            .filter(d => d.submittedAt)
+            .sort((a, b) => parseISO(a.submittedAt!).getTime() - parseISO(b.submittedAt!).getTime())
+            .slice(0, 5);
+
+        return {
+            metrics: {
+                totalRequests: approved.length + rejected.length + pending.length,
+                pendingCount: pending.length,
+                approvedCount: approved.length,
+                rejectedCount: rejected.length,
+                avgDecisionTime: avgHours
+            },
+            byApprover,
+            oldestPending
+        };
+    }, [approvalHistory, filteredHistory, drafts]);
+
+    const uniqueApprovers = useMemo(() => {
+        const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
+        const names = Array.from(new Set(safeHistory.filter(h => h.action !== 'Submitted').map(h => h.userName)));
+        return names.sort();
+    }, [approvalHistory]);
+
+    // Unified Pagination Logic
+    const currentDataSource = useMemo(() => {
+        if (selectedReport === 'user-activity') return processedUserStats;
+        return []; // Definition and Approval reports use custom layouts
+    }, [selectedReport, processedUserStats]);
+
     const filteredAndSortedData = useMemo(() => {
-        let result = [...processedUserStats];
+        let result = [...currentDataSource];
         Object.entries(columnFilters).forEach(([key, value]) => {
             if (!value) return;
             const lowerValue = value.toLowerCase();
-            result = result.filter(item => String(item[key as keyof typeof item] || '').toLowerCase().includes(lowerValue));
+            result = result.filter(item => String((item as any)[key] || '').toLowerCase().includes(lowerValue));
         });
         if (sortConfig) {
             result.sort((a, b) => {
-                const valA = a[sortConfig.key as keyof typeof a];
-                const valB = b[sortConfig.key as keyof typeof b];
+                const valA = (a as any)[sortConfig.key];
+                const valB = (b as any)[sortConfig.key];
                 if (valA === valB) return 0;
                 if (typeof valA === 'number' && typeof valB === 'number') return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
                 const strA = String(valA).toLowerCase();
@@ -212,7 +299,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             });
         }
         return result;
-    }, [processedUserStats, columnFilters, sortConfig]);
+    }, [currentDataSource, columnFilters, sortConfig]);
 
     const totalPages = Math.ceil(filteredAndSortedData.length / pageSize);
     const paginatedData = useMemo(() => {
@@ -234,21 +321,26 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         setColumnFilters({});
         setSortConfig({ key: 'name', direction: 'asc' });
         setCurrentPage(1);
+        setApproverFilter('all');
     };
 
     const handleExport = async (formatType: 'xlsx' | 'csv' | 'pdf') => {
-        const reportName = selectedReport === 'user-activity' ? 'UserActivity' : 'DefinitionReport';
         const timestamp = format(new Date(), 'yyyyMMdd_HHmm');
-        const filename = `MPM_${reportName}_${timestamp}`;
+        const filename = `MPM_Report_${selectedReport.replace('-', '_')}_${timestamp}`;
+        let dataToExport: any[] = [];
 
-        const dataToExport = selectedReport === 'user-activity' ? filteredAndSortedData : [
-            { Category: 'Total Definitions', Count: definitionReportStats.counts.total },
-            { Category: 'Published', Count: definitionReportStats.counts.published },
-            { Category: 'Draft', Count: definitionReportStats.counts.draft },
-            { Category: 'Pending Approval', Count: definitionReportStats.counts.pending },
-            { Category: 'Rejected', Count: definitionReportStats.counts.rejected },
-            { Category: 'Archived', Count: definitionReportStats.counts.archived }
-        ];
+        if (selectedReport === 'user-activity') dataToExport = filteredAndSortedData;
+        else if (selectedReport === 'approval-report') dataToExport = approvalReportStats.byApprover;
+        else {
+            dataToExport = [
+                { Category: 'Total Definitions', Count: definitionReportStats.counts.total },
+                { Category: 'Published', Count: definitionReportStats.counts.published },
+                { Category: 'Draft', Count: definitionReportStats.counts.draft },
+                { Category: 'Pending Approval', Count: definitionReportStats.counts.pending },
+                { Category: 'Rejected', Count: definitionReportStats.counts.rejected },
+                { Category: 'Archived', Count: definitionReportStats.counts.archived }
+            ];
+        }
 
         if (formatType === 'xlsx' || formatType === 'csv') {
             const XLSX = await import('xlsx');
@@ -261,8 +353,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             const doc = new jsPDF('l', 'mm', 'a4');
             doc.setFontSize(18);
             doc.text(`MedPoint Wiki: ${selectedReport.replace('-', ' ').toUpperCase()}`, 14, 20);
-            doc.setFontSize(10);
-            doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
             doc.save(`${filename}.pdf`);
         }
         toast({ title: "Export Success" });
@@ -270,7 +360,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
     return (
         <div className="space-y-6 h-full flex flex-col bg-slate-50/30">
-            <div className="flex flex-col gap-6 bg-white p-6 border-b sticky top-0 z-30 shadow-sm">
+            <div className="bg-white p-6 border-b sticky top-0 z-30 shadow-sm space-y-6">
                 <div className="flex justify-between items-start">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
@@ -286,7 +376,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 Export Results
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl border-slate-200">
+                        <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl">
                             <DropdownMenuItem onClick={() => handleExport('xlsx')} className="font-bold py-3"><FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" /> Excel Spreadsheet</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleExport('csv')} className="font-bold py-3"><FileText className="mr-2 h-4 w-4 text-slate-600" /> CSV Flat File</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleExport('pdf')} className="font-bold py-3"><FileSearch className="mr-2 h-4 w-4 text-red-600" /> PDF Summary</DropdownMenuItem>
@@ -294,71 +384,73 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     </DropdownMenu>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-6 flex-1">
-                        <div className="flex-1 max-w-sm space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Report Selection</Label>
-                            <Select value={selectedReport} onValueChange={(v) => setSelectedReport(v as ReportType)}>
+                <div className="flex items-center gap-6">
+                    <div className="flex-1 max-w-sm space-y-1.5">
+                        <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Report Selection</Label>
+                        <Select value={selectedReport} onValueChange={(v) => { setSelectedReport(v as ReportType); clearAllFilters(); }}>
+                            <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white font-bold">
+                                <div className="flex items-center gap-2">
+                                    <BarChart3 className="h-4 w-4 text-primary" />
+                                    <SelectValue />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="user-activity" className="font-medium">User Activity Report</SelectItem>
+                                <SelectItem value="definition-report" className="font-medium">Definition Report</SelectItem>
+                                <SelectItem value="approval-report" className="font-medium">Approval Report</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {selectedReport === 'approval-report' && (
+                        <div className="flex-1 max-w-xs space-y-1.5 animate-in fade-in slide-in-from-left-2">
+                            <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Reviewing Approver</Label>
+                            <Select value={approverFilter} onValueChange={setApproverFilter}>
                                 <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white font-bold">
                                     <div className="flex items-center gap-2">
-                                        <BarChart3 className="h-4 w-4 text-primary" />
-                                        <SelectValue placeholder="Select Report Type" />
+                                        <UserCheck className="h-3.5 w-3.5 text-primary" />
+                                        <SelectValue />
                                     </div>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="user-activity" className="font-medium">User Activity Report</SelectItem>
-                                    <SelectItem value="definition-report" className="font-medium">Definition Report</SelectItem>
-                                    <SelectItem value="workflow-analysis" className="font-medium">Workflow Analysis</SelectItem>
-                                    <SelectItem value="template-stats" className="font-medium">Template Utilization</SelectItem>
+                                    <SelectItem value="all">All Approvers</SelectItem>
+                                    {uniqueApprovers.map(name => (
+                                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
+                    )}
 
-                        <div className="flex-1 max-w-xs space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Observation Period</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full h-10 px-4 font-bold text-xs gap-2 rounded-xl border-slate-200 justify-start">
-                                        <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-                                        {dateRange?.from ? (
-                                            dateRange.to ? <>{format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd")}</> : format(dateRange.from, "MMM dd, yyyy")
-                                        ) : "Select Range"}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar 
-                                        mode="range" 
-                                        selected={dateRange as any} 
-                                        onSelect={setDateRange as any} 
-                                        initialFocus 
-                                        numberOfMonths={2} 
-                                        disabled={{ after: new Date() }}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-
-                        <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="mt-6 h-10 rounded-xl font-bold gap-2 text-slate-400 hover:text-slate-600 transition-colors"
-                            onClick={clearAllFilters}
-                        >
-                            <FilterX className="h-4 w-4" />
-                            Reset Filters
-                        </Button>
+                    <div className="flex-1 max-w-xs space-y-1.5">
+                        <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Observation Period</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full h-10 px-4 font-bold text-xs gap-2 rounded-xl border-slate-200 justify-start">
+                                    <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+                                    {dateRange?.from ? (
+                                        dateRange.to ? <>{format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd")}</> : format(dateRange.from, "MMM dd, yyyy")
+                                    ) : "Select Range"}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar mode="range" selected={dateRange as any} onSelect={setDateRange as any} initialFocus numberOfMonths={2} disabled={{ after: new Date() }} />
+                            </PopoverContent>
+                        </Popover>
                     </div>
+
+                    <Button variant="ghost" className="mt-6 h-10 rounded-xl font-bold gap-2 text-slate-400" onClick={clearAllFilters}><FilterX className="h-4 w-4" /> Reset</Button>
                 </div>
             </div>
 
             <ScrollArea className="flex-1">
                 <div className="p-8 max-w-[1600px] mx-auto pb-32">
                     {selectedReport === 'user-activity' ? (
-                        <div className="space-y-4">
+                        <div className="space-y-4 animate-in fade-in duration-500">
                             <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <Table>
                                     <TableHeader className="bg-slate-50 border-b">
-                                        <TableRow className="hover:bg-transparent">
+                                        <TableRow>
                                             <ReportHeader label="User Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 w-[220px]" />
                                             <ReportHeader label="Last Login" id="lastLogin" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastLogin} onFilterChange={handleFilterChange} className="w-[180px]" />
                                             <ReportHeader label="Logins" id="logins" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.logins} onFilterChange={handleFilterChange} className="w-[110px]" />
@@ -372,16 +464,16 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                     </TableHeader>
                                     <TableBody>
                                         {paginatedData.map(u => (
-                                            <TableRow key={u.id} className="hover:bg-slate-50/50 border-slate-100 h-16 transition-colors">
-                                                <TableCell className="pl-6"><div className="flex flex-col"><span className="font-bold text-slate-900 leading-none">{u.name}</span><span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight mt-1">{u.role}</span></div></TableCell>
+                                            <TableRow key={u.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
+                                                <TableCell className="pl-6 font-bold text-slate-900">{u.name}</TableCell>
                                                 <TableCell className="text-slate-500 font-mono text-xs">{u.lastLogin}</TableCell>
                                                 <TableCell className="font-black text-slate-700 tabular-nums">{u.logins}</TableCell>
-                                                <TableCell className="text-slate-500 font-medium text-xs">{u.lastActivity}</TableCell>
-                                                <TableCell className="font-bold text-emerald-600 tabular-nums">{u.creations}</TableCell>
-                                                <TableCell className="font-bold text-indigo-600 tabular-nums">{u.edits}</TableCell>
-                                                <TableCell className="font-bold text-amber-600 tabular-nums">{u.approvals}</TableCell>
-                                                <TableCell className="font-bold text-slate-600 tabular-nums">{u.templates}</TableCell>
-                                                <TableCell className="pr-6"><Badge variant={u.status === 'Active' ? 'success' : 'secondary'} className="font-black text-[9px] uppercase px-2.5 h-5">{u.status}</Badge></TableCell>
+                                                <TableCell className="text-slate-500 text-xs">{u.lastActivity}</TableCell>
+                                                <TableCell className="font-bold text-emerald-600">{u.creations}</TableCell>
+                                                <TableCell className="font-bold text-indigo-600">{u.edits}</TableCell>
+                                                <TableCell className="font-bold text-amber-600">{u.approvals}</TableCell>
+                                                <TableCell className="font-bold text-slate-600">{u.templates}</TableCell>
+                                                <TableCell className="pr-6"><Badge variant={u.status === 'Active' ? 'success' : 'secondary'} className="font-black text-[9px] uppercase px-2">{u.status}</Badge></TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -390,84 +482,121 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
                         </div>
                     ) : selectedReport === 'definition-report' ? (
-                        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                            {/* Counts Summary */}
+                        <div className="space-y-10 animate-in fade-in duration-500">
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 px-2"><FilePieChart className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Library Summary Ledger</h3></div>
                                 <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                     <Table>
                                         <TableHeader className="bg-slate-50 border-b">
-                                            <TableRow>
-                                                <TableHead className="font-bold text-slate-900 px-6 h-12">Definition Lifecycle State</TableHead>
-                                                <TableHead className="text-right font-bold text-slate-900 px-6 h-12">Current Count</TableHead>
-                                            </TableRow>
+                                            <TableRow><TableHead className="px-6 h-12">Definition State</TableHead><TableHead className="text-right px-6 h-12">Count</TableHead></TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {[
-                                                { label: 'Total Definitions Managed', count: definitionReportStats.counts.total, color: 'text-slate-900' },
+                                                { label: 'Total Definitions', count: definitionReportStats.counts.total, color: 'text-slate-900' },
                                                 { label: 'Published (Active)', count: definitionReportStats.counts.published, color: 'text-emerald-600' },
+                                                { label: 'Pending Review', count: definitionReportStats.counts.pending, color: 'text-indigo-600' },
                                                 { label: 'Private Drafts', count: definitionReportStats.counts.draft, color: 'text-amber-600' },
-                                                { label: 'Pending Governance Review', count: definitionReportStats.counts.pending, color: 'text-indigo-600' },
-                                                { label: 'Rejected (Requires Revision)', count: definitionReportStats.counts.rejected, color: 'text-red-600' },
-                                                { label: 'Archived (Historical)', count: definitionReportStats.counts.archived, color: 'text-slate-400' }
+                                                { label: 'Rejected', count: definitionReportStats.counts.rejected, color: 'text-red-600' },
+                                                { label: 'Archived', count: definitionReportStats.counts.archived, color: 'text-slate-400' }
                                             ].map((row, i) => (
-                                                <TableRow key={i} className="border-slate-100 h-14">
-                                                    <TableCell className="px-6 font-medium text-slate-700">{row.label}</TableCell>
-                                                    <TableCell className={cn("px-6 text-right font-black text-lg tabular-nums", row.color)}>{row.count}</TableCell>
-                                                </TableRow>
+                                                <TableRow key={i} className="border-slate-100 h-14"><TableCell className="px-6 font-medium text-slate-700">{row.label}</TableCell><TableCell className={cn("px-6 text-right font-black text-lg tabular-nums", row.color)}>{row.count}</TableCell></TableRow>
                                             ))}
+                                        </TableBody>
+                                    </Table>
+                                </Card>
+                            </div>
+                            <div className="grid grid-cols-2 gap-10">
+                                <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white"><div className="p-6 border-b bg-slate-50"><h4 className="font-bold">By Author</h4></div><Table><TableBody>{definitionReportStats.creationsByUser.map((u, i) => (<TableRow key={i} className="h-12 border-slate-100"><TableCell className="px-6 font-bold">{u.name}</TableCell><TableCell className="px-6 text-right font-black text-indigo-600">{u.count}</TableCell></TableRow>))}</TableBody></Table></Card>
+                                <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white"><div className="p-6 border-b bg-slate-50"><h4 className="font-bold">By Month</h4></div><Table><TableBody>{definitionReportStats.creationsByMonth.map((m, i) => (<TableRow key={i} className="h-12 border-slate-100"><TableCell className="px-6 font-mono font-bold">{m.month}</TableCell><TableCell className="px-6 text-right font-black text-emerald-600">{m.count}</TableCell></TableRow>))}</TableBody></Table></Card>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-10 animate-in fade-in duration-500">
+                            {/* Performance Ledger */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 px-2"><ClipboardCheck className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Approval Workflow Performance</h3></div>
+                                <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
+                                    <Table>
+                                        <TableHeader className="bg-slate-50 border-b">
+                                            <TableRow><TableHead className="px-6 h-12">Performance Metric</TableHead><TableHead className="text-right px-6 h-12">Value</TableHead></TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Total Approval Requests</TableCell><TableCell className="px-6 text-right font-black text-slate-900">{approvalReportStats.metrics.totalRequests}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Pending Approvals</TableCell><TableCell className="px-6 text-right font-black text-indigo-600">{approvalReportStats.metrics.pendingCount}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Approved Count</TableCell><TableCell className="px-6 text-right font-black text-emerald-600">{approvalReportStats.metrics.approvedCount}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Rejected Count</TableCell><TableCell className="px-6 text-right font-black text-red-600">{approvalReportStats.metrics.rejectedCount}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14 bg-indigo-50/20"><TableCell className="px-6 font-bold text-primary flex items-center gap-2"><Clock className="h-4 w-4" /> Average Approval Time</TableCell><TableCell className="px-6 text-right font-black text-primary text-xl tabular-nums">{approvalReportStats.metrics.avgDecisionTime} hrs</TableCell></TableRow>
                                         </TableBody>
                                     </Table>
                                 </Card>
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                {/* Creations By User */}
+                                {/* Approver Workload */}
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2 px-2"><Users className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Creations by Author</h3></div>
-                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
+                                    <div className="flex items-center gap-2 px-2"><Users className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Workload by Approver</h3></div>
+                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow><TableHead className="px-6">User Name</TableHead><TableHead className="text-right px-6">Definitions Created</TableHead></TableRow>
+                                                <TableRow>
+                                                    <TableHead className="px-6">Approver Name</TableHead>
+                                                    <TableHead className="text-center">Total</TableHead>
+                                                    <TableHead className="text-center text-emerald-600">Appr.</TableHead>
+                                                    <TableHead className="text-center text-red-600">Rej.</TableHead>
+                                                </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {definitionReportStats.creationsByUser.map((u, i) => (
-                                                    <TableRow key={i} className="border-slate-100 h-14"><TableCell className="px-6 font-bold">{u.name}</TableCell><TableCell className="px-6 text-right font-black text-indigo-600 tabular-nums">{u.count}</TableCell></TableRow>
+                                                {approvalReportStats.byApprover.map((app, i) => (
+                                                    <TableRow key={i} className="h-14 border-slate-100 hover:bg-slate-50/50">
+                                                        <TableCell className="px-6 font-bold text-slate-700">{app.name}</TableCell>
+                                                        <TableCell className="text-center font-black text-slate-900">{app.total}</TableCell>
+                                                        <TableCell className="text-center font-bold text-emerald-600">{app.approved}</TableCell>
+                                                        <TableCell className="text-center font-bold text-red-600">{app.rejected}</TableCell>
+                                                    </TableRow>
                                                 ))}
-                                                {definitionReportStats.creationsByUser.length === 0 && (
-                                                    <TableRow><TableCell colSpan={2} className="h-32 text-center text-slate-400 italic">No creation activity recorded for this period.</TableCell></TableRow>
+                                                {approvalReportStats.byApprover.length === 0 && (
+                                                    <TableRow><TableCell colSpan={4} className="h-32 text-center text-slate-400 italic">No historical decision data for this filter.</TableCell></TableRow>
                                                 )}
                                             </TableBody>
                                         </Table>
                                     </Card>
                                 </div>
 
-                                {/* Growth By Month */}
+                                {/* Oldest Pending */}
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2 px-2"><TrendingUp className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Content Growth by Month</h3></div>
-                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
+                                    <div className="flex items-center gap-2 px-2"><AlertCircle className="h-4 w-4 text-red-500" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Queue Aging: Oldest Pending</h3></div>
+                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow><TableHead className="px-6">Month Period</TableHead><TableHead className="text-right px-6">New Definitions</TableHead></TableRow>
+                                                <TableRow>
+                                                    <TableHead className="px-6">Definition</TableHead>
+                                                    <TableHead>Author</TableHead>
+                                                    <TableHead className="text-right px-6">Submission Age</TableHead>
+                                                </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {definitionReportStats.creationsByMonth.map((m, i) => (
-                                                    <TableRow key={i} className="border-slate-100 h-14"><TableCell className="px-6 font-mono font-bold text-slate-600">{m.month}</TableCell><TableCell className="px-6 text-right font-black text-emerald-600 tabular-nums">{m.count}</TableCell></TableRow>
-                                                ))}
-                                                {definitionReportStats.creationsByMonth.length === 0 && (
-                                                    <TableRow><TableCell colSpan={2} className="h-32 text-center text-slate-400 italic">No growth activity recorded for this period.</TableCell></TableRow>
+                                                {approvalReportStats.oldestPending.map((p, i) => {
+                                                    const hours = differenceInHours(new Date(), parseISO(p.submittedAt!));
+                                                    return (
+                                                        <TableRow key={i} className="h-14 border-slate-100 hover:bg-slate-50/50">
+                                                            <TableCell className="px-6 font-bold text-slate-700 truncate max-w-[200px]">{p.name}</TableCell>
+                                                            <TableCell className="text-sm text-slate-500">{p.submittedBy}</TableCell>
+                                                            <TableCell className="text-right px-6">
+                                                                <Badge className={cn("rounded-lg font-black uppercase text-[10px]", hours > 48 ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700")}>
+                                                                    {hours} hours ago
+                                                                </Badge>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                                {approvalReportStats.oldestPending.length === 0 && (
+                                                    <TableRow><TableCell colSpan={3} className="h-32 text-center text-slate-400 italic">Review queue is currently empty.</TableCell></TableRow>
                                                 )}
                                             </TableBody>
                                         </Table>
                                     </Card>
                                 </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[40px] border border-slate-100 shadow-sm">
-                             <BarChart3 className="h-16 w-16 text-slate-100 mb-4" />
-                             <h3 className="text-lg font-bold text-slate-900">Module Under Refinement</h3>
-                             <p className="text-sm text-slate-400 max-w-xs text-center mt-2 leading-relaxed">The specialized analytics for <strong>{selectedReport.replace('-', ' ')}</strong> are being synchronized with the new global audit schema.</p>
                         </div>
                     )}
                 </div>

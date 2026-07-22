@@ -1,6 +1,50 @@
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry, UserAccount, Role, Permission, MasterDataState, SystemConfigurationState } from './types';
 
-export const initialDrafts: Definition[] = [];
+export const initialDrafts: Definition[] = [
+  {
+    id: 'draft_pending_1',
+    originalId: '1.1.2',
+    name: 'Service Type Mapping (v2 Updates)',
+    module: 'Authorizations',
+    templateId: '1',
+    authorId: 'u2',
+    submittedBy: 'Sarah Chen',
+    submittedAt: new Date(Date.now() - 3600000 * 24 * 3).toISOString(), // 3 days ago
+    isDraft: false,
+    isPendingApproval: true,
+    keywords: ['mapping', 'codes', 'v2'],
+    description: '<p>Updated mapping logic for 2024 CPT codes.</p>',
+    revisions: [],
+    isArchived: false,
+    supportingTables: [],
+    attachments: [],
+    sectionValues: [
+      { sectionId: '1', raw: 'Updated mapping for 2024 codes.' },
+      { sectionId: '2', raw: '<p>Updated mapping logic for 2024 CPT codes.</p>', html: '<p>Updated mapping logic for 2024 CPT codes.</p>' }
+    ]
+  },
+  {
+    id: 'draft_pending_2',
+    name: 'New Provider Contract Template',
+    module: 'Provider',
+    templateId: '1',
+    authorId: 'u4',
+    submittedBy: 'Elena Rodriguez',
+    submittedAt: new Date(Date.now() - 3600000 * 24 * 7).toISOString(), // 7 days ago
+    isDraft: false,
+    isPendingApproval: true,
+    keywords: ['provider', 'contract', 'legal'],
+    description: '<p>New standardized contract language for network providers.</p>',
+    revisions: [],
+    isArchived: false,
+    supportingTables: [],
+    attachments: [],
+    sectionValues: [
+      { sectionId: '1', raw: 'Standard provider contract terms.' },
+      { sectionId: '2', raw: '<p>Standard legal language for provider network participation.</p>', html: '<p>Standard legal language for provider network participation.</p>' }
+    ]
+  }
+];
 
 export const authorizationStatusCodes: SupportingTable = {
     id: 'auth-status-codes',
@@ -378,6 +422,31 @@ export const initialApprovalHistory: ApprovalHistoryEntry[] = [
     userName: 'Administrator',
     date: new Date(Date.now() - 3600000 * 24 * 5).toISOString(),
     comment: 'All metadata verified against EzCAP production schema.'
+  },
+  {
+    id: 'h2',
+    definitionId: '1.1.1',
+    definitionName: 'Auth Decision Date',
+    action: 'Submitted',
+    userName: 'Sarah Chen',
+    date: new Date(Date.now() - 3600000 * 24 * 6).toISOString(),
+  },
+  {
+    id: 'h3',
+    definitionId: '2.1.1',
+    definitionName: 'Contracted Rates',
+    action: 'Rejected',
+    userName: 'Dhilip Sagadevan',
+    date: new Date(Date.now() - 3600000 * 2).toISOString(),
+    comment: 'Missing logic for Medicare Advantage plan tiers.'
+  },
+  {
+    id: 'h4',
+    definitionId: '2.1.1',
+    definitionName: 'Contracted Rates',
+    action: 'Submitted',
+    userName: 'Mark Wilson',
+    date: new Date(Date.now() - 3600000 * 4).toISOString(),
   }
 ];
 
