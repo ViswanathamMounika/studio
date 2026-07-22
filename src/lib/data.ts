@@ -390,17 +390,17 @@ export const initialActivityLogs: ActivityLog[] = [
   },
   {
     id: '4',
-    userName: 'Jane Smith',
-    definitionName: 'Contracted Rates',
-    activityType: 'Definition Viewed',
-    occurredDate: new Date(Date.now() - 3600000 * 48).toISOString(),
+    userName: 'Dhilip Sagadevan',
+    definitionName: 'User Session',
+    activityType: 'User Login',
+    occurredDate: new Date(Date.now() - 3600000 * 2).toISOString(),
   },
   {
     id: '5',
     userName: 'Sarah Chen',
     definitionName: 'User Session',
     activityType: 'User Login',
-    occurredDate: new Date(Date.now() - 3600000 * 2).toISOString(),
+    occurredDate: new Date(Date.now() - 3600000 * 48).toISOString(),
     details: 'Logged in from 192.168.1.45'
   },
   {
@@ -410,6 +410,35 @@ export const initialActivityLogs: ActivityLog[] = [
     activityType: 'Approval Decision',
     occurredDate: new Date(Date.now() - 3600000 * 10).toISOString(),
     details: 'Approved & Published: Service Type Mapping'
+  },
+  {
+    id: '7',
+    userName: 'Sarah Chen',
+    definitionName: 'Service Type Mapping',
+    activityType: 'Definition Created',
+    occurredDate: new Date(Date.now() - 3600000 * 72).toISOString(),
+  },
+  {
+    id: '8',
+    userName: 'Mark Wilson',
+    definitionName: 'User Session',
+    activityType: 'User Login',
+    occurredDate: new Date(Date.now() - 3600000 * 24).toISOString(),
+  },
+  {
+    id: '9',
+    userName: 'Elena Rodriguez',
+    definitionName: 'User Session',
+    activityType: 'User Login',
+    occurredDate: new Date(Date.now() - 3600000 * 120).toISOString(),
+  },
+  {
+    id: '10',
+    userName: 'Administrator',
+    definitionName: 'Standard Definition',
+    activityType: 'Template Updated',
+    occurredDate: new Date(Date.now() - 3600000 * 200).toISOString(),
+    details: 'Modified Source of Truth options.'
   }
 ];
 

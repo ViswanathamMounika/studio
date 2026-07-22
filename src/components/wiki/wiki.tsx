@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
-import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers, initialMasterData, initialSystemConfig } from '@/lib/data';
+import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers, initialMasterData, initialSystemConfig, initialActivityLogs } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog, MasterDataState, SystemConfigurationState, ActivityType } from '@/lib/types';
 import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark, UserCircle, LogOut, Library } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -65,7 +65,7 @@ export default function Wiki() {
   const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v19', initialTemplates);
   const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v19', initialApprovalHistory);
   const [users, setUsers] = useLocalStorage<UserAccount[]>('mpm_users_v1', initialUsers);
-  const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activity_logs_v19', []);
+  const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activity_logs_v19', initialActivityLogs);
   const [masterData, setMasterData] = useLocalStorage<MasterDataState>('mpm_master_data_v1', initialMasterData);
   const [systemConfig, setSystemConfig] = useLocalStorage<SystemConfigurationState>('mpm_system_config_v1', initialSystemConfig);
   
