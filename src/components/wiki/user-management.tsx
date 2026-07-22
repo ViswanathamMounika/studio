@@ -163,7 +163,24 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
     };
 
     const handleSavePermission = () => {
-        if (!editingPermission?.name) return;
+        if (!editingPermission?.name?.trim()) return;
+
+        // Validation: Prevent duplicate names (case-insensitive)
+        const normalizedName = editingPermission.name.trim().toLowerCase();
+        const duplicate = permissions.find(p => 
+            p.id !== editingPermission.id && 
+            p.name.trim().toLowerCase() === normalizedName
+        );
+
+        if (duplicate) {
+            toast({
+                variant: 'destructive',
+                title: "Duplicate Name",
+                description: `A permission with the name "${editingPermission.name}" already exists.`
+            });
+            return;
+        }
+
         const isNew = !permissions.find(p => p.id === editingPermission.id);
         const newPermissions = isNew ? [...permissions, editingPermission as Permission] : permissions.map(p => p.id === editingPermission.id ? (editingPermission as Permission) : p);
         
@@ -409,9 +426,8 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                                     <KeyRound className="h-10 w-10 text-slate-200" />
                                                     <p className="text-slate-400 font-bold text-sm">No securables match your criteria.</p>
                                                 </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
+                                            </TableRow>
+                                        )}
                                 </TableBody>
                             </Table>
                         </div>
@@ -540,7 +556,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                     <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><KeyRound className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">Securable Permission</DialogTitle></div></div>
                     <div className="p-8 space-y-6 bg-slate-50/30">
                         <div className="space-y-4">
-                            <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Internal Name</Label><Input value={editingPermission?.name || ''} onChange={e => setEditingPermission(p => p ? ({ ...p, name: e.target.value }) : null)} className="rounded-xl border-slate-200 h-11 font-bold bg-white" /></div>
+                            <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Permission Name</Label><Input value={editingPermission?.name || ''} onChange={e => setEditingPermission(p => p ? ({ ...p, name: e.target.value }) : null)} className="rounded-xl border-slate-200 h-11 font-bold bg-white" /></div>
                             <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Guideline / Scope</Label><Textarea value={editingPermission?.description || ''} onChange={e => setEditingPermission(p => p ? ({ ...p, description: e.target.value }) : null)} className="rounded-xl border-slate-200 min-h-[80px] bg-white" /></div>
                         </div>
                     </div>
