@@ -838,26 +838,26 @@ export default function Wiki() {
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background relative overflow-hidden">
           {impersonatedUser && (
-              <div className="bg-red-600 px-6 py-2 flex items-center justify-between text-white shadow-lg z-[100] sticky top-0 shrink-0">
+              <div className="bg-red-600 px-6 py-2.5 flex items-center justify-between text-white shadow-xl z-[100] sticky top-0 shrink-0 border-b border-red-500">
                   <div className="flex items-center gap-4">
-                      <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
+                      <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center border border-white/20 shadow-inner">
                           <AlertTriangle className="h-5 w-5 text-white animate-pulse" />
                       </div>
                       <div className="flex flex-col">
-                          <p className="text-[13px] font-black uppercase tracking-wider leading-none">Act as Session Active</p>
-                          <p className="text-[11px] font-medium text-white/90 mt-0.5">
-                              Proxying as <span className="underline font-black">{impersonatedUser.name}</span> ({impersonatedUser.role}). Actions performed will be logged under this account.
+                          <p className="text-[14px] font-black uppercase tracking-widest leading-none">Security Override: Act as Session Active</p>
+                          <p className="text-[11px] font-bold text-white/90 mt-1 uppercase tracking-tight">
+                              Proxying Identity: <span className="underline decoration-white/40">{impersonatedUser.name}</span> <span className="mx-2 opacity-40">|</span> Role: <span className="font-black">{impersonatedUser.role}</span>
                           </p>
                       </div>
                   </div>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="h-8 px-4 rounded-xl border-white/40 bg-white/10 hover:bg-white/20 text-white font-black uppercase text-[10px] gap-2 transition-all active:scale-95"
+                    className="h-9 px-6 rounded-xl border-white/40 bg-white/10 hover:bg-white text-white hover:text-red-600 font-black uppercase text-[11px] gap-2 transition-all active:scale-95 shadow-lg"
                     onClick={() => handleImpersonate('')} 
                   >
-                      <LogOut className="h-3.5 w-3.5" />
-                      Terminate Session
+                      <LogOut className="h-4 w-4" />
+                      Terminate Proxy Session
                   </Button>
               </div>
           )}

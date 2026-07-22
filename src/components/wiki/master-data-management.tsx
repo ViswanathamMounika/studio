@@ -114,12 +114,23 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         if (!editingItem?.name?.trim()) return;
 
         const currentItems = [...masterData[activeCategory]];
-        const exists = currentItems.findIndex(i => i.id === editingItem.id);
+        const existsIdx = currentItems.findIndex(i => i.id === editingItem.id);
+        const originalItem = existsIdx > -1 ? currentItems[existsIdx] : null;
         
+        // Renaming Protection
+        if (originalItem && originalItem.name !== editingItem.name && isItemReferred(originalItem, activeCategory)) {
+            toast({
+                variant: 'destructive',
+                title: "Modification Restricted",
+                description: `"${originalItem.name}" is currently in use and cannot be renamed.`
+            });
+            return;
+        }
+
         let newItems: MasterDataItem[];
         let action: 'Created' | 'Updated' = 'Created';
 
-        if (exists > -1) {
+        if (existsIdx > -1) {
             newItems = currentItems.map(i => i.id === editingItem.id ? (editingItem as MasterDataItem) : i);
             action = 'Updated';
         } else {
@@ -155,7 +166,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         const item = masterData[activeCategory].find(i => i.id === id);
         if (!item) return;
 
-        // Restriction: Prevent soft-delete (inactivation) if referred
+        // Restriction: Prevent inactivation if referred
         if (currentStatus === true && isItemReferred(item, activeCategory)) {
             toast({
                 variant: 'destructive',
@@ -330,7 +341,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                         <Lock className="h-4 w-4 text-amber-500" />
                                                     </TooltipTrigger>
                                                     <TooltipContent>
-                                                        <p className="text-xs">Naming is locked because this record is in use.</p>
+                                                        <p className="text-xs">Renaming is locked because this record is in use.</p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </div>

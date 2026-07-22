@@ -49,7 +49,8 @@ import {
     Terminal, 
     ChevronLeft, 
     ChevronRight, 
-    KeyRound 
+    KeyRound,
+    Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { UserAccount, ActivityLog, Role, Permission } from '@/lib/types';
@@ -157,7 +158,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
     const handleSaveRole = () => {
         if (!editingRole?.name?.trim()) return;
 
-        // Unique Role Name Validation
         const normalizedName = editingRole.name.trim().toLowerCase();
         const duplicate = safeRoles.find(r => 
             r.id !== editingRole.id && 
@@ -203,7 +203,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
     const handleSavePermission = () => {
         if (!editingPermission?.name?.trim()) return;
 
-        // Unique Permission Name Validation
         const normalizedName = editingPermission.name.trim().toLowerCase();
         const duplicate = safePermissions.find(p => 
             p.id !== editingPermission.id && 
