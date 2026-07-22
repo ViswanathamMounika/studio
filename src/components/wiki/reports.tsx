@@ -32,7 +32,6 @@ import {
     ChevronRight,
     FilePieChart,
     Users,
-    TrendingUp,
     ClipboardCheck,
     Clock,
     UserCheck,
@@ -87,6 +86,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     const [approverFilter, setApproverFilter] = useState<string>('all');
     
     const { toast } = useToast();
+
+    // -- DATA PROCESSING LOGIC --
 
     const filteredLogs = useMemo(() => {
         const safeLogs = Array.isArray(activityLogs) ? activityLogs : [];
@@ -386,6 +387,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         return names.sort();
     }, [approvalHistory]);
 
+    // -- TABLE CONTROLS --
+
     const currentDataSource = useMemo(() => {
         if (selectedReport === 'user-activity') return processedUserStats;
         return [];
@@ -438,41 +441,92 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     const handleExport = async (formatType: 'xlsx' | 'csv' | 'pdf') => {
         const timestamp = format(new Date(), 'yyyyMMdd_HHmm');
         const filename = `MPM_Report_${selectedReport.replace('-', '_')}_${timestamp}`;
-        let dataToExport: any[] = [];
+        
+        const XLSX = await import('xlsx');
+        const wb = XLSX.utils.book_new();
 
-        if (selectedReport === 'user-activity') dataToExport = filteredAndSortedData;
-        else if (selectedReport === 'approval-report') dataToExport = approvalReportStats.byApprover;
-        else if (selectedReport === 'template-report') dataToExport = templateReportStats.mostUsed;
-        else if (selectedReport === 'system-usage') dataToExport = systemUsageStats.activeUsersPerDay;
-        else {
-            dataToExport = [
+        if (selectedReport === 'user-activity') {
+            const exportData = filteredAndSortedData.map(u => ({
+                'User Name': u.name,
+                'Email': u.email,
+                'Role': u.role,
+                'Status': u.status,
+                'Logins': u.logins,
+                'Last Login': u.lastLogin,
+                'Last Activity': u.lastActivity,
+                'Definitions Created': u.creations,
+                'Definitions Edited': u.edits,
+                'Approvals Performed': u.approvals,
+                'Templates Managed': u.templates
+            }));
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            XLSX.utils.book_append_sheet(wb, ws, "User Activity");
+        } else if (selectedReport === 'definition-report') {
+            const summary = [
                 { Category: 'Total Definitions', Count: definitionReportStats.counts.total },
                 { Category: 'Published', Count: definitionReportStats.counts.published },
                 { Category: 'Draft', Count: definitionReportStats.counts.draft },
-                { Category: 'Pending Approval', Count: definitionReportStats.counts.pending },
+                { Category: 'Pending', Count: definitionReportStats.counts.pending },
                 { Category: 'Rejected', Count: definitionReportStats.counts.rejected },
                 { Category: 'Archived', Count: definitionReportStats.counts.archived }
             ];
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Library Summary");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(definitionReportStats.creationsByUser), "By Author");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(definitionReportStats.creationsByMonth), "By Month");
+        } else if (selectedReport === 'approval-report') {
+            const metrics = [
+                { Metric: 'Total Requests', Value: approvalReportStats.metrics.totalRequests },
+                { Metric: 'Pending', Value: approvalReportStats.metrics.pendingCount },
+                { Metric: 'Approved', Value: approvalReportStats.metrics.approvedCount },
+                { Metric: 'Rejected', Value: approvalReportStats.metrics.rejectedCount },
+                { Metric: 'Avg Decision Time (Hrs)', Value: approvalReportStats.metrics.avgDecisionTime }
+            ];
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(metrics), "Performance");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(approvalReportStats.byApprover), "By Approver");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(approvalReportStats.oldestPending.map(p => ({
+                Name: p.name,
+                Author: p.submittedBy,
+                Submitted: p.submittedAt
+            }))), "Oldest Pending");
+        } else if (selectedReport === 'template-report') {
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([templateReportStats.counts]), "Architecture Overview");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(templateReportStats.mostUsed), "Template Adoption");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(templateReportStats.recentlyModified), "Modification Audit");
+        } else if (selectedReport === 'system-usage') {
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.creationsPerDay), "Creation Velocity");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.approvalsPerDay), "Governance Throughput");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.activeUsersPerDay), "Daily Active Users");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.peakHours), "Hourly Peak Patterns");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.activeModules), "Module Engagement");
         }
 
-        if (formatType === 'xlsx' || formatType === 'csv') {
-            const XLSX = await import('xlsx');
-            const ws = XLSX.utils.json_to_sheet(dataToExport);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Report");
-            XLSX.writeFile(wb, `${filename}.${formatType === 'xlsx' ? 'xlsx' : 'csv'}`);
+        if (formatType === 'xlsx') {
+            XLSX.writeFile(wb, `${filename}.xlsx`);
+        } else if (formatType === 'csv') {
+            const firstSheetName = wb.SheetNames[0];
+            const csv = XLSX.utils.sheet_to_csv(wb.Sheets[firstSheetName]);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", `${filename}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         } else {
             const { default: jsPDF } = await import('jspdf');
             const doc = new jsPDF('l', 'mm', 'a4');
             doc.setFontSize(18);
             doc.text(`MedPoint Wiki: ${selectedReport.replace('-', ' ').toUpperCase()}`, 14, 20);
+            doc.setFontSize(10);
+            doc.text(`Exported on: ${format(new Date(), 'PPP p')}`, 14, 28);
             doc.save(`${filename}.pdf`);
         }
-        toast({ title: "Export Success" });
+        toast({ title: "Export Success", description: `Report generated as ${formatType.toUpperCase()}.` });
     };
 
     return (
         <div className="space-y-6 h-full flex flex-col bg-slate-50/30">
+            {/* STICKY HEADER ACTIONS */}
             <div className="bg-white p-6 border-b sticky top-0 z-30 shadow-sm space-y-6">
                 <div className="flex justify-between items-start">
                     <div className="space-y-1">
@@ -962,15 +1016,15 @@ function ReportPagination({ currentPage, totalPages, pageSize, setPageSize, onPa
                 <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Rows:</span>
                     <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); onPageChange(1); }}>
-                        <SelectTrigger className="h-8 w-16 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-8 w-16 rounded-lg text-xs font-bold border-slate-200 bg-white"><SelectValue /></SelectTrigger>
                         <SelectContent><SelectItem value="5">5</SelectItem><SelectItem value="10">10</SelectItem><SelectItem value="20">20</SelectItem><SelectItem value="50">50</SelectItem></SelectContent>
                     </Select>
                 </div>
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 font-bold border-slate-200" onClick={() => onPageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4 mr-1.5" />Previous</Button>
+                <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 font-bold border-slate-200 bg-white" onClick={() => onPageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4 mr-1.5" />Previous</Button>
                 <div className="flex items-center justify-center min-w-[3.5rem] h-9 rounded-xl bg-white border border-slate-200 text-sm font-black text-indigo-600">{currentPage} / {totalPages || 1}</div>
-                <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 font-bold border-slate-200" onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage >= totalPages || totalPages === 0}>Next<ChevronRight className="h-4 w-4 ml-1.5" /></Button>
+                <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 font-bold border-slate-200 bg-white" onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage >= totalPages || totalPages === 0}>Next<ChevronRight className="h-4 w-4 ml-1.5" /></Button>
             </div>
         </div>
     );
