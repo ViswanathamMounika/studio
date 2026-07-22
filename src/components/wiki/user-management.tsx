@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -79,18 +80,15 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
     const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
     const [editingPermission, setEditingPermission] = useState<Partial<Permission> | null>(null);
 
-    // Permission Pagination State
     const [permPage, setPermPage] = useState(1);
     const [permPageSize, setPermPageSize] = useState(12);
 
     const { toast } = useToast();
 
-    // -- DEFENSIVE DATA ACCESS --
     const safeUsers = useMemo(() => Array.isArray(users) ? users : [], [users]);
     const safeRoles = useMemo(() => Array.isArray(roles) ? roles : [], [roles]);
     const safePermissions = useMemo(() => Array.isArray(permissions) ? permissions : [], [permissions]);
 
-    // -- USER LOGIC --
     const filteredUsers = useMemo(() => {
         return safeUsers.filter(user => 
             user.name.toLowerCase().includes(userSearch.toLowerCase()) ||
@@ -99,7 +97,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         );
     }, [safeUsers, userSearch]);
 
-    // -- PERMISSION LOGIC --
     const filteredPermissions = useMemo(() => {
         return safePermissions.filter(p => 
             p.name.toLowerCase().includes(userSearch.toLowerCase()) ||
@@ -112,6 +109,18 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         const start = (permPage - 1) * permPageSize;
         return filteredPermissions.slice(start, start + permPageSize);
     }, [filteredPermissions, permPage, permPageSize]);
+
+    const logAction = (type: any, details?: string) => {
+        const newLog: ActivityLog = {
+            id: `log_${Date.now()}`,
+            userName: currentUser.name,
+            definitionName: 'Security Administration',
+            activityType: type,
+            occurredDate: new Date().toISOString(),
+            details
+        };
+        setActivityLogs(prev => [newLog, ...(Array.isArray(prev) ? prev : [])]);
+    };
 
     const handleEditUser = (user: UserAccount) => {
         setEditingUser({ ...user });
@@ -135,7 +144,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         toast({ title: "Account Updated" });
     };
 
-    // -- ROLE LOGIC --
     const handleAddRole = () => {
         setEditingRole({ id: `role_${Date.now()}`, name: '', description: '', status: 'Active', permissions: [] });
         setIsRoleModalOpen(true);
@@ -154,7 +162,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         setRoles(newRoles);
         logAction(isNew ? 'Role Created' : 'Role Updated', `Role: ${editingRole.name}`);
         setIsRoleModalOpen(false);
-        toast({ title: iisNew ? "Role Created" : "Role Saved" });
+        toast({ title: isNew ? "Role Created" : "Role Saved" });
     };
 
     const handleDeleteRole = (id: string) => {
@@ -170,7 +178,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         toast({ title: "Role Removed" });
     };
 
-    // -- PERMISSION MUTATION LOGIC --
     const handleAddPermission = () => {
         setEditingPermission({ id: `p_${Date.now()}`, name: '', description: '' });
         setIsPermissionModalOpen(true);
@@ -214,18 +221,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         setPermissions(safePermissions.filter(p => p.id !== id));
         logAction('Permission Deleted', `Permission: ${perm.name}`);
         toast({ title: "Permission Removed" });
-    };
-
-    const logAction = (type: any, details?: string) => {
-        const newLog: ActivityLog = {
-            id: `log_${Date.now()}`,
-            userName: currentUser.name,
-            definitionName: 'Security Administration',
-            activityType: type,
-            occurredDate: new Date().toISOString(),
-            details
-        };
-        setActivityLogs(prev => [newLog, ...(Array.isArray(prev) ? prev : [])]);
     };
 
     return (

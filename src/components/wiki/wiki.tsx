@@ -6,7 +6,7 @@ import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers, initialMasterData, initialSystemConfig } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog, MasterDataState, SystemConfigurationState, ActivityType } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark, UserCircle, LogOut } from 'lucide-react';
+import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark, UserCircle, LogOut, Library } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -117,13 +117,6 @@ export default function Wiki() {
         status: 'Active' as const
     };
   }, [originalAdminState, impersonatedUser]);
-
-  // Initial routing for Admins to MPM Definitions
-  useEffect(() => {
-    if (isMounted && isAdmin && !window.location.search) {
-        setActiveView('definitions');
-    }
-  }, [isMounted, isAdmin]);
 
   useEffect(() => {
     if (debouncedSearchQuery) {
@@ -251,12 +244,35 @@ export default function Wiki() {
     return () => { if (heartbeatInterval.current) clearInterval(heartbeatInterval.current); };
   }, [isEditing, selectedDefinitionId, viewingMode, setDrafts]);
 
-  const handleExitImpersonation = () => {
-    const targetName = impersonatedUser?.name;
-    setImpersonatedUser(null);
-    logAction('User Role Modified', `Ended impersonation session of ${targetName}`);
-    logAction('User Logout', `Ended proxy session for ${targetName}`);
-    toast({ title: "Impersonation Ended", description: "Returned to Super Admin account." });
+  const handleImpersonate = (user: UserAccount | string) => {
+    if (typeof user === 'string') {
+        if (user === '') {
+            setImpersonatedUser(null);
+            logAction('User Logout', 'Ended proxy session.');
+            toast({ title: 'Impersonation Ended' });
+        } else {
+            const roleUser = (Array.isArray(users) ? users : []).find(u => u.role === user && u.status === 'Active');
+            if (roleUser) {
+                setImpersonatedUser(roleUser);
+                logAction('User Login', `Super Admin began proxying as ${roleUser.name} (${roleUser.role})`);
+                toast({ title: `Now proxying as ${roleUser.role}` });
+            }
+        }
+    } else {
+        setImpersonatedUser(user);
+        logAction('User Login', `Super Admin began proxying as ${user.name} (${user.role})`);
+        toast({ title: `Now proxying as ${user.name}` });
+    }
+  };
+
+  const toggleSelectionForExport = (id: string, checked: boolean) => {
+    setSelectedForExport(prev => {
+      if (checked) {
+        return [...prev, id];
+      } else {
+        return prev.filter(item => item !== id);
+      }
+    });
   };
 
   const handleSave = (updatedDefinition: Definition) => {
@@ -829,7 +845,7 @@ export default function Wiki() {
                     variant="outline" 
                     size="sm" 
                     className="h-8 px-4 rounded-xl border-white/30 bg-white/10 hover:bg-white/20 text-white font-bold gap-2 transition-all active:scale-95"
-                    onClick={handleImpersonate.bind(null, '')} // Reset proxy back to Super Admin via simplified logic if needed, but here we exit
+                    onClick={() => handleImpersonate('')} 
                   >
                       <LogOut className="h-3.5 w-3.5" />
                       Exit Session
@@ -897,7 +913,7 @@ export default function Wiki() {
 
                       <div className="flex-1 p-3">
                         <div className="flex items-center gap-2 px-2 mb-3">
-                            <FolderTree className="h-3 w-3 text-slate-400" />
+                            <Library className="h-3 w-3 text-slate-400" />
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">MPM Definitions</span>
                         </div>
                         <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'live')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={null} />
@@ -917,4 +933,3 @@ export default function Wiki() {
     </SidebarProvider>
   );
 }
-
