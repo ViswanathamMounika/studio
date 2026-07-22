@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -525,8 +524,8 @@ export default function Wiki() {
     
     logAction('Definition Deleted', `ID: ${id}, Name: ${targetName}`);
     toast({ 
-      title: draft ? "Draft Discarded" : "Definition Deleted",
-      description: draft ? "Your private draft has been removed." : "Item permanently deleted from the library."
+      title: draft ? "Draft Discarded" : "Definition Removed",
+      description: draft ? "Your private draft has been removed." : "Item removed from the library."
     });
   };
 

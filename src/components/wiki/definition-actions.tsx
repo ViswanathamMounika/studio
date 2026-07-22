@@ -191,7 +191,7 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
                     <AlertDialogTrigger asChild>
                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50">
                             <Trash2 className="mr-2 h-4 w-4" />
-                            <span>Delete Permanently</span>
+                            <span>Delete</span>
                         </DropdownMenuItem>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-[24px] border-none p-8">
@@ -199,19 +199,19 @@ export default function DefinitionActions({ definition, onEdit, onDuplicate, onA
                             <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
                                 <Trash2 className="h-6 w-6 text-red-600" />
                             </div>
-                            <AlertDialogTitle className="text-2xl font-bold">Delete Permanently?</AlertDialogTitle>
+                            <AlertDialogTitle className="text-2xl font-bold">Delete Definition?</AlertDialogTitle>
                             <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
-                                You are about to permanently delete <strong>{definition.name}</strong> and all of its associated version snapshots. 
-                                This action cannot be reversed and the definition will be removed for all users.
+                                You are about to delete <strong>{definition.name}</strong> from the active library. 
+                                This will remove the entry and all of its associated version snapshots.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter className="mt-8 gap-3">
-                            <AlertDialogCancel className="rounded-xl font-bold">Keep Definition</AlertDialogCancel>
+                            <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
                             <AlertDialogAction 
                                 onClick={() => onDelete(definition.id)} 
                                 className="rounded-xl bg-red-600 hover:bg-red-700 font-bold px-6"
                             >
-                                Delete Everything
+                                Confirm Delete
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
