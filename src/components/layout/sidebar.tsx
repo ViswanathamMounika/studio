@@ -71,7 +71,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     const appName = systemConfig?.settings.appName || 'MedPOINT';
 
     const wikiNavItems = [
-        { id: 'activity-logs', label: 'Activity Logs', icon: History },
         { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
         { id: 'acronyms', label: 'Healthcare Acronyms', icon: GanttChart },
         { id: 'clients', label: 'Clients', icon: Users },
@@ -91,6 +90,8 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     const isAdminViewActive = (view: View) => {
         return ['dashboard', 'reports', 'master-data-management', 'user-management', 'system-configuration'].includes(view);
     };
+
+    const isDefinitionsSectionActive = activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'activity-logs' || isAdminViewActive(activeView);
 
     return (
         <Sidebar>
@@ -130,55 +131,72 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
 
                         <CollapsibleContent className="py-1">
                             <SidebarMenu className='pl-4'>
-                                {/* MPM DATA DEFINITIONS - COLLAPSIBLE FOR ADMINS */}
-                                {isAdmin ? (
-                                    <Collapsible open={isDefinitionsOpen} onOpenChange={setIsDefinitionsOpen}>
-                                        <SidebarMenuItem>
-                                            <CollapsibleTrigger asChild>
-                                                <SidebarMenuButton 
-                                                    isActive={activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || isAdminViewActive(activeView)}
-                                                    className={cn("font-semibold", (activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || isAdminViewActive(activeView)) && "text-primary")}
+                                {/* MPM DATA DEFINITIONS - COLLAPSIBLE FOR ALL ROLES */}
+                                <Collapsible open={isDefinitionsOpen} onOpenChange={setIsDefinitionsOpen}>
+                                    <SidebarMenuItem>
+                                        <CollapsibleTrigger asChild>
+                                            <SidebarMenuButton 
+                                                isActive={isDefinitionsSectionActive}
+                                                className={cn("font-semibold", isDefinitionsSectionActive && "text-primary")}
+                                            >
+                                                <Library className="h-4 w-4" />
+                                                <span>MPM Data Definitions</span>
+                                                <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isDefinitionsOpen && "rotate-180")} />
+                                            </SidebarMenuButton>
+                                        </CollapsibleTrigger>
+                                    </SidebarMenuItem>
+                                    <CollapsibleContent>
+                                        <SidebarMenuSub className="pl-4 border-l ml-2 space-y-0.5 mt-1">
+                                            <SidebarMenuSubItem>
+                                                <SidebarMenuSubButton 
+                                                    isActive={activeView === 'definitions'}
+                                                    onClick={() => handleNavigate('definitions')}
+                                                    className="h-7 text-[12px]"
                                                 >
-                                                    <Library className="h-4 w-4" />
-                                                    <span>MPM Data Definitions</span>
-                                                    <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isDefinitionsOpen && "rotate-180")} />
-                                                </SidebarMenuButton>
-                                            </CollapsibleTrigger>
-                                        </SidebarMenuItem>
-                                        <CollapsibleContent>
-                                            <SidebarMenuSub className="pl-4 border-l ml-2 space-y-0.5 mt-1">
-                                                <SidebarMenuSubItem>
-                                                    <SidebarMenuSubButton 
-                                                        isActive={activeView === 'definitions'}
-                                                        onClick={() => handleNavigate('definitions')}
-                                                        className="h-7 text-[12px]"
-                                                    >
-                                                        <Library className="h-3.5 w-3.5 mr-1" />
-                                                        MPM Definitions
-                                                    </SidebarMenuSubButton>
-                                                </SidebarMenuSubItem>
-                                                <SidebarMenuSubItem>
-                                                    <SidebarMenuSubButton 
-                                                        isActive={activeView === 'approval-workflow'}
-                                                        onClick={() => handleNavigate('approval-workflow')}
-                                                        className="h-7 text-[12px]"
-                                                    >
-                                                        <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
-                                                        Approvals
-                                                    </SidebarMenuSubButton>
-                                                </SidebarMenuSubItem>
-                                                <SidebarMenuSubItem>
-                                                    <SidebarMenuSubButton 
-                                                        isActive={activeView === 'template-management'}
-                                                        onClick={() => handleNavigate('template-management')}
-                                                        className="h-7 text-[12px]"
-                                                    >
-                                                        <Settings2 className="h-3.5 w-3.5 mr-1" />
-                                                        Templates
-                                                    </SidebarMenuSubButton>
-                                                </SidebarMenuSubItem>
+                                                    <Library className="h-3.5 w-3.5 mr-1" />
+                                                    MPM Definitions
+                                                </SidebarMenuSubButton>
+                                            </SidebarMenuSubItem>
 
-                                                {/* NESTED ADMIN CONSOLE */}
+                                            {isAdmin && (
+                                                <>
+                                                    <SidebarMenuSubItem>
+                                                        <SidebarMenuSubButton 
+                                                            isActive={activeView === 'approval-workflow'}
+                                                            onClick={() => handleNavigate('approval-workflow')}
+                                                            className="h-7 text-[12px]"
+                                                        >
+                                                            <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
+                                                            Approvals
+                                                        </SidebarMenuSubButton>
+                                                    </SidebarMenuSubItem>
+                                                    <SidebarMenuSubItem>
+                                                        <SidebarMenuSubButton 
+                                                            isActive={activeView === 'template-management'}
+                                                            onClick={() => handleNavigate('template-management')}
+                                                            className="h-7 text-[12px]"
+                                                        >
+                                                            <Settings2 className="h-3.5 w-3.5 mr-1" />
+                                                            Templates
+                                                        </SidebarMenuSubButton>
+                                                    </SidebarMenuSubItem>
+                                                </>
+                                            )}
+
+                                            {/* Activity Logs - Accessible to all roles inside the Definitions sub-menu */}
+                                            <SidebarMenuSubItem>
+                                                <SidebarMenuSubButton 
+                                                    isActive={activeView === 'activity-logs'}
+                                                    onClick={() => handleNavigate('activity-logs')}
+                                                    className="h-7 text-[12px]"
+                                                >
+                                                    <History className="h-3.5 w-3.5 mr-1" />
+                                                    Activity Logs
+                                                </SidebarMenuSubButton>
+                                            </SidebarMenuSubItem>
+
+                                            {/* NESTED ADMIN CONSOLE */}
+                                            {isAdmin && (
                                                 <Collapsible open={isGovernanceOpen} onOpenChange={setIsGovernanceOpen} className="mt-1">
                                                     <SidebarMenuItem>
                                                         <CollapsibleTrigger asChild>
@@ -249,21 +267,10 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                         </SidebarMenuSub>
                                                     </CollapsibleContent>
                                                 </Collapsible>
-                                            </SidebarMenuSub>
-                                        </CollapsibleContent>
-                                    </Collapsible>
-                                ) : (
-                                    <SidebarMenuItem>
-                                        <SidebarMenuButton 
-                                            isActive={activeView === 'definitions'}
-                                            onClick={() => handleNavigate('definitions')}
-                                            className={cn(activeView === 'definitions' && "text-primary font-bold")}
-                                        >
-                                            <Library className="h-4 w-4" />
-                                            <span>MPM Data Definitions</span>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                )}
+                                            )}
+                                        </SidebarMenuSub>
+                                    </CollapsibleContent>
+                                </Collapsible>
 
                                 {/* Remaining Wiki Items */}
                                 {wikiNavItems.map(item => (
