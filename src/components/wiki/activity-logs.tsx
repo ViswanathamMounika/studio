@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths, subDays } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History, User2 } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Search as SearchIcon, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History, User2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType, UserAccount } from '@/lib/types';
 import { Badge } from '../ui/badge';
@@ -278,7 +278,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                                 onCheckedChange={setIsViewedOnly}
                             />
                             <Label htmlFor="viewed-only" className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1 cursor-pointer">
-                                Include telemetry (Views/Searches)
+                                view as
                             </Label>
                         </div>
                     )}
@@ -288,7 +288,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                         <div className="space-y-2">
                             <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Definition Name</Label>
                             <div className="relative" ref={searchRef}>
-                                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                                <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                                 <Input 
                                     placeholder="Filter by name..." 
                                     className="pl-9 rounded-xl border-slate-200 h-10"
@@ -360,8 +360,8 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
 
                         <div className="flex gap-2">
                             <Button className="h-10 w-full rounded-xl bg-[#3F51B5] font-bold shadow-lg shadow-indigo-100" onClick={handleSearch}>
-                                <Search className="h-4 w-4 mr-2" />
-                                Run Audit
+                                <SearchIcon className="h-4 w-4 mr-2" />
+                                Search
                             </Button>
                         </div>
                     </div>
@@ -404,7 +404,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                             </div>
                             <h3 className="text-xl font-bold text-slate-900">Audit History Ready</h3>
                             <p className="text-sm text-slate-500 max-w-sm mt-2 font-medium">
-                                Configure your governance filters and click <strong>Run Audit</strong> to retrieve system activity logs.
+                                Configure your governance filters and click <strong>Search</strong> to retrieve system activity logs.
                             </p>
                         </div>
                     ) : (
