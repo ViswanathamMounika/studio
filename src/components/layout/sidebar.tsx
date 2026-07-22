@@ -46,7 +46,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
-import type { View, SystemConfigurationState } from '@/lib/types';
+import type { View, SystemConfigurationState, UserAccount } from '@/lib/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type AppSidebarProps = {
@@ -56,6 +56,7 @@ type AppSidebarProps = {
     onToggleAdmin: (isAdmin: boolean) => void;
     isImpersonating?: boolean;
     systemConfig?: SystemConfigurationState;
+    currentUser: Partial<UserAccount>;
 };
 
 const topNavItems = [
@@ -63,12 +64,13 @@ const topNavItems = [
     { id: 'posts', label: 'Posts', icon: Newspaper },
 ];
 
-export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAdmin, isImpersonating, systemConfig }: AppSidebarProps) {
+export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAdmin, isImpersonating, systemConfig, currentUser }: AppSidebarProps) {
     const [isWikiOpen, setIsWikiOpen] = useState(true);
     const [isDefinitionsOpen, setIsDefinitionsOpen] = useState(true);
     const [isGovernanceOpen, setIsGovernanceOpen] = useState(false);
 
     const appName = systemConfig?.settings.appName || 'MedPOINT';
+    const userRole = currentUser.role || 'Standard User';
 
     const wikiNavItems = [
         { id: 'datasets', label: 'MPM Datasets', icon: ShoppingCart },
@@ -79,19 +81,19 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     ];
 
     const handleNavigate = (id: string) => {
-        const adminViews = ['dashboard', 'definitions', 'activity-logs', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration', 'reports'];
-        if (adminViews.includes(id)) {
-            onNavigate(id as View);
-        } else {
-            console.log(`Navigating to ${id}`);
-        }
+        onNavigate(id as View);
     }
 
-    const isAdminViewActive = (view: View) => {
+    const isAdminConsoleActive = (view: View) => {
         return ['dashboard', 'reports', 'master-data-management', 'user-management', 'system-configuration'].includes(view);
     };
 
-    const isDefinitionsSectionActive = activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'activity-logs' || isAdminViewActive(activeView);
+    const isDefinitionsSectionActive = activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'activity-logs' || isAdminConsoleActive(activeView);
+
+    // RBAC VISIBILITY CHECKS
+    const canSeeApprovals = userRole === 'Super Admin' || userRole === 'Approver';
+    const canSeeTemplates = userRole === 'Super Admin' || userRole === 'Admin';
+    const canSeeAdminConsole = userRole === 'Super Admin';
 
     return (
         <Sidebar>
@@ -158,29 +160,32 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                 </SidebarMenuSubButton>
                                             </SidebarMenuSubItem>
 
-                                            {isAdmin && (
-                                                <>
-                                                    <SidebarMenuSubItem>
-                                                        <SidebarMenuSubButton 
-                                                            isActive={activeView === 'approval-workflow'}
-                                                            onClick={() => handleNavigate('approval-workflow')}
-                                                            className="h-7 text-[12px]"
-                                                        >
-                                                            <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
-                                                            Approvals
-                                                        </SidebarMenuSubButton>
-                                                    </SidebarMenuSubItem>
-                                                    <SidebarMenuSubItem>
-                                                        <SidebarMenuSubButton 
-                                                            isActive={activeView === 'template-management'}
-                                                            onClick={() => handleNavigate('template-management')}
-                                                            className="h-7 text-[12px]"
-                                                        >
-                                                            <Settings2 className="h-3.5 w-3.5 mr-1" />
-                                                            Templates
-                                                        </SidebarMenuSubButton>
-                                                    </SidebarMenuSubItem>
-                                                </>
+                                            {/* RBAC: APPROVALS */}
+                                            {canSeeApprovals && (
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton 
+                                                        isActive={activeView === 'approval-workflow'}
+                                                        onClick={() => handleNavigate('approval-workflow')}
+                                                        className="h-7 text-[12px]"
+                                                    >
+                                                        <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
+                                                        Approvals
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            )}
+
+                                            {/* RBAC: TEMPLATES */}
+                                            {canSeeTemplates && (
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton 
+                                                        isActive={activeView === 'template-management'}
+                                                        onClick={() => handleNavigate('template-management')}
+                                                        className="h-7 text-[12px]"
+                                                    >
+                                                        <Settings2 className="h-3.5 w-3.5 mr-1" />
+                                                        Templates
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
                                             )}
 
                                             {/* Activity Logs - Accessible to all roles inside the Definitions sub-menu */}
@@ -195,15 +200,15 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                 </SidebarMenuSubButton>
                                             </SidebarMenuSubItem>
 
-                                            {/* NESTED ADMIN CONSOLE */}
-                                            {isAdmin && (
+                                            {/* RBAC: NESTED ADMIN CONSOLE (SUPER ADMIN ONLY) */}
+                                            {canSeeAdminConsole && (
                                                 <Collapsible open={isGovernanceOpen} onOpenChange={setIsGovernanceOpen} className="mt-1">
                                                     <SidebarMenuItem>
                                                         <CollapsibleTrigger asChild>
                                                             <SidebarMenuSubButton 
                                                                 className={cn(
                                                                     "h-7 text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-primary",
-                                                                    isAdminViewActive(activeView) && "text-primary"
+                                                                    isAdminConsoleActive(activeView) && "text-primary"
                                                                 )}
                                                             >
                                                                 <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />

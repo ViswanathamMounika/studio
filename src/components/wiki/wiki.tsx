@@ -195,12 +195,27 @@ export default function Wiki() {
   }, [definitions, drafts, updateUrl]);
 
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
-    const adminViews = ['dashboard', 'template-management', 'approval-workflow', 'user-management', 'master-data-management', 'system-configuration', 'reports'];
-    const needsAdmin = adminViews.includes(view);
-    if (needsAdmin && !isAdmin) {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'Access restricted to administrators.' });
+    const userRole = currentUser.role;
+
+    // RBAC: SUPER ADMIN ONLY VIEWS
+    const superAdminViews = ['dashboard', 'reports', 'master-data-management', 'user-management', 'system-configuration'];
+    if (superAdminViews.includes(view) && userRole !== 'Super Admin') {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Access to the Admin Console is restricted to Super Administrators.' });
         return;
     }
+
+    // RBAC: APPROVALS (Super Admin or Approver)
+    if (view === 'approval-workflow' && userRole !== 'Super Admin' && userRole !== 'Approver') {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Access to Approvals is restricted to Approvers.' });
+        return;
+    }
+
+    // RBAC: TEMPLATES (Super Admin or Admin)
+    if (view === 'template-management' && userRole !== 'Super Admin' && userRole !== 'Admin') {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Access to Templates is restricted to Administrators.' });
+        return;
+    }
+
     setActiveView(view);
     if (view === 'definitions') {
         handleSelectDefinition('1.1.1', undefined, 'live', shouldUpdateUrl);
@@ -210,7 +225,7 @@ export default function Wiki() {
             updateUrl('', '', view);
         }
     }
-  }, [isAdmin, toast, handleSelectDefinition, updateUrl]);
+  }, [currentUser.role, toast, handleSelectDefinition, updateUrl]);
 
   const handlePopState = useCallback(() => {
     if (!isMounted) return;
@@ -228,7 +243,7 @@ export default function Wiki() {
         setActiveView('definitions');
         handleSelectDefinition('1.1.1', undefined, 'live', false);
     }
-  }, [isMounted, isAdmin, handleNavigate, handleSelectDefinition]);
+  }, [isMounted, handleNavigate, handleSelectDefinition]);
 
   useEffect(() => {
     window.addEventListener('popstate', handlePopState);
@@ -834,6 +849,7 @@ export default function Wiki() {
         onToggleAdmin={setOriginalAdminState} 
         isImpersonating={!!impersonatedUser}
         systemConfig={systemConfig}
+        currentUser={currentUser}
       />
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background relative overflow-hidden">
