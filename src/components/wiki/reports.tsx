@@ -551,8 +551,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     </DropdownMenu>
                 </div>
 
-                <div className="flex items-center gap-6">
-                    <div className="flex-1 max-w-sm space-y-1.5">
+                <div className="flex flex-wrap items-center gap-6">
+                    <div className="flex-1 min-w-[240px] max-w-sm space-y-1.5">
                         <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Report Selection</Label>
                         <Select value={selectedReport} onValueChange={(v) => { setSelectedReport(v as ReportType); clearAllFilters(); }}>
                             <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white font-bold">
@@ -572,7 +572,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     </div>
 
                     {selectedReport === 'approval-report' && (
-                        <div className="flex-1 max-w-xs space-y-1.5 animate-in fade-in slide-in-from-left-2">
+                        <div className="flex-1 min-w-[200px] max-w-xs space-y-1.5 animate-in fade-in slide-in-from-left-2">
                             <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Reviewing Approver</Label>
                             <Select value={approverFilter} onValueChange={setApproverFilter}>
                                 <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white font-bold">
@@ -591,11 +591,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         </div>
                     )}
 
-                    <div className="flex-1 max-w-xs space-y-1.5">
+                    <div className="flex-1 min-w-[220px] max-w-xs space-y-1.5">
                         <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Observation Period</Label>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant="outline" className="w-full h-10 px-4 font-bold text-xs gap-2 rounded-xl border-slate-200 justify-start">
+                                <Button variant="outline" className="w-full h-10 px-4 font-bold text-xs gap-2 rounded-xl border-slate-200 justify-start bg-white">
                                     <CalendarIcon className="h-3.5 w-3.5 text-primary" />
                                     {dateRange?.from ? (
                                         dateRange.to ? <>{format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd")}</> : format(dateRange.from, "MMM dd, yyyy")
@@ -608,7 +608,12 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         </Popover>
                     </div>
 
-                    <Button variant="ghost" className="mt-6 h-10 rounded-xl font-bold gap-2 text-slate-400" onClick={clearAllFilters}><FilterX className="h-4 w-4" /> Reset</Button>
+                    <div className="pt-6">
+                        <Button variant="ghost" className="h-10 rounded-xl font-bold gap-2 text-slate-400 hover:bg-slate-50" onClick={clearAllFilters}>
+                            <FilterX className="h-4 w-4" /> 
+                            Reset
+                        </Button>
+                    </div>
                 </div>
             </div>
 
@@ -616,19 +621,23 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 <div className="p-8 max-w-[1600px] mx-auto pb-32">
                     {selectedReport === 'user-activity' ? (
                         <div className="space-y-4 animate-in fade-in duration-500">
+                            <div className="flex items-center gap-2 px-2">
+                                <Users className="h-4 w-4 text-primary" />
+                                <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">User Activity Audit Ledger</h3>
+                            </div>
                             <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <Table>
                                     <TableHeader className="bg-slate-50 border-b">
                                         <TableRow>
-                                            <ReportHeader label="User Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 w-[220px]" />
-                                            <ReportHeader label="Last Login" id="lastLogin" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastLogin} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                            <ReportHeader label="Logins" id="logins" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.logins} onFilterChange={handleFilterChange} className="w-[110px]" />
-                                            <ReportHeader label="Last Activity" id="lastActivity" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastActivity} onFilterChange={handleFilterChange} className="w-[150px]" />
-                                            <ReportHeader label="Created" id="creations" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.creations} onFilterChange={handleFilterChange} className="w-[110px]" />
-                                            <ReportHeader label="Edited" id="edits" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.edits} onFilterChange={handleFilterChange} className="w-[110px]" />
-                                            <ReportHeader label="Approvals" id="approvals" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approvals} onFilterChange={handleFilterChange} className="w-[120px]" />
-                                            <ReportHeader label="Templates" id="templates" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templates} onFilterChange={handleFilterChange} className="w-[120px]" />
-                                            <ReportHeader label="Status" id="status" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.status} onFilterChange={handleFilterChange} isSelectFilter className="pr-6 w-[130px]" />
+                                            <ReportHeader label="User Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 min-w-[200px]" />
+                                            <ReportHeader label="Last Login" id="lastLogin" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastLogin} onFilterChange={handleFilterChange} className="min-w-[160px]" />
+                                            <ReportHeader label="Logins" id="logins" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.logins} onFilterChange={handleFilterChange} className="min-w-[100px]" />
+                                            <ReportHeader label="Last Activity" id="lastActivity" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastActivity} onFilterChange={handleFilterChange} className="min-w-[140px]" />
+                                            <ReportHeader label="Created" id="creations" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.creations} onFilterChange={handleFilterChange} className="min-w-[100px]" />
+                                            <ReportHeader label="Edited" id="edits" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.edits} onFilterChange={handleFilterChange} className="min-w-[100px]" />
+                                            <ReportHeader label="Approvals" id="approvals" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approvals} onFilterChange={handleFilterChange} className="min-w-[110px]" />
+                                            <ReportHeader label="Templates" id="templates" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templates} onFilterChange={handleFilterChange} className="min-w-[110px]" />
+                                            <ReportHeader label="Status" id="status" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.status} onFilterChange={handleFilterChange} isSelectFilter className="pr-6 min-w-[120px]" />
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -642,9 +651,23 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                 <TableCell className="font-bold text-indigo-600">{u.edits}</TableCell>
                                                 <TableCell className="font-bold text-amber-600">{u.approvals}</TableCell>
                                                 <TableCell className="font-bold text-slate-600">{u.templates}</TableCell>
-                                                <TableCell className="pr-6"><Badge variant={u.status === 'Active' ? 'success' : 'secondary'} className="font-black text-[9px] uppercase px-2">{u.status}</Badge></TableCell>
+                                                <TableCell className="pr-6">
+                                                    <Badge variant={u.status === 'Active' ? 'success' : 'secondary'} className="font-black text-[9px] uppercase px-2">
+                                                        {u.status}
+                                                    </Badge>
+                                                </TableCell>
                                             </TableRow>
                                         ))}
+                                        {paginatedData.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={9} className="h-64 text-center">
+                                                    <div className="flex flex-col items-center justify-center gap-3">
+                                                        <Search className="h-10 w-10 text-slate-200" />
+                                                        <p className="text-slate-400 font-bold italic">No user activity records match your filters.</p>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
                             </Card>
@@ -657,7 +680,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                     <Table>
                                         <TableHeader className="bg-slate-50 border-b">
-                                            <TableRow><TableHead className="px-6 h-12">Definition State</TableHead><TableHead className="text-right px-6 h-12">Count</TableHead></TableRow>
+                                            <TableRow><TableHead className="px-6 h-12 font-black uppercase text-[10px] tracking-widest text-slate-500">Definition State</TableHead><TableHead className="text-right px-6 h-12 font-black uppercase text-[10px] tracking-widest text-slate-500">Count</TableHead></TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {[
@@ -668,15 +691,21 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                 { label: 'Rejected', count: definitionReportStats.counts.rejected, color: 'text-red-600' },
                                                 { label: 'Archived', count: definitionReportStats.counts.archived, color: 'text-slate-400' }
                                             ].map((row, i) => (
-                                                <TableRow key={i} className="border-slate-100 h-14"><TableCell className="px-6 font-medium text-slate-700">{row.label}</TableCell><TableCell className={cn("px-6 text-right font-black text-lg tabular-nums", row.color)}>{row.count}</TableCell></TableRow>
+                                                <TableRow key={i} className="border-slate-100 h-14 hover:bg-slate-50/30"><TableCell className="px-6 font-medium text-slate-700">{row.label}</TableCell><TableCell className={cn("px-6 text-right font-black text-lg tabular-nums", row.color)}>{row.count}</TableCell></TableRow>
                                             ))}
                                         </TableBody>
                                     </Table>
                                 </Card>
                             </div>
-                            <div className="grid grid-cols-2 gap-10">
-                                <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white"><div className="p-6 border-b bg-slate-50"><h4 className="font-bold">By Author</h4></div><Table><TableBody>{definitionReportStats.creationsByUser.map((u, i) => (<TableRow key={i} className="h-12 border-slate-100"><TableCell className="px-6 font-bold">{u.name}</TableCell><TableCell className="px-6 text-right font-black text-indigo-600">{u.count}</TableCell></TableRow>))}</TableBody></Table></Card>
-                                <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white"><div className="p-6 border-b bg-slate-50"><h4 className="font-bold">By Month</h4></div><Table><TableBody>{definitionReportStats.creationsByMonth.map((m, i) => (<TableRow key={i} className="h-12 border-slate-100"><TableCell className="px-6 font-mono font-bold">{m.month}</TableCell><TableCell className="px-6 text-right font-black text-emerald-600">{m.count}</TableCell></TableRow>))}</TableBody></Table></Card>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 px-2"><UserCheck className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Top Authors</h3></div>
+                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm"><Table><TableBody>{definitionReportStats.creationsByUser.map((u, i) => (<TableRow key={i} className="h-12 border-slate-100 hover:bg-slate-50/50"><TableCell className="px-6 font-bold text-slate-700">{u.name}</TableCell><TableCell className="px-6 text-right font-black text-indigo-600 tabular-nums">{u.count}</TableCell></TableRow>))}</TableBody></Table></Card>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 px-2"><Activity className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Creation Trends</h3></div>
+                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm"><Table><TableBody>{definitionReportStats.creationsByMonth.map((m, i) => (<TableRow key={i} className="h-12 border-slate-100 hover:bg-slate-50/50"><TableCell className="px-6 font-mono font-bold text-slate-700">{m.month}</TableCell><TableCell className="px-6 text-right font-black text-emerald-600 tabular-nums">{m.count}</TableCell></TableRow>))}</TableBody></Table></Card>
+                                </div>
                             </div>
                         </div>
                     ) : selectedReport === 'approval-report' ? (
@@ -686,13 +715,13 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                     <Table>
                                         <TableHeader className="bg-slate-50 border-b">
-                                            <TableRow><TableHead className="px-6 h-12">Performance Metric</TableHead><TableHead className="text-right px-6 h-12">Value</TableHead></TableRow>
+                                            <TableRow><TableHead className="px-6 h-12 font-black uppercase text-[10px] tracking-widest text-slate-500">Performance Metric</TableHead><TableHead className="text-right px-6 h-12 font-black uppercase text-[10px] tracking-widest text-slate-500">Value</TableHead></TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Total Approval Requests</TableCell><TableCell className="px-6 text-right font-black text-slate-900">{approvalReportStats.metrics.totalRequests}</TableCell></TableRow>
-                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Pending Approvals</TableCell><TableCell className="px-6 text-right font-black text-indigo-600">{approvalReportStats.metrics.pendingCount}</TableCell></TableRow>
-                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Approved Count</TableCell><TableCell className="px-6 text-right font-black text-emerald-600">{approvalReportStats.metrics.approvedCount}</TableCell></TableRow>
-                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Rejected Count</TableCell><TableCell className="px-6 text-right font-black text-red-600">{approvalReportStats.metrics.rejectedCount}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14 hover:bg-slate-50/30"><TableCell className="px-6 font-medium">Total Approval Requests</TableCell><TableCell className="px-6 text-right font-black text-slate-900 tabular-nums">{approvalReportStats.metrics.totalRequests}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14 hover:bg-slate-50/30"><TableCell className="px-6 font-medium">Pending Approvals</TableCell><TableCell className="px-6 text-right font-black text-indigo-600 tabular-nums">{approvalReportStats.metrics.pendingCount}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14 hover:bg-slate-50/30"><TableCell className="px-6 font-medium">Approved Count</TableCell><TableCell className="px-6 text-right font-black text-emerald-600 tabular-nums">{approvalReportStats.metrics.approvedCount}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14 hover:bg-slate-50/30"><TableCell className="px-6 font-medium">Rejected Count</TableCell><TableCell className="px-6 text-right font-black text-red-600 tabular-nums">{approvalReportStats.metrics.rejectedCount}</TableCell></TableRow>
                                             <TableRow className="border-slate-100 h-14 bg-indigo-50/20"><TableCell className="px-6 font-bold text-primary flex items-center gap-2"><Clock className="h-4 w-4" /> Average Approval Time</TableCell><TableCell className="px-6 text-right font-black text-primary text-xl tabular-nums">{approvalReportStats.metrics.avgDecisionTime} hrs</TableCell></TableRow>
                                         </TableBody>
                                     </Table>
@@ -706,19 +735,19 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
                                                 <TableRow>
-                                                    <TableHead className="px-6">Approver Name</TableHead>
-                                                    <TableHead className="text-center">Total</TableHead>
-                                                    <TableHead className="text-center text-emerald-600">Appr.</TableHead>
-                                                    <TableHead className="text-center text-red-600">Rej.</TableHead>
+                                                    <TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-500">Approver Name</TableHead>
+                                                    <TableHead className="text-center font-black uppercase text-[10px] tracking-widest text-slate-500">Total</TableHead>
+                                                    <TableHead className="text-center font-black uppercase text-[10px] tracking-widest text-emerald-600">Appr.</TableHead>
+                                                    <TableHead className="text-center font-black uppercase text-[10px] tracking-widest text-red-600">Rej.</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {approvalReportStats.byApprover.map((app, i) => (
                                                     <TableRow key={i} className="h-14 border-slate-100 hover:bg-slate-50/50">
                                                         <TableCell className="px-6 font-bold text-slate-700">{app.name}</TableCell>
-                                                        <TableCell className="text-center font-black text-slate-900">{app.total}</TableCell>
-                                                        <TableCell className="text-center font-bold text-emerald-600">{app.approved}</TableCell>
-                                                        <TableCell className="text-center font-bold text-red-600">{app.rejected}</TableCell>
+                                                        <TableCell className="text-center font-black text-slate-900 tabular-nums">{app.total}</TableCell>
+                                                        <TableCell className="text-center font-bold text-emerald-600 tabular-nums">{app.approved}</TableCell>
+                                                        <TableCell className="text-center font-bold text-red-600 tabular-nums">{app.rejected}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -730,7 +759,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                     <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow><TableHead className="px-6">Definition</TableHead><TableHead>Author</TableHead><TableHead className="text-right px-6">Age</TableHead></TableRow>
+                                                <TableRow><TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-500">Definition</TableHead><TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Author</TableHead><TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-500">Age</TableHead></TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {approvalReportStats.oldestPending.map((p, i) => {
@@ -756,12 +785,12 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                     <Table>
                                         <TableHeader className="bg-slate-50 border-b">
-                                            <TableRow><TableHead className="px-6 h-12">Classification</TableHead><TableHead className="text-right px-6 h-12">Value</TableHead></TableRow>
+                                            <TableRow><TableHead className="px-6 h-12 font-black uppercase text-[10px] tracking-widest text-slate-500">Classification</TableHead><TableHead className="text-right px-6 h-12 font-black uppercase text-[10px] tracking-widest text-slate-500">Value</TableHead></TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Total Registered Blueprints</TableCell><TableCell className="px-6 text-right font-black text-slate-900">{templateReportStats.counts.total}</TableCell></TableRow>
-                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Active Templates</TableCell><TableCell className="px-6 text-right font-black text-emerald-600">{templateReportStats.counts.active}</TableCell></TableRow>
-                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Inactive/Draft Templates</TableCell><TableCell className="px-6 text-right font-black text-slate-400">{templateReportStats.counts.inactive}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14 hover:bg-slate-50/30"><TableCell className="px-6 font-medium">Total Registered Blueprints</TableCell><TableCell className="px-6 text-right font-black text-slate-900 tabular-nums">{templateReportStats.counts.total}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14 hover:bg-slate-50/30"><TableCell className="px-6 font-medium">Active Templates</TableCell><TableCell className="px-6 text-right font-black text-emerald-600 tabular-nums">{templateReportStats.counts.active}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14 hover:bg-slate-50/30"><TableCell className="px-6 font-medium">Inactive/Draft Templates</TableCell><TableCell className="px-6 text-right font-black text-slate-400 tabular-nums">{templateReportStats.counts.inactive}</TableCell></TableRow>
                                             <TableRow className="border-slate-100 h-14 bg-indigo-50/20"><TableCell className="px-6 font-bold text-primary flex items-center gap-2"><Settings2 className="h-4 w-4" /> Recently Modified (Selected Period)</TableCell><TableCell className="px-6 text-right font-black text-primary text-xl tabular-nums">{templateReportStats.counts.recentlyModifiedCount}</TableCell></TableRow>
                                         </TableBody>
                                     </Table>
@@ -775,9 +804,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
                                                 <TableRow>
-                                                    <TableHead className="px-6">Template Identity</TableHead>
-                                                    <TableHead>Module</TableHead>
-                                                    <TableHead className="text-right px-6">Definition Usage</TableHead>
+                                                    <TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-500">Template Identity</TableHead>
+                                                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Module</TableHead>
+                                                    <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-500">Usage</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -799,9 +828,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
                                                 <TableRow>
-                                                    <TableHead className="px-6">Template</TableHead>
-                                                    <TableHead>Action By</TableHead>
-                                                    <TableHead className="text-right px-6">Date</TableHead>
+                                                    <TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-500">Template</TableHead>
+                                                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Action By</TableHead>
+                                                    <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-500">Date</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -833,8 +862,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
                                                 <TableRow>
-                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase">Calendar Date</TableHead>
-                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase">Creations</TableHead>
+                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Calendar Date</TableHead>
+                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Creations</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -861,8 +890,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
                                                 <TableRow>
-                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase">Calendar Date</TableHead>
-                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase">Decisions</TableHead>
+                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Calendar Date</TableHead>
+                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Decisions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -891,8 +920,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
                                                 <TableRow>
-                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase">Calendar Date</TableHead>
-                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase">Unique Users</TableHead>
+                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Calendar Date</TableHead>
+                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Unique Users</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -919,8 +948,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
                                                 <TableRow>
-                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase">Hour Block (24h)</TableHead>
-                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase">Login Volume</TableHead>
+                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Hour Block (24h)</TableHead>
+                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Login Volume</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -948,8 +977,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                     <Table>
                                         <TableHeader className="bg-slate-50 border-b">
                                             <TableRow>
-                                                <TableHead className="px-6 h-12 text-[10px] font-black uppercase">Business Module</TableHead>
-                                                <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase">System Interaction Count</TableHead>
+                                                <TableHead className="px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Business Module</TableHead>
+                                                <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">System Interaction Count</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -1010,11 +1039,11 @@ function ReportHeader({ label, id, currentSort, onSort, filterValue, onFilterCha
 
 function ReportPagination({ currentPage, totalPages, pageSize, setPageSize, onPageChange, totalItems }: any) {
     return (
-        <div className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-200 shadow-sm mt-2">
             <div className="flex items-center gap-6">
-                <div className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Showing {totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems}</div>
+                <div className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Showing {totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems} records</div>
                 <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Rows:</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Rows per page:</span>
                     <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); onPageChange(1); }}>
                         <SelectTrigger className="h-8 w-16 rounded-lg text-xs font-bold border-slate-200 bg-white"><SelectValue /></SelectTrigger>
                         <SelectContent><SelectItem value="5">5</SelectItem><SelectItem value="10">10</SelectItem><SelectItem value="20">20</SelectItem><SelectItem value="50">50</SelectItem></SelectContent>
