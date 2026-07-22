@@ -36,7 +36,10 @@ import {
     ClipboardCheck,
     Clock,
     UserCheck,
-    AlertCircle
+    AlertCircle,
+    LayoutTemplate,
+    Activity,
+    Settings2
 } from 'lucide-react';
 import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, differenceInMinutes, differenceInHours } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -66,9 +69,9 @@ type SortConfig = {
     direction: 'asc' | 'desc';
 } | null;
 
-type ReportType = 'user-activity' | 'definition-report' | 'approval-report' | 'workflow-analysis' | 'template-stats';
+type ReportType = 'user-activity' | 'definition-report' | 'approval-report' | 'template-report';
 
-export default function ReportsDashboard({ users, definitions, drafts, activityLogs, approvalHistory }: ReportsDashboardProps) {
+export default function ReportsDashboard({ users, definitions, drafts, activityLogs, approvalHistory, templates }: ReportsDashboardProps) {
     const [selectedReport, setSelectedReport] = useState<ReportType>('user-activity');
     const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>({
         from: subMonths(new Date(), 12),
@@ -212,13 +215,12 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         const rejected = filteredHistory.filter(h => h.action === 'Rejected' || h.action === 'Changes Requested');
         const pending = safeDrafts.filter(d => d.isPendingApproval);
 
-        // Calculate Average Decision Time (Only for Approved/Rejected items in current filter)
+        // Calculate Average Decision Time
         let totalMinutes = 0;
         let countWithTime = 0;
         
         filteredHistory.forEach(h => {
             if (h.action === 'Approved' || h.action === 'Rejected' || h.action === 'Changes Requested') {
-                // Look for most recent 'Submitted' for this definition before this action
                 const submission = safeHistory.find(s => 
                     s.definitionId === h.definitionId && 
                     s.action === 'Submitted' && 
@@ -234,7 +236,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
         const avgHours = countWithTime > 0 ? (totalMinutes / countWithTime / 60).toFixed(1) : '—';
 
-        // Breakdown by Approver
         const approverMap: Record<string, { approved: number, rejected: number }> = {};
         filteredHistory.forEach(h => {
             if (h.action === 'Submitted') return;
@@ -249,7 +250,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             total: stats.approved + stats.rejected
         })).sort((a, b) => b.total - a.total);
 
-        // Oldest Pending
         const oldestPending = [...pending]
             .filter(d => d.submittedAt)
             .sort((a, b) => parseISO(a.submittedAt!).getTime() - parseISO(b.submittedAt!).getTime())
@@ -268,16 +268,68 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         };
     }, [approvalHistory, filteredHistory, drafts]);
 
+    // -- TEMPLATE REPORT LOGIC --
+    const templateReportStats = useMemo(() => {
+        const safeTemplates = Array.isArray(templates) ? templates : [];
+        const safeDefinitions = Array.isArray(definitions) ? definitions : [];
+        const safeDrafts = Array.isArray(drafts) ? drafts : [];
+
+        // Count usage across tree
+        const usageMap: Record<string, number> = {};
+        const countUsage = (items: Definition[]) => {
+            items.forEach(item => {
+                if (item.templateId) {
+                    usageMap[item.templateId] = (usageMap[item.templateId] || 0) + 1;
+                }
+                if (item.children) countUsage(item.children);
+            });
+        };
+        countUsage(safeDefinitions);
+        countUsage(safeDrafts);
+
+        const mostUsed = safeTemplates.map(t => ({
+            id: t.id,
+            name: t.name,
+            module: t.module,
+            usage: usageMap[t.id] || 0
+        })).sort((a, b) => b.usage - a.usage);
+
+        // Track modifications from logs
+        const modificationLogs = filteredLogs.filter(l => 
+            l.activityType === 'Template Created' || l.activityType === 'Template Updated'
+        );
+        
+        const recentlyModified = Array.from(new Set(modificationLogs.map(l => {
+            const templateName = l.details?.includes('Template: ') ? l.details.split('Template: ')[1] : l.definitionName;
+            return {
+                name: templateName,
+                user: l.userName,
+                date: l.occurredDate,
+                type: l.activityType
+            };
+        }))).sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
+
+        return {
+            counts: {
+                total: safeTemplates.length,
+                active: safeTemplates.filter(t => t.isActive).length,
+                inactive: safeTemplates.filter(t => !t.isActive).length,
+                recentlyModifiedCount: recentlyModified.length
+            },
+            mostUsed,
+            recentlyModified
+        };
+    }, [templates, definitions, drafts, filteredLogs]);
+
     const uniqueApprovers = useMemo(() => {
         const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
         const names = Array.from(new Set(safeHistory.filter(h => h.action !== 'Submitted').map(h => h.userName)));
         return names.sort();
     }, [approvalHistory]);
 
-    // Unified Pagination Logic
     const currentDataSource = useMemo(() => {
         if (selectedReport === 'user-activity') return processedUserStats;
-        return []; // Definition and Approval reports use custom layouts
+        return [];
     }, [selectedReport, processedUserStats]);
 
     const filteredAndSortedData = useMemo(() => {
@@ -331,6 +383,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
         if (selectedReport === 'user-activity') dataToExport = filteredAndSortedData;
         else if (selectedReport === 'approval-report') dataToExport = approvalReportStats.byApprover;
+        else if (selectedReport === 'template-report') dataToExport = templateReportStats.mostUsed;
         else {
             dataToExport = [
                 { Category: 'Total Definitions', Count: definitionReportStats.counts.total },
@@ -398,6 +451,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 <SelectItem value="user-activity" className="font-medium">User Activity Report</SelectItem>
                                 <SelectItem value="definition-report" className="font-medium">Definition Report</SelectItem>
                                 <SelectItem value="approval-report" className="font-medium">Approval Report</SelectItem>
+                                <SelectItem value="template-report" className="font-medium">Template Report</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -510,9 +564,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white"><div className="p-6 border-b bg-slate-50"><h4 className="font-bold">By Month</h4></div><Table><TableBody>{definitionReportStats.creationsByMonth.map((m, i) => (<TableRow key={i} className="h-12 border-slate-100"><TableCell className="px-6 font-mono font-bold">{m.month}</TableCell><TableCell className="px-6 text-right font-black text-emerald-600">{m.count}</TableCell></TableRow>))}</TableBody></Table></Card>
                             </div>
                         </div>
-                    ) : (
+                    ) : selectedReport === 'approval-report' ? (
                         <div className="space-y-10 animate-in fade-in duration-500">
-                            {/* Performance Ledger */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 px-2"><ClipboardCheck className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Approval Workflow Performance</h3></div>
                                 <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
@@ -532,7 +585,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                {/* Approver Workload */}
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 px-2"><Users className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Workload by Approver</h3></div>
                                     <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
@@ -554,25 +606,16 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                         <TableCell className="text-center font-bold text-red-600">{app.rejected}</TableCell>
                                                     </TableRow>
                                                 ))}
-                                                {approvalReportStats.byApprover.length === 0 && (
-                                                    <TableRow><TableCell colSpan={4} className="h-32 text-center text-slate-400 italic">No historical decision data for this filter.</TableCell></TableRow>
-                                                )}
                                             </TableBody>
                                         </Table>
                                     </Card>
                                 </div>
-
-                                {/* Oldest Pending */}
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 px-2"><AlertCircle className="h-4 w-4 text-red-500" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Queue Aging: Oldest Pending</h3></div>
                                     <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
                                         <Table>
                                             <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow>
-                                                    <TableHead className="px-6">Definition</TableHead>
-                                                    <TableHead>Author</TableHead>
-                                                    <TableHead className="text-right px-6">Submission Age</TableHead>
-                                                </TableRow>
+                                                <TableRow><TableHead className="px-6">Definition</TableHead><TableHead>Author</TableHead><TableHead className="text-right px-6">Age</TableHead></TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {approvalReportStats.oldestPending.map((p, i) => {
@@ -581,16 +624,84 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                         <TableRow key={i} className="h-14 border-slate-100 hover:bg-slate-50/50">
                                                             <TableCell className="px-6 font-bold text-slate-700 truncate max-w-[200px]">{p.name}</TableCell>
                                                             <TableCell className="text-sm text-slate-500">{p.submittedBy}</TableCell>
-                                                            <TableCell className="text-right px-6">
-                                                                <Badge className={cn("rounded-lg font-black uppercase text-[10px]", hours > 48 ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700")}>
-                                                                    {hours} hours ago
-                                                                </Badge>
-                                                            </TableCell>
+                                                            <TableCell className="text-right px-6"><Badge className={cn("rounded-lg font-black uppercase text-[10px]", hours > 48 ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700")}>{hours} hrs</Badge></TableCell>
                                                         </TableRow>
                                                     );
                                                 })}
-                                                {approvalReportStats.oldestPending.length === 0 && (
-                                                    <TableRow><TableCell colSpan={3} className="h-32 text-center text-slate-400 italic">Review queue is currently empty.</TableCell></TableRow>
+                                            </TableBody>
+                                        </Table>
+                                    </Card>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-10 animate-in fade-in duration-500">
+                            {/* Architecture Summary */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 px-2"><LayoutTemplate className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Template Architecture Summary</h3></div>
+                                <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
+                                    <Table>
+                                        <TableHeader className="bg-slate-50 border-b">
+                                            <TableRow><TableHead className="px-6 h-12">Classification</TableHead><TableHead className="text-right px-6 h-12">Value</TableHead></TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Total Registered Blueprints</TableCell><TableCell className="px-6 text-right font-black text-slate-900">{templateReportStats.counts.total}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Active Templates</TableCell><TableCell className="px-6 text-right font-black text-emerald-600">{templateReportStats.counts.active}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14"><TableCell className="px-6 font-medium">Inactive/Draft Templates</TableCell><TableCell className="px-6 text-right font-black text-slate-400">{templateReportStats.counts.inactive}</TableCell></TableRow>
+                                            <TableRow className="border-slate-100 h-14 bg-indigo-50/20"><TableCell className="px-6 font-bold text-primary flex items-center gap-2"><Settings2 className="h-4 w-4" /> Recently Modified (Selected Period)</TableCell><TableCell className="px-6 text-right font-black text-primary text-xl tabular-nums">{templateReportStats.counts.recentlyModifiedCount}</TableCell></TableRow>
+                                        </TableBody>
+                                    </Table>
+                                </Card>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                {/* Adoption Tracking */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 px-2"><Activity className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Library Adoption Tracking</h3></div>
+                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
+                                        <Table>
+                                            <TableHeader className="bg-slate-50 border-b">
+                                                <TableRow>
+                                                    <TableHead className="px-6">Template Identity</TableHead>
+                                                    <TableHead>Module</TableHead>
+                                                    <TableHead className="text-right px-6">Definition Usage</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {templateReportStats.mostUsed.map((t, i) => (
+                                                    <TableRow key={i} className="h-14 border-slate-100 hover:bg-slate-50/50">
+                                                        <TableCell className="px-6 font-bold text-slate-700">{t.name}</TableCell>
+                                                        <TableCell><Badge variant="outline" className="text-[10px] font-black uppercase border-slate-200 bg-slate-50">{t.module}</Badge></TableCell>
+                                                        <TableCell className="text-right px-6"><span className="font-black text-indigo-600 text-lg tabular-nums">{t.usage}</span></TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </Card>
+                                </div>
+
+                                {/* Modification History */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 px-2"><Clock className="h-4 w-4 text-primary" /><h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Governance Evolution Audit</h3></div>
+                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
+                                        <Table>
+                                            <TableHeader className="bg-slate-50 border-b">
+                                                <TableRow>
+                                                    <TableHead className="px-6">Template</TableHead>
+                                                    <TableHead>Action By</TableHead>
+                                                    <TableHead className="text-right px-6">Date</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {templateReportStats.recentlyModified.map((m, i) => (
+                                                    <TableRow key={i} className="h-14 border-slate-100 hover:bg-slate-50/50">
+                                                        <TableCell className="px-6 font-bold text-slate-700 truncate max-w-[150px]">{m.name}</TableCell>
+                                                        <TableCell className="text-sm text-slate-500 font-medium">{m.user}</TableCell>
+                                                        <TableCell className="text-right px-6 text-slate-400 font-mono text-[11px]">{format(parseISO(m.date), 'yyyy-MM-dd')}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                                {templateReportStats.recentlyModified.length === 0 && (
+                                                    <TableRow><TableCell colSpan={3} className="h-32 text-center text-slate-400 italic">No governance changes detected in this period.</TableCell></TableRow>
                                                 )}
                                             </TableBody>
                                         </Table>
