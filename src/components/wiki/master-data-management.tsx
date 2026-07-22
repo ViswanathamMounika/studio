@@ -206,9 +206,20 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                             <CardTitle className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Configuration Panel</CardTitle>
                         </CardHeader>
                         <CardContent className="p-8">
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end">
-                                <div className="md:col-span-4 space-y-2">
-                                    <Label className="text-[11px] font-bold text-slate-500">Master Data Category</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-end">
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-1.5">
+                                        <Label className="text-[11px] font-bold text-slate-500">Master Data Category</Label>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Info className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-xs rounded-xl shadow-xl border-none p-3 bg-slate-900 text-white">
+                                                <p className="text-[11px] font-bold uppercase tracking-wider mb-1 text-primary-foreground/60">Category Guidelines</p>
+                                                <p className="text-xs leading-relaxed">{activeLabelConfig.description}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
                                     <Select value={activeCategory} onValueChange={(v) => { setActiveCategory(v as MasterDataCategory); setSearchQuery(''); }}>
                                         <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold text-slate-900 shadow-sm focus:ring-primary/10">
                                             <div className="flex items-center gap-2">
@@ -229,22 +240,13 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                     </Select>
                                 </div>
 
-                                <div className="md:col-span-5 space-y-2">
-                                    <Label className="text-[11px] font-bold text-slate-500">Global Guidelines</Label>
-                                    <div className="h-12 flex items-center px-4 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
-                                        <p className="text-[13px] text-indigo-900/70 font-medium truncate">
-                                            {activeLabelConfig.description}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="md:col-span-3 space-y-2">
+                                <div className="space-y-2">
                                     <Label className="text-[11px] font-bold text-slate-500">Search Records</Label>
                                     <div className="relative">
                                         <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                                         <Input 
-                                            placeholder="Filter entries..." 
-                                            className="pl-10 rounded-xl border-slate-200 h-12 bg-white" 
+                                            placeholder="Filter entries by name or description..." 
+                                            className="pl-10 rounded-xl border-slate-200 h-12 bg-white font-medium" 
                                             value={searchQuery} 
                                             onChange={e => setSearchQuery(e.target.value)} 
                                         />
