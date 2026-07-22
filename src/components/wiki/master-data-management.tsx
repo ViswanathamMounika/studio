@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '../ui/textarea';
 import { 
     Search, 
@@ -43,8 +43,8 @@ import {
     CheckCircle2,
     XCircle,
     Info,
-    FilterX,
-    Lock
+    Lock,
+    ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { MasterDataState, MasterDataItem, MasterDataCategory, Definition, Template } from '@/lib/types';
@@ -61,11 +61,11 @@ type MasterDataManagementProps = {
 };
 
 const CATEGORY_LABELS: Record<MasterDataCategory, { label: string; icon: any; description: string }> = {
-  modules: { label: 'Modules', icon: Layers, description: 'High-level business domains (Authorizations, Claims, etc.)' },
-  sourcesOfTruth: { label: 'Source of Truth', icon: Database, description: 'Standardized data origins for definitions.' },
-  sourceTypes: { label: 'Source Type', icon: Workflow, description: 'Technical object categories (Views, Tables, Procs).' },
-  definitionStatuses: { label: 'Def. Statuses', icon: Settings2, description: 'Managed lifecycle states for documentation.' },
-  versionStatuses: { label: 'Version Statuses', icon: History, description: 'Archive and superseding indicators.' }
+  modules: { label: 'Business Modules', icon: Layers, description: 'High-level functional domains like Authorizations or Claims.' },
+  sourcesOfTruth: { label: 'Sources of Truth', icon: Database, description: 'Standardized data origins used for system documentation.' },
+  sourceTypes: { label: 'Technical Object Types', icon: Workflow, description: 'Categories for technical entities (Views, Tables, Procs).' },
+  definitionStatuses: { label: 'Documentation Statuses', icon: Settings2, description: 'Lifecycle states used to manage definition workflows.' },
+  versionStatuses: { label: 'Version Indicators', icon: History, description: 'Indicators for superseding or deprecated revisions.' }
 };
 
 export default function MasterDataManagement({ masterData, onSaveMasterData, onLogAction, definitions, drafts, templates }: MasterDataManagementProps) {
@@ -121,7 +121,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         if (originalItem && originalItem.name !== editingItem.name && isItemReferred(originalItem, activeCategory)) {
             toast({
                 variant: 'destructive',
-                title: "Modification Restricted",
+                title: "Renaming Restricted",
                 description: `"${originalItem.name}" is currently in use and cannot be renamed.`
             });
             return;
@@ -150,8 +150,8 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         if (isItemReferred(item, activeCategory)) {
             toast({
                 variant: 'destructive',
-                title: "Action Restricted",
-                description: `"${item.name}" cannot be deleted because it is currently referenced in the library or templates.`
+                title: "Deletion Restricted",
+                description: `"${item.name}" cannot be deleted because it is currently referenced in the library.`
             });
             return;
         }
@@ -170,8 +170,8 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         if (currentStatus === true && isItemReferred(item, activeCategory)) {
             toast({
                 variant: 'destructive',
-                title: "Action Restricted",
-                description: `"${item.name}" is currently in use and cannot be inactivated.`
+                title: "Deactivation Restricted",
+                description: `"${item.name}" is currently in use and must remain active.`
             });
             return;
         }
@@ -182,193 +182,257 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         toast({ title: "Status Updated" });
     };
 
+    const activeLabelConfig = CATEGORY_LABELS[activeCategory];
+    const ActiveIcon = activeLabelConfig.icon;
+
     return (
         <TooltipProvider>
-            <div className="space-y-6 h-full flex flex-col">
-                <div className="flex justify-between items-end px-2">
-                    <div>
+            <div className="space-y-6 h-full flex flex-col bg-slate-50/30 p-8 rounded-[32px]">
+                <div className="flex justify-between items-start px-2">
+                    <div className="space-y-1">
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Master Data Management</h1>
-                        <p className="text-muted-foreground font-medium">Govern application constants and reference categories globally.</p>
+                        <p className="text-muted-foreground font-medium">Govern global system constants, business modules, and reference categories.</p>
                     </div>
-                    <Button onClick={handleAddItem} className="bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl px-6 shadow-lg shadow-indigo-100">
+                    <Button onClick={handleAddItem} className="bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
                         <Plus className="mr-2 h-4 w-4" />
                         New Record
                     </Button>
                 </div>
 
-                <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as MasterDataCategory)} className="flex-1 flex flex-col">
-                    <TabsList className="bg-slate-100 p-1 w-fit rounded-xl mb-6">
-                        {Object.entries(CATEGORY_LABELS).map(([key, config]) => (
-                            <TabsTrigger key={key} value={key} className="rounded-lg px-4 py-2 font-bold gap-2">
-                                <config.icon className="h-4 w-4" />
-                                {config.label}
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {/* Sidebar / Selector */}
+                    <div className="lg:col-span-4 space-y-6">
+                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                            <CardHeader className="bg-slate-50/50 border-b py-4 px-6">
+                                <CardTitle className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Data Perspective</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6 space-y-6">
+                                <div className="space-y-2">
+                                    <Label className="text-[11px] font-bold text-slate-500">Master Data Category</Label>
+                                    <Select value={activeCategory} onValueChange={(v) => { setActiveCategory(v as MasterDataCategory); setSearchQuery(''); }}>
+                                        <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold text-slate-900 shadow-sm focus:ring-primary/10">
+                                            <div className="flex items-center gap-2">
+                                                <ActiveIcon className="h-4 w-4 text-primary" />
+                                                <SelectValue />
+                                            </div>
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border-slate-200 shadow-xl p-1">
+                                            {Object.entries(CATEGORY_LABELS).map(([key, config]) => (
+                                                <SelectItem key={key} value={key} className="rounded-lg font-medium py-2.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <config.icon className="h-3.5 w-3.5 text-slate-400" />
+                                                        {config.label}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="space-y-1">
-                            <h2 className="text-lg font-bold text-slate-900">{CATEGORY_LABELS[activeCategory].label}</h2>
-                            <p className="text-xs text-slate-500">{CATEGORY_LABELS[activeCategory].description}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="relative w-64">
-                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input 
-                                    placeholder="Search records..." 
-                                    className="pl-9 rounded-xl border-slate-200" 
-                                    value={searchQuery} 
-                                    onChange={e => setSearchQuery(e.target.value)} 
-                                />
-                            </div>
-                        </div>
+                                <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50 space-y-2">
+                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600">
+                                        <Info className="h-3 w-3" />
+                                        Category Scope
+                                    </div>
+                                    <p className="text-[13px] text-indigo-900/70 leading-relaxed font-medium">
+                                        {activeLabelConfig.description}
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2 pt-2">
+                                    <Label className="text-[11px] font-bold text-slate-500">Search Records</Label>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                                        <Input 
+                                            placeholder="Filter entries..." 
+                                            className="pl-9 rounded-xl border-slate-200 h-10 bg-white" 
+                                            value={searchQuery} 
+                                            onChange={e => setSearchQuery(e.target.value)} 
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
 
-                    <Card className="rounded-2xl border-slate-200 overflow-hidden shadow-sm flex-1 bg-white">
-                        <Table>
-                            <TableHeader className="bg-slate-50 border-b">
-                                <TableRow className="hover:bg-transparent">
-                                    <TableHead className="py-4 px-6 font-black uppercase text-[10px] tracking-widest text-slate-500">Record Name</TableHead>
-                                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Description</TableHead>
-                                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">System Status</TableHead>
-                                    <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-500">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredItems.map(item => {
-                                    const referred = isItemReferred(item, activeCategory);
-                                    return (
-                                        <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100">
-                                            <TableCell className="px-6 font-bold text-slate-900">
-                                                <div className="flex items-center gap-2">
-                                                    {item.name}
-                                                    {referred && (
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Lock className="h-3 w-3 text-amber-500" />
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                <p className="text-xs">Record is currently in use across the library.</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-slate-500 text-xs italic max-w-md truncate">
-                                                {item.description || '—'}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge 
-                                                    variant={item.isActive ? 'success' : 'secondary'} 
-                                                    className={cn("font-bold text-[10px] px-2 h-6 uppercase", item.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500")}
-                                                >
-                                                    {item.isActive ? 'Active' : 'Inactive'}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right px-6">
-                                                <div className="flex justify-end gap-1">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-indigo-600 transition-colors" onClick={() => handleEditItem(item)}>
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="icon" 
-                                                        className={cn("h-8 w-8 transition-colors", item.isActive ? "text-slate-400 hover:text-amber-600" : "text-emerald-400 hover:text-emerald-600")}
-                                                        onClick={() => handleToggleStatus(item.id, item.isActive)}
-                                                    >
-                                                        {item.isActive ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-                                                    </Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 transition-colors">
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent className="rounded-[24px] border-none p-8">
-                                                            <AlertDialogHeader>
-                                                                <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
-                                                                    <Trash2 className="h-6 w-6 text-red-600" />
-                                                                </div>
-                                                                <AlertDialogTitle className="text-2xl font-bold">Delete Master Record?</AlertDialogTitle>
-                                                                <AlertDialogDescription className="text-slate-500 text-sm">
-                                                                    Are you sure you want to remove <strong>{item.name}</strong> from the <strong>{CATEGORY_LABELS[activeCategory].label}</strong> catalog?
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter className="mt-8 gap-3">
-                                                                <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteItem(item.id)} className="rounded-xl bg-red-600 font-bold px-6">Delete Record</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
-                                            </TableCell>
+                    {/* Main Ledger */}
+                    <div className="lg:col-span-8">
+                        <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white min-h-[500px] flex flex-col">
+                            <CardHeader className="bg-white border-b py-5 px-8 flex flex-row items-center justify-between shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                                        <ActiveIcon className="h-4.5 w-4.5 text-primary" />
+                                    </div>
+                                    <CardTitle className="text-xl font-bold text-slate-900">{activeLabelConfig.label}</CardTitle>
+                                </div>
+                                <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200">
+                                    {filteredItems.length} Total Records
+                                </Badge>
+                            </CardHeader>
+                            <CardContent className="p-0 flex-1">
+                                <Table>
+                                    <TableHeader className="bg-slate-50 border-b">
+                                        <TableRow className="hover:bg-transparent">
+                                            <TableHead className="py-4 px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Record Identity</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Guidelines</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Status</TableHead>
+                                            <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Actions</TableHead>
                                         </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
-                    </Card>
-                </Tabs>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredItems.map(item => {
+                                            const referred = isItemReferred(item, activeCategory);
+                                            return (
+                                                <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 transition-colors h-16">
+                                                    <TableCell className="px-8 font-bold text-slate-900">
+                                                        <div className="flex items-center gap-2">
+                                                            {item.name}
+                                                            {referred && (
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Lock className="h-3 w-3 text-amber-500" />
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent className="rounded-lg shadow-xl border-none p-2 bg-slate-900 text-white">
+                                                                        <p className="text-[10px] font-bold">LOCKED: RECORD IN USE</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-slate-500 text-xs italic max-w-xs truncate">
+                                                        {item.description || '—'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge 
+                                                            className={cn(
+                                                                "font-black text-[9px] px-2 h-6 uppercase rounded-md tracking-wider border", 
+                                                                item.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-slate-50 text-slate-400 border-slate-200"
+                                                            )}
+                                                        >
+                                                            {item.isActive ? 'Active' : 'Inactive'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-right px-8">
+                                                        <div className="flex justify-end gap-1">
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => handleEditItem(item)}>
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className={cn("h-8 w-8 transition-all", item.isActive ? "text-slate-300 hover:text-amber-600 hover:bg-amber-50" : "text-emerald-300 hover:text-emerald-600 hover:bg-emerald-50")}
+                                                                onClick={() => handleToggleStatus(item.id, item.isActive)}
+                                                            >
+                                                                {item.isActive ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                                                            </Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-red-50 transition-all">
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent className="rounded-[32px] border-none p-10 shadow-2xl">
+                                                                    <AlertDialogHeader className="space-y-4">
+                                                                        <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
+                                                                            <Trash2 className="h-8 w-8 text-red-600" />
+                                                                        </div>
+                                                                        <AlertDialogTitle className="text-2xl font-bold text-slate-900">Confirm Deletion</AlertDialogTitle>
+                                                                        <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
+                                                                            Are you sure you want to permanently remove <strong>{item.name}</strong> from the system metadata? This action cannot be reversed.
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter className="mt-10 gap-3">
+                                                                        <AlertDialogCancel className="rounded-xl font-bold h-11 px-8 border-slate-200">Cancel</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => handleDeleteItem(item.id)} className="rounded-xl bg-red-600 hover:bg-red-700 font-bold h-11 px-8">Delete Record</AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                        {filteredItems.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="h-64 text-center">
+                                                    <div className="flex flex-col items-center justify-center gap-3">
+                                                        <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center">
+                                                            <Database className="h-6 w-6 text-slate-200" />
+                                                        </div>
+                                                        <p className="text-slate-400 font-bold text-sm italic">No records match your search criteria.</p>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
 
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                    <DialogContent className="max-w-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b bg-white">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                                    <Plus className="h-5 w-5 text-indigo-600" />
+                    <DialogContent className="max-w-md rounded-[32px] border-none p-0 overflow-hidden shadow-2xl">
+                        <div className="p-8 border-b bg-white">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-inner">
+                                    {masterData[activeCategory].some(i => i.id === editingItem?.id) ? <Edit className="h-6 w-6 text-indigo-600" /> : <Plus className="h-6 w-6 text-indigo-600" />}
                                 </div>
-                                <DialogTitle className="text-xl font-bold">
-                                    {masterData[activeCategory].some(i => i.id === editingItem?.id) ? 'Edit Record' : 'New Master Record'}
-                                </DialogTitle>
+                                <div>
+                                    <DialogTitle className="text-2xl font-bold tracking-tight">
+                                        {masterData[activeCategory].some(i => i.id === editingItem?.id) ? 'Edit Record' : 'Create Record'}
+                                    </DialogTitle>
+                                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mt-0.5">{activeLabelConfig.label} Category</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="p-8 space-y-6 bg-slate-50/30">
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500">Record Name <span className="text-red-500">*</span></Label>
+                        <div className="p-10 space-y-8 bg-slate-50/50">
+                            <div className="space-y-6">
+                                <div className="space-y-2.5">
+                                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">Entry Name <span className="text-red-500">*</span></Label>
                                     <div className="relative">
                                         <Input 
                                             value={editingItem?.name || ''} 
                                             onChange={e => setEditingItem(p => p ? ({ ...p, name: e.target.value }) : null)} 
-                                            placeholder="e.g. Clinical Workflow"
-                                            className="rounded-xl border-slate-200 h-11 font-bold bg-white" 
+                                            placeholder="Enter descriptive name..."
+                                            className="rounded-2xl border-slate-200 h-12 font-bold bg-white text-base shadow-sm focus-visible:ring-primary/20" 
                                             disabled={editingItem && masterData[activeCategory].some(i => i.id === editingItem.id) && isItemReferred(editingItem as MasterDataItem, activeCategory)}
                                         />
                                         {editingItem && masterData[activeCategory].some(i => i.id === editingItem.id) && isItemReferred(editingItem as MasterDataItem, activeCategory) && (
-                                            <div className="absolute right-3 top-3">
+                                            <div className="absolute right-4 top-3.5">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Lock className="h-4 w-4 text-amber-500" />
+                                                        <Lock className="h-5 w-5 text-amber-500" />
                                                     </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p className="text-xs">Renaming is locked because this record is in use.</p>
+                                                    <TooltipContent className="rounded-lg shadow-xl border-none p-2 bg-slate-900 text-white">
+                                                        <p className="text-[10px] font-bold">RENAMING LOCKED: RECORD IN USE</p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </div>
                                         )}
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500">Description / Guidelines</Label>
+                                <div className="space-y-2.5">
+                                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">Scope / Guidelines</Label>
                                     <Textarea 
                                         value={editingItem?.description || ''} 
                                         onChange={e => setEditingItem(p => p ? ({ ...p, description: e.target.value }) : null)} 
-                                        placeholder="Provide context for users..."
-                                        className="rounded-xl border-slate-200 min-h-[100px] bg-white" 
+                                        placeholder="Provide administrative guidelines for users..."
+                                        className="rounded-2xl border-slate-200 min-h-[140px] bg-white text-sm shadow-sm focus-visible:ring-primary/20 leading-relaxed resize-none" 
                                     />
                                 </div>
                             </div>
                         </div>
-                        <DialogFooter className="p-4 bg-white border-t gap-2">
+                        <DialogFooter className="p-6 bg-white border-t gap-3 flex items-center justify-end">
                             <DialogClose asChild>
-                                <Button variant="outline" className="rounded-xl font-bold">Cancel</Button>
+                                <Button variant="ghost" className="rounded-xl font-bold text-slate-500 px-6 hover:bg-slate-50">Cancel</Button>
                             </DialogClose>
                             <Button 
                                 onClick={handleSaveItem} 
                                 disabled={!editingItem?.name?.trim()}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-8 shadow-md"
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold h-11 px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95"
                             >
-                                Finalize Changes
+                                Finalize Record
                             </Button>
                         </DialogFooter>
                     </DialogContent>
