@@ -111,7 +111,7 @@ export default function Wiki() {
 
   const isAdmin = useMemo(() => {
     if (impersonatedUser) {
-        return impersonatedUser.role === 'Super Admin' || impersonatedUser.role === 'Admin';
+        return impersonatedUser.role === 'Super Admin' || impersonatedUser.role === 'Admin' || impersonatedUser.role === 'Approver';
     }
     return originalAdminState;
   }, [impersonatedUser, originalAdminState]);
@@ -265,14 +265,6 @@ export default function Wiki() {
             sessionStorage.removeItem('mpm_impersonated_user_v1');
             logAction('User Logout', 'Ended Act as proxy session.');
             toast({ title: 'Impersonation Ended' });
-        } else {
-            const roleUser = (Array.isArray(users) ? users : []).find(u => u.role === user && u.status === 'Active');
-            if (roleUser) {
-                setImpersonatedUser(roleUser);
-                sessionStorage.setItem('mpm_impersonated_user_v1', JSON.stringify(roleUser));
-                logAction('User Login', `Super Admin began "Acting as" ${roleUser.name} (${roleUser.role})`);
-                toast({ title: `Now Acting as ${roleUser.role}` });
-            }
         }
     } else {
         setImpersonatedUser(user);
@@ -844,16 +836,16 @@ export default function Wiki() {
         systemConfig={systemConfig}
       />
       <SidebarInset>
-        <div className="flex flex-col h-screen bg-background relative">
+        <div className="flex flex-col h-screen bg-background relative overflow-hidden">
           {impersonatedUser && (
-              <div className="bg-red-600 px-6 py-2.5 flex items-center justify-between text-white shadow-lg animate-in slide-in-from-top-full duration-500 z-[100] sticky top-0">
+              <div className="bg-red-600 px-6 py-2 flex items-center justify-between text-white shadow-lg z-[100] sticky top-0 shrink-0">
                   <div className="flex items-center gap-4">
                       <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
                           <AlertTriangle className="h-5 w-5 text-white animate-pulse" />
                       </div>
                       <div className="flex flex-col">
                           <p className="text-[13px] font-black uppercase tracking-wider leading-none">Act as Session Active</p>
-                          <p className="text-[11px] font-medium text-white/90 mt-1">
+                          <p className="text-[11px] font-medium text-white/90 mt-0.5">
                               Proxying as <span className="underline font-black">{impersonatedUser.name}</span> ({impersonatedUser.role}). Actions performed will be logged under this account.
                           </p>
                       </div>

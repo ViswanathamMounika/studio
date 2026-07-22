@@ -248,25 +248,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900">Security & Access</h1>
                     <p className="text-muted-foreground font-medium">Govern system access, roles, and functional permissions.</p>
                 </div>
-                {isSuperAdmin && (
-                    <div className="p-1 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-1">
-                        <div className="px-3 py-1.5">
-                            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest block">Act as</span>
-                        </div>
-                        {['Admin', 'Approver', 'Standard User'].map(role => (
-                            <Button 
-                                key={role}
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 rounded-lg text-indigo-600 font-bold hover:bg-white hover:shadow-sm text-[11px]"
-                                onClick={() => onImpersonate(role)}
-                            >
-                                <Terminal className="h-3 w-3 mr-1.5" />
-                                {role}
-                            </Button>
-                        ))}
-                    </div>
-                )}
             </div>
 
             <Tabs defaultValue="users" className="flex-1 flex flex-col">
@@ -509,7 +490,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
             </Tabs>
 
             <Dialog open={isEditUserModalOpen} onOpenChange={setIsEditUserModalOpen}>
-                <DialogContent className="max-w-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
+                <DialogContent className="max-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><UserCog className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">Edit Account</DialogTitle></div></div>
                     <div className="p-8 space-y-6 bg-slate-50/30">
                         <div className="space-y-4">
