@@ -291,7 +291,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                                     <Button 
                                                         variant="ghost" 
                                                         size="sm" 
-                                                        className="h-8 rounded-lg text-indigo-600 font-bold hover:bg-indigo-50"
+                                                        className="h-8 rounded-lg text-indigo-600 font-bold hover:bg-blue-600 hover:text-white transition-colors"
                                                         onClick={() => onImpersonate(user)}
                                                     >
                                                         <UserCircle2 className="h-4 w-4 mr-1.5" />
