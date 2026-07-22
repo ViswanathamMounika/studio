@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -8,10 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths, subDays } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History, Eye, ShieldAlert } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Search, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History, User2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ActivityLog, ActivityType } from '@/lib/types';
-import { initialActivityLogs } from '@/lib/data';
+import type { ActivityLog, ActivityType, UserAccount } from '@/lib/types';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
@@ -69,13 +69,19 @@ const ITEMS_PER_PAGE = 15;
 
 type ActivityLogsProps = {
     isAdmin: boolean;
+    users: UserAccount[];
 };
 
-export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
-    const [logs] = useState<ActivityLog[]>(initialActivityLogs || []);
+export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
+    const [logs] = useState<ActivityLog[]>(() => {
+        if (typeof window === 'undefined') return [];
+        const saved = window.localStorage.getItem('activity_logs_v19');
+        return saved ? JSON.parse(saved) : [];
+    });
     
     // UI Filter States (Pending Application)
     const [activityTypeFilter, setActivityTypeFilter] = useState<string>('all');
+    const [userFilter, setUserFilter] = useState<string>('all');
     const [definitionSearch, setDefinitionSearch] = useState<string>('');
     const [timeFrame, setTimeFrame] = useState('last-30-days');
     const [customRange, setCustomRange] = useState<{ from: Date; to: Date } | undefined>();
@@ -84,6 +90,7 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
     // Applied Filter State (Commit on Search)
     const [appliedFilters, setAppliedFilters] = useState<{
         activityType: string;
+        userFilter: string;
         definitionSearch: string;
         timeFrame: string;
         customRange: { from: Date; to: Date } | undefined;
@@ -128,6 +135,7 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
     const handleSearch = () => {
         setAppliedFilters({
             activityType: activityTypeFilter,
+            userFilter,
             definitionSearch,
             timeFrame,
             customRange,
@@ -140,16 +148,14 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
         if (!appliedFilters || !Array.isArray(logs)) return [];
 
         return logs.filter(log => {
-            // UNRESTRICTED: Admin can see everything, including views/searches if toggled.
-            // If activityType is 'all', we show standard logs + system logs.
             const isMainMatch = appliedFilters.activityType === 'all' 
                 ? (log.activityType !== 'Definition Viewed' && log.activityType !== 'Definition Searched')
                 : (log.activityType === appliedFilters.activityType);
             
             const isViewedMatch = appliedFilters.isViewedOnly && (log.activityType === 'Definition Viewed' || log.activityType === 'Definition Searched');
-            
             const activityMatch = isMainMatch || isViewedMatch;
 
+            const userMatch = appliedFilters.userFilter === 'all' || log.userName === appliedFilters.userFilter;
             const definitionMatch = !appliedFilters.definitionSearch || log.definitionName.toLowerCase().includes(appliedFilters.definitionSearch.toLowerCase());
 
             let timeMatch = true;
@@ -171,7 +177,7 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
                 timeMatch = isWithinInterval(logDate, { start: appliedFilters.customRange.from, end: appliedFilters.customRange.to });
             }
 
-            return activityMatch && definitionMatch && timeMatch;
+            return activityMatch && userMatch && definitionMatch && timeMatch;
         }).sort((a, b) => {
             const valA = a[sortConfig.key] || '';
             const valB = b[sortConfig.key] || '';
@@ -208,6 +214,7 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
 
     const resetFilters = () => {
         setActivityTypeFilter('all');
+        setUserFilter('all');
         setDefinitionSearch('');
         setTimeFrame('last-30-days');
         setCustomRange(undefined);
@@ -239,81 +246,6 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Activity Logs');
         XLSX.writeFile(workbook, `Activity_Logs_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`);
-        
-        toast({
-            title: "Export Success",
-            description: "Activity logs have been exported to Excel.",
-        });
-    };
-
-    const handleExportPDF = async () => {
-        if (filteredAndSortedLogs.length === 0) {
-            toast({
-                variant: "destructive",
-                title: "Export Failed",
-                description: "No results found to export.",
-            });
-            return;
-        }
-
-        const { default: jsPDF } = await import('jspdf');
-        const doc = new jsPDF();
-        
-        doc.setFontSize(18);
-        doc.text('MedPoint Wiki - Activity Logs', 14, 20);
-        doc.setFontSize(10);
-        doc.text(`Generated on: ${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}`, 14, 30);
-        
-        let y = 40;
-        const headers = ['User', 'Definition', 'Activity', 'Date'];
-        const colWidths = [45, 65, 45, 30]; // Optimized column widths for alignment
-        
-        // Header
-        doc.setFont('helvetica', 'bold');
-        headers.forEach((h, i) => {
-            const x = 14 + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-            doc.text(h, x, y);
-        });
-        
-        y += 5;
-        doc.line(14, y, 200, y);
-        y += 7;
-        
-        // Data
-        doc.setFont('helvetica', 'normal');
-        filteredAndSortedLogs.slice(0, 50).forEach((log) => {
-            if (y > 280) {
-                doc.addPage();
-                y = 20;
-            }
-            
-            const row = [
-                log.userName,
-                log.definitionName,
-                log.activityType,
-                format(new Date(log.occurredDate), 'yyyy-MM-dd')
-            ];
-            
-            row.forEach((text, i) => {
-                const x = 14 + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-                const truncated = String(text).substring(0, i === 1 ? 30 : 25);
-                doc.text(truncated, x, y);
-            });
-            
-            y += 8;
-        });
-
-        if (filteredAndSortedLogs.length > 50) {
-            doc.setFontSize(8);
-            doc.text(`* Export limited to first 50 entries in PDF. Use Excel for full export.`, 14, y + 10);
-        }
-        
-        doc.save(`Activity_Logs_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`);
-        
-        toast({
-            title: "Export Success",
-            description: "Activity logs have been exported to PDF.",
-        });
     };
 
     return (
@@ -324,24 +256,10 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
                     <p className="text-muted-foreground font-medium">Complete system telemetry and documentation audit trail.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="rounded-xl font-bold bg-white">
-                                <Download className="h-4 w-4 mr-2" />
-                                Export
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={handleExportExcel}>
-                                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                                Export as Excel
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleExportPDF}>
-                                <FileText className="h-4 w-4 mr-2" />
-                                Export as PDF
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button variant="outline" size="sm" className="rounded-xl font-bold bg-white" onClick={handleExportExcel} disabled={!appliedFilters}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export Excel
+                    </Button>
                     <Button variant="outline" size="sm" className="rounded-xl font-bold bg-white" onClick={resetFilters}>
                         <FilterX className="h-4 w-4 mr-2" />
                         Reset
@@ -351,7 +269,7 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
 
             <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
                 <CardHeader className="py-3 px-6 bg-slate-50/80 border-b flex flex-row items-center justify-between">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Search Filters</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Governance Filters</CardTitle>
                     {isAdmin && (
                         <div className="flex items-center space-x-2">
                             <Switch 
@@ -360,15 +278,15 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
                                 onCheckedChange={setIsViewedOnly}
                             />
                             <Label htmlFor="viewed-only" className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1 cursor-pointer">
-                                Show User telemetry (Views/Searches)
+                                Include telemetry (Views/Searches)
                             </Label>
                         </div>
                     )}
                 </CardHeader>
                 <CardContent className="p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
                         <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Definition Name</Label>
+                            <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Target / Context</Label>
                             <div className="relative" ref={searchRef}>
                                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                                 <Input 
@@ -381,34 +299,29 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
                                     }}
                                     onFocus={() => setIsSearchSuggestionsOpen(true)}
                                 />
-                                
-                                {isSearchSuggestionsOpen && suggestions.length > 0 && (
-                                    <div className="absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-xl shadow-xl max-h-60 overflow-auto animate-in fade-in zoom-in-95">
-                                        <div className="p-2">
-                                            {suggestions.map((name) => (
-                                                <div
-                                                    key={name}
-                                                    className={cn(
-                                                        "px-3 py-2 text-xs rounded-lg cursor-pointer flex items-center gap-2 transition-colors font-medium",
-                                                        definitionSearch === name ? "bg-primary/5 text-primary" : "hover:bg-slate-50 text-slate-600"
-                                                    )}
-                                                    onClick={() => {
-                                                        setDefinitionSearch(name);
-                                                        setIsSearchSuggestionsOpen(false);
-                                                    }}
-                                                >
-                                                    <Check className={cn("h-3.5 w-3.5", definitionSearch === name ? "opacity-100" : "opacity-0")} />
-                                                    {name}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Activity Type</Label>
+                            <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">User Account</Label>
+                            <Select value={userFilter} onValueChange={setUserFilter}>
+                                <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white">
+                                    <div className="flex items-center gap-2">
+                                        <User2 className="h-3.5 w-3.5 text-slate-400" />
+                                        <SelectValue placeholder="All Users" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Users</SelectItem>
+                                    {users.map(u => (
+                                        <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Event Category</Label>
                             <Select 
                                 value={activityTypeFilter} 
                                 onValueChange={setActivityTypeFilter}
@@ -446,9 +359,9 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
                         </div>
 
                         <div className="flex gap-2">
-                            <Button className="h-10 px-10 rounded-xl bg-[#3F51B5] font-bold shadow-lg shadow-indigo-100" onClick={handleSearch}>
+                            <Button className="h-10 w-full rounded-xl bg-[#3F51B5] font-bold shadow-lg shadow-indigo-100" onClick={handleSearch}>
                                 <Search className="h-4 w-4 mr-2" />
-                                Search
+                                Run Audit
                             </Button>
                         </div>
                     </div>
@@ -491,7 +404,7 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
                             </div>
                             <h3 className="text-xl font-bold text-slate-900">Audit History Ready</h3>
                             <p className="text-sm text-slate-500 max-w-sm mt-2 font-medium">
-                                Configure your governance filters and click <strong>Search</strong> to retrieve system activity logs.
+                                Configure your governance filters and click <strong>Run Audit</strong> to retrieve system activity logs.
                             </p>
                         </div>
                     ) : (
@@ -506,13 +419,13 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
                                     </TableHead>
                                     <TableHead className="cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('definitionName')}>
                                         <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-slate-500">
-                                            Context / Target
+                                            Target
                                             <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'definitionName' ? "text-primary opacity-100" : "opacity-30")} />
                                         </div>
                                     </TableHead>
                                     <TableHead className="cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('activityType')}>
                                         <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-slate-500">
-                                            Event Type
+                                            Event
                                             <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'activityType' ? "text-primary opacity-100" : "opacity-30")} />
                                         </div>
                                     </TableHead>
@@ -530,49 +443,25 @@ export default function ActivityLogs({ isAdmin }: ActivityLogsProps) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {paginatedLogs.map(log => {
-                                    const isSecurityEvent = log.activityType.includes('System') || 
-                                                            log.activityType.includes('Security') || 
-                                                            log.activityType.includes('User') || 
-                                                            log.activityType.includes('Login') ||
-                                                            log.activityType.includes('Logout') ||
-                                                            log.activityType.includes('Role') ||
-                                                            log.activityType.includes('Permission');
-                                    return (
-                                        <TableRow key={log.id} className="hover:bg-slate-50 transition-colors border-slate-100">
-                                            <TableCell className="px-6 py-5 font-bold text-slate-900">{log.userName}</TableCell>
-                                            <TableCell className="text-slate-600 font-medium">{log.definitionName}</TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline" className={cn(
-                                                    "font-bold text-[10px] uppercase h-6 px-2.5",
-                                                    isSecurityEvent || log.activityType === 'Definition Deleted' || log.activityType === 'Approval Decision'
-                                                        ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
-                                                        : "bg-slate-50 text-slate-600 border-slate-200"
-                                                )}>
-                                                    {log.activityType}
-                                                </Badge>
+                                {paginatedLogs.map(log => (
+                                    <TableRow key={log.id} className="hover:bg-slate-50 transition-colors border-slate-100">
+                                        <TableCell className="px-6 py-5 font-bold text-slate-900">{log.userName}</TableCell>
+                                        <TableCell className="text-slate-600 font-medium">{log.definitionName}</TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className="font-bold text-[10px] uppercase bg-slate-50 text-slate-600 border-slate-200">
+                                                {log.activityType}
+                                            </Badge>
+                                        </TableCell>
+                                        {isAdmin && (
+                                            <TableCell className="text-slate-500 text-xs italic max-w-xs truncate">
+                                                {log.details || '—'}
                                             </TableCell>
-                                            {isAdmin && (
-                                                <TableCell className="text-slate-500 text-xs italic max-w-xs truncate">
-                                                    {log.details || '—'}
-                                                </TableCell>
-                                            )}
-                                            <TableCell className="text-right px-6 text-slate-400 font-bold tabular-nums text-[11px] uppercase whitespace-nowrap">
-                                                {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                                {paginatedLogs.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={isAdmin ? 5 : 4} className="h-64 text-center">
-                                            <div className="flex flex-col items-center gap-3 py-12">
-                                                <Search className="h-10 w-10 text-slate-200" />
-                                                <p className="text-sm font-bold text-slate-400 italic">No telemetry records match your search criteria.</p>
-                                            </div>
+                                        )}
+                                        <TableCell className="text-right px-6 text-slate-400 font-bold tabular-nums text-[11px] uppercase whitespace-nowrap">
+                                            {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}
                                         </TableCell>
                                     </TableRow>
-                                )}
+                                ))}
                             </TableBody>
                         </Table>
                     )}

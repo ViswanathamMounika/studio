@@ -6,7 +6,7 @@ import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers, initialMasterData, initialSystemConfig, initialActivityLogs } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog, MasterDataState, SystemConfigurationState, ActivityType } from '@/lib/types';
-import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark, UserCircle, LogOut, Library } from 'lucide-react';
+import { Search, X, Download, Archive, ChevronDown, Lock as LockIcon, Info, ListFilter, Check, FileJson, FileText, FileSpreadsheet, FileCode, FolderTree, MessageSquare, Clock, ClipboardList, Bookmark, UserCircle, LogOut, Library, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -84,7 +84,9 @@ export default function Wiki() {
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   
   const [originalAdminState, setOriginalAdminState] = useLocalStorage<boolean>('mpm_user_role_admin_v19', true);
-  const [impersonatedUser, setImpersonatedUser] = useLocalStorage<UserAccount | null>('mpm_impersonated_user_v1', null);
+  
+  // Impersonation uses sessionStorage to ensure session closes with browser
+  const [impersonatedUser, setImpersonatedUser] = useState<UserAccount | null>(null);
   
   const [activeView, setActiveView] = useState<View>('definitions');
   const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v19', initialNotifications);
@@ -94,6 +96,18 @@ export default function Wiki() {
   
   const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
+  // Sync impersonation from session storage on mount
+  useEffect(() => {
+    const saved = sessionStorage.getItem('mpm_impersonated_user_v1');
+    if (saved) {
+        try {
+            setImpersonatedUser(JSON.parse(saved));
+        } catch (e) {
+            sessionStorage.removeItem('mpm_impersonated_user_v1');
+        }
+    }
+  }, []);
 
   const isAdmin = useMemo(() => {
     if (impersonatedUser) {
@@ -248,20 +262,23 @@ export default function Wiki() {
     if (typeof user === 'string') {
         if (user === '') {
             setImpersonatedUser(null);
-            logAction('User Logout', 'Ended proxy session.');
+            sessionStorage.removeItem('mpm_impersonated_user_v1');
+            logAction('User Logout', 'Ended Act as proxy session.');
             toast({ title: 'Impersonation Ended' });
         } else {
             const roleUser = (Array.isArray(users) ? users : []).find(u => u.role === user && u.status === 'Active');
             if (roleUser) {
                 setImpersonatedUser(roleUser);
-                logAction('User Login', `Super Admin began proxying as ${roleUser.name} (${roleUser.role})`);
-                toast({ title: `Now proxying as ${roleUser.role}` });
+                sessionStorage.setItem('mpm_impersonated_user_v1', JSON.stringify(roleUser));
+                logAction('User Login', `Super Admin began "Acting as" ${roleUser.name} (${roleUser.role})`);
+                toast({ title: `Now Acting as ${roleUser.role}` });
             }
         }
     } else {
         setImpersonatedUser(user);
-        logAction('User Login', `Super Admin began proxying as ${user.name} (${user.role})`);
-        toast({ title: `Now proxying as ${user.name}` });
+        sessionStorage.setItem('mpm_impersonated_user_v1', JSON.stringify(user));
+        logAction('User Login', `Super Admin began "Acting as" ${user.name} (${user.role})`);
+        toast({ title: `Now Acting as ${user.name}` });
     }
   };
 
@@ -719,9 +736,9 @@ export default function Wiki() {
 
     switch (activeView) {
         case 'dashboard': return <Dashboard definitions={safeDefs} drafts={safeDrafts} users={safeUsers} templates={safeTemplates} onNavigate={handleNavigate} />;
-        case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} /></div>;
+        case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} users={safeUsers} /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={safeTemplates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
-        case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} /></div>;
+        case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} definitions={safeDefs} templates={safeTemplates} drafts={safeDrafts} /></div>;
         case 'system-configuration': return <div className="p-6 h-full"><SystemConfiguration config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
         case 'reports': return (
             <div className="p-6 h-full">
@@ -827,28 +844,28 @@ export default function Wiki() {
         systemConfig={systemConfig}
       />
       <SidebarInset>
-        <div className="flex flex-col h-screen bg-background">
+        <div className="flex flex-col h-screen bg-background relative">
           {impersonatedUser && (
-              <div className="bg-indigo-600 px-6 py-2.5 flex items-center justify-between text-white shadow-lg animate-in slide-in-from-top-full duration-500 z-50">
+              <div className="bg-red-600 px-6 py-2.5 flex items-center justify-between text-white shadow-lg animate-in slide-in-from-top-full duration-500 z-[100] sticky top-0">
                   <div className="flex items-center gap-4">
                       <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
-                          <UserCircle className="h-5 w-5" />
+                          <AlertTriangle className="h-5 w-5 text-white animate-pulse" />
                       </div>
                       <div className="flex flex-col">
-                          <p className="text-[13px] font-bold leading-none">Impersonation Session Active</p>
-                          <p className="text-[11px] font-medium text-white/80 mt-1">
-                              Experiencing app as <span className="underline font-bold">{impersonatedUser.name}</span> ({impersonatedUser.role})
+                          <p className="text-[13px] font-black uppercase tracking-wider leading-none">Act as Session Active</p>
+                          <p className="text-[11px] font-medium text-white/90 mt-1">
+                              Proxying as <span className="underline font-black">{impersonatedUser.name}</span> ({impersonatedUser.role}). Actions performed will be logged under this account.
                           </p>
                       </div>
                   </div>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="h-8 px-4 rounded-xl border-white/30 bg-white/10 hover:bg-white/20 text-white font-bold gap-2 transition-all active:scale-95"
+                    className="h-8 px-4 rounded-xl border-white/40 bg-white/10 hover:bg-white/20 text-white font-black uppercase text-[10px] gap-2 transition-all active:scale-95"
                     onClick={() => handleImpersonate('')} 
                   >
                       <LogOut className="h-3.5 w-3.5" />
-                      Exit Session
+                      Terminate Session
                   </Button>
               </div>
           )}

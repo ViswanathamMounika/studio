@@ -155,7 +155,24 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
     };
 
     const handleSaveRole = () => {
-        if (!editingRole?.name) return;
+        if (!editingRole?.name?.trim()) return;
+
+        // Unique Role Name Validation
+        const normalizedName = editingRole.name.trim().toLowerCase();
+        const duplicate = safeRoles.find(r => 
+            r.id !== editingRole.id && 
+            r.name.trim().toLowerCase() === normalizedName
+        );
+
+        if (duplicate) {
+            toast({
+                variant: 'destructive',
+                title: "Duplicate Role",
+                description: `A role named "${editingRole.name}" already exists.`
+            });
+            return;
+        }
+
         const isNew = !safeRoles.find(r => r.id === editingRole.id);
         const newRoles = isNew ? [...safeRoles, editingRole as Role] : safeRoles.map(r => r.id === editingRole.id ? (editingRole as Role) : r);
         
@@ -170,7 +187,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         if (!role) return;
         const usersWithRole = safeUsers.filter(u => u.role === role.name);
         if (usersWithRole.length > 0) {
-            toast({ variant: 'destructive', title: "Cannot Delete", description: "This role is assigned to users." });
+            toast({ variant: 'destructive', title: "Cannot Delete", description: "This role is currently assigned to users." });
             return;
         }
         setRoles(safeRoles.filter(r => r.id !== id));
@@ -186,6 +203,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
     const handleSavePermission = () => {
         if (!editingPermission?.name?.trim()) return;
 
+        // Unique Permission Name Validation
         const normalizedName = editingPermission.name.trim().toLowerCase();
         const duplicate = safePermissions.find(p => 
             p.id !== editingPermission.id && 
@@ -195,7 +213,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         if (duplicate) {
             toast({
                 variant: 'destructive',
-                title: "Duplicate Name",
+                title: "Duplicate Permission",
                 description: `A permission with the name "${editingPermission.name}" already exists.`
             });
             return;
@@ -215,7 +233,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         if (!perm) return;
         const rolesWithPerm = safeRoles.filter(r => r.permissions.includes(id));
         if (rolesWithPerm.length > 0) {
-            toast({ variant: 'destructive', title: "Cannot Delete", description: "Permission is assigned to existing roles." });
+            toast({ variant: 'destructive', title: "Cannot Delete", description: "Permission is in use by active roles." });
             return;
         }
         setPermissions(safePermissions.filter(p => p.id !== id));
@@ -233,7 +251,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                 {isSuperAdmin && (
                     <div className="p-1 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-1">
                         <div className="px-3 py-1.5">
-                            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest block">Role Impersonation</span>
+                            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest block">Act as</span>
                         </div>
                         {['Admin', 'Approver', 'Standard User'].map(role => (
                             <Button 
@@ -297,7 +315,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                                         onClick={() => onImpersonate(user)}
                                                     >
                                                         <UserCircle2 className="h-4 w-4 mr-1.5" />
-                                                        Impersonate
+                                                        Act as
                                                     </Button>
                                                 )}
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-indigo-600 transition-colors" onClick={() => handleEditUser(user)}><Edit className="h-4 w-4" /></Button>
@@ -366,7 +384,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                 }} 
                             />
                         </div>
-                        <Button onClick={handleAddPermission} className="bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl px-6 shadow-md shadow-indigo-100 h-10">
+                        <Button onClick={handleAddPermission} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-6 shadow-md shadow-indigo-100 h-10">
                             <Plus className="mr-2 h-4 w-4" />
                             New Permission
                         </Button>
@@ -552,7 +570,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
             </Dialog>
 
             <Dialog open={isPermissionModalOpen} onOpenChange={setIsPermissionModalOpen}>
-                <DialogContent className="max-w-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
+                <DialogContent className="max-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><KeyRound className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">Securable Permission</DialogTitle></div></div>
                     <div className="p-8 space-y-6 bg-slate-50/30">
                         <div className="space-y-4">

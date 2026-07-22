@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -101,7 +102,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                 <CardDescription>Configure how the application presents itself to users.</CardDescription>
                             </CardHeader>
                             <CardContent className="p-8 space-y-6">
-                                <div className="grid grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 gap-8">
                                     <div className="space-y-2">
                                         <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Application Name</Label>
                                         <Input 
@@ -111,15 +112,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Logo URL (Icon)</Label>
-                                        <Input 
-                                            value={localConfig.settings.logoUrl || ''} 
-                                            onChange={e => updateSettings({ logoUrl: e.target.value })}
-                                            placeholder="https://example.com/logo.svg"
-                                            className="rounded-xl h-11 border-slate-200"
-                                        />
-                                    </div>
-                                    <div className="col-span-2 space-y-2">
                                         <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">System Description / Tagline</Label>
                                         <Textarea 
                                             value={localConfig.settings.appDescription} 
