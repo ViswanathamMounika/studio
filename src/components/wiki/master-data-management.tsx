@@ -43,7 +43,8 @@ import {
     Info,
     Lock,
     X,
-    LayoutGrid
+    LayoutGrid,
+    Save
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { MasterDataState, MasterDataItem, MasterDataCategory, Definition, Template } from '@/lib/types';
@@ -258,7 +259,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold text-slate-500">Filter Registry</Label>
+                                    <Label className="text-[11px] font-bold text-slate-500">Search Workspace</Label>
                                     <div className="relative">
                                         <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                                         <Input 
@@ -282,7 +283,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                 <CardTitle className="text-xl font-bold text-slate-900">{activeLabelConfig.label} Audit</CardTitle>
                             </div>
                             <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200">
-                                {filteredItems.length} Active Records
+                                {filteredItems.length} Total Records
                             </Badge>
                         </CardHeader>
                         <CardContent className="p-0 flex-1 overflow-auto">
@@ -457,7 +458,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                         <Input 
                                             value={newItemName}
                                             onChange={e => setNewItemName(e.target.value)}
-                                            onKeyDown={handleAddNewRecordChip}
+                                            onKeyDown={handleAddRecordChip}
                                             placeholder="Enter identity name and press Enter..."
                                             className="h-12 rounded-2xl border-slate-200 bg-white font-bold pl-4 pr-32 shadow-sm text-base focus-visible:ring-primary/20"
                                         />
@@ -494,4 +495,3 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         </TooltipProvider>
     );
 }
-
