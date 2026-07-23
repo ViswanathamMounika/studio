@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,11 +29,9 @@ import {
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '../ui/textarea';
 import { 
     Search, 
     Plus, 
-    Edit, 
     Trash2, 
     Database, 
     Layers, 
@@ -44,7 +42,7 @@ import {
     XCircle,
     Info,
     Lock,
-    ChevronDown
+    X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { MasterDataState, MasterDataItem, MasterDataCategory, Definition, Template } from '@/lib/types';
@@ -72,7 +70,12 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
     const [activeCategory, setActiveCategory] = useState<MasterDataCategory>('modules');
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<Partial<MasterDataItem> | null>(null);
+    
+    // New Record State
+    const [newName, setNewName] = useState('');
+    const [tags, setTags] = useState<string[]>([]);
+    const [currentTag, setCurrentTag] = useState('');
+
     const { toast } = useToast();
 
     const allDefs = useMemo(() => {
@@ -101,46 +104,54 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
     }, [masterData, activeCategory, searchQuery]);
 
     const handleAddItem = () => {
-        setEditingItem({ id: `md_${Date.now()}`, name: '', description: '', isActive: true });
+        setNewName('');
+        setTags([]);
+        setCurrentTag('');
         setIsModalOpen(true);
     };
 
-    const handleEditItem = (item: MasterDataItem) => {
-        setEditingItem({ ...item });
-        setIsModalOpen(true);
+    const handleAddTag = (e?: React.KeyboardEvent) => {
+        if (e && e.key !== 'Enter') return;
+        if (e) e.preventDefault();
+        
+        const trimmed = currentTag.trim();
+        if (trimmed && !tags.includes(trimmed)) {
+            setTags([...tags, trimmed]);
+            setCurrentTag('');
+        }
+    };
+
+    const removeTag = (tagToRemove: string) => {
+        setTags(tags.filter(t => t !== tagToRemove));
     };
 
     const handleSaveItem = () => {
-        if (!editingItem?.name?.trim()) return;
+        if (!newName.trim()) return;
 
         const currentItems = [...masterData[activeCategory]];
-        const existsIdx = currentItems.findIndex(i => i.id === editingItem.id);
-        const originalItem = existsIdx > -1 ? currentItems[existsIdx] : null;
         
-        // Renaming Protection
-        if (originalItem && originalItem.name !== editingItem.name && isItemReferred(originalItem, activeCategory)) {
+        // Check for duplicate name in same category
+        if (currentItems.some(i => i.name.toLowerCase() === newName.trim().toLowerCase())) {
             toast({
                 variant: 'destructive',
-                title: "Renaming Restricted",
-                description: `"${originalItem.name}" is currently in use and cannot be renamed.`
+                title: "Duplicate Record",
+                description: `"${newName}" already exists in this category.`
             });
             return;
         }
 
-        let newItems: MasterDataItem[];
-        let action: 'Created' | 'Updated' = 'Created';
+        const newItem: MasterDataItem = {
+            id: `md_${Date.now()}`,
+            name: newName.trim(),
+            description: tags.join(','), // Store tags as comma-separated string
+            isActive: true
+        };
 
-        if (existsIdx > -1) {
-            newItems = currentItems.map(i => i.id === editingItem.id ? (editingItem as MasterDataItem) : i);
-            action = 'Updated';
-        } else {
-            newItems = [...currentItems, editingItem as MasterDataItem];
-        }
-
+        const newItems = [...currentItems, newItem];
         onSaveMasterData({ ...masterData, [activeCategory]: newItems });
-        onLogAction(`Master Data ${action}`, `Category: ${activeCategory}, Item: ${editingItem.name}`);
+        onLogAction('Master Data Created', `Category: ${activeCategory}, Item: ${newItem.name}`);
         setIsModalOpen(false);
-        toast({ title: `Record ${action}` });
+        toast({ title: "Record Created Successfully" });
     };
 
     const handleDeleteItem = (id: string) => {
@@ -193,14 +204,13 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Master Data Management</h1>
                         <p className="text-muted-foreground font-medium">Govern global system constants, business modules, and reference categories.</p>
                     </div>
-                    <Button onClick={handleAddItem} className="bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
+                    <Button onClick={handleAddItem} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
                         <Plus className="mr-2 h-4 w-4" />
                         New Record
                     </Button>
                 </div>
 
                 <div className="space-y-8">
-                    {/* Vertical Step 1: Category Selector (One by One Layout) */}
                     <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden w-full">
                         <CardHeader className="bg-slate-50/50 border-b py-4 px-6">
                             <CardTitle className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Configuration Panel</CardTitle>
@@ -245,7 +255,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                     <div className="relative">
                                         <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                                         <Input 
-                                            placeholder="Filter entries by name or description..." 
+                                            placeholder="Filter entries by name or tag..." 
                                             className="pl-10 rounded-xl border-slate-200 h-12 bg-white font-medium" 
                                             value={searchQuery} 
                                             onChange={e => setSearchQuery(e.target.value)} 
@@ -256,7 +266,6 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                         </CardContent>
                     </Card>
 
-                    {/* Vertical Step 2: Data Ledger (One by One Layout) */}
                     <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white min-h-[400px] flex flex-col w-full">
                         <CardHeader className="bg-white border-b py-5 px-8 flex flex-row items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
@@ -274,7 +283,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                 <TableHeader className="bg-slate-50 border-b">
                                     <TableRow className="hover:bg-transparent">
                                         <TableHead className="py-4 px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Record Identity</TableHead>
-                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Scope / Guidelines</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Tags / Labels</TableHead>
                                         <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Status</TableHead>
                                         <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Actions</TableHead>
                                     </TableRow>
@@ -282,6 +291,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                 <TableBody>
                                     {filteredItems.map(item => {
                                         const referred = isItemReferred(item, activeCategory);
+                                        const itemTags = item.description ? item.description.split(',').filter(t => t.trim()) : [];
                                         return (
                                             <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 transition-colors h-16">
                                                 <TableCell className="px-8 font-bold text-slate-900">
@@ -299,8 +309,18 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-slate-500 text-xs italic max-w-lg truncate">
-                                                    {item.description || '—'}
+                                                <TableCell className="max-w-lg">
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {itemTags.length > 0 ? (
+                                                            itemTags.map(tag => (
+                                                                <Badge key={tag} variant="outline" className="bg-white border-slate-200 text-slate-600 text-[10px] font-bold">
+                                                                    {tag}
+                                                                </Badge>
+                                                            ))
+                                                        ) : (
+                                                            <span className="text-slate-300 italic text-xs">No tags defined</span>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge 
@@ -314,9 +334,6 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                 </TableCell>
                                                 <TableCell className="text-right px-8">
                                                     <div className="flex justify-end gap-1">
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => handleEditItem(item)}>
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
                                                         <Button 
                                                             variant="ghost" 
                                                             size="icon" 
@@ -375,12 +392,10 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                         <div className="p-8 border-b bg-white">
                             <div className="flex items-center gap-4">
                                 <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-inner">
-                                    {masterData[activeCategory].some(i => i.id === editingItem?.id) ? <Edit className="h-6 w-6 text-indigo-600" /> : <Plus className="h-6 w-6 text-indigo-600" />}
+                                    <Plus className="h-6 w-6 text-indigo-600" />
                                 </div>
                                 <div>
-                                    <DialogTitle className="text-2xl font-bold tracking-tight">
-                                        {masterData[activeCategory].some(i => i.id === editingItem?.id) ? 'Edit Record' : 'Create Record'}
-                                    </DialogTitle>
+                                    <DialogTitle className="text-2xl font-bold tracking-tight">Create Record</DialogTitle>
                                     <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mt-0.5">{activeLabelConfig.label} Category</p>
                                 </div>
                             </div>
@@ -388,37 +403,50 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                         <div className="p-10 space-y-8 bg-slate-50/50">
                             <div className="space-y-6">
                                 <div className="space-y-2.5">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">Entry Name <span className="text-red-500">*</span></Label>
-                                    <div className="relative">
-                                        <Input 
-                                            value={editingItem?.name || ''} 
-                                            onChange={e => setEditingItem(p => p ? ({ ...p, name: e.target.value }) : null)} 
-                                            placeholder="Enter descriptive name..."
-                                            className="rounded-2xl border-slate-200 h-12 font-bold bg-white text-base shadow-sm focus-visible:ring-primary/20" 
-                                            disabled={editingItem && masterData[activeCategory].some(i => i.id === editingItem.id) && isItemReferred(editingItem as MasterDataItem, activeCategory)}
-                                        />
-                                        {editingItem && masterData[activeCategory].some(i => i.id === editingItem.id) && isItemReferred(editingItem as MasterDataItem, activeCategory) && (
-                                            <div className="absolute right-4 top-3.5">
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Lock className="h-5 w-5 text-amber-500" />
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="rounded-lg shadow-xl border-none p-2 bg-slate-900 text-white">
-                                                        <p className="text-[10px] font-bold">RENAMING LOCKED: RECORD IN USE</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </div>
-                                        )}
-                                    </div>
+                                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">Master Data Name <span className="text-red-500">*</span></Label>
+                                    <Input 
+                                        value={newName} 
+                                        onChange={e => setNewName(e.target.value)} 
+                                        placeholder="e.g. Documentation Status"
+                                        className="rounded-2xl border-slate-200 h-12 font-bold bg-white text-base shadow-sm focus-visible:ring-primary/20" 
+                                    />
                                 </div>
                                 <div className="space-y-2.5">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">Scope / Guidelines</Label>
-                                    <Textarea 
-                                        value={editingItem?.description || ''} 
-                                        onChange={e => setEditingItem(p => p ? ({ ...p, description: e.target.value }) : null)} 
-                                        placeholder="Provide administrative guidelines for users..."
-                                        className="rounded-2xl border-slate-200 min-h-[140px] bg-white text-sm shadow-sm focus-visible:ring-primary/20 leading-relaxed resize-none" 
-                                    />
+                                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">Chip Tags (Values)</Label>
+                                    <div className="space-y-3">
+                                        <div className="flex flex-wrap gap-2 p-3 min-h-[50px] bg-white border border-slate-200 rounded-2xl shadow-sm">
+                                            {tags.map(tag => (
+                                                <Badge key={tag} className="bg-indigo-50 text-indigo-700 border-indigo-100 rounded-lg h-8 px-2.5 gap-2 font-bold">
+                                                    {tag}
+                                                    <button onClick={() => removeTag(tag)} className="hover:text-red-500 transition-colors">
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </Badge>
+                                            ))}
+                                            {tags.length === 0 && (
+                                                <span className="text-slate-400 text-xs py-2 px-1 italic">Type and press Enter to add tags...</span>
+                                            )}
+                                        </div>
+                                        <div className="relative">
+                                            <Input 
+                                                value={currentTag} 
+                                                onChange={e => setCurrentTag(e.target.value)}
+                                                onKeyDown={handleAddTag}
+                                                placeholder="Add tag (e.g. Published)..."
+                                                className="rounded-2xl border-slate-200 h-12 bg-white text-sm shadow-sm focus-visible:ring-primary/20" 
+                                            />
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="absolute right-2 top-2 h-8 rounded-lg text-primary font-black uppercase text-[10px]"
+                                                onClick={() => handleAddTag()}
+                                                disabled={!currentTag.trim()}
+                                            >
+                                                Add
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-medium px-1 italic">Example: published, archived, deleted</p>
                                 </div>
                             </div>
                         </div>
@@ -428,7 +456,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                             </DialogClose>
                             <Button 
                                 onClick={handleSaveItem} 
-                                disabled={!editingItem?.name?.trim()}
+                                disabled={!newName.trim() || tags.length === 0}
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold h-11 px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95"
                             >
                                 Finalize Record
