@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -50,7 +49,8 @@ import {
     KeyRound,
     Lock,
     Info,
-    Settings2
+    Settings2,
+    Mail
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { UserAccount, ActivityLog, Role, Permission } from '@/lib/types';
@@ -63,7 +63,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 type SecurityManagementProps = {
   users: UserAccount[];
   onSaveUsers: (users: UserAccount[]) => void;
-  currentUser: { name: string };
+  currentUser: { name: string; id: string };
   isSuperAdmin: boolean;
   onImpersonate: (user: UserAccount | string) => void;
 };
@@ -136,9 +136,10 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
     }, [filteredPermissions, permPage, permPageSize]);
 
     const logAction = (type: any, details?: string) => {
+        const actorName = currentUser.name;
         const newLog: ActivityLog = {
             id: `log_${Date.now()}`,
-            userName: currentUser.name,
+            userName: actorName,
             definitionName: 'Security Administration',
             activityType: type,
             occurredDate: new Date().toISOString(),
@@ -147,26 +148,50 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         setActivityLogs(prev => [newLog, ...(Array.isArray(prev) ? prev : [])]);
     };
 
+    const handleAddUser = () => {
+        setEditingUser({ 
+            id: `u_${Date.now()}`, 
+            name: '', 
+            email: '', 
+            role: 'Standard User', 
+            status: 'Active',
+            avatar: `https://picsum.photos/seed/${Date.now()}/40/40`
+        });
+        setIsEditUserModalOpen(true);
+    };
+
     const handleEditUser = (user: UserAccount) => {
         setEditingUser({ ...user });
         setIsEditUserModalOpen(true);
     };
 
     const handleSaveUser = () => {
-        if (!editingUser) return;
-        const original = safeUsers.find(u => u.id === editingUser.id);
-        if (!original) return;
-
-        if (original.role !== editingUser.role) {
-            logAction('User Role Modified', `Assigned ${editingUser.role} to ${editingUser.name}`);
-        }
-        if (original.status !== editingUser.status) {
-            logAction('User Status Changed', `${editingUser.name} status updated to ${editingUser.status}`);
+        if (!editingUser || !editingUser.name.trim() || !editingUser.email.trim()) {
+            toast({ variant: 'destructive', title: "Validation Error", description: "Name and Email are required." });
+            return;
         }
 
-        onSaveUsers(safeUsers.map(u => u.id === editingUser.id ? editingUser : u));
+        const isNew = !safeUsers.some(u => u.id === editingUser.id);
+        
+        if (isNew) {
+            onSaveUsers([...safeUsers, editingUser]);
+            logAction('User Profile Updated', `Created account for ${editingUser.name}`);
+        } else {
+            const original = safeUsers.find(u => u.id === editingUser.id);
+            if (!original) return;
+
+            if (original.role !== editingUser.role) {
+                logAction('User Role Modified', `Assigned ${editingUser.role} to ${editingUser.name}`);
+            }
+            if (original.status !== editingUser.status) {
+                logAction('User Status Changed', `${editingUser.name} status updated to ${editingUser.status}`);
+            }
+
+            onSaveUsers(safeUsers.map(u => u.id === editingUser.id ? editingUser : u));
+        }
+
         setIsEditUserModalOpen(false);
-        toast({ title: "Account Updated" });
+        toast({ title: isNew ? "Account Created" : "Account Updated" });
     };
 
     const handleAddRole = () => {
@@ -275,6 +300,12 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Security & Access</h1>
                         <p className="text-muted-foreground font-medium">Govern system access, identity proxying, and functional permissions.</p>
                     </div>
+                    {activeArea === 'users' && (
+                        <Button onClick={handleAddUser} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create User
+                        </Button>
+                    )}
                     {activeArea === 'roles' && (
                         <Button onClick={handleAddRole} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
                             <Plus className="mr-2 h-4 w-4" />
@@ -538,14 +569,41 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                 {/* MODALS */}
                 <Dialog open={isEditUserModalOpen} onOpenChange={setIsEditUserModalOpen}>
                     <DialogContent className="max-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><UserCog className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">Edit Account</DialogTitle></div></div>
+                        <div className="p-6 border-b bg-white">
+                          <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-inner">
+                                {safeUsers.some(u => u.id === editingUser?.id) ? <UserCog className="h-6 w-6 text-indigo-600" /> : <Plus className="h-6 w-6 text-indigo-600" />}
+                            </div>
+                            <div>
+                                <DialogTitle className="text-2xl font-bold tracking-tight">
+                                    {safeUsers.some(u => u.id === editingUser?.id) ? 'Edit Account' : 'Provision Account'}
+                                </DialogTitle>
+                                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mt-0.5">System Access Identity</p>
+                            </div>
+                          </div>
+                        </div>
                         <div className="p-8 space-y-6 bg-slate-50/30">
                             <div className="space-y-4">
-                                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Full Name</Label><Input value={editingUser?.name || ''} onChange={e => setEditingUser(p => p ? ({ ...p, name: e.target.value }) : null)} className="rounded-xl border-slate-200 h-11 font-bold bg-white" /></div>
-                                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">System Role</Label>
+                                <div className="space-y-2">
+                                    <Label className="text-[11px] font-black uppercase text-slate-500">Full Name</Label>
+                                    <Input value={editingUser?.name || ''} onChange={e => setEditingUser(p => p ? ({ ...p, name: e.target.value }) : null)} className="rounded-xl border-slate-200 h-11 font-bold bg-white" placeholder="e.g. John Smith" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[11px] font-black uppercase text-slate-500">Email Address</Label>
+                                    <div className="relative">
+                                      <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+                                      <Input value={editingUser?.email || ''} onChange={e => setEditingUser(p => p ? ({ ...p, email: e.target.value }) : null)} className="rounded-xl border-slate-200 h-11 pl-10 font-medium bg-white" placeholder="name@medpoint.com" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[11px] font-black uppercase text-slate-500">System Role</Label>
                                     <Select value={editingUser?.role} onValueChange={v => setEditingUser(p => p ? ({ ...p, role: v }) : null)}>
-                                        <SelectTrigger className="rounded-xl h-11 font-bold bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                                        <SelectContent>{safeRoles.filter(r => r.status === 'Active').map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
+                                        <SelectTrigger className="rounded-xl h-11 font-bold bg-white border-slate-200">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {safeRoles.filter(r => r.status === 'Active').map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
+                                        </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
@@ -554,7 +612,14 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                 </div>
                             </div>
                         </div>
-                        <DialogFooter className="p-4 bg-white border-t gap-2"><DialogClose asChild><Button variant="outline" className="rounded-xl font-bold border-slate-200">Cancel</Button></DialogClose><Button onClick={handleSaveUser} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-8 shadow-md transition-all active:scale-95">Save Changes</Button></DialogFooter>
+                        <DialogFooter className="p-4 bg-white border-t gap-2">
+                          <DialogClose asChild>
+                            <Button variant="ghost" className="rounded-xl font-bold text-slate-500 px-6 hover:bg-slate-50">Cancel</Button>
+                          </DialogClose>
+                          <Button onClick={handleSaveUser} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95">
+                            {safeUsers.some(u => u.id === editingUser?.id) ? 'Save Changes' : 'Create Account'}
+                          </Button>
+                        </DialogFooter>
                     </DialogContent>
                 </Dialog>
 
