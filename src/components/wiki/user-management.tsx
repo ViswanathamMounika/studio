@@ -300,12 +300,6 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Security & Access</h1>
                         <p className="text-muted-foreground font-medium">Govern system access, identity proxying, and functional permissions.</p>
                     </div>
-                    {activeArea === 'users' && (
-                        <Button onClick={handleAddUser} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Create User
-                        </Button>
-                    )}
                     {activeArea === 'roles' && (
                         <Button onClick={handleAddRole} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
                             <Plus className="mr-2 h-4 w-4" />
