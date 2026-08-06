@@ -161,11 +161,17 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                     {/* MAIN CONFIG TABS */}
                     <Tabs defaultValue="app-settings" className="space-y-6">
                         <TabsList className="bg-slate-200/40 p-1.5 h-12 rounded-2xl border border-slate-200 inline-flex shadow-sm">
-                            <TabsTrigger value="app-settings" className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md font-bold text-xs gap-2">
+                            <TabsTrigger 
+                                value="app-settings" 
+                                className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary font-bold text-xs gap-2 transition-all"
+                            >
                                 <ShieldCheck className="h-4 w-4" />
                                 App Settings
                             </TabsTrigger>
-                            <TabsTrigger value="app-configs" className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md font-bold text-xs gap-2">
+                            <TabsTrigger 
+                                value="app-configs" 
+                                className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary font-bold text-xs gap-2 transition-all"
+                            >
                                 <Terminal className="h-4 w-4" />
                                 App Configs
                             </TabsTrigger>
