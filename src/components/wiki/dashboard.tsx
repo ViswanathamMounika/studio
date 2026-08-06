@@ -42,6 +42,7 @@ import { differenceInDays, parseISO, subDays, format, startOfDay, endOfDay, isWi
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
 import { Input } from '../ui/input';
+import { useToast } from '@/hooks/use-toast';
 
 type DashboardProps = {
   definitions: Definition[];
@@ -81,13 +82,14 @@ const MODULE_COLORS: Record<string, string> = {
 };
 
 export default function Dashboard({ definitions, drafts, users, templates, onNavigate, approvalHistory = [], activityLogs = [] }: DashboardProps) {
+  const { toast } = useToast();
   
   // Velocity Chart State
-  const [velocityTimeFrame, setVelocityTimeFrame] = useState<'7D' | '30D' | '90D'>('90D');
-  const [velocityRange, setVelocityRange] = useState({
-    from: format(subDays(new Date(), 90), 'yyyy-MM-dd'),
+  const [tempRange, setTempRange] = useState({
+    from: format(subDays(new Date(), 29), 'yyyy-MM-dd'),
     to: format(new Date(), 'yyyy-MM-dd')
   });
+  const [velocityRange, setVelocityRange] = useState(tempRange);
 
   const metrics = useMemo(() => {
     const safeDefinitions = Array.isArray(definitions) ? definitions : [];
@@ -99,7 +101,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     
     // Lifecycle Mapping
     const draftOnly = safeDrafts.filter(d => d && d.isDraft && !d.isPendingApproval && !(d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection'));
-    const sentForApproval = safeDrafts.filter(d => d && d.isPendingApproval && d.submittedAt && parseISO(d.submittedAt) > subDays(new Date(), 1));
     const pendingApproval = safeDrafts.filter(d => d && d.isPendingApproval);
     const changesRequested = safeDrafts.filter(d => d && (d.discussions || []).some(m => m.type === 'change-request') && !d.isPendingApproval);
     const rejected = safeDrafts.filter(d => d && (d.discussions || []).some(m => m.type === 'rejection') && !d.isPendingApproval);
@@ -157,8 +158,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             date: dateKey,
             displayDate: format(day, 'MMM d'),
             count,
-            // Mock visualization style: one bar is "active" or highlighted
-            fill: idx === Math.floor(days.length / 4) ? '#6366F1' : '#E0E7FF'
+            fill: '#E0E7FF'
         };
     });
 
@@ -171,7 +171,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         totalDefinitions: published + archived + safeDrafts.length,
         lifecycle: {
             draft: draftOnly.length,
-            sent: sentForApproval.length,
+            sent: safeDrafts.filter(d => d && d.isPendingApproval && d.submittedAt && parseISO(d.submittedAt) > subDays(new Date(), 1)).length,
             pending: pendingApproval.length,
             requested: changesRequested.length,
             rejected: rejected.length,
@@ -196,12 +196,32 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     };
   }, [definitions, drafts, users, templates, activityLogs, velocityRange]);
 
-  const handleTimeFrameChange = (frame: '7D' | '30D' | '90D') => {
-    setVelocityTimeFrame(frame);
-    const days = frame === '7D' ? 7 : frame === '30D' ? 30 : 90;
-    setVelocityRange({
-        from: format(subDays(new Date(), days), 'yyyy-MM-dd'),
-        to: format(new Date(), 'yyyy-MM-dd')
+  const handleApplyRange = () => {
+    const start = parseISO(tempRange.from);
+    const end = parseISO(tempRange.to);
+
+    if (start > end) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Range',
+        description: 'Start date must be before the end date.'
+      });
+      return;
+    }
+
+    if (differenceInDays(end, start) > 30) {
+      toast({
+        variant: 'destructive',
+        title: 'Limit Exceeded',
+        description: 'Maximum observation period is 30 days.'
+      });
+      return;
+    }
+
+    setVelocityRange(tempRange);
+    toast({
+      title: 'Range Applied',
+      description: `Viewing creation data for ${differenceInDays(end, start) + 1} days.`
     });
   };
 
@@ -352,38 +372,23 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             <div className="flex flex-wrap items-center justify-between mb-8 gap-4">
                 <h3 className="text-xl font-bold text-slate-900">Definitions Created</h3>
                 <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center border border-slate-200 rounded-xl p-1 bg-slate-50/50">
-                        {['7D', '30D', '90D'].map((frame) => (
-                            <button
-                                key={frame}
-                                onClick={() => handleTimeFrameChange(frame as any)}
-                                className={cn(
-                                    "px-4 py-1.5 rounded-lg text-[11px] font-black transition-all",
-                                    velocityTimeFrame === frame 
-                                        ? "bg-white text-primary shadow-sm ring-1 ring-slate-200" 
-                                        : "text-slate-400 hover:text-slate-600"
-                                )}
-                            >
-                                {frame}
-                            </button>
-                        ))}
-                    </div>
                     <div className="flex items-center gap-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Range:</Label>
                         <Input 
                             type="date" 
-                            value={velocityRange.from} 
-                            onChange={e => setVelocityRange(prev => ({ ...prev, from: e.target.value }))}
+                            value={tempRange.from} 
+                            onChange={e => setTempRange(prev => ({ ...prev, from: e.target.value }))}
                             className="h-10 rounded-xl border-slate-200 text-xs font-bold w-[140px]" 
                         />
                         <span className="text-[10px] font-bold text-slate-400 uppercase">to</span>
                         <Input 
                             type="date" 
-                            value={velocityRange.to} 
-                            onChange={e => setVelocityRange(prev => ({ ...prev, to: e.target.value }))}
+                            value={tempRange.to} 
+                            onChange={e => setTempRange(prev => ({ ...prev, to: e.target.value }))}
                             className="h-10 rounded-xl border-slate-200 text-xs font-bold w-[140px]" 
                         />
                     </div>
-                    <Button className="h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold px-6 shadow-md shadow-indigo-100">
+                    <Button onClick={handleApplyRange} className="h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold px-6 shadow-md shadow-indigo-100">
                         Apply
                     </Button>
                 </div>
@@ -399,7 +404,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                             tickLine={false} 
                             tick={{ fontSize: 10, fontWeight: 700, fill: '#94A3B8' }}
                             interval="preserveStartEnd"
-                            minTickGap={30}
+                            minTickGap={20}
                         />
                         <YAxis 
                             axisLine={false} 
@@ -424,7 +429,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                         <Bar 
                             dataKey="count" 
                             radius={[6, 6, 0, 0]} 
-                            barSize={velocityTimeFrame === '7D' ? 60 : velocityTimeFrame === '30D' ? 24 : 12}
+                            barSize={18}
                         >
                             {metrics.velocityData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -432,6 +437,10 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
+            </div>
+            <div className="mt-4 flex items-center justify-center gap-2 text-[10px] font-medium text-slate-400 italic">
+                <Info className="h-3 w-3" />
+                Observation limited to 30 days for optimal data density.
             </div>
         </Card>
       </div>
