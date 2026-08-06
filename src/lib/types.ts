@@ -295,8 +295,12 @@ export interface EmailTemplate {
 }
 
 export interface ConfigKey {
+  id: string;
   key: string;
   value: string;
+  type: string;
+  effectiveFrom: string;
+  active: boolean;
   description: string;
 }
 

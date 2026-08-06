@@ -167,13 +167,13 @@ export const initialSystemConfig: SystemConfigurationState = {
     }
   ],
   configKeys: [
-    { key: 'API_GATEWAY_URL', value: 'https://api.medpoint.cloud/v1', description: 'Primary edge gateway for technical requests.' },
-    { key: 'CACHE_TTL_SEC', value: '3600', description: 'Standard object cache duration.' },
-    { key: 'ELASTIC_AUTH_KEY', value: '********', description: 'Search provider authorization token.' },
-    { key: 'SMTP_HOST', value: 'smtp.office365.com', description: 'Internal mail relay host.' },
-    { key: 'LDAP_BASE_DN', value: 'DC=medpoint,DC=org', description: 'Active Directory root path.' },
-    { key: 'LOG_LEVEL', value: 'INFO', description: 'System telemetry verbosity.' },
-    { key: 'MAX_RETRY_COUNT', value: '3', description: 'Default failure retry limit.' }
+    { id: '1', key: 'SESSION_TIMEOUT', value: '20', type: 'minutes', effectiveFrom: '2025-12-23T00:00:00Z', active: true, description: 'Session timeout setting for the application' },
+    { id: '2', key: 'REVISION_RECORD_COUNT', value: '10', type: 'record count', effectiveFrom: '2025-12-23T00:00:00Z', active: true, description: 'No. of revisions to show for each definition' },
+    { id: '3', key: 'DATA_PREVIEW_COUNT', value: '10', type: 'int', effectiveFrom: '2026-01-06T05:03:00Z', active: true, description: 'Support table data preview count' },
+    { id: '7', key: 'DEF_EDIT_LOCK_DURATION', value: '15', type: 'minutes', effectiveFrom: '2026-01-06T21:52:00Z', active: true, description: 'Lock the edit definition' },
+    { id: '8', key: 'DEF_RECENT_COUNT', value: '10', type: 'int', effectiveFrom: '2026-01-07T05:21:00Z', active: true, description: 'Recent definitions count' },
+    { id: '9', key: 'INITIAL_DEF_COUNT', value: '300', type: 'int', effectiveFrom: '2026-01-21T23:05:00Z', active: true, description: 'Initial definition count' },
+    { id: '10', key: 'ACTIVITY_LOGS_GRID_RECORDS_COUNT', value: '500', type: 'int', effectiveFrom: '2026-05-29T09:10:00Z', active: true, description: 'Activity logs search results count' }
   ]
 };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,21 +12,24 @@ import {
     Check, 
     Search, 
     Save, 
-    RotateCcw, 
-    PlusSquare, 
+    Plus, 
     Eye, 
     EyeOff,
     Terminal,
     Settings2,
-    ShieldCheck
+    ShieldCheck,
+    Pencil,
+    Trash2,
+    Filter
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { SystemConfigurationState } from '@/lib/types';
+import type { SystemConfigurationState, ConfigKey } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
 import { Switch } from '../ui/switch';
 import { ScrollArea } from '../ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { format, parseISO } from 'date-fns';
 
 type SystemConfigurationProps = {
   config: SystemConfigurationState;
@@ -37,6 +40,7 @@ type SystemConfigurationProps = {
 export default function SystemConfiguration({ config, onSaveConfig, onLogAction }: SystemConfigurationProps) {
     const [localConfig, setLocalConfig] = useState<SystemConfigurationState>(config);
     const [showPassword, setShowPassword] = useState(false);
+    const [configSearch, setConfigSearch] = useState('');
     const { toast } = useToast();
 
     const handleSave = () => {
@@ -55,6 +59,48 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             ...prev,
             settings: { ...prev.settings, ...updates }
         }));
+    };
+
+    const filteredConfigKeys = useMemo(() => {
+        if (!configSearch.trim()) return localConfig.configKeys;
+        const lower = configSearch.toLowerCase();
+        return localConfig.configKeys.filter(k => 
+            k.key.toLowerCase().includes(lower) || 
+            k.description.toLowerCase().includes(lower)
+        );
+    }, [localConfig.configKeys, configSearch]);
+
+    const handleUpdateConfigKey = (id: string, updates: Partial<ConfigKey>) => {
+        setLocalConfig(prev => ({
+            ...prev,
+            configKeys: prev.configKeys.map(k => k.id === id ? { ...k, ...updates } : k)
+        }));
+    };
+
+    const handleRemoveConfigKey = (id: string) => {
+        setLocalConfig(prev => ({
+            ...prev,
+            configKeys: prev.configKeys.filter(k => k.id !== id)
+        }));
+        toast({ title: "Configuration Key Removed" });
+    };
+
+    const handleAddConfigKey = () => {
+        const newId = (Math.max(...localConfig.configKeys.map(k => parseInt(k.id) || 0)) + 1).toString();
+        const newKey: ConfigKey = {
+            id: newId,
+            key: 'NEW_CONFIG_KEY',
+            value: '0',
+            type: 'int',
+            effectiveFrom: new Date().toISOString(),
+            active: true,
+            description: 'New system configuration parameter.'
+        };
+        setLocalConfig(prev => ({
+            ...prev,
+            configKeys: [...prev.configKeys, newKey]
+        }));
+        toast({ title: "New Key Initialized" });
     };
 
     return (
@@ -89,7 +135,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                     <Card className="rounded-[24px] border-slate-200 bg-white p-8 shadow-sm overflow-hidden border-l-4 border-l-indigo-600">
                         <div className="flex flex-wrap items-center gap-10">
                             <div className="h-16 w-16 rounded-[20px] bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100">
-                                <PlusSquare className="h-8 w-8" />
+                                <Terminal className="h-8 w-8" />
                             </div>
                             <div className="flex-1 min-w-[300px] space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Application Name</Label>
@@ -118,12 +164,10 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             <TabsTrigger value="app-settings" className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md font-bold text-xs gap-2">
                                 <ShieldCheck className="h-4 w-4" />
                                 App Settings
-                                <Badge variant="secondary" className="h-5 px-1.5 bg-indigo-50 text-indigo-700 font-black text-[9px] uppercase">5 sections</Badge>
                             </TabsTrigger>
                             <TabsTrigger value="app-configs" className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md font-bold text-xs gap-2">
                                 <Terminal className="h-4 w-4" />
                                 App Configs
-                                <Badge variant="secondary" className="h-5 px-1.5 bg-slate-100 text-slate-500 font-black text-[9px] uppercase">7 keys</Badge>
                             </TabsTrigger>
                         </TabsList>
 
@@ -293,35 +337,97 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="app-configs">
+                        <TabsContent value="app-configs" className="space-y-6 mt-0">
+                            {/* SEARCH & ADD ACTION BAR */}
+                            <div className="flex items-center justify-between">
+                                <div className="relative w-full max-w-md">
+                                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                    <Input 
+                                        placeholder="Filter by key or description..." 
+                                        value={configSearch}
+                                        onChange={e => setConfigSearch(e.target.value)}
+                                        className="pl-9 h-10 rounded-xl bg-white border-slate-200 shadow-sm"
+                                    />
+                                </div>
+                                <Button onClick={handleAddConfigKey} className="bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white rounded-xl h-10 px-6 gap-2 font-bold shadow-md transition-all active:scale-95">
+                                    <Plus className="h-4 w-4" />
+                                    Add Config
+                                </Button>
+                            </div>
+
                             <Card className="rounded-[28px] border-slate-200 shadow-sm overflow-hidden bg-white">
                                 <Table>
                                     <TableHeader className="bg-slate-50 border-b">
-                                        <TableRow>
-                                            <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-500 h-14">Parameter Key</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Active Value</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Registry Description</TableHead>
+                                        <TableRow className="h-12 border-none">
+                                            <TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 w-16">ID</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Config Key</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Value</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Type</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Effective From</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Active</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Description</TableHead>
+                                            <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 w-24">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {localConfig.configKeys.map(item => (
-                                            <TableRow key={item.key} className="hover:bg-slate-50/50 border-slate-100 h-16">
-                                                <TableCell className="px-8 font-mono text-[13px] font-bold text-indigo-600">{item.key}</TableCell>
+                                        {filteredConfigKeys.map(item => (
+                                            <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 h-20">
+                                                <TableCell className="px-6 font-bold text-slate-400 text-xs tabular-nums">{item.id}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline" className="bg-indigo-50/50 text-indigo-700 border-transparent font-black text-[11px] tracking-wider px-2.5 h-7 rounded-lg">
+                                                        {item.key}
+                                                    </Badge>
+                                                </TableCell>
                                                 <TableCell>
                                                     <Input 
                                                         value={item.value} 
-                                                        onChange={(e) => {
-                                                            const newKeys = localConfig.configKeys.map(k => k.key === item.key ? { ...k, value: e.target.value } : k);
-                                                            setLocalConfig(prev => ({ ...prev, configKeys: newKeys }));
-                                                        }}
-                                                        className="h-9 rounded-lg border-slate-200 bg-slate-50/50 font-bold"
+                                                        onChange={(e) => handleUpdateConfigKey(item.id, { value: e.target.value })}
+                                                        className="h-9 w-24 rounded-xl border-slate-200 bg-white font-black text-center shadow-inner"
                                                     />
                                                 </TableCell>
-                                                <TableCell className="text-slate-500 text-xs italic">{item.description}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant="secondary" className="bg-slate-100 text-slate-500 font-bold text-[10px] px-2 h-6 rounded-lg uppercase">
+                                                        {item.type}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-bold text-slate-700">{format(parseISO(item.effectiveFrom), 'dd MMM yyyy')}</span>
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{format(parseISO(item.effectiveFrom), 'hh:mm a')}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Switch 
+                                                        checked={item.active} 
+                                                        onCheckedChange={v => handleUpdateConfigKey(item.id, { active: v })}
+                                                        className="data-[state=checked]:bg-emerald-500"
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="text-slate-500 text-xs font-medium max-w-xs leading-relaxed">
+                                                    {item.description}
+                                                </TableCell>
+                                                <TableCell className="text-right px-6">
+                                                    <div className="flex justify-end gap-1">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-white rounded-lg">
+                                                            <Pencil className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-white rounded-lg" onClick={() => handleRemoveConfigKey(item.id)}>
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
                                 </Table>
+                                <div className="p-4 px-6 border-t bg-slate-50/50 flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                                        Showing {filteredConfigKeys.length} of {localConfig.configKeys.length} config keys
+                                    </span>
+                                    <span className="text-[10px] font-medium text-slate-400 italic">
+                                        Effective To values are NULL — configs apply indefinitely once active
+                                    </span>
+                                </div>
                             </Card>
                         </TabsContent>
                     </Tabs>
