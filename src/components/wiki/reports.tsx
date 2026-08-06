@@ -39,8 +39,6 @@ import {
     LayoutTemplate,
     Activity,
     Settings2,
-    Zap,
-    Timer,
     Play
 } from 'lucide-react';
 import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, differenceInMinutes, differenceInHours } from 'date-fns';
@@ -71,7 +69,7 @@ type SortConfig = {
     direction: 'asc' | 'desc';
 } | null;
 
-type ReportType = 'user-activity' | 'definition-report' | 'approval-report' | 'template-report' | 'system-usage';
+type ReportType = 'user-activity' | 'definition-report' | 'approval-report' | 'template-report';
 
 type AppliedFilters = {
     reportType: ReportType;
@@ -350,76 +348,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         };
     }, [templates, definitions, drafts, filteredLogs, appliedFilters]);
 
-    const systemUsageStats = useMemo(() => {
-        if (!appliedFilters || appliedFilters.reportType !== 'system-usage') return null;
-        const getShortDate = (iso: string) => format(parseISO(iso), 'yyyy-MM-dd');
-
-        const creationsMap: Record<string, number> = {};
-        filteredLogs.filter(l => l && l.activityType === 'Definition Created').forEach(l => {
-            const d = getShortDate(l.occurredDate);
-            creationsMap[d] = (creationsMap[d] || 0) + 1;
-        });
-        const creationsPerDay = Object.entries(creationsMap)
-            .map(([date, count]) => ({ date, count }))
-            .sort((a, b) => b.date.localeCompare(a.date));
-
-        const approvalsMap: Record<string, number> = {};
-        filteredHistory.filter(h => h && h.action !== 'Submitted').forEach(h => {
-            const d = getShortDate(h.date);
-            approvalsMap[d] = (approvalsMap[d] || 0) + 1;
-        });
-        const approvalsPerDay = Object.entries(approvalsMap)
-            .map(([date, count]) => ({ date, count }))
-            .sort((a, b) => b.date.localeCompare(a.date));
-
-        const activeUsersMap: Record<string, Set<string>> = {};
-        filteredLogs.forEach(l => {
-            if (!l) return;
-            const d = getShortDate(l.occurredDate);
-            if (!activeUsersMap[d]) activeUsersMap[d] = new Set();
-            activeUsersMap[d].add(l.userName);
-        });
-        const activeUsersPerDay = Object.entries(activeUsersMap)
-            .map(([date, users]) => ({ date, count: users.size }))
-            .sort((a, b) => b.date.localeCompare(a.date));
-
-        const hoursMap: Record<number, number> = {};
-        filteredLogs.filter(l => l && l.activityType === 'User Login').forEach(l => {
-            const hour = parseISO(l.occurredDate).getHours();
-            hoursMap[hour] = (hoursMap[hour] || 0) + 1;
-        });
-        const peakHours = Object.entries(hoursMap)
-            .map(([hour, count]) => ({ hour: parseInt(hour), count }))
-            .sort((a, b) => b.count - a.count);
-
-        const moduleActivityMap: Record<string, number> = {};
-        const safeDefs = Array.isArray(definitions) ? definitions : [];
-        const safeDrafts = Array.isArray(drafts) ? drafts : [];
-
-        filteredLogs.forEach(log => {
-            if (!log) return;
-            if (log.definitionName === 'System Governance' || log.definitionName === 'Template Governance' || log.definitionName === 'Security Administration') return;
-            
-            let def = safeDefs.find(d => d && d.name === log.definitionName);
-            if (!def) def = safeDrafts.find(d => d && d.name === log.definitionName);
-            
-            const moduleName = def?.module || 'Core';
-            moduleActivityMap[moduleName] = (moduleActivityMap[moduleName] || 0) + 1;
-        });
-
-        const activeModules = Object.entries(moduleActivityMap)
-            .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count);
-
-        return {
-            creationsPerDay,
-            approvalsPerDay,
-            activeUsersPerDay,
-            peakHours,
-            activeModules
-        };
-    }, [filteredLogs, filteredHistory, definitions, drafts, appliedFilters]);
-
     const uniqueApprovers = useMemo(() => {
         const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
         const names = Array.from(new Set(safeHistory.filter(h => h && h.action !== 'Submitted').map(h => h.userName)));
@@ -532,12 +460,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([templateReportStats.counts]), "Architecture Overview");
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(templateReportStats.mostUsed), "Template Adoption");
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(templateReportStats.recentlyModified), "Modification Audit");
-        } else if (appliedFilters.reportType === 'system-usage' && systemUsageStats) {
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.creationsPerDay), "Creation Velocity");
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.approvalsPerDay), "Governance Throughput");
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.activeUsersPerDay), "Daily Active Users");
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.peakHours), "Hourly Peak Patterns");
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(systemUsageStats.activeModules), "Module Engagement");
         }
 
         if (formatType === 'xlsx') {
@@ -605,7 +527,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 <SelectItem value="definition-report" className="font-medium">Definition Report</SelectItem>
                                 <SelectItem value="approval-report" className="font-medium">Approval Report</SelectItem>
                                 <SelectItem value="template-report" className="font-medium">Template Report</SelectItem>
-                                <SelectItem value="system-usage" className="font-medium">System Usage Report</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -672,7 +593,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </div>
                             <div className="space-y-2">
                                 <h3 className="text-xl font-bold text-slate-900">Report Configuration Required</h3>
-                                <p className="text-sm text-slate-500 max-w-sm font-medium leading-relaxed">
+                                <p className="text-sm text-slate-500 max-sm font-medium leading-relaxed">
                                     Please select your report type and observation period in the header above, then click <strong>Run Report</strong> to generate the audit data.
                                 </p>
                             </div>
@@ -907,156 +828,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                     </Card>
                                 </div>
                             </div>
-                        </div>
-                    ) : appliedFilters.reportType === 'system-usage' && systemUsageStats ? (
-                        <div className="space-y-10 animate-in fade-in duration-500">
-                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2 px-2">
-                                        <Zap className="h-4 w-4 text-primary" />
-                                        <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Definition Creation Velocity</h3>
-                                    </div>
-                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
-                                        <Table>
-                                            <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow>
-                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Calendar Date</TableHead>
-                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Creations</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {systemUsageStats.creationsPerDay.map((row, i) => (
-                                                    <TableRow key={i} className="h-12 border-slate-100 hover:bg-slate-50/50">
-                                                        <TableCell className="px-6 font-mono text-xs">{row.date}</TableCell>
-                                                        <TableCell className="px-6 text-right font-black text-indigo-600 tabular-nums">{row.count}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                                {systemUsageStats.creationsPerDay.length === 0 && (
-                                                    <TableRow><TableCell colSpan={2} className="h-24 text-center text-slate-400 italic">No creation data for selected period.</TableCell></TableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </Card>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2 px-2">
-                                        <ClipboardCheck className="h-4 w-4 text-primary" />
-                                        <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Governance Throughput (Approvals)</h3>
-                                    </div>
-                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
-                                        <Table>
-                                            <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow>
-                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Calendar Date</TableHead>
-                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Decisions</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {systemUsageStats.approvalsPerDay.map((row, i) => (
-                                                    <TableRow key={i} className="h-12 border-slate-100 hover:bg-slate-50/50">
-                                                        <TableCell className="px-6 font-mono text-xs">{row.date}</TableCell>
-                                                        <TableCell className="px-6 text-right font-black text-emerald-600 tabular-nums">{row.count}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                                {systemUsageStats.approvalsPerDay.length === 0 && (
-                                                    <TableRow><TableCell colSpan={2} className="h-24 text-center text-slate-400 italic">No approval data for selected period.</TableCell></TableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </Card>
-                                </div>
-                             </div>
-
-                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2 px-2">
-                                        <Users className="h-4 w-4 text-primary" />
-                                        <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Daily Active Users (DAU)</h3>
-                                    </div>
-                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
-                                        <Table>
-                                            <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow>
-                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Calendar Date</TableHead>
-                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Unique Users</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {systemUsageStats.activeUsersPerDay.map((row, i) => (
-                                                    <TableRow key={i} className="h-12 border-slate-100 hover:bg-slate-50/50">
-                                                        <TableCell className="px-6 font-mono text-xs">{row.date}</TableCell>
-                                                        <TableCell className="px-6 text-right font-black text-primary tabular-nums">{row.count}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                                {systemUsageStats.activeUsersPerDay.length === 0 && (
-                                                    <TableRow><TableCell colSpan={2} className="h-24 text-center text-slate-400 italic">No engagement data recorded.</TableCell></TableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </Card>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2 px-2">
-                                        <Timer className="h-4 w-4 text-primary" />
-                                        <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Peak System Access Hours</h3>
-                                    </div>
-                                    <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
-                                        <Table>
-                                            <TableHeader className="bg-slate-50 border-b">
-                                                <TableRow>
-                                                    <TableHead className="px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Hour Block (24h)</TableHead>
-                                                    <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Login Volume</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {systemUsageStats.peakHours.map((row, i) => (
-                                                    <TableRow key={i} className="h-12 border-slate-100 hover:bg-slate-50/50">
-                                                        <TableCell className="px-6 font-bold text-slate-700">{row.hour}:00 - {row.hour}:59</TableCell>
-                                                        <TableCell className="px-6 text-right font-black text-indigo-600 tabular-nums">{row.count}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                                {systemUsageStats.peakHours.length === 0 && (
-                                                    <TableRow><TableCell colSpan={2} className="h-24 text-center text-slate-400 italic">No login data for period.</TableCell></TableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </Card>
-                                </div>
-                             </div>
-
-                             <div className="space-y-4">
-                                <div className="flex items-center gap-2 px-2">
-                                    <ShieldCheck className="h-4 w-4 text-primary" />
-                                    <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Module Engagement Intensity</h3>
-                                </div>
-                                <Card className="rounded-[24px] border-slate-200 overflow-hidden bg-white shadow-sm">
-                                    <Table>
-                                        <TableHeader className="bg-slate-50 border-b">
-                                            <TableRow>
-                                                <TableHead className="px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">Business Module</TableHead>
-                                                <TableHead className="text-right px-6 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500">System Interaction Count</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {systemUsageStats.activeModules.map((row, i) => (
-                                                <TableRow key={i} className="h-14 border-slate-100 hover:bg-slate-50/50">
-                                                    <TableCell className="px-6 font-bold text-slate-900">{row.name}</TableCell>
-                                                    <TableCell className="px-6 text-right">
-                                                        <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100 font-black text-sm px-4 h-8 tabular-nums">
-                                                            {row.count}
-                                                        </Badge>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                            {systemUsageStats.activeModules.length === 0 && (
-                                                <TableRow><TableCell colSpan={2} className="h-32 text-center text-slate-400 italic">No module interactions detected.</TableCell></TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </Card>
-                             </div>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-40">
