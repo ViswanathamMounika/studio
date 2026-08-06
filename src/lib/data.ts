@@ -538,9 +538,9 @@ export const initialDefinitions: Definition[] = [
 ];
 
 export const initialActivityLogs: ActivityLog[] = [
-  { id: '1', userName: 'Administrator', definitionName: 'System Configuration', activityType: 'System Configuration Updated', occurredDate: new Date(Date.now() - 3600000 * 1).toISOString(), details: 'Updated maximum file upload size to 25MB and modified authorized file types.' },
-  { id: '2', userName: 'Administrator', definitionName: 'Security Administration', activityType: 'User Role Modified', occurredDate: new Date(Date.now() - 3600000 * 5).toISOString(), details: 'Assigned Standard User role to s.chen@medpoint.com.' },
-  { id: '6', userName: 'Administrator', definitionName: 'Service Type Mapping', activityType: 'Approval Decision', occurredDate: new Date(Date.now() - 3600000 * 10).toISOString(), details: 'Approved & Published: Service Type Mapping' }
+  { id: '1', userName: 'Dhilip Sagadevan', definitionName: 'System Configuration', activityType: 'System Configuration Updated', occurredDate: new Date(Date.now() - 3600000 * 1).toISOString(), details: 'Updated maximum file upload size to 25MB.' },
+  { id: '2', userName: 'Sarah Chen', definitionName: 'Auth Decision Date', activityType: 'Definition Updated', occurredDate: new Date(Date.now() - 3600000 * 5).toISOString(), details: 'Updated SLA logic for urgent requests.' },
+  { id: '3', userName: 'Elena Rodriguez', definitionName: 'Breast Cancer Screening (BCS)', activityType: 'Approval Decision', occurredDate: new Date(Date.now() - 3600000 * 10).toISOString(), details: 'Approved & Published.' }
 ];
 
 export const initialApprovalHistory: ApprovalHistoryEntry[] = [
@@ -549,10 +549,10 @@ export const initialApprovalHistory: ApprovalHistoryEntry[] = [
 ];
 
 export const initialUsers: UserAccount[] = [
-  { id: 'u1', name: 'Dhilip Sagadevan', email: 'dhilip.s@medpoint.com', role: 'Super Admin', status: 'Active', lastLogin: new Date().toISOString(), avatar: 'https://picsum.photos/seed/dhilip/40/40' },
-  { id: 'u2', name: 'Sarah Chen', email: 's.chen@medpoint.com', role: 'Admin', status: 'Active', lastLogin: new Date(Date.now() - 3600000 * 5).toISOString(), avatar: 'https://picsum.photos/seed/sarah/40/40' },
-  { id: 'u3', name: 'Mark Wilson', email: 'm.wilson@medpoint.com', role: 'Standard User', status: 'Active', lastLogin: new Date(Date.now() - 3600000 * 24).toISOString(), avatar: 'https://picsum.photos/seed/mark/40/40' },
-  { id: 'u4', name: 'Elena Rodriguez', email: 'e.rodriguez@medpoint.com', role: 'Approver', status: 'Inactive', lastLogin: new Date(Date.now() - 3600000 * 24 * 3).toISOString(), avatar: 'https://picsum.photos/seed/elena/40/40' },
+  { id: 'u1', name: 'Dhilip Sagadevan', email: 'dhilip.s@medpoint.com', role: 'Super Admin', status: 'Active', lastLogin: new Date().toISOString(), avatar: 'https://picsum.photos/seed/dhilip/40/40', department: 'Executive' },
+  { id: 'u2', name: 'Sarah Chen', email: 's.chen@medpoint.com', role: 'Admin', status: 'Active', lastLogin: new Date(Date.now() - 3600000 * 5).toISOString(), avatar: 'https://picsum.photos/seed/sarah/40/40', department: 'Clinical IT' },
+  { id: 'u3', name: 'Mark Wilson', email: 'm.wilson@medpoint.com', role: 'Standard User', status: 'Active', lastLogin: new Date(Date.now() - 3600000 * 24).toISOString(), avatar: 'https://picsum.photos/seed/mark/40/40', department: 'Reporting' },
+  { id: 'u4', name: 'Elena Rodriguez', email: 'e.rodriguez@medpoint.com', role: 'Approver', status: 'Inactive', lastLogin: new Date(Date.now() - 3600000 * 24 * 3).toISOString(), avatar: 'https://picsum.photos/seed/elena/40/40', department: 'Compliance' },
 ];
 
 export const initialPermissions: Permission[] = [

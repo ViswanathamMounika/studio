@@ -181,6 +181,7 @@ export interface UserAccount {
   status: 'Active' | 'Inactive';
   lastLogin?: string;
   avatar?: string;
+  department?: string;
 }
 
 export type View = 
