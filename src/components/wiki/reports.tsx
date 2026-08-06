@@ -115,7 +115,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     const flattenDefinitions = (items: Definition[]): Definition[] => {
         let result: Definition[] = [];
         items.forEach(item => {
-            if (item.description || item.shortDescription || item.sectionValues) {
+            if (item.description || item.shortDescription || (item.sectionValues && item.sectionValues.length > 0)) {
                 result.push(item);
             }
             if (item.children) {
@@ -182,50 +182,80 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
         if (appliedFilters.reportType === 'definition-report') {
             const allItems = [...flattenDefinitions(definitions), ...drafts];
-            
-            return allItems.map(def => {
-                const template = templates.find(t => t.id === def.templateId);
-                const creationLog = activityLogs.find(l => l.definitionName === def.name && l.activityType === 'Definition Created');
-                const lastModLog = activityLogs.filter(l => l.definitionName === def.name && l.activityType === 'Definition Updated').sort((a,b) => parseISO(b.occurredDate).getTime() - parseISO(a.occurredDate).getTime())[0];
-                const approvalLog = approvalHistory.filter(h => h.definitionId === def.id || h.definitionId === def.originalId).sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0];
-                const submissionLog = approvalHistory.filter(h => h.action === 'Submitted' && (h.definitionId === def.id || h.definitionId === def.originalId)).sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0];
-                
-                const owner = users.find(u => u.id === def.authorId)?.name || 'System';
-                
-                let turnaround = '—';
-                if (submissionLog && approvalLog && approvalLog.action !== 'Submitted') {
-                    const diff = differenceInDays(parseISO(approvalLog.date), parseISO(submissionLog.date));
-                    turnaround = `${diff} days`;
-                }
+            const reportRows: any[] = [];
 
-                return {
-                    id: def.id,
-                    name: def.name,
-                    module: def.module,
-                    templateUsed: template?.name || 'Standard',
-                    description: (def.shortDescription || def.description || '').replace(/<[^>]+>/g, '').substring(0, 100) + '...',
-                    createdBy: creationLog?.userName || 'System',
-                    lastModifiedBy: lastModLog?.userName || creationLog?.userName || 'System',
-                    currentOwner: owner,
-                    currentStatus: def.isArchived ? 'Archived' : (def.isPendingApproval ? 'Pending Approval' : (def.isDraft ? 'Draft' : 'Published')),
-                    createdDate: creationLog?.occurredDate || def.revisions[def.revisions.length-1]?.date || '—',
-                    lastModifiedDate: lastModLog?.occurredDate || def.revisions[0]?.date || '—',
-                    submittedDate: submissionLog?.date || '—',
-                    decisionDate: (approvalLog && approvalLog.action !== 'Submitted') ? approvalLog.date : '—',
-                    publishedDate: def.isDraft ? '—' : (def.revisions[0]?.date || '—'),
-                    archivedDate: def.isArchived ? 'Archive Active' : '—',
-                    approverName: (approvalLog && approvalLog.action !== 'Submitted') ? approvalLog.userName : '—',
-                    approvalComments: approvalLog?.comment || '—',
-                    turnaroundTime: turnaround,
-                    currentVersion: def.revisions[0]?.ticketId || 'v1.0',
-                    totalRevisions: def.revisions.length,
-                    isDuplicate: def.name.includes('(Copy)') ? 'Yes' : 'No',
-                    duplicatedFrom: def.originalId || '—',
-                    linkedRecordsCount: def.relatedDefinitions?.length || 0,
-                    attachmentCount: def.attachments?.length || 0,
-                    isActiveFlag: def.isArchived ? 'Inactive' : 'Active'
-                };
+            allItems.forEach(def => {
+                const template = templates.find(t => t.id === def.templateId);
+                const owner = users.find(u => u.id === def.authorId)?.name || 'System';
+                const totalRevisions = def.revisions?.length || 0;
+
+                // 1. Map all historical and current published revisions
+                def.revisions.forEach((rev, revIdx) => {
+                    const versionNo = totalRevisions - revIdx;
+                    reportRows.push({
+                        id: `${def.id}_v${versionNo}`,
+                        name: def.name,
+                        versionNo: versionNo,
+                        module: def.module,
+                        templateUsed: template?.name || 'Standard',
+                        description: (rev.snapshot.shortDescription || rev.snapshot.description || '').replace(/<[^>]+>/g, '').substring(0, 100) + '...',
+                        createdBy: def.revisions[totalRevisions - 1]?.developer || 'System',
+                        lastModifiedBy: rev.developer,
+                        currentOwner: owner,
+                        currentStatus: def.isArchived ? 'Archived' : (versionNo === totalRevisions ? 'Published' : 'Published (Historical)'),
+                        createdDate: def.revisions[totalRevisions - 1]?.date || '—',
+                        lastModifiedDate: rev.date,
+                        submittedDate: '—',
+                        decisionDate: rev.date,
+                        publishedDate: rev.date,
+                        archivedDate: def.isArchived ? 'Archive Active' : '—',
+                        approverName: rev.developer === 'System Admin' ? 'System' : rev.developer,
+                        approvalComments: rev.description,
+                        turnaroundTime: '—',
+                        currentVersion: rev.ticketId,
+                        totalRevisions: totalRevisions,
+                        isDuplicate: def.name.includes('(Copy)') ? 'Yes' : 'No',
+                        duplicatedFrom: def.originalId || '—',
+                        linkedRecordsCount: def.relatedDefinitions?.length || 0,
+                        attachmentCount: def.attachments?.length || 0,
+                        isActiveFlag: (versionNo === totalRevisions && !def.isArchived && !def.isDraft && !def.isPendingApproval) ? 'Active' : 'Inactive'
+                    });
+                });
+
+                // 2. Add current working copy if it's a draft or pending
+                if (def.isDraft || def.isPendingApproval) {
+                    reportRows.push({
+                        id: `${def.id}_working`,
+                        name: def.name,
+                        versionNo: totalRevisions + 1,
+                        module: def.module,
+                        templateUsed: template?.name || 'Standard',
+                        description: (def.shortDescription || def.description || '').replace(/<[^>]+>/g, '').substring(0, 100) + '...',
+                        createdBy: def.revisions[totalRevisions - 1]?.developer || 'System',
+                        lastModifiedBy: def.submittedBy || 'Author',
+                        currentOwner: owner,
+                        currentStatus: def.isPendingApproval ? 'Pending Approval' : 'Draft',
+                        createdDate: def.revisions[totalRevisions - 1]?.date || '—',
+                        lastModifiedDate: def.submittedAt || '—',
+                        submittedDate: def.submittedAt || '—',
+                        decisionDate: '—',
+                        publishedDate: '—',
+                        archivedDate: '—',
+                        approverName: '—',
+                        approvalComments: 'Awaiting Action',
+                        turnaroundTime: '—',
+                        currentVersion: 'v.Next (Draft)',
+                        totalRevisions: totalRevisions,
+                        isDuplicate: def.name.includes('(Copy)') ? 'Yes' : 'No',
+                        duplicatedFrom: def.originalId || '—',
+                        linkedRecordsCount: def.relatedDefinitions?.length || 0,
+                        attachmentCount: def.attachments?.length || 0,
+                        isActiveFlag: 'Inactive'
+                    });
+                }
             });
+
+            return reportRows;
         }
 
         if (appliedFilters.reportType === 'approval-report') {
@@ -544,17 +574,18 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </div>
                             <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <ScrollArea className="w-full">
-                                    <Table className="min-w-[3800px]">
+                                    <Table className="min-w-[4200px]">
                                         <TableHeader className="bg-slate-50 border-b">
                                             <TableRow>
                                                 <ReportHeader label="Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" />
+                                                <ReportHeader label="Version No" id="versionNo" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.versionNo} onFilterChange={handleFilterChange} className="w-[100px]" />
                                                 <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" />
                                                 <ReportHeader label="Template Used" id="templateUsed" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateUsed} onFilterChange={handleFilterChange} className="w-[180px]" />
                                                 <ReportHeader label="Description" id="description" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.description} onFilterChange={handleFilterChange} className="w-[250px]" />
                                                 <ReportHeader label="Created By" id="createdBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdBy} onFilterChange={handleFilterChange} className="w-[160px]" />
                                                 <ReportHeader label="Last Modified By" id="lastModifiedBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedBy} onFilterChange={handleFilterChange} className="w-[160px]" />
                                                 <ReportHeader label="Current Owner" id="currentOwner" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentOwner} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Current Status" id="currentStatus" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentStatus} onFilterChange={handleFilterChange} className="w-[140px]" />
+                                                <ReportHeader label="Current Status" id="currentStatus" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentStatus} onFilterChange={handleFilterChange} className="w-[160px]" />
                                                 <ReportHeader label="Created Date" id="createdDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdDate} onFilterChange={handleFilterChange} className="w-[180px]" />
                                                 <ReportHeader label="Last Modified Date" id="lastModifiedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
                                                 <ReportHeader label="Submitted Date" id="submittedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.submittedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
@@ -564,7 +595,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                 <ReportHeader label="Approver Name" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="w-[160px]" />
                                                 <ReportHeader label="Approval Comments" id="approvalComments" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approvalComments} onFilterChange={handleFilterChange} className="w-[250px]" />
                                                 <ReportHeader label="Turnaround Time" id="turnaroundTime" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.turnaroundTime} onFilterChange={handleFilterChange} className="w-[150px]" />
-                                                <ReportHeader label="Version" id="currentVersion" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentVersion} onFilterChange={handleFilterChange} className="w-[120px]" />
+                                                <ReportHeader label="Version ID" id="currentVersion" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentVersion} onFilterChange={handleFilterChange} className="w-[140px]" />
                                                 <ReportHeader label="Total Revisions" id="totalRevisions" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.totalRevisions} onFilterChange={handleFilterChange} className="w-[130px]" />
                                                 <ReportHeader label="Is Duplicate" id="isDuplicate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.isDuplicate} onFilterChange={handleFilterChange} className="w-[120px]" />
                                                 <ReportHeader label="Duplicated From" id="duplicatedFrom" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.duplicatedFrom} onFilterChange={handleFilterChange} className="w-[140px]" />
@@ -577,6 +608,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                             {paginatedData.map((d: any) => (
                                                 <TableRow key={d.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
                                                     <TableCell className="pl-6 font-bold text-primary">{d.name}</TableCell>
+                                                    <TableCell className="text-center font-black text-indigo-600 bg-indigo-50/30">{d.versionNo}</TableCell>
                                                     <TableCell className="font-bold text-slate-700">{d.module}</TableCell>
                                                     <TableCell className="text-xs font-bold text-slate-500">{d.templateUsed}</TableCell>
                                                     <TableCell className="text-slate-500 text-xs italic truncate max-w-[220px]">{d.description}</TableCell>
@@ -586,6 +618,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                     <TableCell>
                                                         <Badge className={cn("text-[10px] font-bold uppercase", 
                                                             d.currentStatus === 'Published' ? "bg-emerald-50 text-emerald-700" :
+                                                            d.currentStatus.includes('Historical') ? "bg-slate-50 text-slate-400 border-slate-100" :
                                                             d.currentStatus === 'Archived' ? "bg-slate-50 text-slate-400" :
                                                             "bg-amber-50 text-amber-700"
                                                         )}>
@@ -593,10 +626,10 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell className="font-mono text-[11px] text-slate-400">{d.createdDate !== '—' ? format(parseISO(d.createdDate), 'yyyy-MM-dd') : '—'}</TableCell>
-                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.lastModifiedDate !== '—' ? format(parseISO(d.lastModifiedDate), 'yyyy-MM-dd') : '—'}</TableCell>
-                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.submittedDate !== '—' ? format(parseISO(d.submittedDate), 'yyyy-MM-dd') : '—'}</TableCell>
-                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.decisionDate !== '—' ? format(parseISO(d.decisionDate), 'yyyy-MM-dd') : '—'}</TableCell>
-                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.publishedDate !== '—' ? format(parseISO(d.publishedDate), 'yyyy-MM-dd') : '—'}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.lastModifiedDate !== '—' ? (d.lastModifiedDate.includes('—') ? '—' : format(parseISO(d.lastModifiedDate), 'yyyy-MM-dd')) : '—'}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.submittedDate !== '—' ? (d.submittedDate.includes('—') ? '—' : format(parseISO(d.submittedDate), 'yyyy-MM-dd')) : '—'}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.decisionDate !== '—' ? (d.decisionDate.includes('—') ? '—' : format(parseISO(d.decisionDate), 'yyyy-MM-dd')) : '—'}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.publishedDate !== '—' ? (d.publishedDate.includes('—') ? '—' : format(parseISO(d.publishedDate), 'yyyy-MM-dd')) : '—'}</TableCell>
                                                     <TableCell className="text-xs font-bold text-slate-300">{d.archivedDate}</TableCell>
                                                     <TableCell className="font-bold text-slate-800">{d.approverName}</TableCell>
                                                     <TableCell className="text-slate-500 text-xs italic truncate max-w-[200px]">{d.approvalComments}</TableCell>
@@ -791,7 +824,7 @@ function ReportPagination({ currentPage, totalPages, pageSize, setPageSize, onPa
             <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 font-bold border-slate-200 bg-white" onClick={() => onPageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4 mr-1.5" />Prev</Button>
                 <div className="flex items-center justify-center min-w-[3.5rem] h-9 rounded-xl bg-white border border-slate-200 text-sm font-black text-indigo-600">{currentPage} / {totalPages || 1}</div>
-                <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 font-bold border-slate-200 bg-white" onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage >= totalPages || totalPages === 0}>Next<ChevronRight className="h-4 w-4 ml-1.5" /></Button>
+                <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 font-bold border-slate-200 bg-white" onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage >= totalPages || totalItems === 0}>Next<ChevronRight className="h-4 w-4 ml-1.5" /></Button>
             </div>
         </div>
     );
