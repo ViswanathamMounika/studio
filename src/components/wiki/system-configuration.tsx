@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -395,6 +394,37 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                         </div>
                                     </CardContent>
                                 </Card>
+
+                                {/* GLOBAL SECURITY CARD */}
+                                <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white lg:col-span-2">
+                                    <div className="p-6 border-b bg-slate-50/50 flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-xl bg-[#F3F1FF] border border-[#E0DAFF] flex items-center justify-center shadow-sm">
+                                            <Lock className="h-5 w-5 text-[#3F51B5]" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 leading-none">Global Security</h3>
+                                            <span className="text-[10px] font-mono text-[#3F51B5] font-bold uppercase tracking-tight">Global*</span>
+                                        </div>
+                                    </div>
+                                    <CardContent className="p-8 space-y-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Global Security API URL</Label>
+                                            <Input 
+                                                value={localConfig.settings.globalSecurityApiUrl} 
+                                                onChange={e => updateSettings({ globalSecurityApiUrl: e.target.value })}
+                                                className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-medium"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Global Security App ID</Label>
+                                            <Input 
+                                                value={localConfig.settings.globalSecurityAppId} 
+                                                onChange={e => updateSettings({ globalSecurityAppId: e.target.value })}
+                                                className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-bold"
+                                            />
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             </div>
                         </TabsContent>
 
@@ -510,7 +540,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-0.5">Define System Parameter</p>
                         </div>
                     </div>
-                    <div className="p-8 space-y-6 bg-slate-50/50">
+                    <div className="p-8 space-y-6 bg-slate-50/30">
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-black uppercase text-slate-500">Config Identity Key</Label>
@@ -574,4 +604,3 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         </div>
     );
 }
-

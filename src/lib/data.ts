@@ -155,7 +155,11 @@ export const initialSystemConfig: SystemConfigurationState = {
     searchIndexName: 'mpm-service-wiki-wikis-local',
     searchSyncInterval: 15,
     searchResultSize: 10000,
-    searchSyncEnabled: true
+    searchSyncEnabled: true,
+
+    // Global Security
+    globalSecurityApiUrl: 'http://xeon3.keysoftwareinc.com:6062/',
+    globalSecurityAppId: '1041'
   },
   emailTemplates: [
     {

@@ -338,6 +338,10 @@ export interface SystemSettings {
   searchSyncInterval: number;
   searchResultSize: number;
   searchSyncEnabled: boolean;
+
+  // Global Security
+  globalSecurityApiUrl: string;
+  globalSecurityAppId: string;
 }
 
 export interface SystemConfigurationState {
