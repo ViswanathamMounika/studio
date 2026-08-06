@@ -156,6 +156,7 @@ export const initialTemplates: Template[] = [
     id: '1',
     name: 'Standard Definition',
     description: 'Default MPM Wiki definition structure',
+    module: 'Core',
     isDefault: true,
     isActive: true,
     sections: [
@@ -212,6 +213,85 @@ export const initialTemplates: Template[] = [
           { id: 's5', templateSectionId: '8', label: 'Other', value: 'Other', sortOrder: 5, isDefault: false },
         ]
       }
+    ]
+  },
+  {
+    id: '2',
+    name: 'Clinical Authorization Protocol',
+    description: 'Structured layout for medical necessity and clinical review guidelines.',
+    module: 'Authorizations',
+    isDefault: false,
+    isActive: true,
+    sections: [
+      { id: 'c1', templateId: '2', name: 'Clinical Criteria', fieldType: 'RichText', isMulti: false, isRequired: true, order: 1 },
+      { id: 'c2', templateId: '2', name: 'Medical Necessity Rules', fieldType: 'RichText', isMulti: false, isRequired: true, order: 2 },
+      { id: 'c3', templateId: '2', name: 'Authorized CPT Ranges', fieldType: 'PlainText', isMulti: false, isRequired: false, order: 3 },
+      { id: 'c4', templateId: '2', name: 'Reviewer Guidelines', fieldType: 'RichText', isMulti: false, isRequired: false, order: 4 }
+    ]
+  },
+  {
+    id: '3',
+    name: 'Technical API Specification',
+    description: 'Documentation blueprint for system integration endpoints and data mapping.',
+    module: 'Core',
+    isDefault: false,
+    isActive: true,
+    sections: [
+      { id: 't1', templateId: '3', name: 'Endpoint URI', fieldType: 'PlainText', isMulti: false, isRequired: true, order: 1 },
+      { id: 't2', templateId: '3', name: 'Request Payload Schema', fieldType: 'RichText', isMulti: false, isRequired: true, order: 2 },
+      { id: 't3', templateId: '3', name: 'Response Mapping', fieldType: 'KeyValue', isMulti: false, isRequired: true, order: 3, columns: [
+          { id: 'tc1', templateSectionId: 't3', name: 'Field', inputType: 'TextBox', isMulti: false, sortOrder: 1, isRequired: true },
+          { id: 'tc2', templateSectionId: 't3', name: 'Internal Data Type', inputType: 'TextBox', isMulti: false, sortOrder: 2, isRequired: true }
+      ]},
+      { id: 't4', templateId: '3', name: 'Authentication Requirements', fieldType: 'PlainText', isMulti: false, isRequired: false, order: 4 }
+    ]
+  },
+  {
+    id: '4',
+    name: 'Member Benefit Policy',
+    description: 'User-friendly layout for explaining complex healthcare benefits and coverage rules.',
+    module: 'Member',
+    isDefault: false,
+    isActive: true,
+    sections: [
+      { id: 'b1', templateId: '4', name: 'Coverage Summary', fieldType: 'RichText', isMulti: false, isRequired: true, order: 1 },
+      { id: 'b2', templateId: '4', name: 'Exclusions & Limitations', fieldType: 'RichText', isMulti: false, isRequired: true, order: 2 },
+      { id: 'b3', templateId: '4', name: 'Member Cost Share', fieldType: 'PlainText', isMulti: false, isRequired: false, order: 3 },
+      { id: 'b4', templateId: '4', name: 'Plan Year Accumulators', fieldType: 'PlainText', isMulti: false, isRequired: false, order: 4 }
+    ]
+  },
+  {
+    id: '5',
+    name: 'Provider Fee Schedule',
+    description: 'Documentation for reimbursement models and specialized provider billing rules.',
+    module: 'Provider',
+    isDefault: false,
+    isActive: true,
+    sections: [
+      { id: 'f1', templateId: '5', name: 'Reimbursement Model', fieldType: 'Dropdown', isMulti: false, isRequired: true, order: 1, options: [
+        { id: 'fo1', templateSectionId: 'f1', label: 'Fee-For-Service', value: 'FFS', sortOrder: 1, isDefault: true },
+        { id: 'fo2', templateSectionId: 'f1', label: 'Capitation', value: 'CAP', sortOrder: 2, isDefault: false },
+        { id: 'fo3', templateSectionId: 'f1', label: 'Case Rate', value: 'CASE', sortOrder: 3, isDefault: false }
+      ]},
+      { id: 'f2', templateId: '5', name: 'Base Rate Table', fieldType: 'KeyValue', isMulti: false, isRequired: true, order: 2, columns: [
+        { id: 'fc1', templateSectionId: 'f2', name: 'Code Type', inputType: 'TextBox', isMulti: false, sortOrder: 1, isRequired: true },
+        { id: 'fc2', templateSectionId: 'f2', name: 'Percent of Medicare', inputType: 'TextBox', isMulti: false, sortOrder: 2, isRequired: true }
+      ]},
+      { id: 'f3', templateId: '5', name: 'Modifier Adjustments', fieldType: 'RichText', isMulti: false, isRequired: false, order: 3 }
+    ]
+  },
+  {
+    id: '6',
+    name: 'Financial Audit Schema',
+    description: 'Registry for financial reconciliation and claim batch auditing procedures.',
+    module: 'Claims',
+    isDefault: false,
+    isActive: true,
+    sections: [
+      { id: 'a1', templateId: '6', name: 'Audit Objective', fieldType: 'PlainText', isMulti: false, isRequired: true, order: 1 },
+      { id: 'a2', templateId: '6', name: 'Data Validation Rules', fieldType: 'RichText', isMulti: false, isRequired: true, order: 2 },
+      { id: 'a3', templateId: '6', name: 'Reconciliation SQL', fieldType: 'RichText', isMulti: false, isRequired: true, order: 3 },
+      { id: 'a4', templateId: '6', name: 'Compliance Thresholds', fieldType: 'PlainText', isMulti: false, isRequired: false, order: 4 }
     ]
   }
 ];
@@ -282,6 +362,23 @@ export const initialDefinitions: Definition[] = [
         revisions: [baselineRevision('Service Type Mapping', 'Baseline mapping logic.')],
         supportingTables: [],
         attachments: []
+      },
+      {
+        id: '1.1.3',
+        name: 'Inpatient Medical Review Protocol',
+        module: 'Authorizations',
+        templateId: '2',
+        keywords: ['clinical', 'inpatient', 'review'],
+        description: '<p>Standard medical review criteria for inpatient stays.</p>',
+        isArchived: false,
+        isDraft: false,
+        revisions: [baselineRevision('Inpatient Medical Review Protocol', 'Clinical workflow baseline.')],
+        supportingTables: [],
+        attachments: [],
+        sectionValues: [
+          { sectionId: 'c1', html: '<p>Standard InterQual criteria must be applied to all inpatient admissions.</p>', raw: 'Standard InterQual criteria must be applied to all inpatient admissions.' },
+          { sectionId: 'c2', html: '<h3>Necessity Thresholds</h3><ul><li>Acute Care: Standard 3-day window</li><li>Skilled Nursing: Prior authorization required</li></ul>', raw: 'Acute care thresholds and SNF requirements.' }
+        ]
       }
     ]
   },
@@ -327,25 +424,27 @@ export const initialDefinitions: Definition[] = [
         supportingTables: [],
         attachments: [],
         sectionValues: [
-          { 
-            sectionId: '1', 
-            raw: 'Core engine logic for processing professional claims.' 
-          },
-          { 
-            sectionId: '2', 
-            raw: 'This framework defines the automated steps taken to validate claim data against provider contracts and member benefits.', 
-            html: '<p>This framework defines the automated steps taken to validate claim data against provider contracts and member benefits.</p><h3>Data Retrieval Pattern</h3><p>The following SQL is used to identify claims that are ready for the adjudication batch:</p><pre class="language-sql"><code>SELECT \n  ClaimID, \n  Status, \n  ProviderID, \n  DateOfService \nFROM tbl_Claims \nWHERE AdjudicationDate IS NULL \nAND Status = \'PND\';</code></pre>' 
-          },
-          { 
-            sectionId: '3', 
-            raw: 'The engine is built on a C# service layer that implements the IAdjudicationStrategy interface.',
-            html: '<h3>Service Implementation</h3><p>The core logic is encapsulated within the <code>ClaimProcessor</code> service. Below is the simplified C# implementation for the validation strategy:</p><pre class="language-csharp"><code>public class ClaimProcessor : IAdjudicationStrategy {\n  public void ProcessClaim(int claimId) {\n    var claim = _repository.GetById(claimId);\n    if (claim.IsValid()) {\n      ApplyContractRates(claim);\n      claim.Status = "APP";\n    }\n    _repository.Update(claim);\n  }\n}</code></pre>'
-          },
-          {
-            sectionId: '8',
-            raw: 'EzCAP',
-            multiValues: ['EzCAP']
-          }
+          { sectionId: '1', raw: 'Core engine logic for processing professional claims.' },
+          { sectionId: '2', raw: 'This framework defines the automated steps taken to validate claim data against provider contracts and member benefits.', html: '<p>This framework defines the automated steps taken to validate claim data against provider contracts and member benefits.</p><h3>Data Retrieval Pattern</h3><p>The following SQL is used to identify claims that are ready for the adjudication batch:</p><pre class="language-sql"><code>SELECT \n  ClaimID, \n  Status, \n  ProviderID, \n  DateOfService \nFROM tbl_Claims \nWHERE AdjudicationDate IS NULL \nAND Status = \'PND\';</code></pre>' },
+          { sectionId: '3', raw: 'The engine is built on a C# service layer that implements the IAdjudicationStrategy interface.', html: '<h3>Service Implementation</h3><p>The core logic is encapsulated within the <code>ClaimProcessor</code> service. Below is the simplified C# implementation for the validation strategy:</p><pre class="language-csharp"><code>public class ClaimProcessor : IAdjudicationStrategy {\n  public void ProcessClaim(int claimId) {\n    var claim = _repository.GetById(claimId);\n    if (claim.IsValid()) {\n      ApplyContractRates(claim);\n      claim.Status = "APP";\n    }\n    _repository.Update(claim);\n  }\n}</code></pre>' },
+          { sectionId: '8', raw: 'EzCAP', multiValues: ['EzCAP'] }
+        ]
+      },
+      {
+        id: '2.1.3',
+        name: 'Claim Batch Reconciliation Audit',
+        module: 'Claims',
+        templateId: '6',
+        keywords: ['finance', 'audit', 'batch'],
+        description: '<p>Nightly reconciliation process for claims batches.</p>',
+        isArchived: false,
+        isDraft: false,
+        revisions: [baselineRevision('Claim Batch Reconciliation Audit', 'Financial audit baseline.')],
+        supportingTables: [],
+        attachments: [],
+        sectionValues: [
+          { sectionId: 'a1', raw: 'Ensure total paid amounts match the general ledger export for the daily claim run.' },
+          { sectionId: 'a3', html: '<pre class="language-sql"><code>SELECT BatchID, SUM(TotalPaid) as Total \nFROM tbl_ClaimBatch \nWHERE ProcessDate = CAST(GETDATE() as date) \nGROUP BY BatchID;</code></pre>', raw: 'SQL for batch totaling.' }
         ]
       }
     ]
@@ -361,7 +460,88 @@ export const initialDefinitions: Definition[] = [
     isDraft: false,
     supportingTables: [],
     attachments: [],
-    children: []
+    children: [
+      {
+        id: '3.1.1',
+        name: 'Primary Care Capitation Schedule',
+        module: 'Provider',
+        templateId: '5',
+        keywords: ['provider', 'billing', 'capitation'],
+        description: '<p>Reimbursement rules for PCP capitated groups.</p>',
+        isArchived: false,
+        isDraft: false,
+        revisions: [baselineRevision('Primary Care Capitation Schedule', 'PCP rate baseline.')],
+        supportingTables: [],
+        attachments: [],
+        sectionValues: [
+          { sectionId: 'f1', raw: 'CAP' },
+          { sectionId: 'f2', structuredRows: [{ fc1: 'Adult Commercial', fc2: '110%' }, { fc1: 'Adult Medicare', fc2: '125%' }] }
+        ]
+      }
+    ]
+  },
+  {
+    id: '4',
+    name: 'Member',
+    module: 'Member',
+    keywords: [],
+    description: '',
+    revisions: [],
+    isArchived: false,
+    isDraft: false,
+    supportingTables: [],
+    attachments: [],
+    children: [
+      {
+        id: '4.1.1',
+        name: 'Urgent Care Coverage Policy',
+        module: 'Member',
+        templateId: '4',
+        keywords: ['member', 'coverage', 'urgent care'],
+        description: '<p>Standard member benefits for urgent care services.</p>',
+        isArchived: false,
+        isDraft: false,
+        revisions: [baselineRevision('Urgent Care Coverage Policy', 'Member policy baseline.')],
+        supportingTables: [],
+        attachments: [],
+        sectionValues: [
+          { sectionId: 'b1', html: '<p>Services rendered at authorized Urgent Care centers are covered with a fixed copayment.</p>', raw: 'Authorized UC coverage details.' },
+          { sectionId: 'b2', html: '<p>Does not include emergency room services or routine physical exams.</p>', raw: 'ER exclusions apply.' },
+          { sectionId: 'b3', raw: '$35.00 Copayment per visit.' }
+        ]
+      }
+    ]
+  },
+  {
+    id: '5',
+    name: 'Core',
+    module: 'Core',
+    keywords: [],
+    description: '',
+    revisions: [],
+    isArchived: false,
+    isDraft: false,
+    supportingTables: [],
+    attachments: [],
+    children: [
+      {
+        id: '5.1.1',
+        name: 'Eligibility Verification API',
+        module: 'Core',
+        templateId: '3',
+        keywords: ['api', 'integration', 'eligibility'],
+        description: '<p>Public API spec for verifying member eligibility.</p>',
+        isArchived: false,
+        isDraft: false,
+        revisions: [baselineRevision('Eligibility Verification API', 'Internal API baseline.')],
+        supportingTables: [],
+        attachments: [],
+        sectionValues: [
+          { sectionId: 't1', raw: 'https://api.medpoint.com/v1/member/verify' },
+          { sectionId: 't3', structuredRows: [{ tc1: 'MemberID', tc2: 'String' }, { tc1: 'DOB', tc2: 'DateTime' }, { tc1: 'IsActive', tc2: 'Boolean' }] }
+        ]
+      }
+    ]
   }
 ];
 
