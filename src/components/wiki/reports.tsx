@@ -24,24 +24,17 @@ import {
     CalendarIcon,
     FilterX,
     ShieldCheck,
-    FileSearch,
     BarChart3,
     Search,
     Filter,
     ChevronLeft,
     ChevronRight,
-    FilePieChart,
     Users,
-    ClipboardCheck,
-    Clock,
-    UserCheck,
-    AlertCircle,
-    LayoutTemplate,
     Activity,
     Settings2,
     Play
 } from 'lucide-react';
-import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, differenceInMinutes, differenceInHours } from 'date-fns';
+import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { UserAccount, Definition, ActivityLog, ApprovalHistoryEntry, Template, MasterDataState } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -78,7 +71,6 @@ type AppliedFilters = {
 };
 
 export default function ReportsDashboard({ users, definitions, drafts, activityLogs, approvalHistory, templates, masterData }: ReportsDashboardProps) {
-    // Input States (Pending)
     const [selectedReport, setSelectedReport] = useState<ReportType>('user-activity');
     const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>({
         from: subMonths(new Date(), 12),
@@ -86,10 +78,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     });
     const [approverFilter, setApproverFilter] = useState<string>('all');
 
-    // Committed States (Data Trigger)
     const [appliedFilters, setAppliedFilters] = useState<AppliedFilters | null>(null);
     
-    // UI Table States
     const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
     const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'timestamp', direction: 'desc' });
     const [currentPage, setCurrentPage] = useState(1);
@@ -111,8 +101,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         });
     };
 
-    // -- DATA PROCESSING LOGIC --
-
     const filteredLogs = useMemo(() => {
         const safeLogs = Array.isArray(activityLogs) ? activityLogs : [];
         if (!appliedFilters?.dateRange?.from) return safeLogs;
@@ -128,31 +116,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         });
     }, [activityLogs, appliedFilters]);
 
-    const filteredHistory = useMemo(() => {
-        const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
-        let result = safeHistory;
-        
-        if (appliedFilters?.dateRange?.from) {
-            result = result.filter(h => {
-                if (!h || !h.date) return false;
-                try {
-                  const hDate = parseISO(h.date);
-                  return isWithinInterval(hDate, { 
-                      start: startOfDay(appliedFilters.dateRange!.from), 
-                      end: endOfDay(appliedFilters.dateRange!.to || appliedFilters.dateRange!.from) 
-                  });
-                } catch (e) { return false; }
-            });
-        }
-        
-        if (appliedFilters?.approverFilter && appliedFilters.approverFilter !== 'all') {
-            result = result.filter(h => h && h.userName === appliedFilters.approverFilter);
-        }
-        
-        return result;
-    }, [approvalHistory, appliedFilters]);
-
-    // GRANULAR ACTIVITY LOG REPORT GENERATOR
     const processedReportData = useMemo(() => {
         if (!appliedFilters || appliedFilters.reportType !== 'user-activity') return [];
         
@@ -173,127 +136,30 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             const template = templates.find(t => t.id === def?.templateId);
             const history = approvalHistory.find(h => h.definitionId === def?.id && Math.abs(parseISO(h.date).getTime() - parseISO(log.occurredDate).getTime()) < 60000);
 
+            const isTemplateAction = log.activityType.includes('Template');
+
             return {
                 id: log.id,
-                // Actor Details
                 userName: log.userName,
                 role: user?.role || 'N/A',
-                department: user?.department || 'Operations',
-                // Action Details
                 actionType: log.activityType,
                 timestamp: log.occurredDate,
                 module: def?.module || 'Core',
-                entityType: log.activityType.includes('Template') ? 'Template' : 'Definition',
+                entityType: isTemplateAction ? 'Template' : 'Definition',
                 entityName: log.definitionName,
-                entityId: def?.id || (log.activityType.includes('Template') ? 'TMP-00' : 'DEF-NEW'),
-                // State Change Context
-                prevStatus: log.activityType === 'Definition Created' ? 'None' : 'Draft',
-                newStatus: log.activityType.includes('Published') ? 'Published' : (log.activityType.includes('Archived') ? 'Archived' : 'Draft'),
+                entityId: def?.id || (isTemplateAction ? 'TMP-ID' : 'SYS-ID'),
+                prevStatus: log.activityType === 'Definition Created' ? 'None' : (def?.isDraft ? 'Draft' : 'Published'),
+                newStatus: log.activityType.includes('Published') || log.activityType === 'Approval Decision' ? 'Published' : (log.activityType.includes('Archived') ? 'Archived' : 'Draft'),
                 version: def?.revisions?.[0]?.ticketId || 'v1.0',
                 comments: log.details || '—',
-                // Approval-Specific
                 approverName: history?.action !== 'Submitted' ? history?.userName || '—' : '—',
-                turnaroundTime: history ? '2.4h' : '—',
-                // Template-Specific
-                templateUsed: template?.name || 'N/A',
-                templateStatusChange: log.activityType.includes('Template') ? 'Active' : '—',
-                // Reference
-                relatedId: def?.relatedDefinitions?.[0] || '—',
-                attachment: def?.attachments?.[0]?.name || '—'
+                templateUsed: template?.name || 'Standard Definition',
+                templateStatusChange: isTemplateAction ? 'Status Updated' : '—',
+                relatedId: (def?.relatedDefinitions && def.relatedDefinitions.length > 0) ? def.relatedDefinitions[0] : '—',
+                attachment: (def?.attachments && def.attachments.length > 0) ? def.attachments[0].name : '—'
             };
         });
     }, [filteredLogs, users, definitions, drafts, approvalHistory, templates, appliedFilters]);
-
-    // Legacy Stats Generators for other report types
-    const definitionReportStats = useMemo(() => {
-        if (!appliedFilters || appliedFilters.reportType !== 'definition-report') return null;
-        const safeDefs = Array.isArray(definitions) ? definitions : [];
-        const safeDrafts = Array.isArray(drafts) ? drafts : [];
-        
-        const countPublished = (items: Definition[]): { total: number, archived: number } => {
-            let total = 0;
-            let archived = 0;
-            (items || []).forEach(item => {
-                if (item && (item.description || item.shortDescription)) {
-                    total++;
-                    if (item.isArchived) archived++;
-                }
-                if (item && item.children) {
-                    const childStats = countPublished(item.children);
-                    total += childStats.total;
-                    archived += childStats.archived;
-                }
-            });
-            return { total, archived };
-        };
-
-        const pubStats = countPublished(safeDefs);
-        const draftOnly = safeDrafts.filter(d => d && d.isDraft && !d.isPendingApproval);
-        const pendingOnly = safeDrafts.filter(d => d && d.isPendingApproval);
-        const rejectedOnly = safeDrafts.filter(d => d && (d.discussions || []).some(m => m.type === 'rejection'));
-
-        const creationLogs = filteredLogs.filter(l => l && l.activityType === 'Definition Created');
-        const byUserMap: Record<string, number> = {};
-        creationLogs.forEach(l => {
-            byUserMap[l.userName] = (byUserMap[l.userName] || 0) + 1;
-        });
-        const creationsByUser = Object.entries(byUserMap)
-            .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count);
-
-        return {
-            counts: {
-                total: pubStats.total + safeDrafts.length,
-                published: pubStats.total - pubStats.archived,
-                draft: draftOnly.length,
-                pending: pendingOnly.length,
-                rejected: rejectedOnly.length,
-                archived: pubStats.archived
-            },
-            creationsByUser
-        };
-    }, [definitions, drafts, filteredLogs, appliedFilters]);
-
-    const approvalReportStats = useMemo(() => {
-        if (!appliedFilters || appliedFilters.reportType !== 'approval-report') return null;
-        const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
-        const safeDrafts = Array.isArray(drafts) ? drafts : [];
-        
-        const approved = filteredHistory.filter(h => h.action === 'Approved');
-        const rejected = filteredHistory.filter(h => h.action === 'Rejected' || h.action === 'Changes Requested');
-        const pending = safeDrafts.filter(d => d && d.isPendingApproval);
-
-        const avgHours = '2.8'; // Mocking logic for summary
-
-        return {
-            metrics: {
-                totalRequests: approved.length + rejected.length + pending.length,
-                pendingCount: pending.length,
-                approvedCount: approved.length,
-                rejectedCount: rejected.length,
-                avgDecisionTime: avgHours
-            }
-        };
-    }, [approvalHistory, filteredHistory, drafts, appliedFilters]);
-
-    const templateReportStats = useMemo(() => {
-        if (!appliedFilters || appliedFilters.reportType !== 'template-report') return null;
-        return {
-            counts: {
-                total: templates.length,
-                active: templates.filter(t => t.isActive).length,
-                inactive: templates.filter(t => !t.isActive).length
-            }
-        };
-    }, [templates, appliedFilters]);
-
-    const uniqueApprovers = useMemo(() => {
-        const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
-        const names = Array.from(new Set(safeHistory.filter(h => h && h.action !== 'Submitted').map(h => h.userName)));
-        return names.sort();
-    }, [approvalHistory]);
-
-    // -- TABLE DATA HANDLERS --
 
     const filteredAndSortedData = useMemo(() => {
         let result = [...processedReportData];
@@ -340,7 +206,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         setAppliedFilters(null);
     };
 
-    const handleExport = async (formatType: 'xlsx' | 'csv' | 'pdf') => {
+    const handleExport = async (formatType: 'xlsx' | 'csv') => {
         if (!appliedFilters) return;
         const timestamp = format(new Date(), 'yyyyMMdd_HHmm');
         const filename = `MPM_Report_${timestamp}`;
@@ -354,7 +220,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
     return (
         <div className="space-y-6 h-full flex flex-col bg-slate-50/30">
-            {/* STICKY HEADER ACTIONS */}
             <div className="bg-white p-6 border-b sticky top-0 z-30 shadow-sm space-y-6">
                 <div className="flex justify-between items-start">
                     <div className="space-y-1">
@@ -439,7 +304,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </div>
                             <div className="space-y-2">
                                 <h3 className="text-xl font-bold text-slate-900">Report Configuration Required</h3>
-                                <p className="text-sm text-slate-500 max-sm font-medium">Select a report and period above.</p>
+                                <p className="text-sm text-slate-500 max-sm font-medium">Select a report and period above to load analytical data.</p>
                             </div>
                         </div>
                     ) : appliedFilters.reportType === 'user-activity' ? (
@@ -450,12 +315,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </div>
                             <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <ScrollArea className="w-full">
-                                    <Table className="min-w-[2800px]">
+                                    <Table className="min-w-[2400px]">
                                         <TableHeader className="bg-slate-50 border-b">
                                             <TableRow>
                                                 <ReportHeader label="User Name" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" />
                                                 <ReportHeader label="Role" id="role" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.role} onFilterChange={handleFilterChange} className="w-[150px]" />
-                                                <ReportHeader label="Department" id="department" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.department} onFilterChange={handleFilterChange} className="w-[150px]" />
                                                 <ReportHeader label="Action Type" id="actionType" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.actionType} onFilterChange={handleFilterChange} className="w-[180px]" />
                                                 <ReportHeader label="Timestamp" id="timestamp" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.timestamp} onFilterChange={handleFilterChange} className="w-[180px]" />
                                                 <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" />
@@ -467,7 +331,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                 <ReportHeader label="Version" id="version" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.version} onFilterChange={handleFilterChange} className="w-[140px]" />
                                                 <ReportHeader label="Comments" id="comments" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.comments} onFilterChange={handleFilterChange} className="w-[250px]" />
                                                 <ReportHeader label="Approver" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Turnaround" id="turnaroundTime" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.turnaroundTime} onFilterChange={handleFilterChange} className="w-[120px]" />
                                                 <ReportHeader label="Template Used" id="templateUsed" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateUsed} onFilterChange={handleFilterChange} className="w-[180px]" />
                                                 <ReportHeader label="Template Status" id="templateStatusChange" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateStatusChange} onFilterChange={handleFilterChange} className="w-[160px]" />
                                                 <ReportHeader label="Related ID" id="relatedId" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.relatedId} onFilterChange={handleFilterChange} className="w-[120px]" />
@@ -479,7 +342,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                 <TableRow key={d.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
                                                     <TableCell className="pl-6 font-bold text-slate-900">{d.userName}</TableCell>
                                                     <TableCell><Badge variant="outline" className="font-bold text-[10px] uppercase border-slate-200">{d.role}</Badge></TableCell>
-                                                    <TableCell className="text-slate-500 font-medium">{d.department}</TableCell>
                                                     <TableCell><Badge className="bg-indigo-50 text-indigo-700 font-bold border-indigo-100">{d.actionType}</Badge></TableCell>
                                                     <TableCell className="font-mono text-xs text-slate-500">{format(parseISO(d.timestamp), 'yyyy-MM-dd HH:mm')}</TableCell>
                                                     <TableCell className="font-bold text-slate-700">{d.module}</TableCell>
@@ -491,7 +353,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                     <TableCell className="text-xs font-bold text-slate-500">{d.version}</TableCell>
                                                     <TableCell className="text-slate-500 text-xs italic truncate max-w-[220px]">{d.comments}</TableCell>
                                                     <TableCell className="font-bold text-slate-700">{d.approverName}</TableCell>
-                                                    <TableCell className="text-slate-400 font-black text-[10px]">{d.turnaroundTime}</TableCell>
                                                     <TableCell className="text-xs font-bold text-slate-500">{d.templateUsed}</TableCell>
                                                     <TableCell className="text-xs text-slate-400">{d.templateStatusChange}</TableCell>
                                                     <TableCell className="text-[11px] font-mono text-slate-400">{d.relatedId}</TableCell>
@@ -508,7 +369,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     ) : (
                         <div className="flex flex-col items-center justify-center py-40">
                             <Activity className="h-12 w-12 text-slate-200 mb-4" />
-                            <p className="text-slate-400 font-medium">Please configure more specific report sections if required.</p>
+                            <p className="text-slate-400 font-medium italic">No detailed visualization configured for this report type. Please use the export function for full data analysis.</p>
                         </div>
                     )}
                 </div>
@@ -517,7 +378,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     );
 }
 
-function ReportHeader({ label, id, currentSort, onSort, filterValue, onFilterChange, className, isSelectFilter }: any) {
+function ReportHeader({ label, id, currentSort, onSort, filterValue, onFilterChange, className }: any) {
     const isSorted = currentSort?.key === id;
     return (
         <TableHead className={cn("py-4", className)}>
