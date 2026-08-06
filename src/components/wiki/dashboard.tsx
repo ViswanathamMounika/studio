@@ -13,7 +13,9 @@ import {
     CheckCircle2,
     ShieldCheck,
     ChevronRight,
-    User2
+    User2,
+    LayoutGrid,
+    PieChart as PieChartIcon
 } from 'lucide-react';
 import { 
     PieChart, 
@@ -24,7 +26,8 @@ import {
     XAxis, 
     YAxis, 
     Tooltip as RechartsTooltip, 
-    ResponsiveContainer
+    ResponsiveContainer,
+    Legend
 } from 'recharts';
 import type { Definition, UserAccount, Template, View } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +36,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { differenceInDays, parseISO } from 'date-fns';
 import { Button } from '../ui/button';
+import { Progress } from '../ui/progress';
 
 type DashboardProps = {
   definitions: Definition[];
@@ -56,6 +60,15 @@ const countPublishedDefinitions = (items: Definition[]): number => {
   return count;
 };
 
+const MODULE_COLORS: Record<string, string> = {
+    'Authorizations': 'bg-indigo-50 text-indigo-700 border-indigo-100 dot-indigo-500',
+    'Claims': 'bg-blue-50 text-blue-700 border-blue-100 dot-blue-500',
+    'Provider': 'bg-emerald-50 text-emerald-700 border-emerald-100 dot-emerald-500',
+    'Member': 'bg-orange-50 text-orange-700 border-orange-100 dot-orange-500',
+    'Core': 'bg-slate-50 text-slate-700 border-slate-100 dot-slate-500',
+    'Other': 'bg-slate-50 text-slate-700 border-slate-100 dot-slate-500'
+};
+
 export default function Dashboard({ definitions, drafts, users, templates, onNavigate }: DashboardProps) {
   
   const metrics = useMemo(() => {
@@ -66,8 +79,10 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
 
     const published = countPublishedDefinitions(safeDefinitions);
     const pending = safeDrafts.filter(d => d?.isPendingApproval).length;
+    const rejected = safeDrafts.filter(d => d?.discussions?.some(msg => msg.type === 'rejection')).length;
+    const draftCount = safeDrafts.filter(d => d?.isDraft && !d?.isPendingApproval).length;
     
-    // Items that need attention
+    // Needs Attention
     const needsAttention = safeDrafts.filter(d => 
         d?.isPendingApproval || 
         (d?.discussions && d.discussions.some(m => m.type === 'change-request'))
@@ -78,7 +93,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     });
 
     // Template usage data
-    const templateUsage = safeTemplates.map(t => {
+    const templateUsageData = safeTemplates.map(t => {
         let usage = 0;
         const countUsage = (items: Definition[]) => {
             items.forEach(item => {
@@ -88,10 +103,25 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         };
         countUsage(safeDefinitions);
         countUsage(safeDrafts);
-        return { name: t.name, usage };
+        return { id: t.id, name: t.name, module: t.module, usage, isActive: t.isActive };
     }).sort((a, b) => b.usage - a.usage);
 
-    // Role distribution for the new list
+    // Module stats for templates
+    const moduleStatsMap: Record<string, number> = {};
+    safeTemplates.forEach(t => {
+        moduleStatsMap[t.module] = (moduleStatsMap[t.module] || 0) + 1;
+    });
+    const templateModuleStats = Object.entries(moduleStatsMap).map(([name, count]) => ({ name, count }));
+
+    const maxUsage = Math.max(...templateUsageData.map(t => t.usage), 1);
+
+    const definitionLifecycleData = [
+        { name: 'Published', value: published, color: '#10B981' },
+        { name: 'Pending', value: pending, color: '#3B82F6' },
+        { name: 'Draft', value: draftCount, color: '#6366F1' },
+        { name: 'Rejected', value: rejected, color: '#EF4444' }
+    ];
+
     const roleStats = [
         { id: 'SA', name: 'Super Admin', desc: 'Full system access', count: safeUsers.filter(u => u.role === 'Super Admin').length },
         { id: 'AD', name: 'Admin', desc: 'Manage templates & library', count: safeUsers.filter(u => u.role === 'Admin').length },
@@ -108,20 +138,24 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         totalDefinitions: published + safeDrafts.length,
         publishedDefinitions: published,
         pendingApprovals: pending,
-        draftDefinitions: safeDrafts.filter(d => d?.isDraft && !d?.isPendingApproval).length,
-        rejectedDefinitions: safeDrafts.filter(d => d?.discussions?.some(msg => msg.type === 'rejection')).length,
+        draftDefinitions: draftCount,
+        rejectedDefinitions: rejected,
         needsAttention,
+        definitionLifecycleData,
 
         totalTemplates: safeTemplates.length,
         activeTemplates: safeTemplates.filter(t => t.isActive).length,
-        templateUsage,
+        inactiveTemplates: safeTemplates.filter(t => !t.isActive).length,
+        templateUsageData,
+        templateModuleStats,
+        maxUsage,
         roleStats
     };
   }, [definitions, drafts, users, templates]);
 
   return (
     <div className="p-8 space-y-12 max-w-[1600px] mx-auto pb-32">
-      {/* --- DASHBOARD HEADER --- */}
+      {/* HEADER */}
       <div className="flex justify-between items-center px-2">
         <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">Admin Dashboard</h1>
         <div className="flex items-center gap-3">
@@ -135,7 +169,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         </div>
       </div>
 
-      {/* --- SECTION: NEEDS ATTENTION --- */}
+      {/* SECTION: NEEDS ATTENTION */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
@@ -208,22 +242,133 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         </Card>
       </div>
 
-      {/* --- SECTION: DEFINITIONS OVERVIEW --- */}
+      {/* SECTION: DEFINITIONS DETAILS */}
       <div className="space-y-6">
         <div className="flex items-center gap-2 px-2">
             <FileText className="h-4 w-4 text-slate-400" />
             <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em]">Definitions Overview</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            <StatsCard label="Total Definitions" value={metrics.totalDefinitions} badge="+0" badgeColor="bg-slate-100 text-slate-400" />
-            <StatsCard label="Published" value={metrics.publishedDefinitions} badge="Live" badgeColor="bg-emerald-50 text-emerald-600" />
-            <StatsCard label="Pending" value={metrics.pendingApprovals} badge="Review" badgeColor="bg-amber-50 text-amber-600" />
-            <StatsCard label="Draft" value={metrics.draftDefinitions} badge="Editing" badgeColor="bg-indigo-50 text-indigo-600" />
-            <StatsCard label="Rejected" value={metrics.rejectedDefinitions} badge="Action" badgeColor="bg-red-50 text-red-600" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Pie Chart Card */}
+            <Card className="lg:col-span-2 rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8 flex flex-col items-center justify-center min-h-[400px]">
+                <div className="w-full flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-slate-800">Library Lifecycle</h3>
+                    <div className="h-8 w-8 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100"><PieChartIcon className="h-4 w-4 text-slate-400" /></div>
+                </div>
+                <div className="h-[280px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={metrics.definitionLifecycleData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={70}
+                                outerRadius={110}
+                                paddingAngle={5}
+                                dataKey="value"
+                            >
+                                {metrics.definitionLifecycleData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                                ))}
+                            </Pie>
+                            <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                            <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }} />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+            </Card>
+
+            {/* Metric Column */}
+            <div className="space-y-6">
+                <StatsCard label="Total Definitions" value={metrics.totalDefinitions} badge="+0" badgeColor="bg-slate-100 text-slate-400" />
+                <StatsCard label="Published" value={metrics.publishedDefinitions} badge="Live" badgeColor="bg-emerald-50 text-emerald-600" />
+                <StatsCard label="Pending" value={metrics.pendingApprovals} badge="Review" badgeColor="bg-blue-50 text-blue-600" />
+                <StatsCard label="Rejected" value={metrics.rejectedDefinitions} badge="Action" badgeColor="bg-red-50 text-red-600" />
+            </div>
         </div>
       </div>
 
-      {/* --- SECTION: USERS & ROLES --- */}
+      {/* SECTION: TEMPLATE ARCHITECTURE (MATCHING IMAGE) */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 px-2">
+            <LayoutTemplate className="h-4 w-4 text-slate-400" />
+            <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em]">Template Architecture</h3>
+        </div>
+        <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8 flex flex-col">
+            <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xl font-bold text-slate-900">Template Architecture</h3>
+                <span className="text-[13px] font-bold text-slate-500">Total <span className='text-slate-900'>{metrics.totalTemplates}</span> templates</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 mb-8">
+                <div className="p-6 rounded-[20px] bg-slate-50/50 border border-slate-100">
+                    <span className="text-4xl font-black text-indigo-600">{metrics.activeTemplates}</span>
+                    <p className="text-[13px] font-bold text-slate-500 mt-1">Active</p>
+                </div>
+                <div className="p-6 rounded-[20px] bg-slate-50/50 border border-slate-100">
+                    <span className="text-4xl font-black text-slate-400">{metrics.inactiveTemplates}</span>
+                    <p className="text-[13px] font-bold text-slate-500 mt-1">Inactive</p>
+                </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2.5 mb-10 pb-6 border-b border-slate-100">
+                {metrics.templateModuleStats.map(stat => (
+                    <Badge 
+                        key={stat.name} 
+                        variant="outline" 
+                        className={cn(
+                            "h-9 px-4 rounded-full font-bold gap-2 text-[12px] border-slate-200 transition-all",
+                            MODULE_COLORS[stat.name] || MODULE_COLORS.Other
+                        )}
+                    >
+                        <div className={cn("h-1.5 w-1.5 rounded-full bg-current")} />
+                        {stat.name} <span className="opacity-40">•</span> {stat.count}
+                    </Badge>
+                ))}
+            </div>
+
+            <div className="space-y-6">
+                {metrics.templateUsageData.map(template => (
+                    <div key={template.id} className="flex items-center gap-4 group">
+                        <div className="w-[180px] shrink-0">
+                            <span className={cn("text-[14px] font-bold", template.isActive ? "text-slate-900" : "text-slate-400")}>
+                                {template.name}
+                            </span>
+                        </div>
+                        <div className="w-[100px] shrink-0">
+                             <Badge 
+                                variant="outline" 
+                                className={cn(
+                                    "text-[10px] font-black uppercase h-5 px-1.5 border-transparent opacity-80", 
+                                    MODULE_COLORS[template.module] || MODULE_COLORS.Other
+                                )}
+                            >
+                                {template.module}
+                            </Badge>
+                        </div>
+                        <div className="flex-1 max-w-xs">
+                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div 
+                                    className={cn("h-full transition-all duration-1000", template.isActive ? "bg-indigo-500" : "bg-slate-300")} 
+                                    style={{ width: `${(template.usage / metrics.maxUsage) * 100}%` }} 
+                                />
+                            </div>
+                        </div>
+                        <div className="text-[12px] font-bold text-slate-400 whitespace-nowrap">
+                            <span className={cn(template.isActive ? "text-slate-500" : "text-slate-300")}>
+                                {template.usage} uses
+                            </span>
+                            {!template.isActive && (
+                                <span className="ml-2 font-medium opacity-60">· Inactive</span>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </Card>
+      </div>
+
+      {/* SECTION: USERS & ROLES */}
       <div className="space-y-6">
         <div className="flex items-center gap-2 px-2">
             <Users2 className="h-4 w-4 text-slate-400" />
@@ -292,44 +437,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             </Card>
         </div>
       </div>
-
-      {/* --- SECTION: TEMPLATES DETAILS --- */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-2 px-2">
-            <LayoutTemplate className="h-4 w-4 text-slate-400" />
-            <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em]">Templates Details</h3>
-        </div>
-        <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8 flex flex-col min-h-[400px]">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex flex-col">
-                    <span className="text-3xl font-black text-slate-900">{metrics.totalTemplates}</span>
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total Templates</span>
-                </div>
-                <div className="flex flex-col text-right">
-                    <span className="text-3xl font-black text-emerald-600">{metrics.activeTemplates}</span>
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Active Status</span>
-                </div>
-            </div>
-            
-            <div className="flex-1 w-full">
-                <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={metrics.templateUsage.slice(0, 5)} layout="vertical" margin={{ left: 20, right: 30, top: 0, bottom: 0 }}>
-                        <XAxis type="number" hide />
-                        <YAxis 
-                            dataKey="name" 
-                            type="category" 
-                            axisLine={false} 
-                            tickLine={false} 
-                            tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }}
-                            width={120}
-                        />
-                        <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                        <Bar dataKey="usage" radius={[0, 4, 4, 0]} barSize={24} fill="#3F51B5" />
-                    </BarChart>
-                </ResponsiveContainer>
-            </div>
-        </Card>
-      </div>
     </div>
   );
 }
@@ -347,4 +454,3 @@ function StatsCard({ label, value, badge, badgeColor }: { label: string, value: 
         </Card>
     );
 }
-
