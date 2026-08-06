@@ -1,30 +1,32 @@
-
 "use client";
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { 
-    Mail, 
-    ShieldCheck, 
+    Folder, 
+    Lock, 
+    Check, 
+    Search, 
     Save, 
-    Info, 
-    Globe, 
-    Clock, 
-    HardDrive,
-    Languages,
-    X,
+    RotateCcw, 
+    PlusSquare, 
+    Eye, 
+    EyeOff,
+    Terminal,
+    Settings2,
+    ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { SystemConfigurationState, EmailTemplate } from '@/lib/types';
+import type { SystemConfigurationState } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
+import { Switch } from '../ui/switch';
 import { ScrollArea } from '../ui/scroll-area';
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
 type SystemConfigurationProps = {
   config: SystemConfigurationState;
@@ -32,40 +34,20 @@ type SystemConfigurationProps = {
   onLogAction: (type: string, details?: string) => void;
 };
 
-type ConfigArea = 'general' | 'email' | 'localization' | 'security';
-
-const AREA_LABELS: Record<ConfigArea, { label: string; icon: any; description: string }> = {
-  general: { 
-    label: 'General & Branding', 
-    icon: Globe, 
-    description: 'Manage core application identity and public-facing branding.' 
-  },
-  email: { 
-    label: 'Email Templates', 
-    icon: Mail, 
-    description: 'Configure automated workflow notifications and system alerts.' 
-  },
-  localization: { 
-    label: 'Localization', 
-    icon: Languages, 
-    description: 'Define regional standards for language, dates, and time zones.' 
-  },
-  security: { 
-    label: 'Security & Files', 
-    icon: ShieldCheck, 
-    description: 'Govern technical security, upload policies, and session parameters.' 
-  }
-};
-
 export default function SystemConfiguration({ config, onSaveConfig, onLogAction }: SystemConfigurationProps) {
     const [localConfig, setLocalConfig] = useState<SystemConfigurationState>(config);
-    const [activeArea, setActiveArea] = useState<ConfigArea>('general');
+    const [showPassword, setShowPassword] = useState(false);
     const { toast } = useToast();
 
     const handleSave = () => {
         onSaveConfig(localConfig);
-        onLogAction('System Configuration Updated', 'Modified global application parameters.');
-        toast({ title: "Configuration Saved", description: "Changes have been applied globally." });
+        onLogAction('System Configuration Updated', 'Platform registry parameters modified.');
+        toast({ title: "Configuration Synchronized", description: "Changes have been applied globally." });
+    };
+
+    const handleDiscard = () => {
+        setLocalConfig(config);
+        toast({ title: "Changes Discarded" });
     };
 
     const updateSettings = (updates: Partial<typeof localConfig.settings>) => {
@@ -75,268 +57,276 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         }));
     };
 
-    const updateEmailTemplate = (id: string, updates: Partial<EmailTemplate>) => {
-        setLocalConfig(prev => ({
-            ...prev,
-            emailTemplates: prev.emailTemplates.map(t => t.id === id ? { ...t, ...updates } : t)
-        }));
-    };
-
-    const ActiveIcon = AREA_LABELS[activeArea].icon;
-
     return (
-        <TooltipProvider>
-            <div className="space-y-6 h-full flex flex-col bg-slate-50/30 p-8 rounded-[32px]">
-                {/* HEADER ACTIONS */}
-                <div className="flex justify-between items-start px-2">
-                    <div className="space-y-1">
-                        <h1 className="text-3xl font-bold tracking-tight text-slate-900">System Settings</h1>
-                        <p className="text-muted-foreground font-medium">Manage operational, branding, and governance policies.</p>
-                    </div>
-                    <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
-                        <Save className="mr-2 h-4 w-4" />
-                        Apply Changes
+        <div className="h-full flex flex-col bg-[#F8F9FC]">
+            {/* TOP ACTION HEADER */}
+            <div className="bg-white border-b px-8 py-4 flex items-center justify-between shadow-sm shrink-0 z-30">
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.2em] flex items-center gap-1.5">
+                        <Settings2 className="h-3 w-3" />
+                        Configuration
+                    </p>
+                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">System Settings</h1>
+                </div>
+                <div className="flex items-center gap-4">
+                    <span className="text-[11px] font-bold text-amber-600 flex items-center gap-1.5">
+                        <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                        Unsaved changes are per-section
+                    </span>
+                    <Button variant="outline" onClick={handleDiscard} className="rounded-xl border-slate-200 h-10 px-6 font-bold bg-white hover:bg-slate-50">
+                        Discard
+                    </Button>
+                    <Button onClick={handleSave} className="bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white rounded-xl h-10 px-8 gap-2 font-bold shadow-lg shadow-indigo-100 transition-all active:scale-95">
+                        <Save className="h-4 w-4" />
+                        Save All Changes
                     </Button>
                 </div>
-
-                <div className="flex flex-1 gap-8 min-h-0">
-                    {/* SIDENAV */}
-                    <div className="w-72 flex flex-col gap-2 shrink-0">
-                        {Object.entries(AREA_LABELS).map(([key, config]) => {
-                            const Icon = config.icon;
-                            const isActive = activeArea === key;
-                            return (
-                                <button
-                                    key={key}
-                                    onClick={() => setActiveArea(key as ConfigArea)}
-                                    className={cn(
-                                        "flex items-center gap-3 px-4 py-3.5 rounded-2xl text-left transition-all group",
-                                        isActive 
-                                            ? "bg-white text-indigo-600 shadow-sm border border-slate-200" 
-                                            : "text-slate-500 hover:bg-slate-200/50 hover:text-slate-900"
-                                    )}
-                                >
-                                    <div className={cn(
-                                        "h-9 w-9 rounded-xl flex items-center justify-center transition-colors",
-                                        isActive ? "bg-indigo-50" : "bg-slate-100 group-hover:bg-slate-200"
-                                    )}>
-                                        <Icon className={cn("h-4.5 w-4.5", isActive ? "text-indigo-600" : "text-slate-400")} />
-                                    </div>
-                                    <div className="flex flex-col overflow-hidden">
-                                        <span className="text-sm font-bold truncate">{config.label}</span>
-                                        <span className="text-[10px] font-medium opacity-60 line-clamp-1 truncate">{config.description}</span>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* CONTENT AREA */}
-                    <div className="flex-1 bg-white rounded-[28px] border border-slate-200 shadow-sm overflow-hidden flex flex-col min-w-0">
-                        <div className="bg-slate-50/50 border-b py-4 px-8 flex items-center gap-3">
-                             <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-sm">
-                                <ActiveIcon className="h-4 w-4 text-indigo-600" />
-                             </div>
-                             <div>
-                                <h2 className="font-bold text-slate-800 text-sm">{AREA_LABELS[activeArea].label}</h2>
-                                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">System Registry Configuration</p>
-                             </div>
-                        </div>
-                        <ScrollArea className="flex-1">
-                            <div className="p-8 space-y-8">
-                                {activeArea === 'general' && (
-                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                                        <div className="space-y-2">
-                                            <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Application Name</Label>
-                                            <Input 
-                                                value={localConfig.settings.appName} 
-                                                onChange={e => updateSettings({ appName: e.target.value })}
-                                                className="rounded-xl h-12 font-bold border-slate-200 bg-white text-base shadow-sm focus-visible:ring-primary/20"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">System Description / Tagline</Label>
-                                            <Textarea 
-                                                value={localConfig.settings.appDescription} 
-                                                onChange={e => updateSettings({ appDescription: e.target.value })}
-                                                placeholder="Enter descriptive system info..."
-                                                className="rounded-2xl border-slate-200 min-h-[140px] bg-white text-sm shadow-sm focus-visible:ring-primary/20 leading-relaxed resize-none"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeArea === 'email' && (
-                                    <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
-                                        {localConfig.emailTemplates.map(template => (
-                                            <Card key={template.id} className="rounded-2xl border-slate-200 overflow-hidden shadow-none bg-slate-50/50">
-                                                <CardHeader className="bg-white border-b py-4 px-6 flex flex-row items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
-                                                            <Mail className="h-4 w-4 text-indigo-600" />
-                                                        </div>
-                                                        <div>
-                                                            <CardTitle className="text-sm font-bold text-slate-900">{template.name}</CardTitle>
-                                                            <CardDescription className="text-[10px]">System workflow notification</CardDescription>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-1.5 flex-wrap justify-end max-w-xs">
-                                                        {template.variables.map(v => (
-                                                            <Badge key={v} variant="outline" className="text-[8px] font-black bg-white border-slate-200 text-indigo-600 px-1.5">
-                                                                {v}
-                                                            </Badge>
-                                                        ))}
-                                                    </div>
-                                                </CardHeader>
-                                                <CardContent className="p-6 space-y-4">
-                                                    <div className="space-y-2">
-                                                        <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Subject Line</Label>
-                                                        <Input 
-                                                            value={template.subject} 
-                                                            onChange={e => updateEmailTemplate(template.id, { subject: e.target.value })}
-                                                            className="rounded-xl h-10 border-slate-200 font-bold bg-white"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Template Body</Label>
-                                                        <Textarea 
-                                                            value={template.body} 
-                                                            onChange={e => updateEmailTemplate(template.id, { body: e.target.value })}
-                                                            className="rounded-2xl border-slate-200 min-h-[140px] font-mono text-[11px] leading-relaxed bg-white"
-                                                        />
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {activeArea === 'localization' && (
-                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                            <div className="space-y-2">
-                                                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Date Format</Label>
-                                                <Select value={localConfig.settings.dateFormat} onValueChange={v => updateSettings({ dateFormat: v })}>
-                                                    <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="MM/DD/YYYY">MM/DD/YYYY (US Standard)</SelectItem>
-                                                        <SelectItem value="DD/MM/YYYY">DD/MM/YYYY (International)</SelectItem>
-                                                        <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (ISO 8601)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">System Time Zone</Label>
-                                                <Select value={localConfig.settings.timeZone} onValueChange={v => updateSettings({ timeZone: v })}>
-                                                    <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                                                        <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                                                        <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                                                        <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                                                        <SelectItem value="UTC">Universal Time (UTC)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Display Language</Label>
-                                                <Select value={localConfig.settings.language} onValueChange={v => updateSettings({ language: v })}>
-                                                    <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="English (US)">English (US)</SelectItem>
-                                                        <SelectItem value="English (UK)">English (UK)</SelectItem>
-                                                        <SelectItem value="Spanish">Spanish</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeArea === 'security' && (
-                                    <div className="space-y-12 animate-in fade-in slide-in-from-right-2 duration-300">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Max File Upload Size (MB)</Label>
-                                                    <Badge variant="outline" className="text-[10px] bg-slate-50 border-slate-200">System Limit</Badge>
-                                                </div>
-                                                <div className="relative">
-                                                    <HardDrive className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
-                                                    <Input 
-                                                        type="number" 
-                                                        value={localConfig.settings.maxFileUploadSizeMb} 
-                                                        onChange={e => updateSettings({ maxFileUploadSizeMb: parseInt(e.target.value) || 0 })}
-                                                        className="rounded-xl h-12 pl-10 border-slate-200 font-bold bg-white shadow-sm"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Session Timeout (Minutes)</Label>
-                                                    <Badge variant="outline" className="text-[10px] bg-slate-50 border-slate-200">Idle Guard</Badge>
-                                                </div>
-                                                <div className="relative">
-                                                    <Clock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
-                                                    <Input 
-                                                        type="number" 
-                                                        value={localConfig.settings.sessionTimeoutMinutes} 
-                                                        onChange={e => updateSettings({ sessionTimeoutMinutes: parseInt(e.target.value) || 0 })}
-                                                        className="rounded-xl h-12 pl-10 border-slate-200 font-bold bg-white shadow-sm"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Authorized File Extensions</Label>
-                                            <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 flex flex-wrap gap-3">
-                                                {localConfig.settings.allowedFileTypes.map(type => (
-                                                    <Badge key={type} className="bg-white border-slate-200 text-slate-700 h-10 px-4 rounded-xl gap-3 font-bold shadow-sm group">
-                                                        {type}
-                                                        <button 
-                                                            onClick={() => updateSettings({ allowedFileTypes: localConfig.settings.allowedFileTypes.filter(t => t !== type) })}
-                                                            className="text-slate-300 hover:text-red-500 transition-colors"
-                                                        >
-                                                            <X className="h-3.5 w-3.5" />
-                                                        </button>
-                                                    </Badge>
-                                                ))}
-                                                <div className="flex items-center gap-3">
-                                                    <Input 
-                                                        placeholder=".zip" 
-                                                        className="h-10 w-24 rounded-xl text-sm font-bold bg-white border-slate-200"
-                                                        onKeyDown={e => {
-                                                            if (e.key === 'Enter') {
-                                                                const val = (e.target as HTMLInputElement).value.trim();
-                                                                if (val && !localConfig.settings.allowedFileTypes.includes(val)) {
-                                                                    updateSettings({ allowedFileTypes: [...localConfig.settings.allowedFileTypes, val] });
-                                                                    (e.target as HTMLInputElement).value = '';
-                                                                }
-                                                            }
-                                                        }}
-                                                    />
-                                                    <span className="text-[10px] text-slate-400 font-bold uppercase">Press Enter</span>
-                                                </div>
-                                            </div>
-                                            <p className="text-xs text-slate-400 italic flex items-center gap-2 px-2">
-                                                <Info className="h-3.5 w-3.5" />
-                                                Attachment policy enforces these technical extensions globally across the library.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </ScrollArea>
-                    </div>
-                </div>
             </div>
-        </TooltipProvider>
+
+            <ScrollArea className="flex-1">
+                <div className="p-8 max-w-[1400px] mx-auto space-y-8 pb-32">
+                    {/* APP IDENTITY HEADER CARD */}
+                    <Card className="rounded-[24px] border-slate-200 bg-white p-8 shadow-sm overflow-hidden border-l-4 border-l-indigo-600">
+                        <div className="flex flex-wrap items-center gap-10">
+                            <div className="h-16 w-16 rounded-[20px] bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+                                <PlusSquare className="h-8 w-8" />
+                            </div>
+                            <div className="flex-1 min-w-[300px] space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Application Name</Label>
+                                <Input 
+                                    value={localConfig.settings.appName} 
+                                    onChange={e => updateSettings({ appName: e.target.value })}
+                                    className="h-12 rounded-xl bg-slate-50/50 border-slate-200 font-bold text-xl px-4 focus-visible:bg-white transition-colors"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Environment</Label>
+                                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 h-10 px-6 rounded-xl font-bold text-sm">
+                                    {localConfig.settings.environment}
+                                </Badge>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Version</Label>
+                                <span className="text-xl font-black text-slate-300 tracking-tight block pt-1">{localConfig.settings.version}</span>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* MAIN CONFIG TABS */}
+                    <Tabs defaultValue="app-settings" className="space-y-6">
+                        <TabsList className="bg-slate-200/40 p-1.5 h-12 rounded-2xl border border-slate-200 inline-flex shadow-sm">
+                            <TabsTrigger value="app-settings" className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md font-bold text-xs gap-2">
+                                <ShieldCheck className="h-4 w-4" />
+                                App Settings
+                                <Badge variant="secondary" className="h-5 px-1.5 bg-indigo-50 text-indigo-700 font-black text-[9px] uppercase">5 sections</Badge>
+                            </TabsTrigger>
+                            <TabsTrigger value="app-configs" className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md font-bold text-xs gap-2">
+                                <Terminal className="h-4 w-4" />
+                                App Configs
+                                <Badge variant="secondary" className="h-5 px-1.5 bg-slate-100 text-slate-500 font-black text-[9px] uppercase">7 keys</Badge>
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="app-settings" className="mt-0">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* FILE STORAGE CARD */}
+                                <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
+                                    <div className="p-6 border-b bg-slate-50/50 flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <Folder className="h-5 w-5 text-indigo-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 leading-none">File Storage</h3>
+                                            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter">FileStorage</span>
+                                        </div>
+                                    </div>
+                                    <CardContent className="p-8 space-y-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">Network Path</Label>
+                                            <Input 
+                                                value={localConfig.settings.fileStoragePath} 
+                                                onChange={e => updateSettings({ fileStoragePath: e.target.value })}
+                                                className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-medium"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase text-slate-400">Username</Label>
+                                                <Input 
+                                                    value={localConfig.settings.fileStorageUser} 
+                                                    onChange={e => updateSettings({ fileStorageUser: e.target.value })}
+                                                    className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-medium"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase text-slate-400">Password</Label>
+                                                <div className="relative">
+                                                    <Input 
+                                                        type={showPassword ? "text" : "password"}
+                                                        value={localConfig.settings.fileStoragePass} 
+                                                        onChange={e => updateSettings({ fileStoragePass: e.target.value })}
+                                                        className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-medium pr-10"
+                                                    />
+                                                    <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-slate-400 hover:text-indigo-600 transition-colors">
+                                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-slate-700">Use Credentials</span>
+                                                <span className="text-[10px] font-mono text-slate-400">UseCredentials</span>
+                                            </div>
+                                            <Switch checked={localConfig.settings.fileStorageEnabled} onCheckedChange={v => updateSettings({ fileStorageEnabled: v })} />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* LOCK CLEANUP CARD */}
+                                <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
+                                    <div className="p-6 border-b bg-slate-50/50 flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <Lock className="h-5 w-5 text-indigo-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 leading-none">Lock Cleanup Settings</h3>
+                                            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter">LockCleanupSettings</span>
+                                        </div>
+                                    </div>
+                                    <CardContent className="p-8 space-y-8">
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">Cleanup Interval</Label>
+                                            <div className="relative">
+                                                <Input 
+                                                    type="number" 
+                                                    value={localConfig.settings.lockCleanupInterval} 
+                                                    onChange={e => updateSettings({ lockCleanupInterval: parseInt(e.target.value) || 0 })}
+                                                    className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-black pr-20"
+                                                />
+                                                <span className="absolute right-4 top-3 text-[10px] font-bold text-slate-400 uppercase">minutes</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-slate-700">Enabled</span>
+                                                <span className="text-[10px] font-mono text-slate-400">Enabled</span>
+                                            </div>
+                                            <Switch checked={localConfig.settings.lockCleanupEnabled} onCheckedChange={v => updateSettings({ lockCleanupEnabled: v })} />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* APPROVAL SETTINGS CARD */}
+                                <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
+                                    <div className="p-6 border-b bg-slate-50/50 flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <Check className="h-5 w-5 text-indigo-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 leading-none">Approval Settings</h3>
+                                            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter">ApprovalSettings</span>
+                                        </div>
+                                    </div>
+                                    <CardContent className="p-8 space-y-6">
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase text-slate-400">Approver Role ID</Label>
+                                                <Input value={localConfig.settings.approverRoleId} onChange={e => updateSettings({ approverRoleId: e.target.value })} className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-bold" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase text-slate-400">Admin Role ID</Label>
+                                                <Input value={localConfig.settings.adminRoleId} onChange={e => updateSettings({ adminRoleId: e.target.value })} className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-bold" />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase text-slate-400">Approval Requests Count</Label>
+                                                <Input type="number" value={localConfig.settings.approvalRequestLimit} onChange={e => updateSettings({ approvalRequestLimit: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-bold" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase text-slate-400">Approval History Count</Label>
+                                                <Input type="number" value={localConfig.settings.approvalHistoryLimit} onChange={e => updateSettings({ approvalHistoryLimit: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-bold" />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* SEARCH SYNC CARD */}
+                                <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
+                                    <div className="p-6 border-b bg-slate-50/50 flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <Search className="h-5 w-5 text-indigo-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 leading-none">Search Sync — Wiki</h3>
+                                            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter">SearchSync.Wiki</span>
+                                        </div>
+                                    </div>
+                                    <CardContent className="p-8 space-y-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">Index Name</Label>
+                                            <Input value={localConfig.settings.searchIndexName} onChange={e => updateSettings({ searchIndexName: e.target.value })} className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-bold" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase text-slate-400">Sync Interval</Label>
+                                                <div className="relative">
+                                                    <Input type="number" value={localConfig.settings.searchSyncInterval} onChange={e => updateSettings({ searchSyncInterval: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-bold pr-16" />
+                                                    <span className="absolute right-4 top-3 text-[10px] font-bold text-slate-400 uppercase">minutes</span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase text-slate-400">Search Result Size</Label>
+                                                <Input type="number" value={localConfig.settings.searchResultSize} onChange={e => updateSettings({ searchResultSize: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-slate-50/50 border-slate-200 font-bold" />
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-slate-700">Enabled</span>
+                                                <span className="text-[10px] font-mono text-slate-400">Enabled</span>
+                                            </div>
+                                            <Switch checked={localConfig.settings.searchSyncEnabled} onCheckedChange={v => updateSettings({ searchSyncEnabled: v })} />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="app-configs">
+                            <Card className="rounded-[28px] border-slate-200 shadow-sm overflow-hidden bg-white">
+                                <Table>
+                                    <TableHeader className="bg-slate-50 border-b">
+                                        <TableRow>
+                                            <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-500 h-14">Parameter Key</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Active Value</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Registry Description</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {localConfig.configKeys.map(item => (
+                                            <TableRow key={item.key} className="hover:bg-slate-50/50 border-slate-100 h-16">
+                                                <TableCell className="px-8 font-mono text-[13px] font-bold text-indigo-600">{item.key}</TableCell>
+                                                <TableCell>
+                                                    <Input 
+                                                        value={item.value} 
+                                                        onChange={(e) => {
+                                                            const newKeys = localConfig.configKeys.map(k => k.key === item.key ? { ...k, value: e.target.value } : k);
+                                                            setLocalConfig(prev => ({ ...prev, configKeys: newKeys }));
+                                                        }}
+                                                        className="h-9 rounded-lg border-slate-200 bg-slate-50/50 font-bold"
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="text-slate-500 text-xs italic">{item.description}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
+                </div>
+            </ScrollArea>
+        </div>
     );
 }

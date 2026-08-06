@@ -294,6 +294,12 @@ export interface EmailTemplate {
   variables: string[];
 }
 
+export interface ConfigKey {
+  key: string;
+  value: string;
+  description: string;
+}
+
 export interface SystemSettings {
   appName: string;
   appDescription: string;
@@ -304,9 +310,34 @@ export interface SystemSettings {
   dateFormat: string;
   timeZone: string;
   language: string;
+  environment: string;
+  version: string;
+
+  // File Storage
+  fileStoragePath: string;
+  fileStorageUser: string;
+  fileStoragePass: string;
+  fileStorageEnabled: boolean;
+
+  // Lock Cleanup
+  lockCleanupInterval: number;
+  lockCleanupEnabled: boolean;
+
+  // Approval Settings
+  approverRoleId: string;
+  adminRoleId: string;
+  approvalRequestLimit: number;
+  approvalHistoryLimit: number;
+
+  // Search Sync
+  searchIndexName: string;
+  searchSyncInterval: number;
+  searchResultSize: number;
+  searchSyncEnabled: boolean;
 }
 
 export interface SystemConfigurationState {
   settings: SystemSettings;
   emailTemplates: EmailTemplate[];
+  configKeys: ConfigKey[];
 }

@@ -1,4 +1,3 @@
-
 import type { Definition, SupportingTable, ActivityLog, DatabaseMetadata, SourceTypeMetadata, SourceObjectMetadata, ActivityType, Template, Revision, TemplateSection, ApprovalHistoryEntry, UserAccount, Role, Permission, MasterDataState, SystemConfigurationState } from './types';
 
 export const initialDrafts: Definition[] = [
@@ -128,14 +127,35 @@ export const initialMasterData: MasterDataState = {
 
 export const initialSystemConfig: SystemConfigurationState = {
   settings: {
-    appName: 'MedPOINT Wiki',
+    appName: 'MPM Core Platform',
     appDescription: 'Centralized Healthcare Knowledge Management System',
+    environment: 'Production',
+    version: 'v2.14.3',
     maxFileUploadSizeMb: 25,
     allowedFileTypes: ['.pdf', '.docx', '.xlsx', '.json', '.sql', '.txt', '.csv', '.png'],
     sessionTimeoutMinutes: 60,
     dateFormat: 'MM/DD/YYYY',
     timeZone: 'America/Los_Angeles',
-    language: 'English (US)'
+    language: 'English (US)',
+    
+    // New fields from reference
+    fileStoragePath: '\\\\nas.keysoftwareinc.com\\share\\MPMCore',
+    fileStorageUser: 'nas\\KSUser',
+    fileStoragePass: '••••••••••••••••••••••••',
+    fileStorageEnabled: true,
+    
+    lockCleanupInterval: 1,
+    lockCleanupEnabled: true,
+    
+    approverRoleId: '1317',
+    adminRoleId: '1218',
+    approvalRequestLimit: 100,
+    approvalHistoryLimit: 100,
+    
+    searchIndexName: 'mpm-service-wiki-wikis-local',
+    searchSyncInterval: 15,
+    searchResultSize: 10000,
+    searchSyncEnabled: true
   },
   emailTemplates: [
     {
@@ -144,14 +164,16 @@ export const initialSystemConfig: SystemConfigurationState = {
       subject: 'Action Required: Definition Approval Request - {{definitionName}}',
       body: 'Hello {{recipientName}},\n\nA new definition "{{definitionName}}" has been submitted for approval by {{authorName}}.\n\nPlease review it at: {{definitionUrl}}',
       variables: ['{{definitionName}}', '{{recipientName}}', '{{authorName}}', '{{definitionUrl}}']
-    },
-    {
-      id: 'et2',
-      name: 'Revision Requested',
-      subject: 'Changes Requested: {{definitionName}}',
-      body: 'Hello {{authorName}},\n\nThe governance team has requested changes for "{{definitionName}}".\n\nFeedback: {{feedback}}\n\nYou can update your draft here: {{draftUrl}}',
-      variables: ['{{definitionName}}', '{{authorName}}', '{{feedback}}', '{{draftUrl}}']
     }
+  ],
+  configKeys: [
+    { key: 'API_GATEWAY_URL', value: 'https://api.medpoint.cloud/v1', description: 'Primary edge gateway for technical requests.' },
+    { key: 'CACHE_TTL_SEC', value: '3600', description: 'Standard object cache duration.' },
+    { key: 'ELASTIC_AUTH_KEY', value: '********', description: 'Search provider authorization token.' },
+    { key: 'SMTP_HOST', value: 'smtp.office365.com', description: 'Internal mail relay host.' },
+    { key: 'LDAP_BASE_DN', value: 'DC=medpoint,DC=org', description: 'Active Directory root path.' },
+    { key: 'LOG_LEVEL', value: 'INFO', description: 'System telemetry verbosity.' },
+    { key: 'MAX_RETRY_COUNT', value: '3', description: 'Default failure retry limit.' }
   ]
 };
 
