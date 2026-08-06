@@ -34,7 +34,8 @@ import {
     Settings2,
     Play,
     Library,
-    ClipboardCheck
+    ClipboardCheck,
+    LayoutTemplate
 } from 'lucide-react';
 import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -229,12 +230,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
         if (appliedFilters.reportType === 'approval-report') {
             const allItems = [...flattenDefinitions(definitions), ...drafts];
-            
-            // We want to track "Processes" (Submitted -> Decision)
-            // But history is flat. Let's iterate through decisions and pending items.
             const history = Array.isArray(approvalHistory) ? approvalHistory : [];
             
-            // Map decisions
             const decisions = history.filter(h => h.action !== 'Submitted').map(h => {
                 const def = allItems.find(d => d.id === h.definitionId || d.originalId === h.definitionId);
                 const submission = history.filter(s => s.action === 'Submitted' && s.definitionId === h.definitionId && parseISO(s.date) < parseISO(h.date))
@@ -266,7 +263,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 };
             });
 
-            // Map pending items
             const pendingRows = drafts.filter(d => d.isPendingApproval).map(d => {
                 const submission = history.filter(s => s.action === 'Submitted' && s.definitionId === d.id)
                                           .sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0];
@@ -296,6 +292,41 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             });
 
             return [...decisions, ...pendingRows];
+        }
+
+        if (appliedFilters.reportType === 'template-report') {
+            const allItems = [...flattenDefinitions(definitions), ...drafts];
+            
+            return templates.map(template => {
+                const creationLog = activityLogs.find(l => l.activityType === 'Template Created' && (l.details?.includes(template.name) || l.definitionName === template.name));
+                const modLogs = activityLogs.filter(l => l.activityType === 'Template Updated' && (l.details?.includes(template.name) || l.definitionName === template.name))
+                                            .sort((a,b) => parseISO(b.occurredDate).getTime() - parseISO(a.occurredDate).getTime());
+                
+                const usage = allItems.filter(d => d.templateId === template.id);
+                const lastUsageLog = activityLogs.filter(l => (l.activityType === 'Definition Created' || l.activityType === 'Definition Updated') && 
+                                                            usage.some(u => u.name === l.definitionName))
+                                                 .sort((a,b) => parseISO(b.occurredDate).getTime() - parseISO(a.occurredDate).getTime())[0];
+
+                const statusLogs = activityLogs.filter(l => l.activityType === 'Template Updated' && (l.details?.includes(template.name) || l.definitionName === template.name) && l.details?.includes('Status'))
+                                              .map(l => `${format(parseISO(l.occurredDate), 'MM/dd')}: ${l.details}`)
+                                              .join('; ');
+
+                return {
+                    id: template.id,
+                    name: template.name,
+                    module: template.module,
+                    status: template.isActive ? 'Active' : 'Inactive',
+                    createdBy: creationLog?.userName || 'System',
+                    createdDate: creationLog?.occurredDate || '—',
+                    lastModifiedBy: modLogs[0]?.userName || creationLog?.userName || '—',
+                    lastModifiedDate: modLogs[0]?.occurredDate || creationLog?.occurredDate || '—',
+                    usageCount: usage.length,
+                    lastUsedDate: lastUsageLog?.occurredDate || '—',
+                    definitionsList: usage.map(u => u.name).slice(0, 3).join(', ') + (usage.length > 3 ? '...' : ''),
+                    statusHistory: statusLogs || 'No changes recorded',
+                    description: template.description || '—'
+                };
+            });
         }
 
         return [];
@@ -396,7 +427,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 <SelectItem value="user-activity" className="font-medium">User Activity Report</SelectItem>
                                 <SelectItem value="definition-report" className="font-medium">Definition Report</SelectItem>
                                 <SelectItem value="approval-report" className="font-medium">Approval Report</SelectItem>
-                                <SelectItem value="template-report" className="font-medium">Template Architecture</SelectItem>
+                                <SelectItem value="template-report" className="font-medium">Template Report</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -647,6 +678,59 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                     <TableCell className="text-slate-500 text-xs italic truncate max-w-[280px]">{d.comments}</TableCell>
                                                     <TableCell className="font-bold text-center">{d.resubmissionCount}</TableCell>
                                                     <TableCell className="pr-6 italic text-slate-400 text-xs">{d.previousDecision}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                    <ScrollBar orientation="horizontal" />
+                                </ScrollArea>
+                            </Card>
+                            <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
+                        </div>
+                    ) : appliedFilters.reportType === 'template-report' ? (
+                        <div className="space-y-4 animate-in fade-in duration-500">
+                            <div className="flex items-center gap-2 px-2">
+                                <LayoutTemplate className="h-4 w-4 text-primary" />
+                                <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Template Report</h3>
+                            </div>
+                            <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
+                                <ScrollArea className="w-full">
+                                    <Table className="min-w-[2600px]">
+                                        <TableHeader className="bg-slate-50 border-b">
+                                            <TableRow>
+                                                <ReportHeader label="Template Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 w-[220px]" />
+                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" />
+                                                <ReportHeader label="Status" id="status" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.status} onFilterChange={handleFilterChange} className="w-[130px]" />
+                                                <ReportHeader label="Created By" id="createdBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdBy} onFilterChange={handleFilterChange} className="w-[160px]" />
+                                                <ReportHeader label="Created Date" id="createdDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdDate} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Last Modified By" id="lastModifiedBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedBy} onFilterChange={handleFilterChange} className="w-[160px]" />
+                                                <ReportHeader label="Last Modified Date" id="lastModifiedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Usage Count" id="usageCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.usageCount} onFilterChange={handleFilterChange} className="w-[130px]" />
+                                                <ReportHeader label="Last Used Date" id="lastUsedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastUsedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Definitions Using Template" id="definitionsList" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.definitionsList} onFilterChange={handleFilterChange} className="w-[280px]" />
+                                                <ReportHeader label="Status Change History" id="statusHistory" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.statusHistory} onFilterChange={handleFilterChange} className="w-[250px]" />
+                                                <ReportHeader label="Description" id="description" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.description} onFilterChange={handleFilterChange} className="pr-6 w-[300px]" />
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {paginatedData.map((d: any) => (
+                                                <TableRow key={d.id} className="hover:bg-slate-50/50 border-slate-100 h-20">
+                                                    <TableCell className="pl-6 font-bold text-primary">{d.name}</TableCell>
+                                                    <TableCell className="font-bold text-slate-700">{d.module}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={d.status === 'Active' ? 'success' : 'secondary'} className="font-black text-[9px] uppercase tracking-wider">
+                                                            {d.status}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="font-bold text-slate-800">{d.createdBy}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.createdDate !== '—' ? format(parseISO(d.createdDate), 'yyyy-MM-dd HH:mm') : '—'}</TableCell>
+                                                    <TableCell className="font-bold text-slate-800">{d.lastModifiedBy}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.lastModifiedDate !== '—' ? format(parseISO(d.lastModifiedDate), 'yyyy-MM-dd HH:mm') : '—'}</TableCell>
+                                                    <TableCell className="font-black text-center text-indigo-600">{d.usageCount}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.lastUsedDate !== '—' ? format(parseISO(d.lastUsedDate), 'yyyy-MM-dd') : '—'}</TableCell>
+                                                    <TableCell className="text-xs font-medium text-slate-600 truncate max-w-[260px]">{d.definitionsList || 'None'}</TableCell>
+                                                    <TableCell className="text-xs text-slate-400 italic truncate max-w-[230px]">{d.statusHistory}</TableCell>
+                                                    <TableCell className="pr-6 text-slate-500 text-xs leading-relaxed max-w-[280px]">{d.description}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
