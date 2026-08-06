@@ -57,14 +57,14 @@ const initialNotifications: NotificationType[] = [
 ];
 
 export default function Wiki() {
-  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v19', initialDefinitions);
-  const [drafts, setDrafts] = useLocalStorage<Definition[]>('mpm_user_drafts_v19', initialDrafts);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v19', initialTemplates);
-  const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v19', initialApprovalHistory);
-  const [users, setUsers] = useLocalStorage<UserAccount[]>('mpm_users_v2', initialUsers);
-  const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activity_logs_v19', initialActivityLogs);
-  const [masterData, setMasterData] = useLocalStorage<MasterDataState>('mpm_master_data_v1', initialMasterData);
-  const [systemConfig, setSystemConfig] = useLocalStorage<SystemConfigurationState>('mpm_system_config_v1', initialSystemConfig);
+  const [definitions, setDefinitions] = useLocalStorage<Definition[]>('definitions_v20', initialDefinitions);
+  const [drafts, setDrafts] = useLocalStorage<Definition[]>('mpm_user_drafts_v20', initialDrafts);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('managed_templates_v20', initialTemplates);
+  const [approvalHistory, setApprovalHistory] = useLocalStorage<ApprovalHistoryEntry[]>('approval_history_v20', initialApprovalHistory);
+  const [users, setUsers] = useLocalStorage<UserAccount[]>('mpm_users_v3', initialUsers);
+  const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activity_logs_v20', initialActivityLogs);
+  const [masterData, setMasterData] = useLocalStorage<MasterDataState>('mpm_master_data_v2', initialMasterData);
+  const [systemConfig, setSystemConfig] = useLocalStorage<SystemConfigurationState>('mpm_system_config_v2', initialSystemConfig);
   
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string | null>(null);
   const [viewingMode, setViewingMode] = useState<ViewingMode>('live');
@@ -80,10 +80,10 @@ export default function Wiki() {
   const [isNewDefinitionModalOpen, setIsNewDefinitionModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   
-  const [originalAdminState, setOriginalAdminState] = useLocalStorage<boolean>('mpm_user_role_admin_v19', true);
+  const [originalAdminState, setOriginalAdminState] = useLocalStorage<boolean>('mpm_user_role_admin_v20', true);
   const [impersonatedUser, setImpersonatedUser] = useState<UserAccount | null>(null);
   const [activeView, setActiveView] = useState<View>('definitions');
-  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v19', initialNotifications);
+  const [notifications, setNotifications] = useLocalStorage<NotificationType[]>('notifications_v20', initialNotifications);
   const [draftedDefinitionData, setDraftedDefinitionData] = useState<Partial<Definition> | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const { toast } = useToast();

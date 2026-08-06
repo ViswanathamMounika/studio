@@ -92,21 +92,25 @@ export const initialMasterData: MasterDataState = {
     { id: 'm3', name: 'Provider', isActive: true, description: 'Network and contract management.' },
     { id: 'm4', name: 'Member', isActive: true, description: 'Eligibility and benefits.' },
     { id: 'm5', name: 'Core', isActive: true, description: 'Cross-functional system reference.' },
-    { id: 'm6', name: 'Other', isActive: true },
+    { id: 'm6', name: 'Infrastructure', isActive: true },
+    { id: 'm7', name: 'Quality', isActive: true },
+    { id: 'm8', name: 'Compliance', isActive: true },
   ],
   sourcesOfTruth: [
     { id: 's1', name: 'EzCAP', isActive: true },
     { id: 's2', name: 'SupportTbls', isActive: true },
     { id: 's3', name: 'NetApps', isActive: true },
     { id: 's4', name: 'AuditTables', isActive: true },
-    { id: 's5', name: 'Other', isActive: true },
+    { id: 's5', name: 'CloudData', isActive: true },
+    { id: 's6', name: 'Other', isActive: true },
   ],
   sourceTypes: [
     { id: 'st1', name: 'View', isActive: true },
     { id: 'st2', name: 'Table', isActive: true },
     { id: 'st3', name: 'SQL Function', isActive: true },
     { id: 'st4', name: 'SQL Stored Procedure', isActive: true },
-    { id: 'st5', name: 'None', isActive: true },
+    { id: 'st5', name: 'External API', isActive: true },
+    { id: 'st6', name: 'None', isActive: true },
   ],
   definitionStatuses: [
     { id: 'ds1', name: 'Draft', isActive: true },
@@ -126,8 +130,8 @@ export const initialSystemConfig: SystemConfigurationState = {
   settings: {
     appName: 'MedPOINT Wiki',
     appDescription: 'Centralized Healthcare Knowledge Management System',
-    maxFileUploadSizeMb: 10,
-    allowedFileTypes: ['.pdf', '.docx', '.xlsx', '.json', '.sql', '.txt'],
+    maxFileUploadSizeMb: 25,
+    allowedFileTypes: ['.pdf', '.docx', '.xlsx', '.json', '.sql', '.txt', '.csv', '.png'],
     sessionTimeoutMinutes: 60,
     dateFormat: 'MM/DD/YYYY',
     timeZone: 'America/Los_Angeles',
@@ -160,52 +164,11 @@ export const initialTemplates: Template[] = [
     isDefault: true,
     isActive: true,
     sections: [
-      {
-        id: '1',
-        templateId: '1',
-        name: 'Short Description',
-        fieldType: 'PlainText',
-        isMulti: false,
-        maxLength: 500,
-        isRequired: false,
-        order: 2
-      },
-      {
-        id: '2',
-        templateId: '1',
-        name: 'Description',
-        fieldType: 'RichText',
-        isMulti: false,
-        isRequired: false,
-        order: 3
-      },
-      {
-        id: '3',
-        templateId: '1',
-        name: 'Technical Details',
-        fieldType: 'RichText',
-        isMulti: false,
-        isRequired: false,
-        order: 4
-      },
-      {
-        id: '4',
-        templateId: '1',
-        name: 'Usage Examples',
-        fieldType: 'RichText',
-        isMulti: false,
-        isRequired: false,
-        order: 5
-      },
-      {
-        id: '8',
-        templateId: '1',
-        name: 'Source of Truth',
-        fieldType: 'Dropdown',
-        isMulti: true,
-        isRequired: false,
-        order: 1,
-        options: [
+      { id: '1', templateId: '1', name: 'Short Description', fieldType: 'PlainText', isMulti: false, maxLength: 500, isRequired: false, order: 2 },
+      { id: '2', templateId: '1', name: 'Description', fieldType: 'RichText', isMulti: false, isRequired: false, order: 3 },
+      { id: '3', templateId: '1', name: 'Technical Details', fieldType: 'RichText', isMulti: false, isRequired: false, order: 4 },
+      { id: '4', templateId: '1', name: 'Usage Examples', fieldType: 'RichText', isMulti: false, isRequired: false, order: 5 },
+      { id: '8', templateId: '1', name: 'Source of Truth', fieldType: 'Dropdown', isMulti: true, isRequired: false, order: 1, options: [
           { id: 's1', templateSectionId: '8', label: 'EzCAP', value: 'EzCAP', sortOrder: 1, isDefault: false },
           { id: 's2', templateSectionId: '8', label: 'SupportTbls', value: 'SupportTbls', sortOrder: 2, isDefault: false },
           { id: 's3', templateSectionId: '8', label: 'NetApps', value: 'NetApps', sortOrder: 3, isDefault: false },
@@ -281,17 +244,38 @@ export const initialTemplates: Template[] = [
     ]
   },
   {
-    id: '6',
-    name: 'Financial Audit Schema',
-    description: 'Registry for financial reconciliation and claim batch auditing procedures.',
-    module: 'Claims',
+    id: '7',
+    name: 'HEDIS Quality Measure',
+    description: 'Documentation for clinical quality reporting and NCQA metrics.',
+    module: 'Quality',
     isDefault: false,
     isActive: true,
     sections: [
-      { id: 'a1', templateId: '6', name: 'Audit Objective', fieldType: 'PlainText', isMulti: false, isRequired: true, order: 1 },
-      { id: 'a2', templateId: '6', name: 'Data Validation Rules', fieldType: 'RichText', isMulti: false, isRequired: true, order: 2 },
-      { id: 'a3', templateId: '6', name: 'Reconciliation SQL', fieldType: 'RichText', isMulti: false, isRequired: true, order: 3 },
-      { id: 'a4', templateId: '6', name: 'Compliance Thresholds', fieldType: 'PlainText', isMulti: false, isRequired: false, order: 4 }
+      { id: 'q1', templateId: '7', name: 'Measure Description', fieldType: 'PlainText', isMulti: false, isRequired: true, order: 1 },
+      { id: 'q2', templateId: '7', name: 'Denominator Criteria', fieldType: 'RichText', isMulti: false, isRequired: true, order: 2 },
+      { id: 'q3', templateId: '7', name: 'Numerator Criteria', fieldType: 'RichText', isMulti: false, isRequired: true, order: 3 },
+      { id: 'q4', templateId: '7', name: 'Exclusions', fieldType: 'RichText', isMulti: false, isRequired: false, order: 4 }
+    ]
+  },
+  {
+    id: '8',
+    name: 'Infrastructure Configuration',
+    description: 'Registry for system environments, servers, and technical endpoints.',
+    module: 'Infrastructure',
+    isDefault: false,
+    isActive: true,
+    sections: [
+      { id: 'i1', templateId: '8', name: 'Environment', fieldType: 'Dropdown', isMulti: false, isRequired: true, order: 1, options: [
+        { id: 'io1', templateSectionId: 'i1', label: 'Production', value: 'PROD', sortOrder: 1, isDefault: true },
+        { id: 'io2', templateSectionId: 'i1', label: 'UAT', value: 'UAT', sortOrder: 2, isDefault: false },
+        { id: 'io3', templateSectionId: 'i1', label: 'Development', value: 'DEV', sortOrder: 3, isDefault: false }
+      ]},
+      { id: 'i2', templateId: '8', name: 'Server Name', fieldType: 'PlainText', isMulti: false, isRequired: true, order: 2 },
+      { id: 'i3', templateId: '8', name: 'IP Address', fieldType: 'PlainText', isMulti: false, isRequired: false, order: 3 },
+      { id: 'i4', templateId: '8', name: 'Service Registry', fieldType: 'KeyValue', isMulti: false, isRequired: false, order: 4, columns: [
+        { id: 'ic1', templateSectionId: 'i4', name: 'Service Name', inputType: 'TextBox', isMulti: false, sortOrder: 1, isRequired: true },
+        { id: 'ic2', templateSectionId: 'i4', name: 'Port', inputType: 'TextBox', isMulti: false, sortOrder: 2, isRequired: true }
+      ]}
     ]
   }
 ];
@@ -364,20 +348,21 @@ export const initialDefinitions: Definition[] = [
         attachments: []
       },
       {
-        id: '1.1.3',
-        name: 'Inpatient Medical Review Protocol',
+        id: '1.1.4',
+        name: 'Prior Auth Turnaround SLA',
         module: 'Authorizations',
-        templateId: '2',
-        keywords: ['clinical', 'inpatient', 'review'],
-        description: '<p>Standard medical review criteria for inpatient stays.</p>',
+        templateId: '1',
+        keywords: ['SLA', 'turnaround', 'compliance'],
+        description: '<p>Regulatory requirements for authorization decision speed.</p>',
+        shortDescription: 'SLA rules for auth decisions.',
         isArchived: false,
         isDraft: false,
-        revisions: [baselineRevision('Inpatient Medical Review Protocol', 'Clinical workflow baseline.')],
+        revisions: [baselineRevision('Prior Auth Turnaround SLA', 'Compliance baseline.')],
         supportingTables: [],
         attachments: [],
         sectionValues: [
-          { sectionId: 'c1', html: '<p>Standard InterQual criteria must be applied to all inpatient admissions.</p>', raw: 'Standard InterQual criteria must be applied to all inpatient admissions.' },
-          { sectionId: 'c2', html: '<h3>Necessity Thresholds</h3><ul><li>Acute Care: Standard 3-day window</li><li>Skilled Nursing: Prior authorization required</li></ul>', raw: 'Acute care thresholds and SNF requirements.' }
+          { sectionId: '1', raw: '72 hours for urgent, 14 days for routine.' },
+          { sectionId: '2', html: '<h3>SLA Thresholds</h3><ul><li>Urgent: 72 Hours</li><li>Routine: 14 Calendar Days</li></ul>', raw: 'SLA Thresholds: Urgent 72h, Routine 14d' }
         ]
       }
     ]
@@ -429,30 +414,13 @@ export const initialDefinitions: Definition[] = [
           { sectionId: '3', raw: 'The engine is built on a C# service layer that implements the IAdjudicationStrategy interface.', html: '<h3>Service Implementation</h3><p>The core logic is encapsulated within the <code>ClaimProcessor</code> service. Below is the simplified C# implementation for the validation strategy:</p><pre class="language-csharp"><code>public class ClaimProcessor : IAdjudicationStrategy {\n  public void ProcessClaim(int claimId) {\n    var claim = _repository.GetById(claimId);\n    if (claim.IsValid()) {\n      ApplyContractRates(claim);\n      claim.Status = "APP";\n    }\n    _repository.Update(claim);\n  }\n}</code></pre>' },
           { sectionId: '8', raw: 'EzCAP', multiValues: ['EzCAP'] }
         ]
-      },
-      {
-        id: '2.1.3',
-        name: 'Claim Batch Reconciliation Audit',
-        module: 'Claims',
-        templateId: '6',
-        keywords: ['finance', 'audit', 'batch'],
-        description: '<p>Nightly reconciliation process for claims batches.</p>',
-        isArchived: false,
-        isDraft: false,
-        revisions: [baselineRevision('Claim Batch Reconciliation Audit', 'Financial audit baseline.')],
-        supportingTables: [],
-        attachments: [],
-        sectionValues: [
-          { sectionId: 'a1', raw: 'Ensure total paid amounts match the general ledger export for the daily claim run.' },
-          { sectionId: 'a3', html: '<pre class="language-sql"><code>SELECT BatchID, SUM(TotalPaid) as Total \nFROM tbl_ClaimBatch \nWHERE ProcessDate = CAST(GETDATE() as date) \nGROUP BY BatchID;</code></pre>', raw: 'SQL for batch totaling.' }
-        ]
       }
     ]
   },
   {
-    id: '3',
-    name: 'Provider',
-    module: 'Provider',
+    id: '7',
+    name: 'Quality Metrics',
+    module: 'Quality',
     keywords: [],
     description: '',
     revisions: [],
@@ -462,28 +430,29 @@ export const initialDefinitions: Definition[] = [
     attachments: [],
     children: [
       {
-        id: '3.1.1',
-        name: 'Primary Care Capitation Schedule',
-        module: 'Provider',
-        templateId: '5',
-        keywords: ['provider', 'billing', 'capitation'],
-        description: '<p>Reimbursement rules for PCP capitated groups.</p>',
+        id: '7.1.1',
+        name: 'Breast Cancer Screening (BCS)',
+        module: 'Quality',
+        templateId: '7',
+        keywords: ['HEDIS', 'HMO', 'Quality'],
+        description: '<p>HEDIS measure for breast cancer screening compliance.</p>',
         isArchived: false,
         isDraft: false,
-        revisions: [baselineRevision('Primary Care Capitation Schedule', 'PCP rate baseline.')],
+        revisions: [baselineRevision('Breast Cancer Screening (BCS)', 'HEDIS 2024 baseline.')],
         supportingTables: [],
         attachments: [],
         sectionValues: [
-          { sectionId: 'f1', raw: 'CAP' },
-          { sectionId: 'f2', structuredRows: [{ fc1: 'Adult Commercial', fc2: '110%' }, { fc1: 'Adult Medicare', fc2: '125%' }] }
+          { sectionId: 'q1', raw: 'Percentage of women 50-74 who had a mammogram.' },
+          { sectionId: 'q2', html: '<p>Women ages 50-74 as of Dec 31 of the measurement year.</p>', raw: 'Women 50-74.' },
+          { sectionId: 'q3', html: '<p>One or more mammograms between Oct 1 two years prior and Dec 31 of measurement year.</p>', raw: '1+ Mammogram in window.' }
         ]
       }
     ]
   },
   {
-    id: '4',
-    name: 'Member',
-    module: 'Member',
+    id: '8',
+    name: 'System Infrastructure',
+    module: 'Infrastructure',
     keywords: [],
     description: '',
     revisions: [],
@@ -493,28 +462,28 @@ export const initialDefinitions: Definition[] = [
     attachments: [],
     children: [
       {
-        id: '4.1.1',
-        name: 'Urgent Care Coverage Policy',
-        module: 'Member',
-        templateId: '4',
-        keywords: ['member', 'coverage', 'urgent care'],
-        description: '<p>Standard member benefits for urgent care services.</p>',
+        id: '8.1.1',
+        name: 'SQL Production Cluster',
+        module: 'Infrastructure',
+        templateId: '8',
+        keywords: ['DB', 'SQL', 'Server'],
+        description: '<p>Core production SQL server environment.</p>',
         isArchived: false,
         isDraft: false,
-        revisions: [baselineRevision('Urgent Care Coverage Policy', 'Member policy baseline.')],
+        revisions: [baselineRevision('SQL Production Cluster', 'Environment baseline.')],
         supportingTables: [],
         attachments: [],
         sectionValues: [
-          { sectionId: 'b1', html: '<p>Services rendered at authorized Urgent Care centers are covered with a fixed copayment.</p>', raw: 'Authorized UC coverage details.' },
-          { sectionId: 'b2', html: '<p>Does not include emergency room services or routine physical exams.</p>', raw: 'ER exclusions apply.' },
-          { sectionId: 'b3', raw: '$35.00 Copayment per visit.' }
+          { sectionId: 'i1', raw: 'PROD' },
+          { sectionId: 'i2', raw: 'MPM-SQL-CL01' },
+          { sectionId: 'i4', structuredRows: [{ ic1: 'SQL Browser', ic2: '1433' }, { ic1: 'HTTP Gateway', ic2: '8080' }] }
         ]
       }
     ]
   },
   {
     id: '5',
-    name: 'Core',
+    name: 'Core System',
     module: 'Core',
     keywords: [],
     description: '',
@@ -525,139 +494,32 @@ export const initialDefinitions: Definition[] = [
     attachments: [],
     children: [
       {
-        id: '5.1.1',
-        name: 'Eligibility Verification API',
+        id: '5.1.2',
+        name: 'Line of Business (LOB) Registry',
         module: 'Core',
-        templateId: '3',
-        keywords: ['api', 'integration', 'eligibility'],
-        description: '<p>Public API spec for verifying member eligibility.</p>',
+        templateId: '1',
+        keywords: ['LOB', 'Commercial', 'Medicare'],
+        description: '<p>Registry of authorized business lines.</p>',
+        shortDescription: 'Master list of LOB codes.',
         isArchived: false,
         isDraft: false,
-        revisions: [baselineRevision('Eligibility Verification API', 'Internal API baseline.')],
+        revisions: [baselineRevision('Line of Business Registry', 'System baseline.')],
         supportingTables: [],
-        attachments: [],
-        sectionValues: [
-          { sectionId: 't1', raw: 'https://api.medpoint.com/v1/member/verify' },
-          { sectionId: 't3', structuredRows: [{ tc1: 'MemberID', tc2: 'String' }, { tc1: 'DOB', tc2: 'DateTime' }, { tc1: 'IsActive', tc2: 'Boolean' }] }
-        ]
+        attachments: []
       }
     ]
   }
 ];
 
 export const initialActivityLogs: ActivityLog[] = [
-  {
-    id: '1',
-    userName: 'Administrator',
-    definitionName: 'System Configuration',
-    activityType: 'System Configuration Updated',
-    occurredDate: new Date(Date.now() - 3600000 * 1).toISOString(),
-    details: 'Updated maximum file upload size to 25MB and modified authorized file types.'
-  },
-  {
-    id: '2',
-    userName: 'Administrator',
-    definitionName: 'Security Administration',
-    activityType: 'User Role Modified',
-    occurredDate: new Date(Date.now() - 3600000 * 5).toISOString(),
-    details: 'Assigned Standard User role to s.chen@medpoint.com.'
-  },
-  {
-    id: '3',
-    userName: 'Dhilip Sagadevan',
-    definitionName: 'Auth Decision Date',
-    activityType: 'Definition Updated',
-    occurredDate: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-  {
-    id: '4',
-    userName: 'Dhilip Sagadevan',
-    definitionName: 'User Session',
-    activityType: 'User Login',
-    occurredDate: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    id: '5',
-    userName: 'Sarah Chen',
-    definitionName: 'User Session',
-    activityType: 'User Login',
-    occurredDate: new Date(Date.now() - 3600000 * 48).toISOString(),
-    details: 'Logged in from 192.168.1.45'
-  },
-  {
-    id: '6',
-    userName: 'Administrator',
-    definitionName: 'Service Type Mapping',
-    activityType: 'Approval Decision',
-    occurredDate: new Date(Date.now() - 3600000 * 10).toISOString(),
-    details: 'Approved & Published: Service Type Mapping'
-  },
-  {
-    id: '7',
-    userName: 'Sarah Chen',
-    definitionName: 'Service Type Mapping',
-    activityType: 'Definition Created',
-    occurredDate: new Date(Date.now() - 3600000 * 72).toISOString(),
-  },
-  {
-    id: '8',
-    userName: 'Mark Wilson',
-    definitionName: 'User Session',
-    activityType: 'User Login',
-    occurredDate: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-  {
-    id: '9',
-    userName: 'Elena Rodriguez',
-    definitionName: 'User Session',
-    activityType: 'User Login',
-    occurredDate: new Date(Date.now() - 3600000 * 120).toISOString(),
-  },
-  {
-    id: '10',
-    userName: 'Administrator',
-    definitionName: 'Standard Definition',
-    activityType: 'Template Updated',
-    occurredDate: new Date(Date.now() - 3600000 * 200).toISOString(),
-    details: 'Modified Source of Truth options.'
-  }
+  { id: '1', userName: 'Administrator', definitionName: 'System Configuration', activityType: 'System Configuration Updated', occurredDate: new Date(Date.now() - 3600000 * 1).toISOString(), details: 'Updated maximum file upload size to 25MB and modified authorized file types.' },
+  { id: '2', userName: 'Administrator', definitionName: 'Security Administration', activityType: 'User Role Modified', occurredDate: new Date(Date.now() - 3600000 * 5).toISOString(), details: 'Assigned Standard User role to s.chen@medpoint.com.' },
+  { id: '6', userName: 'Administrator', definitionName: 'Service Type Mapping', activityType: 'Approval Decision', occurredDate: new Date(Date.now() - 3600000 * 10).toISOString(), details: 'Approved & Published: Service Type Mapping' }
 ];
 
 export const initialApprovalHistory: ApprovalHistoryEntry[] = [
-  {
-    id: 'h1',
-    definitionId: '1.1.1',
-    definitionName: 'Auth Decision Date',
-    action: 'Approved',
-    userName: 'Administrator',
-    date: new Date(Date.now() - 3600000 * 24 * 5).toISOString(),
-    comment: 'All metadata verified against EzCAP production schema.'
-  },
-  {
-    id: 'h2',
-    definitionId: '1.1.1',
-    definitionName: 'Auth Decision Date',
-    action: 'Submitted',
-    userName: 'Sarah Chen',
-    date: new Date(Date.now() - 3600000 * 24 * 6).toISOString(),
-  },
-  {
-    id: 'h3',
-    definitionId: '2.1.1',
-    definitionName: 'Contracted Rates',
-    action: 'Rejected',
-    userName: 'Dhilip Sagadevan',
-    date: new Date(Date.now() - 3600000 * 2).toISOString(),
-    comment: 'Missing logic for Medicare Advantage plan tiers.'
-  },
-  {
-    id: 'h4',
-    definitionId: '2.1.1',
-    definitionName: 'Contracted Rates',
-    action: 'Submitted',
-    userName: 'Mark Wilson',
-    date: new Date(Date.now() - 3600000 * 4).toISOString(),
-  }
+  { id: 'h1', definitionId: '1.1.1', definitionName: 'Auth Decision Date', action: 'Approved', userName: 'Administrator', date: new Date(Date.now() - 3600000 * 24 * 5).toISOString(), comment: 'All metadata verified against EzCAP production schema.' },
+  { id: 'h2', definitionId: '1.1.1', definitionName: 'Auth Decision Date', action: 'Submitted', userName: 'Sarah Chen', date: new Date(Date.now() - 3600000 * 24 * 6).toISOString() }
 ];
 
 export const initialUsers: UserAccount[] = [
@@ -665,7 +527,6 @@ export const initialUsers: UserAccount[] = [
   { id: 'u2', name: 'Sarah Chen', email: 's.chen@medpoint.com', role: 'Admin', status: 'Active', lastLogin: new Date(Date.now() - 3600000 * 5).toISOString(), avatar: 'https://picsum.photos/seed/sarah/40/40' },
   { id: 'u3', name: 'Mark Wilson', email: 'm.wilson@medpoint.com', role: 'Standard User', status: 'Active', lastLogin: new Date(Date.now() - 3600000 * 24).toISOString(), avatar: 'https://picsum.photos/seed/mark/40/40' },
   { id: 'u4', name: 'Elena Rodriguez', email: 'e.rodriguez@medpoint.com', role: 'Approver', status: 'Inactive', lastLogin: new Date(Date.now() - 3600000 * 24 * 3).toISOString(), avatar: 'https://picsum.photos/seed/elena/40/40' },
-  { id: 'u5', name: 'James T. Kirk', email: 'j.kirk@medpoint.com', role: 'Standard User', status: 'Active', lastLogin: new Date(Date.now() - 3600000 * 2).toISOString(), avatar: 'https://picsum.photos/seed/kirk/40/40' },
 ];
 
 export const initialPermissions: Permission[] = [
@@ -688,49 +549,12 @@ export const initialRoles: Role[] = [
 export const defDataTable = {
     headers: ['ID', 'OBJECT_TYPE', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION', 'CREATEDBY', 'CREATEDDATE', 'LASTCHANGEDBY', 'LASTCHANGEDDATE'],
     rows: [
-        {
-            ID: 1,
-            OBJECT_TYPE: 1,
-            SERVER_NAME: 'MPM_PROD_SQL',
-            DATABASE_NAME: 'DW_Reporting',
-            QUERY: 'SELECT * FROM vw_AuthDecisionDate',
-            NAME: 'Auth Decision Date View',
-            DESCRIPTION: 'Main view for authorization decision dates.',
-            CREATEDBY: 'Dhilip Sagadevan',
-            CREATEDDATE: '2023-01-01T09:00:00Z',
-            LASTCHANGEDBY: 'Dhilip Sagadevan',
-            LASTCHANGEDDATE: '2023-10-15T14:30:00Z'
-        },
-        {
-            ID: 2,
-            OBJECT_TYPE: 2,
-            SERVER_NAME: 'MPM_PROD_SQL',
-            DATABASE_NAME: 'EzCAp',
-            QUERY: 'SELECT * FROM tbl_ServiceTypeMap',
-            NAME: 'Service Type Map Table',
-            DESCRIPTION: 'Mapping table for service categories.',
-            CREATEDBY: 'Admin',
-            CREATEDDATE: '2023-02-15T10:00:00Z',
-            LASTCHANGEDBY: 'Jane Smith',
-            LASTCHANGEDDATE: '2023-11-01T11:20:00Z'
-        }
+        { ID: 1, OBJECT_TYPE: 1, SERVER_NAME: 'MPM_PROD_SQL', DATABASE_NAME: 'DW_Reporting', QUERY: 'SELECT * FROM vw_AuthDecisionDate', NAME: 'Auth Decision Date View', DESCRIPTION: 'Main view for authorization decision dates.', CREATEDBY: 'Dhilip Sagadevan', CREATEDDATE: '2023-01-01T09:00:00Z', LASTCHANGEDBY: 'Dhilip Sagadevan', LASTCHANGEDDATE: '2023-10-15T14:30:00Z' }
     ]
 };
 
 export const allDataTables: SupportingTable[] = [
-    {
-        id: 'table-1',
-        name: 'vw_AuthDecisionDate',
-        description: 'Preview of Auth Decision Date',
-        headers: ['AuthID', 'DecisionDate', 'Status'],
-        rows: [
-            ['A100', '2023-10-01', 'Approved'],
-            ['A101', '2023-10-02', 'Denied'],
-            ['A102', '2023-10-03', 'Approved'],
-            ['A103', '2023-10-04', 'Canceled'],
-            ['A104', '2023-10-05', 'Pending'],
-        ]
-    }
+    { id: 'table-1', name: 'vw_AuthDecisionDate', description: 'Preview of Auth Decision Date', headers: ['AuthID', 'DecisionDate', 'Status'], rows: [['A100', '2023-10-01', 'Approved'], ['A101', '2023-10-02', 'Denied']] }
 ];
 
 export function findDefinition(definitions: Definition[], id: string): Definition | null {
