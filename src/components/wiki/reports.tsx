@@ -314,7 +314,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="user-activity" className="font-medium">User Activity Report</SelectItem>
-                                <SelectItem value="definition-report" className="font-medium">Definition Master Report</SelectItem>
+                                <SelectItem value="definition-report" className="font-medium">Definition Report</SelectItem>
                                 <SelectItem value="approval-report" className="font-medium">Approval Performance</SelectItem>
                                 <SelectItem value="template-report" className="font-medium">Template Architecture</SelectItem>
                             </SelectContent>
@@ -429,7 +429,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         <div className="space-y-4 animate-in fade-in duration-500">
                             <div className="flex items-center gap-2 px-2">
                                 <Library className="h-4 w-4 text-primary" />
-                                <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Definition Master Report</h3>
+                                <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Definition Report</h3>
                             </div>
                             <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <ScrollArea className="w-full">
