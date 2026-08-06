@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
     Users, 
@@ -17,7 +17,8 @@ import {
     LayoutGrid,
     PieChart as PieChartIcon,
     ChevronRightSquare,
-    Play
+    Play,
+    Calendar as CalendarIcon
 } from 'lucide-react';
 import { 
     PieChart, 
@@ -29,16 +30,18 @@ import {
     YAxis, 
     Tooltip as RechartsTooltip, 
     ResponsiveContainer,
-    Legend
+    Legend,
+    CartesianGrid
 } from 'recharts';
-import type { Definition, UserAccount, Template, View, ApprovalHistoryEntry } from '@/lib/types';
+import type { Definition, UserAccount, Template, View, ApprovalHistoryEntry, ActivityLog } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { differenceInDays, parseISO, subDays } from 'date-fns';
+import { differenceInDays, parseISO, subDays, format, startOfDay, endOfDay, isWithinInterval, eachDayOfInterval } from 'date-fns';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
+import { Input } from '../ui/input';
 
 type DashboardProps = {
   definitions: Definition[];
@@ -47,6 +50,7 @@ type DashboardProps = {
   templates: Template[];
   onNavigate: (view: View) => void;
   approvalHistory?: ApprovalHistoryEntry[];
+  activityLogs?: ActivityLog[];
 };
 
 const countPublishedDefinitions = (items: Definition[]): { published: number, archived: number } => {
@@ -76,20 +80,26 @@ const MODULE_COLORS: Record<string, string> = {
     'Other': 'bg-slate-50 text-slate-700 border-slate-100 dot-slate-500'
 };
 
-export default function Dashboard({ definitions, drafts, users, templates, onNavigate, approvalHistory = [] }: DashboardProps) {
+export default function Dashboard({ definitions, drafts, users, templates, onNavigate, approvalHistory = [], activityLogs = [] }: DashboardProps) {
   
+  // Velocity Chart State
+  const [velocityTimeFrame, setVelocityTimeFrame] = useState<'7D' | '30D' | '90D'>('90D');
+  const [velocityRange, setVelocityRange] = useState({
+    from: format(subDays(new Date(), 90), 'yyyy-MM-dd'),
+    to: format(new Date(), 'yyyy-MM-dd')
+  });
+
   const metrics = useMemo(() => {
     const safeDefinitions = Array.isArray(definitions) ? definitions : [];
     const safeDrafts = Array.isArray(drafts) ? drafts : [];
     const safeUsers = Array.isArray(users) ? users : [];
     const safeTemplates = Array.isArray(templates) ? templates : [];
-    const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
 
     const { published, archived } = countPublishedDefinitions(safeDefinitions);
     
     // Lifecycle Mapping
     const draftOnly = safeDrafts.filter(d => d && d.isDraft && !d.isPendingApproval && !(d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection'));
-    const sentForApproval = safeDrafts.filter(d => d && d.isPendingApproval && d.submittedAt && parseISO(d.submittedAt) > subDays(new Date(), 1)); // Approximate "Recently Sent"
+    const sentForApproval = safeDrafts.filter(d => d && d.isPendingApproval && d.submittedAt && parseISO(d.submittedAt) > subDays(new Date(), 1));
     const pendingApproval = safeDrafts.filter(d => d && d.isPendingApproval);
     const changesRequested = safeDrafts.filter(d => d && (d.discussions || []).some(m => m.type === 'change-request') && !d.isPendingApproval);
     const rejected = safeDrafts.filter(d => d && (d.discussions || []).some(m => m.type === 'rejection') && !d.isPendingApproval);
@@ -131,9 +141,27 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         { id: 'SU', name: 'Standard User', desc: 'Creates definitions', count: safeUsers.filter(u => u.role === 'Standard User').length },
     ];
 
-    // Historical calculation simulation
     const duplicatedCount = safeDrafts.filter(d => d && d.name.includes('(Copy)')).length;
     
+    // Calculate velocity chart data
+    const startDate = parseISO(velocityRange.from);
+    const endDate = parseISO(velocityRange.to);
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    
+    const creationLogs = activityLogs.filter(l => l.activityType === 'Definition Created');
+    
+    const velocityData = days.map((day, idx) => {
+        const dateKey = format(day, 'yyyy-MM-dd');
+        const count = creationLogs.filter(l => format(parseISO(l.occurredDate), 'yyyy-MM-dd') === dateKey).length;
+        return {
+            date: dateKey,
+            displayDate: format(day, 'MMM d'),
+            count,
+            // Mock visualization style: one bar is "active" or highlighted
+            fill: idx === Math.floor(days.length / 4) ? '#6366F1' : '#E0E7FF'
+        };
+    });
+
     return {
         totalUsers: safeUsers.length,
         activeUsers: safeUsers.filter(u => u.status === 'Active').length,
@@ -152,10 +180,11 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         },
         stats: {
             duplicated: duplicatedCount,
-            conversion: 33, // Simulation
-            avgApprovalTime: 1.8 // Simulation
+            conversion: 33,
+            avgApprovalTime: 1.8
         },
         needsAttention,
+        velocityData,
 
         totalTemplates: safeTemplates.length,
         activeTemplates: safeTemplates.filter(t => t.isActive).length,
@@ -165,7 +194,16 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         maxUsage: Math.max(...templateUsageData.map(t => t.usage), 1),
         roleStats
     };
-  }, [definitions, drafts, users, templates, approvalHistory]);
+  }, [definitions, drafts, users, templates, activityLogs, velocityRange]);
+
+  const handleTimeFrameChange = (frame: '7D' | '30D' | '90D') => {
+    setVelocityTimeFrame(frame);
+    const days = frame === '7D' ? 7 : frame === '30D' ? 30 : 90;
+    setVelocityRange({
+        from: format(subDays(new Date(), days), 'yyyy-MM-dd'),
+        to: format(new Date(), 'yyyy-MM-dd')
+    });
+  };
 
   return (
     <div className="p-8 space-y-12 max-w-[1600px] mx-auto pb-32">
@@ -254,7 +292,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         </Card>
       </div>
 
-      {/* SECTION: DEFINITION LIFECYCLE (MATCHING REFERENCE) */}
+      {/* SECTION: DEFINITION LIFECYCLE */}
       <div className="space-y-6">
         <div className="flex items-center gap-2 px-2">
             <Activity className="h-4 w-4 text-slate-400" />
@@ -266,7 +304,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <span className="text-[13px] font-bold text-slate-500">Total <span className="text-slate-900 font-black">{metrics.totalDefinitions}</span> definitions</span>
             </div>
 
-            {/* Lifecycle Blocks */}
             <div className="flex items-center gap-2 mb-8">
                 <LifecycleBlock count={metrics.lifecycle.draft} label="Draft" color="bg-amber-50 text-amber-600 border-amber-100" />
                 <BlockArrow />
@@ -282,7 +319,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <LifecycleBlock count={metrics.lifecycle.archived} label="Archived" color="bg-slate-50 text-slate-400 border-slate-100" />
             </div>
 
-            {/* Footer Stats Row */}
             <div className="flex items-center gap-8 px-2 mb-10">
                 <div className="flex items-center gap-2">
                     <span className="text-[13px] font-black text-slate-900">{metrics.stats.duplicated}</span>
@@ -298,7 +334,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 </div>
             </div>
 
-            {/* Dot Legend */}
             <div className="flex flex-wrap items-center gap-4 pt-6 border-t border-slate-100">
                 <LegendItem label="Draft" dot="bg-amber-500" />
                 <LegendItem label="Sent for Approval" dot="bg-purple-500" />
@@ -307,6 +342,96 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <LegendItem label="Rejected" dot="bg-red-500" />
                 <LegendItem label="Published" dot="bg-emerald-500" />
                 <LegendItem label="Archived" dot="bg-slate-400" />
+            </div>
+        </Card>
+      </div>
+
+      {/* SECTION: DEFINITIONS CREATED (VELOCITY CHART) */}
+      <div className="space-y-6">
+        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden p-8">
+            <div className="flex flex-wrap items-center justify-between mb-8 gap-4">
+                <h3 className="text-xl font-bold text-slate-900">Definitions Created</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center border border-slate-200 rounded-xl p-1 bg-slate-50/50">
+                        {['7D', '30D', '90D'].map((frame) => (
+                            <button
+                                key={frame}
+                                onClick={() => handleTimeFrameChange(frame as any)}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-lg text-[11px] font-black transition-all",
+                                    velocityTimeFrame === frame 
+                                        ? "bg-white text-primary shadow-sm ring-1 ring-slate-200" 
+                                        : "text-slate-400 hover:text-slate-600"
+                                )}
+                            >
+                                {frame}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Input 
+                            type="date" 
+                            value={velocityRange.from} 
+                            onChange={e => setVelocityRange(prev => ({ ...prev, from: e.target.value }))}
+                            className="h-10 rounded-xl border-slate-200 text-xs font-bold w-[140px]" 
+                        />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">to</span>
+                        <Input 
+                            type="date" 
+                            value={velocityRange.to} 
+                            onChange={e => setVelocityRange(prev => ({ ...prev, to: e.target.value }))}
+                            className="h-10 rounded-xl border-slate-200 text-xs font-bold w-[140px]" 
+                        />
+                    </div>
+                    <Button className="h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold px-6 shadow-md shadow-indigo-100">
+                        Apply
+                    </Button>
+                </div>
+            </div>
+
+            <div className="h-[240px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={metrics.velocityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                        <XAxis 
+                            dataKey="displayDate" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 10, fontWeight: 700, fill: '#94A3B8' }}
+                            interval="preserveStartEnd"
+                            minTickGap={30}
+                        />
+                        <YAxis 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 10, fontWeight: 700, fill: '#94A3B8' }}
+                            allowDecimals={false}
+                        />
+                        <RechartsTooltip 
+                            cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }}
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    return (
+                                        <div className="bg-slate-900 text-white p-3 rounded-xl shadow-2xl border-none">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{payload[0].payload.date}</p>
+                                            <p className="text-sm font-bold">{payload[0].value} Definitions Created</p>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }}
+                        />
+                        <Bar 
+                            dataKey="count" 
+                            radius={[6, 6, 0, 0]} 
+                            barSize={velocityTimeFrame === '7D' ? 60 : velocityTimeFrame === '30D' ? 24 : 12}
+                        >
+                            {metrics.velocityData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
             </div>
         </Card>
       </div>
@@ -491,19 +616,5 @@ function LegendItem({ label, dot }: { label: string, dot: string }) {
             <div className={cn("h-2 w-2 rounded-full", dot)} />
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{label}</span>
         </div>
-    );
-}
-
-function StatsCard({ label, value, badge, badgeColor }: { label: string, value: number, badge: string, badgeColor: string }) {
-    return (
-        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white p-6 flex flex-col justify-between group hover:shadow-xl transition-all">
-            <div className="flex justify-between items-start">
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{label}</span>
-                <Badge className={cn("font-bold text-[9px] h-5 px-1.5 rounded-md uppercase", badgeColor)}>{badge}</Badge>
-            </div>
-            <div className="mt-4">
-                <h2 className="text-3xl font-black tracking-tighter text-slate-900 group-hover:text-[#3F51B5] transition-colors">{value}</h2>
-            </div>
-        </Card>
     );
 }

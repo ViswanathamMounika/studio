@@ -715,7 +715,7 @@ export default function Wiki() {
     const safeUsers = Array.isArray(users) ? users : [];
 
     switch (activeView) {
-        case 'dashboard': return <Dashboard definitions={safeDefs} drafts={safeDrafts} users={safeUsers} templates={safeTemplates} onNavigate={handleNavigate} />;
+        case 'dashboard': return <Dashboard definitions={safeDefs} drafts={safeDrafts} users={safeUsers} templates={safeTemplates} onNavigate={handleNavigate} activityLogs={Array.isArray(activityLogs) ? activityLogs : []} />;
         case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} users={safeUsers} /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={safeTemplates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
         case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} definitions={safeDefs} templates={safeTemplates} drafts={safeDrafts} /></div>;
