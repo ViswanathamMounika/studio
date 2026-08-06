@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -6,6 +7,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { 
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogClose,
+} from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { 
     Folder, 
     Lock, 
@@ -30,6 +46,7 @@ import { Switch } from '../ui/switch';
 import { ScrollArea } from '../ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { format, parseISO } from 'date-fns';
+import { Textarea } from '../ui/textarea';
 
 type SystemConfigurationProps = {
   config: SystemConfigurationState;
@@ -37,10 +54,25 @@ type SystemConfigurationProps = {
   onLogAction: (type: string, details?: string) => void;
 };
 
+const CONFIG_TYPES = [
+    { label: 'Integer', value: 'int' },
+    { label: 'String / Text', value: 'string' },
+    { label: 'Boolean', value: 'bool' },
+    { label: 'Minutes', value: 'minutes' },
+    { label: 'Record Count', value: 'record count' },
+    { label: 'File Path', value: 'path' },
+    { label: 'Decimal', value: 'decimal' },
+];
+
 export default function SystemConfiguration({ config, onSaveConfig, onLogAction }: SystemConfigurationProps) {
     const [localConfig, setLocalConfig] = useState<SystemConfigurationState>(config);
     const [showPassword, setShowPassword] = useState(false);
     const [configSearch, setConfigSearch] = useState('');
+    
+    // Key Edit Modal State
+    const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
+    const [editingKeyEntry, setEditingKeyEntry] = useState<ConfigKey | null>(null);
+
     const { toast } = useToast();
 
     const handleSave = () => {
@@ -70,10 +102,51 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         );
     }, [localConfig.configKeys, configSearch]);
 
-    const handleUpdateConfigKey = (id: string, updates: Partial<ConfigKey>) => {
+    const handleOpenAddModal = () => {
+        const nextIdNum = Math.max(...localConfig.configKeys.map(k => parseInt(k.id) || 0), 0) + 1;
+        setEditingKeyEntry({
+            id: nextIdNum.toString(),
+            key: '',
+            value: '',
+            type: 'int',
+            description: '',
+            effectiveFrom: new Date().toISOString(),
+            active: true
+        });
+        setIsKeyModalOpen(true);
+    };
+
+    const handleOpenEditModal = (key: ConfigKey) => {
+        setEditingKeyEntry({ ...key });
+        setIsKeyModalOpen(true);
+    };
+
+    const handleSaveKeyEntry = () => {
+        if (!editingKeyEntry || !editingKeyEntry.key.trim()) {
+            toast({ variant: 'destructive', title: "Validation Error", description: "Configuration Key is required." });
+            return;
+        }
+
+        const isNew = !localConfig.configKeys.some(k => k.id === editingKeyEntry.id);
+        
         setLocalConfig(prev => ({
             ...prev,
-            configKeys: prev.configKeys.map(k => k.id === id ? { ...k, ...updates } : k)
+            configKeys: isNew 
+                ? [...prev.configKeys, editingKeyEntry]
+                : prev.configKeys.map(k => k.id === editingKeyEntry.id ? editingKeyEntry : k)
+        }));
+
+        setIsKeyModalOpen(false);
+        toast({ 
+            title: isNew ? "Registry Key Created" : "Configuration Updated",
+            description: `Changes for "${editingKeyEntry.key}" have been staged.`
+        });
+    };
+
+    const handleToggleStatus = (id: string, active: boolean) => {
+        setLocalConfig(prev => ({
+            ...prev,
+            configKeys: prev.configKeys.map(k => k.id === id ? { ...k, active } : k)
         }));
     };
 
@@ -83,24 +156,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             configKeys: prev.configKeys.filter(k => k.id !== id)
         }));
         toast({ title: "Configuration Key Removed" });
-    };
-
-    const handleAddConfigKey = () => {
-        const newId = (Math.max(...localConfig.configKeys.map(k => parseInt(k.id) || 0)) + 1).toString();
-        const newKey: ConfigKey = {
-            id: newId,
-            key: 'NEW_CONFIG_KEY',
-            value: '0',
-            type: 'int',
-            effectiveFrom: new Date().toISOString(),
-            active: true,
-            description: 'New system configuration parameter.'
-        };
-        setLocalConfig(prev => ({
-            ...prev,
-            configKeys: [...prev.configKeys, newKey]
-        }));
-        toast({ title: "New Key Initialized" });
     };
 
     return (
@@ -163,14 +218,14 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                         <TabsList className="bg-slate-200/40 p-1.5 h-12 rounded-2xl border border-slate-200 inline-flex shadow-sm">
                             <TabsTrigger 
                                 value="app-settings" 
-                                className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary font-bold text-xs gap-2 transition-all"
+                                className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary font-bold text-xs gap-2 transition-all data-[state=active]:text-[#3F51B5]"
                             >
                                 <ShieldCheck className="h-4 w-4" />
                                 App Settings
                             </TabsTrigger>
                             <TabsTrigger 
                                 value="app-configs" 
-                                className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary font-bold text-xs gap-2 transition-all"
+                                className="rounded-xl px-8 h-full data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary font-bold text-xs gap-2 transition-all data-[state=active]:text-[#3F51B5]"
                             >
                                 <Terminal className="h-4 w-4" />
                                 App Configs
@@ -355,7 +410,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                         className="pl-9 h-10 rounded-xl bg-white border-slate-200 shadow-sm"
                                     />
                                 </div>
-                                <Button onClick={handleAddConfigKey} className="bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white rounded-xl h-10 px-6 gap-2 font-bold shadow-md transition-all active:scale-95">
+                                <Button onClick={handleOpenAddModal} className="bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white rounded-xl h-10 px-6 gap-2 font-bold shadow-md transition-all active:scale-95">
                                     <Plus className="h-4 w-4" />
                                     Add Config
                                 </Button>
@@ -385,11 +440,9 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Input 
-                                                        value={item.value} 
-                                                        onChange={(e) => handleUpdateConfigKey(item.id, { value: e.target.value })}
-                                                        className="h-9 w-24 rounded-xl border-slate-200 bg-white font-black text-center shadow-inner"
-                                                    />
+                                                    <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 min-w-[60px] text-center font-black text-sm">
+                                                        {item.value}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant="secondary" className="bg-slate-100 text-slate-500 font-bold text-[10px] px-2 h-6 rounded-lg uppercase">
@@ -405,7 +458,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                                 <TableCell>
                                                     <Switch 
                                                         checked={item.active} 
-                                                        onCheckedChange={v => handleUpdateConfigKey(item.id, { active: v })}
+                                                        onCheckedChange={v => handleToggleStatus(item.id, v)}
                                                         className="data-[state=checked]:bg-emerald-500"
                                                     />
                                                 </TableCell>
@@ -414,7 +467,12 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                                 </TableCell>
                                                 <TableCell className="text-right px-6">
                                                     <div className="flex justify-end gap-1">
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-white rounded-lg">
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-white rounded-lg"
+                                                            onClick={() => handleOpenEditModal(item)}
+                                                        >
                                                             <Pencil className="h-3.5 w-3.5" />
                                                         </Button>
                                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-white rounded-lg" onClick={() => handleRemoveConfigKey(item.id)}>
@@ -439,6 +497,81 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                     </Tabs>
                 </div>
             </ScrollArea>
+
+            {/* KEY EDIT MODAL */}
+            <Dialog open={isKeyModalOpen} onOpenChange={setIsKeyModalOpen}>
+                <DialogContent className="max-w-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
+                    <div className="p-6 border-b bg-white flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-inner">
+                            <Terminal className="h-5 w-5 text-indigo-600" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-xl font-bold tracking-tight">Configuration Registry</DialogTitle>
+                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-0.5">Define System Parameter</p>
+                        </div>
+                    </div>
+                    <div className="p-8 space-y-6 bg-slate-50/50">
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-500">Config Identity Key</Label>
+                                <Input 
+                                    value={editingKeyEntry?.key || ''} 
+                                    onChange={e => setEditingKeyEntry(p => p ? ({ ...p, key: e.target.value.toUpperCase().replace(/\s/g, '_') }) : null)} 
+                                    placeholder="e.g. API_TIMEOUT_SECONDS"
+                                    className="rounded-xl border-slate-200 h-11 font-black bg-white shadow-sm" 
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500">Parameter Value</Label>
+                                    <Input 
+                                        value={editingKeyEntry?.value || ''} 
+                                        onChange={e => setEditingKeyEntry(p => p ? ({ ...p, value: e.target.value }) : null)} 
+                                        className="rounded-xl border-slate-200 h-11 font-bold bg-white shadow-sm" 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500">Data Type</Label>
+                                    <Select 
+                                        value={editingKeyEntry?.type} 
+                                        onValueChange={v => setEditingKeyEntry(p => p ? ({ ...p, type: v }) : null)}
+                                    >
+                                        <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-bold">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl shadow-xl">
+                                            {CONFIG_TYPES.map(t => (
+                                                <SelectItem key={t.value} value={t.value} className="font-medium">{t.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-500">Functional Description</Label>
+                                <Textarea 
+                                    value={editingKeyEntry?.description || ''} 
+                                    onChange={e => setEditingKeyEntry(p => p ? ({ ...p, description: e.target.value }) : null)} 
+                                    placeholder="Describe the application impact of this setting..."
+                                    className="rounded-xl border-slate-200 min-h-[100px] bg-white shadow-sm resize-none text-sm font-medium" 
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter className="p-4 bg-white border-t gap-2">
+                        <DialogClose asChild>
+                            <Button variant="ghost" className="rounded-xl font-bold text-slate-500 px-6 hover:bg-slate-50">Cancel</Button>
+                        </DialogClose>
+                        <Button 
+                            onClick={handleSaveKeyEntry} 
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95"
+                        >
+                            Finalize Entry
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
+
