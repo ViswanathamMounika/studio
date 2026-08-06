@@ -33,7 +33,8 @@ import {
     Activity,
     Settings2,
     Play,
-    Library
+    Library,
+    ClipboardCheck
 } from 'lucide-react';
 import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -93,7 +94,16 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         });
         setCurrentPage(1);
         setColumnFilters({});
-        setSortConfig({ key: selectedReport === 'user-activity' ? 'timestamp' : 'name', direction: 'desc' });
+        
+        const defaultSort: Record<ReportType, SortConfig> = {
+            'user-activity': { key: 'timestamp', direction: 'desc' },
+            'definition-report': { key: 'name', direction: 'asc' },
+            'approval-report': { key: 'submittedDate', direction: 'desc' },
+            'template-report': { key: 'name', direction: 'asc' }
+        };
+
+        setSortConfig(defaultSort[selectedReport]);
+        
         toast({
             title: "Report Generated",
             description: `Data retrieved for ${selectedReport.replace('-', ' ')}.`,
@@ -218,6 +228,77 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             });
         }
 
+        if (appliedFilters.reportType === 'approval-report') {
+            const allItems = [...flattenDefinitions(definitions), ...drafts];
+            
+            // We want to track "Processes" (Submitted -> Decision)
+            // But history is flat. Let's iterate through decisions and pending items.
+            const history = Array.isArray(approvalHistory) ? approvalHistory : [];
+            
+            // Map decisions
+            const decisions = history.filter(h => h.action !== 'Submitted').map(h => {
+                const def = allItems.find(d => d.id === h.definitionId || d.originalId === h.definitionId);
+                const submission = history.filter(s => s.action === 'Submitted' && s.definitionId === h.definitionId && parseISO(s.date) < parseISO(h.date))
+                                          .sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0];
+                
+                const prevActions = history.filter(p => p.definitionId === h.definitionId && parseISO(p.date) < parseISO(h.date));
+                const resubmissionCount = prevActions.filter(p => p.action === 'Submitted').length;
+                const lastSubmission = prevActions.filter(p => p.action === 'Submitted').sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0];
+                const prevDecision = lastSubmission ? prevActions.filter(p => p.action !== 'Submitted' && parseISO(p.date) < parseISO(lastSubmission.date)).sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0] : null;
+
+                const tTime = submission ? differenceInDays(parseISO(h.date), parseISO(submission.date)) : 0;
+
+                return {
+                    id: h.id,
+                    approverName: h.userName,
+                    definitionName: h.definitionName,
+                    module: def?.module || '—',
+                    version: def?.revisions?.[0]?.ticketId || 'v1.0',
+                    action: h.action,
+                    status: 'Resolved',
+                    submittedBy: submission?.userName || 'Author',
+                    submittedDate: submission?.date || '—',
+                    decisionDate: h.date,
+                    turnaroundTime: `${tTime} days`,
+                    daysPending: '—',
+                    comments: h.comment || '—',
+                    resubmissionCount: resubmissionCount > 1 ? resubmissionCount - 1 : 0,
+                    previousDecision: prevDecision?.action || 'Initial'
+                };
+            });
+
+            // Map pending items
+            const pendingRows = drafts.filter(d => d.isPendingApproval).map(d => {
+                const submission = history.filter(s => s.action === 'Submitted' && s.definitionId === d.id)
+                                          .sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0];
+                const daysPend = submission ? differenceInDays(new Date(), parseISO(submission.date)) : 0;
+                
+                const prevActions = history.filter(p => p.definitionId === d.id);
+                const resubCount = prevActions.filter(p => p.action === 'Submitted').length;
+                const prevDec = prevActions.filter(p => p.action !== 'Submitted').sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0];
+
+                return {
+                    id: `pending_${d.id}`,
+                    approverName: 'Unassigned',
+                    definitionName: d.name,
+                    module: d.module,
+                    version: d.revisions?.[0]?.ticketId || 'v1.0 (Draft)',
+                    action: 'Pending',
+                    status: 'Pending',
+                    submittedBy: d.submittedBy || 'Author',
+                    submittedDate: d.submittedAt || submission?.date || '—',
+                    decisionDate: '—',
+                    turnaroundTime: '—',
+                    daysPending: `${daysPend} days`,
+                    comments: 'Awaiting Review',
+                    resubmissionCount: resubCount > 1 ? resubCount - 1 : 0,
+                    previousDecision: prevDec?.action || 'Initial'
+                };
+            });
+
+            return [...decisions, ...pendingRows];
+        }
+
         return [];
     }, [appliedFilters, activityLogs, approvalHistory, definitions, drafts, users, templates]);
 
@@ -315,7 +396,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             <SelectContent>
                                 <SelectItem value="user-activity" className="font-medium">User Activity Report</SelectItem>
                                 <SelectItem value="definition-report" className="font-medium">Definition Report</SelectItem>
-                                <SelectItem value="approval-report" className="font-medium">Approval Performance</SelectItem>
+                                <SelectItem value="approval-report" className="font-medium">Approval Report</SelectItem>
                                 <SelectItem value="template-report" className="font-medium">Template Architecture</SelectItem>
                             </SelectContent>
                         </Select>
@@ -503,6 +584,72 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                             {d.isActiveFlag}
                                                         </Badge>
                                                     </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                    <ScrollBar orientation="horizontal" />
+                                </ScrollArea>
+                            </Card>
+                            <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
+                        </div>
+                    ) : appliedFilters.reportType === 'approval-report' ? (
+                        <div className="space-y-4 animate-in fade-in duration-500">
+                            <div className="flex items-center gap-2 px-2">
+                                <ClipboardCheck className="h-4 w-4 text-primary" />
+                                <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Approval Report</h3>
+                            </div>
+                            <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
+                                <ScrollArea className="w-full">
+                                    <Table className="min-w-[2800px]">
+                                        <TableHeader className="bg-slate-50 border-b">
+                                            <TableRow>
+                                                <ReportHeader label="Approver Name" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="pl-6 w-[180px]" />
+                                                <ReportHeader label="Definition Name" id="definitionName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.definitionName} onFilterChange={handleFilterChange} className="w-[200px]" />
+                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" />
+                                                <ReportHeader label="Version" id="version" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.version} onFilterChange={handleFilterChange} className="w-[140px]" />
+                                                <ReportHeader label="Action" id="action" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.action} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Status" id="status" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.status} onFilterChange={handleFilterChange} className="w-[120px]" />
+                                                <ReportHeader label="Submitted By" id="submittedBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.submittedBy} onFilterChange={handleFilterChange} className="w-[160px]" />
+                                                <ReportHeader label="Submitted Date" id="submittedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.submittedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Decision Date" id="decisionDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.decisionDate} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Turnaround" id="turnaroundTime" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.turnaroundTime} onFilterChange={handleFilterChange} className="w-[140px]" />
+                                                <ReportHeader label="Days Pending" id="daysPending" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.daysPending} onFilterChange={handleFilterChange} className="w-[140px]" />
+                                                <ReportHeader label="Comments" id="comments" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.comments} onFilterChange={handleFilterChange} className="w-[300px]" />
+                                                <ReportHeader label="Resubs" id="resubmissionCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.resubmissionCount} onFilterChange={handleFilterChange} className="w-[100px]" />
+                                                <ReportHeader label="Prev Decision" id="previousDecision" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.previousDecision} onFilterChange={handleFilterChange} className="pr-6 w-[160px]" />
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {paginatedData.map((d: any) => (
+                                                <TableRow key={d.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
+                                                    <TableCell className="pl-6 font-bold text-slate-800">{d.approverName}</TableCell>
+                                                    <TableCell className="font-bold text-primary">{d.definitionName}</TableCell>
+                                                    <TableCell className="font-medium text-slate-600">{d.module}</TableCell>
+                                                    <TableCell><Badge variant="outline" className="text-[10px] font-bold border-slate-200">{d.version}</Badge></TableCell>
+                                                    <TableCell>
+                                                        <Badge className={cn("text-[10px] font-bold uppercase", 
+                                                            d.action === 'Approved' ? "bg-emerald-50 text-emerald-700" :
+                                                            d.action === 'Rejected' ? "bg-red-50 text-red-700" :
+                                                            d.action === 'Changes Requested' ? "bg-amber-50 text-amber-700" :
+                                                            "bg-blue-50 text-blue-700"
+                                                        )}>
+                                                            {d.action}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={d.status === 'Resolved' ? 'secondary' : 'outline'} className={cn("text-[9px] font-black uppercase", d.status === 'Pending' && "animate-pulse border-blue-200 text-blue-600")}>
+                                                            {d.status}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="font-bold text-slate-700">{d.submittedBy}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.submittedDate !== '—' ? format(parseISO(d.submittedDate), 'yyyy-MM-dd') : '—'}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.decisionDate !== '—' ? format(parseISO(d.decisionDate), 'yyyy-MM-dd') : '—'}</TableCell>
+                                                    <TableCell className="font-black text-indigo-600 text-xs">{d.turnaroundTime}</TableCell>
+                                                    <TableCell className="font-black text-red-600 text-xs">{d.daysPending}</TableCell>
+                                                    <TableCell className="text-slate-500 text-xs italic truncate max-w-[280px]">{d.comments}</TableCell>
+                                                    <TableCell className="font-bold text-center">{d.resubmissionCount}</TableCell>
+                                                    <TableCell className="pr-6 italic text-slate-400 text-xs">{d.previousDecision}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
