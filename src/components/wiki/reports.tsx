@@ -199,7 +199,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
                 return {
                     id: def.id,
-                    definitionId: def.id,
                     name: def.name,
                     module: def.module,
                     templateUsed: template?.name || 'Standard',
@@ -514,11 +513,10 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </div>
                             <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <ScrollArea className="w-full">
-                                    <Table className="min-w-[4000px]">
+                                    <Table className="min-w-[3800px]">
                                         <TableHeader className="bg-slate-50 border-b">
                                             <TableRow>
-                                                <ReportHeader label="Definition ID" id="definitionId" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.definitionId} onFilterChange={handleFilterChange} className="pl-6 w-[140px]" />
-                                                <ReportHeader label="Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="w-[200px]" />
+                                                <ReportHeader label="Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" />
                                                 <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" />
                                                 <ReportHeader label="Template Used" id="templateUsed" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateUsed} onFilterChange={handleFilterChange} className="w-[180px]" />
                                                 <ReportHeader label="Description" id="description" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.description} onFilterChange={handleFilterChange} className="w-[250px]" />
@@ -547,8 +545,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         <TableBody>
                                             {paginatedData.map((d: any) => (
                                                 <TableRow key={d.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
-                                                    <TableCell className="pl-6 font-mono text-xs font-bold text-slate-400">{d.definitionId}</TableCell>
-                                                    <TableCell className="font-bold text-primary">{d.name}</TableCell>
+                                                    <TableCell className="pl-6 font-bold text-primary">{d.name}</TableCell>
                                                     <TableCell className="font-bold text-slate-700">{d.module}</TableCell>
                                                     <TableCell className="text-xs font-bold text-slate-500">{d.templateUsed}</TableCell>
                                                     <TableCell className="text-slate-500 text-xs italic truncate max-w-[220px]">{d.description}</TableCell>
