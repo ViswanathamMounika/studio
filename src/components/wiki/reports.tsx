@@ -32,9 +32,10 @@ import {
     Users,
     Activity,
     Settings2,
-    Play
+    Play,
+    Library
 } from 'lucide-react';
-import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO } from 'date-fns';
+import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { UserAccount, Definition, ActivityLog, ApprovalHistoryEntry, Template, MasterDataState } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -67,7 +68,6 @@ type ReportType = 'user-activity' | 'definition-report' | 'approval-report' | 't
 type AppliedFilters = {
     reportType: ReportType;
     dateRange: { from: Date; to: Date } | undefined;
-    approverFilter: string;
 };
 
 export default function ReportsDashboard({ users, definitions, drafts, activityLogs, approvalHistory, templates, masterData }: ReportsDashboardProps) {
@@ -76,7 +76,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         from: subMonths(new Date(), 12),
         to: new Date()
     });
-    const [approverFilter, setApproverFilter] = useState<string>('all');
 
     const [appliedFilters, setAppliedFilters] = useState<AppliedFilters | null>(null);
     
@@ -90,76 +89,137 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     const handleRunReport = () => {
         setAppliedFilters({
             reportType: selectedReport,
-            dateRange,
-            approverFilter
+            dateRange
         });
         setCurrentPage(1);
         setColumnFilters({});
+        setSortConfig({ key: selectedReport === 'user-activity' ? 'timestamp' : 'name', direction: 'desc' });
         toast({
             title: "Report Generated",
             description: `Data retrieved for ${selectedReport.replace('-', ' ')}.`,
         });
     };
 
-    const filteredLogs = useMemo(() => {
-        const safeLogs = Array.isArray(activityLogs) ? activityLogs : [];
-        if (!appliedFilters?.dateRange?.from) return safeLogs;
-        return safeLogs.filter(log => {
-            if (!log || !log.occurredDate) return false;
-            try {
-              const logDate = parseISO(log.occurredDate);
-              return isWithinInterval(logDate, { 
-                  start: startOfDay(appliedFilters.dateRange!.from), 
-                  end: endOfDay(appliedFilters.dateRange!.to || appliedFilters.dateRange!.from) 
-              });
-            } catch (e) { return false; }
+    // Helper to flatten definitions
+    const flattenDefinitions = (items: Definition[]): Definition[] => {
+        let result: Definition[] = [];
+        items.forEach(item => {
+            if (item.description || item.shortDescription || item.sectionValues) {
+                result.push(item);
+            }
+            if (item.children) {
+                result = result.concat(flattenDefinitions(item.children));
+            }
         });
-    }, [activityLogs, appliedFilters]);
+        return result;
+    };
 
     const processedReportData = useMemo(() => {
-        if (!appliedFilters || appliedFilters.reportType !== 'user-activity') return [];
-        
-        const allItems = [...definitions, ...drafts];
-        const findInTree = (items: Definition[], idOrName: string): Definition | undefined => {
-            for (const item of items) {
-                if (item.id === idOrName || item.name === idOrName) return item;
-                if (item.children) {
-                    const found = findInTree(item.children, idOrName);
-                    if (found) return found;
+        if (!appliedFilters) return [];
+
+        if (appliedFilters.reportType === 'user-activity') {
+            const filteredLogs = activityLogs.filter(log => {
+                if (!log || !log.occurredDate || !appliedFilters.dateRange?.from) return true;
+                try {
+                    const logDate = parseISO(log.occurredDate);
+                    return isWithinInterval(logDate, { 
+                        start: startOfDay(appliedFilters.dateRange.from), 
+                        end: endOfDay(appliedFilters.dateRange.to || appliedFilters.dateRange.from) 
+                    });
+                } catch (e) { return false; }
+            });
+
+            const allItems = [...definitions, ...drafts];
+            const findInTree = (items: Definition[], idOrName: string): Definition | undefined => {
+                for (const item of items) {
+                    if (item.id === idOrName || item.name === idOrName) return item;
+                    if (item.children) {
+                        const found = findInTree(item.children, idOrName);
+                        if (found) return found;
+                    }
                 }
-            }
-        };
-
-        return filteredLogs.map(log => {
-            const user = users.find(u => u.name === log.userName);
-            const def = findInTree(allItems, log.definitionName);
-            const template = templates.find(t => t.id === def?.templateId);
-            const history = approvalHistory.find(h => h.definitionId === def?.id && Math.abs(parseISO(h.date).getTime() - parseISO(log.occurredDate).getTime()) < 60000);
-
-            const isTemplateAction = log.activityType.includes('Template');
-
-            return {
-                id: log.id,
-                userName: log.userName,
-                role: user?.role || 'N/A',
-                actionType: log.activityType,
-                timestamp: log.occurredDate,
-                module: def?.module || 'Core',
-                entityType: isTemplateAction ? 'Template' : 'Definition',
-                entityName: log.definitionName,
-                entityId: def?.id || (isTemplateAction ? 'TMP-ID' : 'SYS-ID'),
-                prevStatus: log.activityType === 'Definition Created' ? 'None' : (def?.isDraft ? 'Draft' : 'Published'),
-                newStatus: log.activityType.includes('Published') || log.activityType === 'Approval Decision' ? 'Published' : (log.activityType.includes('Archived') ? 'Archived' : 'Draft'),
-                version: def?.revisions?.[0]?.ticketId || 'v1.0',
-                comments: log.details || '—',
-                approverName: history?.action !== 'Submitted' ? history?.userName || '—' : '—',
-                templateUsed: template?.name || 'Standard Definition',
-                templateStatusChange: isTemplateAction ? 'Status Updated' : '—',
-                relatedId: (def?.relatedDefinitions && def.relatedDefinitions.length > 0) ? def.relatedDefinitions[0] : '—',
-                attachment: (def?.attachments && def.attachments.length > 0) ? def.attachments[0].name : '—'
             };
-        });
-    }, [filteredLogs, users, definitions, drafts, approvalHistory, templates, appliedFilters]);
+
+            return filteredLogs.map(log => {
+                const user = users.find(u => u.name === log.userName);
+                const def = findInTree(allItems, log.definitionName);
+                const template = templates.find(t => t.id === def?.templateId);
+                const history = approvalHistory.find(h => h.definitionId === def?.id && Math.abs(parseISO(h.date).getTime() - parseISO(log.occurredDate).getTime()) < 60000);
+
+                return {
+                    id: log.id,
+                    userName: log.userName,
+                    role: user?.role || 'N/A',
+                    actionType: log.activityType,
+                    timestamp: log.occurredDate,
+                    module: def?.module || 'Core',
+                    entityType: log.activityType.includes('Template') ? 'Template' : 'Definition',
+                    entityName: log.definitionName,
+                    entityId: def?.id || 'SYS-ID',
+                    prevStatus: log.activityType === 'Definition Created' ? 'None' : (def?.isDraft ? 'Draft' : 'Published'),
+                    newStatus: log.activityType.includes('Published') || log.activityType === 'Approval Decision' ? 'Published' : (log.activityType.includes('Archived') ? 'Archived' : 'Draft'),
+                    version: def?.revisions?.[0]?.ticketId || 'v1.0',
+                    comments: log.details || '—',
+                    approverName: history?.action !== 'Submitted' ? history?.userName || '—' : '—',
+                    templateUsed: template?.name || 'Standard Definition',
+                    templateStatusChange: log.activityType.includes('Template') ? 'Status Updated' : '—',
+                    relatedId: (def?.relatedDefinitions && def.relatedDefinitions.length > 0) ? def.relatedDefinitions[0] : '—',
+                    attachment: (def?.attachments && def.attachments.length > 0) ? def.attachments[0].name : '—'
+                };
+            });
+        }
+
+        if (appliedFilters.reportType === 'definition-report') {
+            const allItems = [...flattenDefinitions(definitions), ...drafts];
+            
+            return allItems.map(def => {
+                const template = templates.find(t => t.id === def.templateId);
+                const creationLog = activityLogs.find(l => l.definitionName === def.name && l.activityType === 'Definition Created');
+                const lastModLog = activityLogs.filter(l => l.definitionName === def.name && l.activityType === 'Definition Updated').sort((a,b) => parseISO(b.occurredDate).getTime() - parseISO(a.occurredDate).getTime())[0];
+                const approvalLog = approvalHistory.filter(h => h.definitionId === def.id || h.definitionId === def.originalId).sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0];
+                const submissionLog = approvalHistory.filter(h => h.action === 'Submitted' && (h.definitionId === def.id || h.definitionId === def.originalId)).sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0];
+                
+                const owner = users.find(u => u.id === def.authorId)?.name || 'System';
+                
+                let turnaround = '—';
+                if (submissionLog && approvalLog && approvalLog.action !== 'Submitted') {
+                    const diff = differenceInDays(parseISO(approvalLog.date), parseISO(submissionLog.date));
+                    turnaround = `${diff} days`;
+                }
+
+                return {
+                    id: def.id,
+                    definitionId: def.id,
+                    name: def.name,
+                    module: def.module,
+                    templateUsed: template?.name || 'Standard',
+                    description: (def.shortDescription || def.description || '').replace(/<[^>]+>/g, '').substring(0, 100) + '...',
+                    createdBy: creationLog?.userName || 'System',
+                    lastModifiedBy: lastModLog?.userName || creationLog?.userName || 'System',
+                    currentOwner: owner,
+                    currentStatus: def.isArchived ? 'Archived' : (def.isPendingApproval ? 'Pending Approval' : (def.isDraft ? 'Draft' : 'Published')),
+                    createdDate: creationLog?.occurredDate || def.revisions[def.revisions.length-1]?.date || '—',
+                    lastModifiedDate: lastModLog?.occurredDate || def.revisions[0]?.date || '—',
+                    submittedDate: submissionLog?.date || '—',
+                    decisionDate: (approvalLog && approvalLog.action !== 'Submitted') ? approvalLog.date : '—',
+                    publishedDate: def.isDraft ? '—' : (def.revisions[0]?.date || '—'),
+                    archivedDate: def.isArchived ? 'Archive Active' : '—',
+                    approverName: (approvalLog && approvalLog.action !== 'Submitted') ? approvalLog.userName : '—',
+                    approvalComments: approvalLog?.comment || '—',
+                    turnaroundTime: turnaround,
+                    currentVersion: def.revisions[0]?.ticketId || 'v1.0',
+                    totalRevisions: def.revisions.length,
+                    isDuplicate: def.name.includes('(Copy)') ? 'Yes' : 'No',
+                    duplicatedFrom: def.originalId || '—',
+                    linkedRecordsCount: def.relatedDefinitions?.length || 0,
+                    attachmentCount: def.attachments?.length || 0,
+                    isActiveFlag: def.isArchived ? 'Inactive' : 'Active'
+                };
+            });
+        }
+
+        return [];
+    }, [appliedFilters, activityLogs, approvalHistory, definitions, drafts, users, templates]);
 
     const filteredAndSortedData = useMemo(() => {
         let result = [...processedReportData];
@@ -200,21 +260,20 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
     const clearAllFilters = () => {
         setColumnFilters({});
-        setSortConfig({ key: 'timestamp', direction: 'desc' });
+        setSortConfig(null);
         setCurrentPage(1);
-        setApproverFilter('all');
         setAppliedFilters(null);
     };
 
     const handleExport = async (formatType: 'xlsx' | 'csv') => {
         if (!appliedFilters) return;
         const timestamp = format(new Date(), 'yyyyMMdd_HHmm');
-        const filename = `MPM_Report_${timestamp}`;
+        const filename = `MPM_${appliedFilters.reportType}_${timestamp}`;
         const XLSX = await import('xlsx');
         const wb = XLSX.utils.book_new();
         const exportData = filteredAndSortedData.map(d => ({ ...d }));
         const ws = XLSX.utils.json_to_sheet(exportData);
-        XLSX.utils.book_append_sheet(wb, ws, "Activity Report");
+        XLSX.utils.book_append_sheet(wb, ws, "Report Data");
         XLSX.writeFile(wb, `${filename}.${formatType === 'xlsx' ? 'xlsx' : 'csv'}`);
     };
 
@@ -255,9 +314,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="user-activity" className="font-medium">User Activity Report</SelectItem>
-                                <SelectItem value="definition-report" className="font-medium">Definition Report</SelectItem>
-                                <SelectItem value="approval-report" className="font-medium">Approval Report</SelectItem>
-                                <SelectItem value="template-report" className="font-medium">Template Report</SelectItem>
+                                <SelectItem value="definition-report" className="font-medium">Definition Master Report</SelectItem>
+                                <SelectItem value="approval-report" className="font-medium">Approval Performance</SelectItem>
+                                <SelectItem value="template-report" className="font-medium">Template Architecture</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -366,10 +425,97 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </Card>
                             <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
                         </div>
+                    ) : appliedFilters.reportType === 'definition-report' ? (
+                        <div className="space-y-4 animate-in fade-in duration-500">
+                            <div className="flex items-center gap-2 px-2">
+                                <Library className="h-4 w-4 text-primary" />
+                                <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Definition Master Report</h3>
+                            </div>
+                            <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
+                                <ScrollArea className="w-full">
+                                    <Table className="min-w-[4000px]">
+                                        <TableHeader className="bg-slate-50 border-b">
+                                            <TableRow>
+                                                <ReportHeader label="Definition ID" id="definitionId" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.definitionId} onFilterChange={handleFilterChange} className="pl-6 w-[140px]" />
+                                                <ReportHeader label="Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="w-[200px]" />
+                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" />
+                                                <ReportHeader label="Template Used" id="templateUsed" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateUsed} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Description" id="description" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.description} onFilterChange={handleFilterChange} className="w-[250px]" />
+                                                <ReportHeader label="Created By" id="createdBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdBy} onFilterChange={handleFilterChange} className="w-[160px]" />
+                                                <ReportHeader label="Last Modified By" id="lastModifiedBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedBy} onFilterChange={handleFilterChange} className="w-[160px]" />
+                                                <ReportHeader label="Current Owner" id="currentOwner" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentOwner} onFilterChange={handleFilterChange} className="w-[160px]" />
+                                                <ReportHeader label="Current Status" id="currentStatus" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentStatus} onFilterChange={handleFilterChange} className="w-[140px]" />
+                                                <ReportHeader label="Created Date" id="createdDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdDate} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Last Modified Date" id="lastModifiedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Submitted Date" id="submittedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.submittedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Approved/Rejected Date" id="decisionDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.decisionDate} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Published Date" id="publishedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.publishedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Archived Date" id="archivedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.archivedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
+                                                <ReportHeader label="Approver Name" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="w-[160px]" />
+                                                <ReportHeader label="Approval Comments" id="approvalComments" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approvalComments} onFilterChange={handleFilterChange} className="w-[250px]" />
+                                                <ReportHeader label="Turnaround Time" id="turnaroundTime" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.turnaroundTime} onFilterChange={handleFilterChange} className="w-[150px]" />
+                                                <ReportHeader label="Version" id="currentVersion" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentVersion} onFilterChange={handleFilterChange} className="w-[120px]" />
+                                                <ReportHeader label="Total Revisions" id="totalRevisions" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.totalRevisions} onFilterChange={handleFilterChange} className="w-[130px]" />
+                                                <ReportHeader label="Is Duplicate" id="isDuplicate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.isDuplicate} onFilterChange={handleFilterChange} className="w-[120px]" />
+                                                <ReportHeader label="Duplicated From" id="duplicatedFrom" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.duplicatedFrom} onFilterChange={handleFilterChange} className="w-[140px]" />
+                                                <ReportHeader label="Linked Records" id="linkedRecordsCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.linkedRecordsCount} onFilterChange={handleFilterChange} className="w-[130px]" />
+                                                <ReportHeader label="Attachments" id="attachmentCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.attachmentCount} onFilterChange={handleFilterChange} className="w-[130px]" />
+                                                <ReportHeader label="Active/Inactive Flag" id="isActiveFlag" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.isActiveFlag} onFilterChange={handleFilterChange} className="pr-6 w-[160px]" />
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {paginatedData.map((d: any) => (
+                                                <TableRow key={d.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
+                                                    <TableCell className="pl-6 font-mono text-xs font-bold text-slate-400">{d.definitionId}</TableCell>
+                                                    <TableCell className="font-bold text-primary">{d.name}</TableCell>
+                                                    <TableCell className="font-bold text-slate-700">{d.module}</TableCell>
+                                                    <TableCell className="text-xs font-bold text-slate-500">{d.templateUsed}</TableCell>
+                                                    <TableCell className="text-slate-500 text-xs italic truncate max-w-[220px]">{d.description}</TableCell>
+                                                    <TableCell className="font-bold text-slate-800">{d.createdBy}</TableCell>
+                                                    <TableCell className="font-bold text-slate-800">{d.lastModifiedBy}</TableCell>
+                                                    <TableCell className="font-bold text-slate-800">{d.currentOwner}</TableCell>
+                                                    <TableCell>
+                                                        <Badge className={cn("text-[10px] font-bold uppercase", 
+                                                            d.currentStatus === 'Published' ? "bg-emerald-50 text-emerald-700" :
+                                                            d.currentStatus === 'Archived' ? "bg-slate-50 text-slate-400" :
+                                                            "bg-amber-50 text-amber-700"
+                                                        )}>
+                                                            {d.currentStatus}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.createdDate !== '—' ? format(parseISO(d.createdDate), 'yyyy-MM-dd') : '—'}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.lastModifiedDate !== '—' ? format(parseISO(d.lastModifiedDate), 'yyyy-MM-dd') : '—'}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.submittedDate !== '—' ? format(parseISO(d.submittedDate), 'yyyy-MM-dd') : '—'}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.decisionDate !== '—' ? format(parseISO(d.decisionDate), 'yyyy-MM-dd') : '—'}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.publishedDate !== '—' ? format(parseISO(d.publishedDate), 'yyyy-MM-dd') : '—'}</TableCell>
+                                                    <TableCell className="text-xs font-bold text-slate-300">{d.archivedDate}</TableCell>
+                                                    <TableCell className="font-bold text-slate-800">{d.approverName}</TableCell>
+                                                    <TableCell className="text-slate-500 text-xs italic truncate max-w-[200px]">{d.approvalComments}</TableCell>
+                                                    <TableCell className="font-black text-indigo-600 text-xs">{d.turnaroundTime}</TableCell>
+                                                    <TableCell><Badge variant="outline" className="font-bold text-[10px] border-slate-200">{d.currentVersion}</Badge></TableCell>
+                                                    <TableCell className="font-bold text-center">{d.totalRevisions}</TableCell>
+                                                    <TableCell className="text-xs font-bold text-slate-400">{d.isDuplicate}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.duplicatedFrom}</TableCell>
+                                                    <TableCell className="font-bold text-center">{d.linkedRecordsCount}</TableCell>
+                                                    <TableCell className="font-bold text-center">{d.attachmentCount}</TableCell>
+                                                    <TableCell className="pr-6">
+                                                        <Badge variant={d.isActiveFlag === 'Active' ? 'success' : 'secondary'} className="font-black text-[9px] uppercase tracking-wider">
+                                                            {d.isActiveFlag}
+                                                        </Badge>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                    <ScrollBar orientation="horizontal" />
+                                </ScrollArea>
+                            </Card>
+                            <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
+                        </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-40">
                             <Activity className="h-12 w-12 text-slate-200 mb-4" />
-                            <p className="text-slate-400 font-medium italic">No detailed visualization configured for this report type. Please use the export function for full data analysis.</p>
+                            <p className="text-slate-400 font-medium italic">Detailed visualization for {appliedFilters.reportType} coming soon. Use export functions for raw data.</p>
                         </div>
                     )}
                 </div>
