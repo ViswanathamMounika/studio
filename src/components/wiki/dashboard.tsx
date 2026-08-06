@@ -9,16 +9,11 @@ import {
     LayoutTemplate, 
     Activity,
     Users2,
-    BarChart3,
-    Trophy,
-    Target,
     AlertCircle,
     CheckCircle2,
-    Clock,
+    ShieldCheck,
     ChevronRight,
-    Play,
-    User2,
-    ShieldCheck
+    User2
 } from 'lucide-react';
 import { 
     PieChart, 
@@ -28,17 +23,15 @@ import {
     Bar, 
     XAxis, 
     YAxis, 
-    CartesianGrid, 
     Tooltip as RechartsTooltip, 
-    ResponsiveContainer,
-    Legend
+    ResponsiveContainer
 } from 'recharts';
 import type { Definition, UserAccount, Template, View } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { differenceInDays, parseISO, formatDistanceToNow } from 'date-fns';
+import { differenceInDays, parseISO } from 'date-fns';
 import { Button } from '../ui/button';
 
 type DashboardProps = {
@@ -73,16 +66,15 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
 
     const published = countPublishedDefinitions(safeDefinitions);
     const pending = safeDrafts.filter(d => d?.isPendingApproval).length;
-    const draft = safeDrafts.filter(d => d?.isDraft && !d?.isPendingApproval).length;
     
-    // Items that need attention (Pending or Changes Requested)
+    // Items that need attention
     const needsAttention = safeDrafts.filter(d => 
         d?.isPendingApproval || 
         (d?.discussions && d.discussions.some(m => m.type === 'change-request'))
     ).sort((a, b) => {
         const dateA = a.submittedAt ? parseISO(a.submittedAt).getTime() : 0;
         const dateB = b.submittedAt ? parseISO(b.submittedAt).getTime() : 0;
-        return dateA - dateB; // Oldest first
+        return dateA - dateB;
     });
 
     // Template usage data
@@ -98,20 +90,32 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         countUsage(safeDrafts);
         return { name: t.name, usage };
     }).sort((a, b) => b.usage - a.usage);
+
+    // Role distribution for the new list
+    const roleStats = [
+        { id: 'SA', name: 'Super Admin', desc: 'Full system access', count: safeUsers.filter(u => u.role === 'Super Admin').length },
+        { id: 'AD', name: 'Admin', desc: 'Manage templates & library', count: safeUsers.filter(u => u.role === 'Admin').length },
+        { id: 'AP', name: 'Approver', desc: 'Reviews & publishes', count: safeUsers.filter(u => u.role === 'Approver').length },
+        { id: 'SU', name: 'Standard User', desc: 'Creates definitions', count: safeUsers.filter(u => u.role === 'Standard User').length },
+    ];
     
     return {
         totalUsers: safeUsers.length,
         activeUsers: safeUsers.filter(u => u.status === 'Active').length,
         inactiveUsers: safeUsers.filter(u => u.status === 'Inactive').length,
+        activePercentage: safeUsers.length > 0 ? Math.round((safeUsers.filter(u => u.status === 'Active').length / safeUsers.length) * 100) : 0,
         
         totalDefinitions: published + safeDrafts.length,
         publishedDefinitions: published,
         pendingApprovals: pending,
+        draftDefinitions: safeDrafts.filter(d => d?.isDraft && !d?.isPendingApproval).length,
+        rejectedDefinitions: safeDrafts.filter(d => d?.discussions?.some(msg => msg.type === 'rejection')).length,
         needsAttention,
 
         totalTemplates: safeTemplates.length,
         activeTemplates: safeTemplates.filter(t => t.isActive).length,
-        templateUsage
+        templateUsage,
+        roleStats
     };
   }, [definitions, drafts, users, templates]);
 
@@ -138,11 +142,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <AlertCircle className="h-4 w-4 text-slate-400" />
                 <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em]">Needs Attention</h3>
             </div>
-            {metrics.needsAttention.length > 0 && (
-                <span className="text-[11px] font-bold text-slate-400">
-                    {metrics.needsAttention.length} items • oldest waiting {differenceInDays(new Date(), parseISO(metrics.needsAttention[0].submittedAt || new Date().toISOString()))} days
-                </span>
-            )}
         </div>
         <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
             <Table>
@@ -152,7 +151,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                         <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</TableHead>
                         <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400">Submitted By</TableHead>
                         <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400">Waiting</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stage</TableHead>
                         <TableHead className="text-right px-8 text-[10px] font-black uppercase tracking-widest text-slate-400">Action</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -161,13 +159,12 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                         metrics.needsAttention.slice(0, 5).map(item => {
                             const isPending = item.isPendingApproval;
                             const waitDays = item.submittedAt ? differenceInDays(new Date(), parseISO(item.submittedAt)) : 0;
-                            
                             return (
                                 <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 h-20 transition-colors">
                                     <TableCell className="px-8">
                                         <div className="flex flex-col">
                                             <span className="font-bold text-slate-900 text-[15px]">{item.name}</span>
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">DEF-{(item.id.match(/\d+/) || [Math.floor(Math.random() * 9999)])[0]}</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase mt-0.5">{item.module}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -182,7 +179,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                                     <TableCell>
                                         <div className="flex items-center gap-2.5">
                                             <Avatar className="h-7 w-7 border-2 border-white shadow-sm">
-                                                <AvatarImage src={`https://picsum.photos/seed/${item.authorId}/40/40`} />
                                                 <AvatarFallback className="text-[10px] font-bold">{(item.submittedBy || 'U')[0]}</AvatarFallback>
                                             </Avatar>
                                             <span className="text-sm font-bold text-slate-700">{item.submittedBy || 'Unknown User'}</span>
@@ -190,46 +186,20 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                                     </TableCell>
                                     <TableCell>
                                         <span className={cn("text-sm font-black tabular-nums", waitDays > 3 ? "text-red-600" : "text-slate-600")}>
-                                            {waitDays === 0 ? 'Today' : `${waitDays} day${waitDays > 1 ? 's' : ''}`}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell>
-                                        <span className="text-xs font-medium text-slate-400">
-                                            {isPending ? 'Sent for Approval' : 'Awaiting resubmission'}
+                                            {waitDays === 0 ? 'Today' : `${waitDays}d`}
                                         </span>
                                     </TableCell>
                                     <TableCell className="px-8 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                className={cn(
-                                                    "h-8 px-4 rounded-lg font-bold text-[11px] border-none shadow-sm",
-                                                    isPending ? "bg-emerald-500 text-white hover:bg-emerald-600" : "bg-white text-slate-600 border-slate-200"
-                                                )}
-                                            >
-                                                {isPending ? 'Approve' : 'Remind'}
-                                            </Button>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                className="h-8 px-3 rounded-lg font-bold text-[11px] text-slate-500"
-                                                onClick={() => onNavigate('approval-workflow')}
-                                            >
-                                                View
-                                            </Button>
-                                        </div>
+                                        <Button variant="ghost" size="sm" className="h-8 px-3 rounded-lg font-bold text-[11px] text-slate-500" onClick={() => onNavigate('approval-workflow')}>View</Button>
                                     </TableCell>
                                 </TableRow>
                             );
                         })
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={6} className="h-32 text-center">
-                                <div className="flex flex-col items-center justify-center py-8">
-                                    <CheckCircle2 className="h-8 w-8 text-emerald-100 mb-2" />
-                                    <p className="text-sm font-bold text-slate-400">All caught up! No items need attention.</p>
-                                </div>
+                            <TableCell colSpan={5} className="h-32 text-center py-8">
+                                <CheckCircle2 className="h-8 w-8 text-emerald-100 mx-auto mb-2" />
+                                <p className="text-sm font-bold text-slate-400">All caught up!</p>
                             </TableCell>
                         </TableRow>
                     )}
@@ -244,162 +214,137 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             <FileText className="h-4 w-4 text-slate-400" />
             <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em]">Definitions Overview</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Total Definitions */}
-            <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8 flex flex-col justify-between group hover:shadow-xl hover:shadow-indigo-500/5 transition-all">
-                <div className="flex justify-between items-start">
-                    <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Total Definitions</span>
-                    <Badge variant="outline" className="bg-slate-50 text-slate-400 border-slate-200 font-bold text-[9px] h-6">+3 this week</Badge>
-                </div>
-                <div className="mt-6">
-                    <h2 className="text-5xl font-black tracking-tighter text-slate-900 group-hover:text-[#3F51B5] transition-colors">{metrics.totalDefinitions}</h2>
-                </div>
-            </Card>
-
-            {/* Published */}
-            <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8 flex flex-col justify-between group hover:shadow-xl hover:shadow-emerald-500/5 transition-all">
-                <div className="flex justify-between items-start">
-                    <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Published</span>
-                    <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold text-[9px] h-6">
-                        {metrics.totalDefinitions > 0 ? Math.round((metrics.publishedDefinitions / metrics.totalDefinitions) * 100) : 0}% of total
-                    </Badge>
-                </div>
-                <div className="mt-6">
-                    <h2 className="text-5xl font-black tracking-tighter text-slate-900 group-hover:text-emerald-600 transition-colors">{metrics.publishedDefinitions}</h2>
-                </div>
-            </Card>
-
-            {/* Pending Approval */}
-            <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8 flex flex-col justify-between group hover:shadow-xl hover:shadow-amber-500/5 transition-all">
-                <div className="flex justify-between items-start">
-                    <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Pending Approval</span>
-                    <Badge className="bg-amber-50 text-amber-600 border-amber-100 font-bold text-[9px] h-6">Avg wait 3.2d</Badge>
-                </div>
-                <div className="mt-6">
-                    <h2 className="text-5xl font-black tracking-tighter text-slate-900 group-hover:text-amber-600 transition-colors">{metrics.pendingApprovals}</h2>
-                </div>
-            </Card>
-
-            {/* Action Needed (Highlighted) */}
-            <Card className="rounded-[28px] border-none shadow-2xl bg-[#3F51B5] overflow-hidden p-8 flex flex-col justify-between relative">
-                <div className="absolute top-0 right-0 p-8 opacity-10">
-                    <ShieldCheck className="h-32 w-32 text-white" />
-                </div>
-                <div className="flex justify-between items-start relative z-10">
-                    <span className="text-[11px] font-black uppercase text-white/60 tracking-widest">Awaiting Your Action</span>
-                    <Badge className="bg-white/10 text-white border-white/20 font-bold text-[9px] h-6 uppercase">Live</Badge>
-                </div>
-                <div className="mt-6 relative z-10">
-                    <h2 className="text-5xl font-black tracking-tighter text-white">{metrics.needsAttention.length}</h2>
-                </div>
-            </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <StatsCard label="Total Definitions" value={metrics.totalDefinitions} badge="+0" badgeColor="bg-slate-100 text-slate-400" />
+            <StatsCard label="Published" value={metrics.publishedDefinitions} badge="Live" badgeColor="bg-emerald-50 text-emerald-600" />
+            <StatsCard label="Pending" value={metrics.pendingApprovals} badge="Review" badgeColor="bg-amber-50 text-amber-600" />
+            <StatsCard label="Draft" value={metrics.draftDefinitions} badge="Editing" badgeColor="bg-indigo-50 text-indigo-600" />
+            <StatsCard label="Rejected" value={metrics.rejectedDefinitions} badge="Action" badgeColor="bg-red-50 text-red-600" />
         </div>
       </div>
 
-      {/* --- SECTION: TEMPLATES & ADOPTION --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <div className="space-y-4">
-            <div className="flex items-center gap-2 px-2">
-                <LayoutTemplate className="h-4 w-4 text-slate-400" />
-                <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em]">Templates Details</h3>
-            </div>
-            <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8 h-[400px] flex flex-col">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex flex-col">
-                        <span className="text-3xl font-black text-slate-900">{metrics.totalTemplates}</span>
-                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total Templates</span>
-                    </div>
-                    <div className="flex flex-col text-right">
-                        <span className="text-3xl font-black text-emerald-600">{metrics.activeTemplates}</span>
-                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Active Status</span>
-                    </div>
-                </div>
-                
-                <div className="flex-1 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={metrics.templateUsage.slice(0, 5)} layout="vertical" margin={{ left: 20, right: 30, top: 0, bottom: 0 }}>
-                            <XAxis type="number" hide />
-                            <YAxis 
-                                dataKey="name" 
-                                type="category" 
-                                axisLine={false} 
-                                tickLine={false} 
-                                tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }}
-                                width={120}
-                            />
-                            <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                            <Bar dataKey="usage" radius={[0, 4, 4, 0]} barSize={24} fill="#3F51B5" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </Card>
+      {/* --- SECTION: USERS & ROLES --- */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 px-2">
+            <Users2 className="h-4 w-4 text-slate-400" />
+            <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em]">Users & Roles</h3>
         </div>
-
-        <div className="space-y-4">
-            <div className="flex items-center gap-2 px-2">
-                <Users2 className="h-4 w-4 text-slate-400" />
-                <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em]">User & Role Details</h3>
+        <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="rounded-[24px] border-slate-200 bg-white p-8 flex flex-col justify-between shadow-sm">
+                    <div className="flex justify-between items-start">
+                        <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Total Users</span>
+                        <Badge variant="outline" className="bg-slate-100/50 text-slate-400 border-slate-200 font-bold text-[9px] h-5 px-2">+0</Badge>
+                    </div>
+                    <h2 className="text-5xl font-black tracking-tighter text-slate-900 mt-6">{metrics.totalUsers}</h2>
+                </Card>
+                <Card className="rounded-[24px] border-slate-200 bg-white p-8 flex flex-col justify-between shadow-sm">
+                    <div className="flex justify-between items-start">
+                        <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Active Users</span>
+                        <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold text-[9px] h-5 px-2">{metrics.activePercentage}%</Badge>
+                    </div>
+                    <h2 className="text-5xl font-black tracking-tighter text-slate-900 mt-6">{metrics.activeUsers}</h2>
+                </Card>
+                <Card className="rounded-[24px] border-slate-200 bg-white p-8 flex flex-col justify-between shadow-sm">
+                    <div className="flex justify-between items-start">
+                        <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Inactive Users</span>
+                        <Badge className="bg-amber-50 text-amber-600 border-amber-100 font-bold text-[9px] h-5 px-2 uppercase tracking-widest">Review</Badge>
+                    </div>
+                    <h2 className="text-5xl font-black tracking-tighter text-slate-900 mt-6">{metrics.inactiveUsers}</h2>
+                </Card>
             </div>
-            <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8 h-[400px] flex flex-col">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex flex-col">
-                        <span className="text-3xl font-black text-slate-900">{metrics.totalUsers}</span>
-                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total Managed Users</span>
-                    </div>
-                    <div className="flex gap-4">
-                        <div className="text-right">
-                            <p className="text-[18px] font-black text-emerald-600 leading-none">{metrics.activeUsers}</p>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Active</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-[18px] font-black text-slate-300 leading-none">{metrics.inactiveUsers}</p>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Disabled</p>
-                        </div>
-                    </div>
-                </div>
 
-                <div className="flex-1 w-full flex items-center justify-center">
-                    <ResponsiveContainer width="100%" height={220}>
-                        <PieChart>
-                            <Pie
-                                data={[
-                                    { name: 'Active', value: metrics.activeUsers },
-                                    { name: 'Inactive', value: metrics.inactiveUsers }
-                                ]}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={85}
-                                paddingAngle={5}
-                                dataKey="value"
-                                stroke="none"
-                            >
-                                <Cell fill="#10b981" />
-                                <Cell fill="#e2e8f0" />
-                            </Pie>
-                            <RechartsTooltip />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+            <Card className="rounded-[24px] border-slate-200 bg-white shadow-sm overflow-hidden">
+                <CardHeader className="py-6 px-8 border-b bg-white">
+                    <CardTitle className="text-base font-bold text-slate-800">Users by Role</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <div className="divide-y divide-slate-100">
+                        {metrics.roleStats.map((role) => (
+                            <div key={role.id} className="flex items-center justify-between py-5 px-8 hover:bg-slate-50/50 transition-colors">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-[10px] text-slate-500 uppercase border border-slate-200">
+                                        {role.id}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[14px] font-bold text-slate-900">{role.name}</span>
+                                        <span className="text-[11px] font-medium text-slate-400 mt-0.5">{role.desc}</span>
+                                    </div>
+                                </div>
+                                <div className="text-lg font-black text-slate-900 tabular-nums">
+                                    {role.count}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+                <div className="p-4 bg-slate-50/50 border-t flex justify-end">
                     <Button 
                         variant="ghost" 
                         size="sm" 
                         className="text-[11px] font-black uppercase tracking-widest text-[#3F51B5] hover:bg-indigo-50 rounded-xl"
                         onClick={() => onNavigate('user-management')}
                     >
-                        Directory Management
+                        Management Console
                         <ChevronRight className="ml-1 h-3 w-3" />
                     </Button>
-                    <div className="flex items-center gap-1">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">{metrics.activeUsers} Sessions Authorized</span>
-                    </div>
                 </div>
             </Card>
         </div>
       </div>
+
+      {/* --- SECTION: TEMPLATES DETAILS --- */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 px-2">
+            <LayoutTemplate className="h-4 w-4 text-slate-400" />
+            <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em]">Templates Details</h3>
+        </div>
+        <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8 flex flex-col min-h-[400px]">
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col">
+                    <span className="text-3xl font-black text-slate-900">{metrics.totalTemplates}</span>
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total Templates</span>
+                </div>
+                <div className="flex flex-col text-right">
+                    <span className="text-3xl font-black text-emerald-600">{metrics.activeTemplates}</span>
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Active Status</span>
+                </div>
+            </div>
+            
+            <div className="flex-1 w-full">
+                <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={metrics.templateUsage.slice(0, 5)} layout="vertical" margin={{ left: 20, right: 30, top: 0, bottom: 0 }}>
+                        <XAxis type="number" hide />
+                        <YAxis 
+                            dataKey="name" 
+                            type="category" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }}
+                            width={120}
+                        />
+                        <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                        <Bar dataKey="usage" radius={[0, 4, 4, 0]} barSize={24} fill="#3F51B5" />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+        </Card>
+      </div>
     </div>
   );
 }
+
+function StatsCard({ label, value, badge, badgeColor }: { label: string, value: number, badge: string, badgeColor: string }) {
+    return (
+        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white p-6 flex flex-col justify-between group hover:shadow-xl transition-all">
+            <div className="flex justify-between items-start">
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{label}</span>
+                <Badge className={cn("font-bold text-[9px] h-5 px-1.5 rounded-md uppercase", badgeColor)}>{badge}</Badge>
+            </div>
+            <div className="mt-4">
+                <h2 className="text-3xl font-black tracking-tighter text-slate-900 group-hover:text-[#3F51B5] transition-colors">{value}</h2>
+            </div>
+        </Card>
+    );
+}
+
