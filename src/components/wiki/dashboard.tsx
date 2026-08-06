@@ -18,7 +18,8 @@ import {
     PieChart as PieChartIcon,
     ChevronRightSquare,
     Play,
-    Calendar as CalendarIcon
+    Calendar as CalendarIcon,
+    Info
 } from 'lucide-react';
 import { 
     PieChart, 
@@ -42,6 +43,7 @@ import { differenceInDays, parseISO, subDays, format, startOfDay, endOfDay, isWi
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
 import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 type DashboardProps = {
@@ -550,7 +552,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <Card className="rounded-[24px] border-slate-200 bg-white p-8 flex flex-col justify-between shadow-sm">
                     <div className="flex justify-between items-start">
                         <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Inactive Users</span>
-                        <Badge className="bg-amber-50 text-amber-600 border-amber-100 font-bold text-[9px] h-5 px-2 uppercase tracking-widest">Review</Badge>
+                        <Badge className="bg-amber-50 text-amber-600 border-emerald-100 font-bold text-[9px] h-5 px-2 uppercase tracking-widest">Review</Badge>
                     </div>
                     <h2 className="text-5xl font-black tracking-tighter text-slate-900 mt-6">{metrics.inactiveUsers}</h2>
                 </Card>
