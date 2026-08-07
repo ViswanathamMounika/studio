@@ -198,17 +198,9 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             title: 'Approval Settings',
             key: 'ApprovalSettings',
             icon: Check,
-            fields: 4,
+            fields: 2,
             content: (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400">Approver Role ID</Label>
-                        <Input value={localConfig.settings.approverRoleId} onChange={e => updateSettings({ approverRoleId: e.target.value })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400">Admin Role ID</Label>
-                        <Input value={localConfig.settings.adminRoleId} onChange={e => updateSettings({ adminRoleId: e.target.value })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
-                    </div>
                     <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase text-slate-400">Approval Requests Count</Label>
                         <Input type="number" value={localConfig.settings.approvalRequestLimit} onChange={e => updateSettings({ approvalRequestLimit: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
