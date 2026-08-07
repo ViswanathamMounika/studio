@@ -45,7 +45,8 @@ import {
     SlidersHorizontal,
     Table as TableIcon,
     Shield,
-    ChevronDown
+    ChevronDown,
+    SearchX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SystemConfigurationState, ConfigKey } from '@/lib/types';
@@ -77,6 +78,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
     const [localConfig, setLocalConfig] = useState<SystemConfigurationState>(config);
     const [showPassword, setShowPassword] = useState(false);
     const [configSearch, setConfigSearch] = useState('');
+    const [prefSearch, setPrefSearch] = useState('');
     
     // Key Edit Modal State
     const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
@@ -110,6 +112,184 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             k.description.toLowerCase().includes(lower)
         );
     }, [localConfig.configKeys, configSearch]);
+
+    // Preference Sections for dynamic filtering
+    const preferenceSections = [
+        {
+            id: 'file-storage',
+            title: 'File Storage',
+            key: 'FileStorage',
+            icon: Folder,
+            fields: 4,
+            content: (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Network Path</Label>
+                        <Input 
+                            value={localConfig.settings.fileStoragePath} 
+                            onChange={e => updateSettings({ fileStoragePath: e.target.value })}
+                            className="rounded-xl h-11 bg-white border-slate-200 font-medium"
+                        />
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 self-end h-11">
+                        <div className="flex flex-col">
+                            <span className="text-xs font-bold text-slate-700">Use Credentials</span>
+                            <span className="text-[9px] font-mono text-slate-400">UseCredentials</span>
+                        </div>
+                        <Switch checked={localConfig.settings.fileStorageEnabled} onCheckedChange={v => updateSettings({ fileStorageEnabled: v })} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Username</Label>
+                        <Input 
+                            value={localConfig.settings.fileStorageUser} 
+                            onChange={e => updateSettings({ fileStorageUser: e.target.value })}
+                            className="rounded-xl h-11 bg-white border-slate-200 font-medium"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Password</Label>
+                        <div className="relative">
+                            <Input 
+                                type={showPassword ? "text" : "password"}
+                                value={localConfig.settings.fileStoragePass} 
+                                onChange={e => updateSettings({ fileStoragePass: e.target.value })}
+                                className="rounded-xl h-11 bg-white border-slate-200 font-medium pr-10"
+                            />
+                            <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-slate-400 hover:text-indigo-600 transition-colors">
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )
+        },
+        {
+            id: 'lock-cleanup',
+            title: 'Lock Cleanup Settings',
+            key: 'LockCleanupSettings',
+            icon: Lock,
+            fields: 2,
+            content: (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Cleanup Interval</Label>
+                        <div className="relative">
+                            <Input 
+                                type="number" 
+                                value={localConfig.settings.lockCleanupInterval} 
+                                onChange={e => updateSettings({ lockCleanupInterval: parseInt(e.target.value) || 0 })}
+                                className="rounded-xl h-11 bg-white border-slate-200 font-black pr-20"
+                            />
+                            <span className="absolute right-4 top-3 text-[10px] font-bold text-slate-400 uppercase">minutes</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 self-end h-11">
+                        <div className="flex flex-col">
+                            <span className="text-xs font-bold text-slate-700">Enabled</span>
+                            <span className="text-[9px] font-mono text-slate-400">Enabled</span>
+                        </div>
+                        <Switch checked={localConfig.settings.lockCleanupEnabled} onCheckedChange={v => updateSettings({ lockCleanupEnabled: v })} />
+                    </div>
+                </div>
+            )
+        },
+        {
+            id: 'approval-settings',
+            title: 'Approval Settings',
+            key: 'ApprovalSettings',
+            icon: Check,
+            fields: 4,
+            content: (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Approver Role ID</Label>
+                        <Input value={localConfig.settings.approverRoleId} onChange={e => updateSettings({ approverRoleId: e.target.value })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Admin Role ID</Label>
+                        <Input value={localConfig.settings.adminRoleId} onChange={e => updateSettings({ adminRoleId: e.target.value })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Approval Requests Count</Label>
+                        <Input type="number" value={localConfig.settings.approvalRequestLimit} onChange={e => updateSettings({ approvalRequestLimit: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Approval History Count</Label>
+                        <Input type="number" value={localConfig.settings.approvalHistoryLimit} onChange={e => updateSettings({ approvalHistoryLimit: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
+                    </div>
+                </div>
+            )
+        },
+        {
+            id: 'search-sync',
+            title: 'Search Sync — Wiki',
+            key: 'SearchSync.Wiki',
+            icon: Search,
+            fields: 4,
+            content: (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Index Name</Label>
+                        <Input value={localConfig.settings.searchIndexName} onChange={e => updateSettings({ searchIndexName: e.target.value })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 self-end h-11">
+                        <div className="flex flex-col">
+                            <span className="text-xs font-bold text-slate-700">Enabled</span>
+                            <span className="text-[9px] font-mono text-slate-400">Enabled</span>
+                        </div>
+                        <Switch checked={localConfig.settings.searchSyncEnabled} onCheckedChange={v => updateSettings({ searchSyncEnabled: v })} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Sync Interval</Label>
+                        <div className="relative">
+                            <Input type="number" value={localConfig.settings.searchSyncInterval} onChange={e => updateSettings({ searchSyncInterval: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold pr-16" />
+                            <span className="absolute right-4 top-3 text-[10px] font-bold text-slate-400 uppercase">minutes</span>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Search Result Size</Label>
+                        <Input type="number" value={localConfig.settings.searchResultSize} onChange={e => updateSettings({ searchResultSize: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
+                    </div>
+                </div>
+            )
+        },
+        {
+            id: 'global-security',
+            title: 'Global Security',
+            key: 'Global*',
+            icon: Shield,
+            fields: 2,
+            content: (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Global Security API URL</Label>
+                        <Input 
+                            value={localConfig.settings.globalSecurityApiUrl} 
+                            onChange={e => updateSettings({ globalSecurityApiUrl: e.target.value })}
+                            className="rounded-xl h-11 bg-white border-slate-200 font-medium"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Global Security App ID</Label>
+                        <Input 
+                            value={localConfig.settings.globalSecurityAppId} 
+                            onChange={e => updateSettings({ globalSecurityAppId: e.target.value })}
+                            className="rounded-xl h-11 bg-white border-slate-200 font-bold"
+                        />
+                    </div>
+                </div>
+            )
+        }
+    ];
+
+    const filteredPreferences = useMemo(() => {
+        if (!prefSearch.trim()) return preferenceSections;
+        const lower = prefSearch.toLowerCase();
+        return preferenceSections.filter(s => 
+            s.title.toLowerCase().includes(lower) || 
+            s.key.toLowerCase().includes(lower)
+        );
+    }, [preferenceSections, prefSearch]);
 
     const handleOpenAddModal = () => {
         const nextIdNum = Math.max(...localConfig.configKeys.map(k => parseInt(k.id) || 0), 0) + 1;
@@ -167,7 +347,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         toast({ title: "Configuration Key Removed" });
     };
 
-    const sectionCount = 5; // Fixed number of sections in Preferences
+    const sectionCount = preferenceSections.length;
     const keysCount = localConfig.configKeys.length;
 
     return (
@@ -246,229 +426,57 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             </TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="preferences" className="mt-0">
+                        <TabsContent value="preferences" className="space-y-6 mt-0">
+                            {/* SEARCH BAR FOR PREFERENCES */}
+                            <div className="flex items-center justify-between">
+                                <div className="relative w-full max-w-md">
+                                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                    <Input 
+                                        placeholder="Find a preference section..." 
+                                        value={prefSearch}
+                                        onChange={e => setPrefSearch(e.target.value)}
+                                        className="pl-9 h-10 rounded-xl bg-white border-slate-200 shadow-sm"
+                                    />
+                                </div>
+                            </div>
+
                             <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
-                                <Accordion type="multiple" defaultValue={['file-storage']} className="w-full">
-                                    {/* SECTION: FILE STORAGE */}
-                                    <AccordionItem value="file-storage" className="border-b last:border-b-0 border-slate-100">
-                                        <AccordionTrigger className="hover:no-underline py-5 px-8 group">
-                                            <div className="flex items-center gap-5 flex-1">
-                                                <div className="h-10 w-10 rounded-xl bg-[#F3F1FF] flex items-center justify-center border border-indigo-100 group-hover:bg-[#EAE6FF] transition-colors">
-                                                    <Folder className="h-5 w-5 text-[#3F51B5]" />
-                                                </div>
-                                                <div className="text-left">
-                                                    <h3 className="font-bold text-[15px] text-slate-900 leading-tight">File Storage</h3>
-                                                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-tighter">FileStorage</span>
-                                                </div>
-                                                <div className="ml-auto flex items-center gap-6">
-                                                    <span className="text-[11px] font-bold text-slate-400 mr-4">4 fields</span>
-                                                </div>
-                                            </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="bg-[#FBFBFF] px-8 py-8 border-t border-slate-50">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Network Path</Label>
-                                                    <Input 
-                                                        value={localConfig.settings.fileStoragePath} 
-                                                        onChange={e => updateSettings({ fileStoragePath: e.target.value })}
-                                                        className="rounded-xl h-11 bg-white border-slate-200 font-medium"
-                                                    />
-                                                </div>
-                                                <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 self-end h-11">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold text-slate-700">Use Credentials</span>
-                                                        <span className="text-[9px] font-mono text-slate-400">UseCredentials</span>
+                                {filteredPreferences.length > 0 ? (
+                                    <Accordion type="multiple" defaultValue={filteredPreferences.map(s => s.id)} className="w-full">
+                                        {filteredPreferences.map((section) => (
+                                            <AccordionItem key={section.id} value={section.id} className="border-b last:border-b-0 border-slate-100">
+                                                <AccordionTrigger className="hover:no-underline py-5 px-8 group">
+                                                    <div className="flex items-center gap-5 flex-1">
+                                                        <div className="h-10 w-10 rounded-xl bg-[#F3F1FF] flex items-center justify-center border border-indigo-100 group-hover:bg-[#EAE6FF] transition-colors">
+                                                            <section.icon className="h-5 w-5 text-[#3F51B5]" />
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <h3 className="font-bold text-[15px] text-slate-900 leading-tight">{section.title}</h3>
+                                                            <span className="text-[11px] font-mono text-slate-400 uppercase tracking-tighter">{section.key}</span>
+                                                        </div>
+                                                        <div className="ml-auto flex items-center gap-6">
+                                                            <span className="text-[11px] font-bold text-slate-400 mr-4">{section.fields} fields</span>
+                                                        </div>
                                                     </div>
-                                                    <Switch checked={localConfig.settings.fileStorageEnabled} onCheckedChange={v => updateSettings({ fileStorageEnabled: v })} />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Username</Label>
-                                                    <Input 
-                                                        value={localConfig.settings.fileStorageUser} 
-                                                        onChange={e => updateSettings({ fileStorageUser: e.target.value })}
-                                                        className="rounded-xl h-11 bg-white border-slate-200 font-medium"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Password</Label>
-                                                    <div className="relative">
-                                                        <Input 
-                                                            type={showPassword ? "text" : "password"}
-                                                            value={localConfig.settings.fileStoragePass} 
-                                                            onChange={e => updateSettings({ fileStoragePass: e.target.value })}
-                                                            className="rounded-xl h-11 bg-white border-slate-200 font-medium pr-10"
-                                                        />
-                                                        <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-slate-400 hover:text-indigo-600 transition-colors">
-                                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-
-                                    {/* SECTION: LOCK CLEANUP */}
-                                    <AccordionItem value="lock-cleanup" className="border-b last:border-b-0 border-slate-100">
-                                        <AccordionTrigger className="hover:no-underline py-5 px-8 group">
-                                            <div className="flex items-center gap-5 flex-1">
-                                                <div className="h-10 w-10 rounded-xl bg-[#F3F1FF] flex items-center justify-center border border-indigo-100 group-hover:bg-[#EAE6FF] transition-colors">
-                                                    <Lock className="h-5 w-5 text-[#3F51B5]" />
-                                                </div>
-                                                <div className="text-left">
-                                                    <h3 className="font-bold text-[15px] text-slate-900 leading-tight">Lock Cleanup Settings</h3>
-                                                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-tighter">LockCleanupSettings</span>
-                                                </div>
-                                                <div className="ml-auto flex items-center gap-6">
-                                                    <span className="text-[11px] font-bold text-slate-400 mr-4">2 fields</span>
-                                                </div>
-                                            </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="bg-[#FBFBFF] px-8 py-8 border-t border-slate-50">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">Cleanup Interval</Label>
-                                                    <div className="relative">
-                                                        <Input 
-                                                            type="number" 
-                                                            value={localConfig.settings.lockCleanupInterval} 
-                                                            onChange={e => updateSettings({ lockCleanupInterval: parseInt(e.target.value) || 0 })}
-                                                            className="rounded-xl h-11 bg-white border-slate-200 font-black pr-20"
-                                                        />
-                                                        <span className="absolute right-4 top-3 text-[10px] font-bold text-slate-400 uppercase">minutes</span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 self-end h-11">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold text-slate-700">Enabled</span>
-                                                        <span className="text-[9px] font-mono text-slate-400">Enabled</span>
-                                                    </div>
-                                                    <Switch checked={localConfig.settings.lockCleanupEnabled} onCheckedChange={v => updateSettings({ lockCleanupEnabled: v })} />
-                                                </div>
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-
-                                    {/* SECTION: APPROVAL SETTINGS */}
-                                    <AccordionItem value="approval-settings" className="border-b last:border-b-0 border-slate-100">
-                                        <AccordionTrigger className="hover:no-underline py-5 px-8 group">
-                                            <div className="flex items-center gap-5 flex-1">
-                                                <div className="h-10 w-10 rounded-xl bg-[#F3F1FF] flex items-center justify-center border border-indigo-100 group-hover:bg-[#EAE6FF] transition-colors">
-                                                    <Check className="h-5 w-5 text-[#3F51B5]" />
-                                                </div>
-                                                <div className="text-left">
-                                                    <h3 className="font-bold text-[15px] text-slate-900 leading-tight">Approval Settings</h3>
-                                                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-tighter">ApprovalSettings</span>
-                                                </div>
-                                                <div className="ml-auto flex items-center gap-6">
-                                                    <span className="text-[11px] font-bold text-slate-400 mr-4">4 fields</span>
-                                                </div>
-                                            </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="bg-[#FBFBFF] px-8 py-8 border-t border-slate-50">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">Approver Role ID</Label>
-                                                    <Input value={localConfig.settings.approverRoleId} onChange={e => updateSettings({ approverRoleId: e.target.value })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">Admin Role ID</Label>
-                                                    <Input value={localConfig.settings.adminRoleId} onChange={e => updateSettings({ adminRoleId: e.target.value })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">Approval Requests Count</Label>
-                                                    <Input type="number" value={localConfig.settings.approvalRequestLimit} onChange={e => updateSettings({ approvalRequestLimit: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">Approval History Count</Label>
-                                                    <Input type="number" value={localConfig.settings.approvalHistoryLimit} onChange={e => updateSettings({ approvalHistoryLimit: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
-                                                </div>
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-
-                                    {/* SECTION: SEARCH SYNC */}
-                                    <AccordionItem value="search-sync" className="border-b last:border-b-0 border-slate-100">
-                                        <AccordionTrigger className="hover:no-underline py-5 px-8 group">
-                                            <div className="flex items-center gap-5 flex-1">
-                                                <div className="h-10 w-10 rounded-xl bg-[#F3F1FF] flex items-center justify-center border border-indigo-100 group-hover:bg-[#EAE6FF] transition-colors">
-                                                    <Search className="h-5 w-5 text-[#3F51B5]" />
-                                                </div>
-                                                <div className="text-left">
-                                                    <h3 className="font-bold text-[15px] text-slate-900 leading-tight">Search Sync — Wiki</h3>
-                                                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-tighter">SearchSync.Wiki</span>
-                                                </div>
-                                                <div className="ml-auto flex items-center gap-6">
-                                                    <span className="text-[11px] font-bold text-slate-400 mr-4">4 fields</span>
-                                                </div>
-                                            </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="bg-[#FBFBFF] px-8 py-8 border-t border-slate-50">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">Index Name</Label>
-                                                    <Input value={localConfig.settings.searchIndexName} onChange={e => updateSettings({ searchIndexName: e.target.value })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
-                                                </div>
-                                                <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 self-end h-11">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold text-slate-700">Enabled</span>
-                                                        <span className="text-[9px] font-mono text-slate-400">Enabled</span>
-                                                    </div>
-                                                    <Switch checked={localConfig.settings.searchSyncEnabled} onCheckedChange={v => updateSettings({ searchSyncEnabled: v })} />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">Sync Interval</Label>
-                                                    <div className="relative">
-                                                        <Input type="number" value={localConfig.settings.searchSyncInterval} onChange={e => updateSettings({ searchSyncInterval: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold pr-16" />
-                                                        <span className="absolute right-4 top-3 text-[10px] font-bold text-slate-400 uppercase">minutes</span>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">Search Result Size</Label>
-                                                    <Input type="number" value={localConfig.settings.searchResultSize} onChange={e => updateSettings({ searchResultSize: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
-                                                </div>
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-
-                                    {/* SECTION: GLOBAL SECURITY */}
-                                    <AccordionItem value="global-security" className="border-b last:border-b-0 border-slate-100">
-                                        <AccordionTrigger className="hover:no-underline py-5 px-8 group">
-                                            <div className="flex items-center gap-5 flex-1">
-                                                <div className="h-10 w-10 rounded-xl bg-[#F3F1FF] flex items-center justify-center border border-indigo-100 group-hover:bg-[#EAE6FF] transition-colors">
-                                                    <Shield className="h-5 w-5 text-[#3F51B5]" />
-                                                </div>
-                                                <div className="text-left">
-                                                    <h3 className="font-bold text-[15px] text-slate-900 leading-tight">Global Security</h3>
-                                                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-tighter">Global*</span>
-                                                </div>
-                                                <div className="ml-auto flex items-center gap-6">
-                                                    <span className="text-[11px] font-bold text-slate-400 mr-4">2 fields</span>
-                                                </div>
-                                            </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="bg-[#FBFBFF] px-8 py-8 border-t border-slate-50">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Global Security API URL</Label>
-                                                    <Input 
-                                                        value={localConfig.settings.globalSecurityApiUrl} 
-                                                        onChange={e => updateSettings({ globalSecurityApiUrl: e.target.value })}
-                                                        className="rounded-xl h-11 bg-white border-slate-200 font-medium"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Global Security App ID</Label>
-                                                    <Input 
-                                                        value={localConfig.settings.globalSecurityAppId} 
-                                                        onChange={e => updateSettings({ globalSecurityAppId: e.target.value })}
-                                                        className="rounded-xl h-11 bg-white border-slate-200 font-bold"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Accordion>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="bg-[#FBFBFF] px-8 py-8 border-t border-slate-50">
+                                                    {section.content}
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        ))}
+                                    </Accordion>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                                        <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center">
+                                            <SearchX className="h-8 w-8 text-slate-300" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-lg font-bold text-slate-900">No matching preferences</p>
+                                            <p className="text-sm text-slate-500">We couldn't find any configuration sections matching your search.</p>
+                                        </div>
+                                        <Button variant="ghost" className="text-indigo-600 font-bold" onClick={() => setPrefSearch('')}>Clear Search</Button>
+                                    </div>
+                                )}
                             </Card>
                         </TabsContent>
 
@@ -574,7 +582,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
 
             {/* KEY EDIT MODAL */}
             <Dialog open={isKeyModalOpen} onOpenChange={setIsKeyModalOpen}>
-                <DialogContent className="max-w-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
+                <DialogContent className="max-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b bg-white flex items-center gap-4">
                         <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-inner">
                             <Terminal className="h-5 w-5 text-indigo-600" />
@@ -644,4 +652,3 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         </div>
     );
 }
-
