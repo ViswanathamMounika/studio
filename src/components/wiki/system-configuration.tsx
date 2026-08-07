@@ -27,7 +27,7 @@ import {
     AccordionContent, 
     AccordionItem, 
     AccordionTrigger 
-} from "@/components/ui/accordion";
+} from "@/components/accordion";
 import { 
     Folder, 
     Lock, 
@@ -51,12 +51,12 @@ import {
 import { cn } from '@/lib/utils';
 import type { SystemConfigurationState, ConfigKey } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from '../ui/badge';
-import { Switch } from '../ui/switch';
-import { ScrollArea } from '../ui/scroll-area';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, parseISO } from 'date-fns';
-import { Textarea } from '../ui/textarea';
+import { Textarea } from '@/components/ui/textarea';
 
 type SystemConfigurationProps = {
   config: SystemConfigurationState;
@@ -74,13 +74,26 @@ const CONFIG_TYPES = [
     { label: 'Decimal', value: 'decimal' },
 ];
 
+/**
+ * Maps technical keys to human-readable names as per the reference UI
+ */
+const KEY_DISPLAY_NAMES: Record<string, string> = {
+    'SESSION_TIMEOUT': 'Session Timeout',
+    'REVISION_RECORD_COUNT': 'Revision History Limit',
+    'DATA_PREVIEW_COUNT': 'Data Preview Row Limit',
+    'DEF_EDIT_LOCK_DURATION': 'Definition Edit Lock Duration',
+    'DEF_RECENT_COUNT': 'Recent Definitions Count',
+    'INITIAL_DEF_COUNT': 'Initial Definition Load Count',
+    'ACTIVITY_LOGS_GRID_RECORDS_COUNT': 'Activity Log Records Per Page'
+};
+
 export default function SystemConfiguration({ config, onSaveConfig, onLogAction }: SystemConfigurationProps) {
     const [localConfig, setLocalConfig] = useState<SystemConfigurationState>(config);
     const [showPassword, setShowPassword] = useState(false);
     const [configSearch, setConfigSearch] = useState('');
     const [prefSearch, setPrefSearch] = useState('');
     
-    // Key Edit Modal State
+    // Key Edit Modal State (Retained for Add logic even if UI simplified)
     const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
     const [editingKeyEntry, setEditingKeyEntry] = useState<ConfigKey | null>(null);
 
@@ -104,12 +117,28 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         }));
     };
 
+    const handleUpdateParamValue = (id: string, value: string) => {
+        setLocalConfig(prev => ({
+            ...prev,
+            configKeys: prev.configKeys.map(k => k.id === id ? { ...k, value } : k)
+        }));
+    };
+
+    const getSettingName = (item: ConfigKey) => {
+        return KEY_DISPLAY_NAMES[item.key] || item.description || item.key;
+    };
+
     const filteredConfigKeys = useMemo(() => {
-        if (!configSearch.trim()) return localConfig.configKeys;
+        const sorted = [...localConfig.configKeys].sort((a, b) => {
+            const order = Object.keys(KEY_DISPLAY_NAMES);
+            return order.indexOf(a.key) - order.indexOf(b.key);
+        });
+
+        if (!configSearch.trim()) return sorted;
         const lower = configSearch.toLowerCase();
-        return localConfig.configKeys.filter(k => 
+        return sorted.filter(k => 
             k.key.toLowerCase().includes(lower) || 
-            k.description.toLowerCase().includes(lower)
+            getSettingName(k).toLowerCase().includes(lower)
         );
     }, [localConfig.configKeys, configSearch]);
 
@@ -297,11 +326,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         setIsKeyModalOpen(true);
     };
 
-    const handleOpenEditModal = (key: ConfigKey) => {
-        setEditingKeyEntry({ ...key });
-        setIsKeyModalOpen(true);
-    };
-
     const handleSaveKeyEntry = () => {
         if (!editingKeyEntry || !editingKeyEntry.key.trim()) {
             toast({ variant: 'destructive', title: "Validation Error", description: "Configuration Key is required." });
@@ -322,21 +346,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             title: isNew ? "Registry Key Created" : "Configuration Updated",
             description: `Changes for "${editingKeyEntry.key}" have been staged.`
         });
-    };
-
-    const handleToggleStatus = (id: string, active: boolean) => {
-        setLocalConfig(prev => ({
-            ...prev,
-            configKeys: prev.configKeys.map(k => k.id === id ? { ...k, active } : k)
-        }));
-    };
-
-    const handleRemoveConfigKey = (id: string) => {
-        setLocalConfig(prev => ({
-            ...prev,
-            configKeys: prev.configKeys.filter(k => k.id !== id)
-        }));
-        toast({ title: "Configuration Key Removed" });
     };
 
     const sectionCount = preferenceSections.length;
@@ -478,7 +487,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                 <div className="relative w-full max-w-md">
                                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                                     <Input 
-                                        placeholder="Filter by key or description..." 
+                                        placeholder="Filter settings..." 
                                         value={configSearch}
                                         onChange={e => setConfigSearch(e.target.value)}
                                         className="pl-9 h-10 rounded-xl bg-white border-slate-200 shadow-sm"
@@ -486,7 +495,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                 </div>
                                 <Button onClick={handleOpenAddModal} className="bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white rounded-xl h-10 px-6 gap-2 font-bold shadow-md transition-all active:scale-95">
                                     <Plus className="h-4 w-4" />
-                                    Add Config
+                                    Add Custom
                                 </Button>
                             </div>
 
@@ -494,76 +503,40 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                 <Table>
                                     <TableHeader className="bg-slate-50 border-b">
                                         <TableRow className="h-12 border-none">
-                                            <TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 w-16">ID</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Config Key</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Value</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Type</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Effective From</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Active</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Description</TableHead>
-                                            <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 w-24">Actions</TableHead>
+                                            <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-400">SETTING NAME</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">VALUE</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">TYPE</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {filteredConfigKeys.map(item => (
                                             <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 h-20">
-                                                <TableCell className="px-6 font-bold text-slate-400 text-xs tabular-nums">{item.id}</TableCell>
-                                                <TableCell>
-                                                    <Badge variant="outline" className="bg-indigo-50/50 text-indigo-700 border-transparent font-black text-[11px] tracking-wider px-2.5 h-7 rounded-lg">
-                                                        {item.key}
-                                                    </Badge>
+                                                <TableCell className="px-8 py-5">
+                                                    <span className="font-bold text-slate-900 text-[15px]">
+                                                        {getSettingName(item)}
+                                                    </span>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 min-w-[60px] text-center font-black text-sm">
-                                                        {item.value}
+                                                    <div className="flex items-center">
+                                                        <Input 
+                                                            value={item.value} 
+                                                            onChange={e => handleUpdateParamValue(item.id, e.target.value)}
+                                                            className="h-10 w-48 rounded-xl bg-white border-slate-200 font-bold text-center focus-visible:ring-indigo-100 focus-visible:border-indigo-300"
+                                                        />
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="secondary" className="bg-slate-100 text-slate-500 font-bold text-[10px] px-2 h-6 rounded-lg uppercase">
+                                                    <Badge variant="secondary" className="bg-[#F1F3F9] text-slate-500 font-bold text-[11px] px-3.5 h-8 rounded-lg uppercase tracking-tight">
                                                         {item.type}
                                                     </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold text-slate-700">{format(parseISO(item.effectiveFrom), 'dd MMM yyyy')}</span>
-                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{format(parseISO(item.effectiveFrom), 'hh:mm a')}</span>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Switch 
-                                                        checked={item.active} 
-                                                        onCheckedChange={v => handleToggleStatus(item.id, v)}
-                                                        className="data-[state=checked]:bg-emerald-500"
-                                                    />
-                                                </TableCell>
-                                                <TableCell className="text-slate-500 text-xs font-medium max-w-xs leading-relaxed">
-                                                    {item.description}
-                                                </TableCell>
-                                                <TableCell className="text-right px-6">
-                                                    <div className="flex justify-end gap-1">
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="icon" 
-                                                            className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-white rounded-lg"
-                                                            onClick={() => handleOpenEditModal(item)}
-                                                        >
-                                                            <Pencil className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-white rounded-lg" onClick={() => handleRemoveConfigKey(item.id)}>
-                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
                                 </Table>
-                                <div className="p-4 px-6 border-t bg-slate-50/50 flex items-center justify-between">
+                                <div className="p-6 px-8 border-t bg-slate-50/50 flex items-center justify-between">
                                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                                        Showing {filteredConfigKeys.length} of {localConfig.configKeys.length} config keys
-                                    </span>
-                                    <span className="text-[10px] font-medium text-slate-400 italic">
-                                        Effective To values are NULL — configs apply indefinitely once active
+                                        Platform Registry Governance • {filteredConfigKeys.length} ACTIVE KEYS
                                     </span>
                                 </div>
                             </Card>
@@ -572,32 +545,32 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                 </div>
             </ScrollArea>
 
-            {/* KEY EDIT MODAL */}
+            {/* KEY ADD MODAL (Retained for extended management) */}
             <Dialog open={isKeyModalOpen} onOpenChange={setIsKeyModalOpen}>
                 <DialogContent className="max-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b bg-white flex items-center gap-4">
                         <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-inner">
-                            <Terminal className="h-5 w-5 text-indigo-600" />
+                            <Plus className="h-5 w-5 text-indigo-600" />
                         </div>
                         <div>
-                            <DialogTitle className="text-xl font-bold tracking-tight">Configuration Registry</DialogTitle>
-                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-0.5">Define System Parameter</p>
+                            <DialogTitle className="text-xl font-bold tracking-tight">New Registry Parameter</DialogTitle>
+                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-0.5">Define Application Constant</p>
                         </div>
                     </div>
                     <div className="p-8 space-y-6 bg-slate-50/30">
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-500">Config Identity Key</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-500">Parameter Display Name</Label>
                                 <Input 
-                                    value={editingKeyEntry?.key || ''} 
-                                    onChange={e => setEditingKeyEntry(p => p ? ({ ...p, key: e.target.value.toUpperCase().replace(/\s/g, '_') }) : null)} 
-                                    placeholder="e.g. API_TIMEOUT_SECONDS"
-                                    className="rounded-xl border-slate-200 h-11 font-black bg-white shadow-sm" 
+                                    value={editingKeyEntry?.description || ''} 
+                                    onChange={e => setEditingKeyEntry(p => p ? ({ ...p, description: e.target.value }) : null)} 
+                                    placeholder="e.g. Session Timeout"
+                                    className="rounded-xl border-slate-200 h-11 font-bold bg-white shadow-sm" 
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-500">Parameter Value</Label>
+                                    <Label className="text-[10px] font-black uppercase text-slate-500">Initial Value</Label>
                                     <Input 
                                         value={editingKeyEntry?.value || ''} 
                                         onChange={e => setEditingKeyEntry(p => p ? ({ ...p, value: e.target.value }) : null)} 
@@ -608,7 +581,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                     <Label className="text-[10px] font-black uppercase text-slate-500">Data Type</Label>
                                     <select 
                                         value={editingKeyEntry?.type} 
-                                        className="flex h-11 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-bold"
+                                        className="flex h-11 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm ring-offset-background font-bold"
                                         onChange={v => setEditingKeyEntry(p => p ? ({ ...p, type: v.target.value }) : null)}
                                     >
                                         {CONFIG_TYPES.map(t => (
@@ -616,15 +589,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                         ))}
                                     </select>
                                 </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-500">Functional Description</Label>
-                                <Textarea 
-                                    value={editingKeyEntry?.description || ''} 
-                                    onChange={e => setEditingKeyEntry(p => p ? ({ ...p, description: e.target.value }) : null)} 
-                                    placeholder="Describe the application impact of this setting..."
-                                    className="rounded-xl border-slate-200 min-h-[100px] bg-white shadow-sm resize-none text-sm font-medium" 
-                                />
                             </div>
                         </div>
                     </div>
@@ -636,7 +600,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             onClick={handleSaveKeyEntry} 
                             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95"
                         >
-                            Finalize Entry
+                            Finalize Parameter
                         </Button>
                     </DialogFooter>
                 </DialogContent>
