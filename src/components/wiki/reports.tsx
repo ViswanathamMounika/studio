@@ -166,7 +166,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     module: def?.module || 'Core',
                     entityType: log.activityType.includes('Template') ? 'Template' : 'Definition',
                     entityName: log.definitionName,
-                    entityId: def?.id || 'SYS-ID',
+                    entityId: def?.id || 'DEF-AUTO',
                     prevStatus: log.activityType === 'Definition Created' ? 'None' : (def?.isDraft ? 'Draft' : 'Published'),
                     newStatus: log.activityType.includes('Published') || log.activityType === 'Approval Decision' ? 'Published' : (log.activityType.includes('Archived') ? 'Archived' : 'Draft'),
                     version: def?.revisions?.[0]?.ticketId || 'v1.0',
@@ -210,7 +210,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         archivedDate: def.isArchived ? 'Archive Active' : '—',
                         approverName: rev.developer === 'System Admin' ? 'System' : rev.developer,
                         approvalComments: rev.description,
-                        turnaroundTime: '—',
                         currentVersion: rev.ticketId,
                         totalRevisions: totalRevisions,
                         isDuplicate: def.name.includes('(Copy)') ? 'Yes' : 'No',
@@ -241,7 +240,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         archivedDate: '—',
                         approverName: '—',
                         approvalComments: 'Awaiting Action',
-                        turnaroundTime: '—',
                         currentVersion: 'v.Next (Draft)',
                         totalRevisions: totalRevisions,
                         isDuplicate: def.name.includes('(Copy)') ? 'Yes' : 'No',
@@ -515,6 +513,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             <div className="flex items-center gap-2 px-2">
                                 <Users className="h-4 w-4 text-primary" />
                                 <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">User Activity Audit Ledger</h3>
+                                <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200 ml-auto">
+                                    {filteredAndSortedData.length} Records Found
+                                </Badge>
                             </div>
                             <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <ScrollArea className="w-full">
@@ -574,6 +575,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             <div className="flex items-center gap-2 px-2">
                                 <Library className="h-4 w-4 text-primary" />
                                 <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Definition Report</h3>
+                                <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200 ml-auto">
+                                    {filteredAndSortedData.length} Records Found
+                                </Badge>
                             </div>
                             <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <ScrollArea className="w-full">
@@ -662,6 +666,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             <div className="flex items-center gap-2 px-2">
                                 <ClipboardCheck className="h-4 w-4 text-primary" />
                                 <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Approval Report</h3>
+                                <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200 ml-auto">
+                                    {filteredAndSortedData.length} Records Found
+                                </Badge>
                             </div>
                             <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <ScrollArea className="w-full">
@@ -728,6 +735,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             <div className="flex items-center gap-2 px-2">
                                 <LayoutTemplate className="h-4 w-4 text-primary" />
                                 <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Template Report</h3>
+                                <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200 ml-auto">
+                                    {filteredAndSortedData.length} Records Found
+                                </Badge>
                             </div>
                             <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <ScrollArea className="w-full">
