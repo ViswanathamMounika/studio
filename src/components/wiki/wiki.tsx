@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
-import AppHeader from '@/components/header';
+import AppHeader from '@/components/layout/header';
 import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers, initialMasterData, initialSystemConfig, initialActivityLogs } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog, MasterDataState, SystemConfigurationState, ActivityType } from '@/lib/types';
 import { Search, ListFilter, Library, Clock, LogOut, AlertTriangle } from 'lucide-react';
