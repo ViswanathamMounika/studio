@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -188,7 +189,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 const owner = users.find(u => u.id === def.authorId)?.name || 'System';
                 const totalRevisions = def.revisions?.length || 0;
 
-                // 1. Map all historical and current published revisions
                 def.revisions.forEach((rev, revIdx) => {
                     const versionNo = totalRevisions - revIdx;
                     reportRows.push({
@@ -221,7 +221,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     });
                 });
 
-                // 2. Add current working copy if it's a draft or pending
                 if (def.isDraft || def.isPendingApproval) {
                     reportRows.push({
                         id: `${def.id}_working`,
@@ -364,9 +363,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     const filteredAndSortedData = useMemo(() => {
         let result = [...processedReportData];
         Object.entries(columnFilters).forEach(([key, value]) => {
-            if (!value) return;
+            if (!value || value === 'ALL_RECORDS') return;
             const lowerValue = value.toLowerCase();
-            result = result.filter(item => String((item as any)[key] || '').toLowerCase().includes(lowerValue));
+            result = result.filter(item => String((item as any)[key] || '').toLowerCase() === lowerValue || String((item as any)[key] || '').toLowerCase().includes(lowerValue));
         });
         if (sortConfig) {
             result.sort((a, b) => {
@@ -415,6 +414,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         const ws = XLSX.utils.json_to_sheet(exportData);
         XLSX.utils.book_append_sheet(wb, ws, "Report Data");
         XLSX.writeFile(wb, `${filename}.${formatType === 'xlsx' ? 'xlsx' : 'csv'}`);
+    };
+
+    const getUniqueValues = (key: string) => {
+        const values = Array.from(new Set(processedReportData.map((d: any) => d[key]))).filter(v => v !== null && v !== undefined && v !== '—' && v !== '');
+        return values.sort((a: any, b: any) => String(a).localeCompare(String(b)));
     };
 
     return (
@@ -517,23 +521,23 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                     <Table className="min-w-[2400px]">
                                         <TableHeader className="bg-slate-50 border-b">
                                             <TableRow>
-                                                <ReportHeader label="User Name" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" />
-                                                <ReportHeader label="Role" id="role" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.role} onFilterChange={handleFilterChange} className="w-[150px]" />
-                                                <ReportHeader label="Action Type" id="actionType" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.actionType} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Timestamp" id="timestamp" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.timestamp} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" />
-                                                <ReportHeader label="Entity Type" id="entityType" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.entityType} onFilterChange={handleFilterChange} className="w-[140px]" />
+                                                <ReportHeader label="User Name" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" filterType="dropdown" options={getUniqueValues('userName')} />
+                                                <ReportHeader label="Role" id="role" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.role} onFilterChange={handleFilterChange} className="w-[150px]" filterType="dropdown" options={getUniqueValues('role')} />
+                                                <ReportHeader label="Action Type" id="actionType" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.actionType} onFilterChange={handleFilterChange} className="w-[180px]" filterType="dropdown" options={getUniqueValues('actionType')} />
+                                                <ReportHeader label="Timestamp" id="timestamp" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" filterType="dropdown" options={getUniqueValues('module')} />
+                                                <ReportHeader label="Entity Type" id="entityType" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.entityType} onFilterChange={handleFilterChange} className="w-[140px]" filterType="dropdown" options={getUniqueValues('entityType')} />
                                                 <ReportHeader label="Entity Name" id="entityName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.entityName} onFilterChange={handleFilterChange} className="w-[200px]" />
                                                 <ReportHeader label="Entity ID" id="entityId" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.entityId} onFilterChange={handleFilterChange} className="w-[120px]" />
-                                                <ReportHeader label="Prev Status" id="prevStatus" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.prevStatus} onFilterChange={handleFilterChange} className="w-[140px]" />
-                                                <ReportHeader label="New Status" id="newStatus" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.newStatus} onFilterChange={handleFilterChange} className="w-[140px]" />
+                                                <ReportHeader label="Prev Status" id="prevStatus" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.prevStatus} onFilterChange={handleFilterChange} className="w-[140px]" filterType="dropdown" options={getUniqueValues('prevStatus')} />
+                                                <ReportHeader label="New Status" id="newStatus" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.newStatus} onFilterChange={handleFilterChange} className="w-[140px]" filterType="dropdown" options={getUniqueValues('newStatus')} />
                                                 <ReportHeader label="Version" id="version" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.version} onFilterChange={handleFilterChange} className="w-[140px]" />
-                                                <ReportHeader label="Comments" id="comments" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.comments} onFilterChange={handleFilterChange} className="w-[250px]" />
-                                                <ReportHeader label="Approver" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Template Used" id="templateUsed" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateUsed} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Template Status" id="templateStatusChange" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateStatusChange} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Related ID" id="relatedId" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.relatedId} onFilterChange={handleFilterChange} className="w-[120px]" />
-                                                <ReportHeader label="Attachment" id="attachment" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.attachment} onFilterChange={handleFilterChange} className="pr-6 w-[180px]" />
+                                                <ReportHeader label="Comments" id="comments" currentSort={sortConfig} onSort={handleSort} className="w-[250px]" filterType="none" />
+                                                <ReportHeader label="Approver" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="w-[160px]" filterType="dropdown" options={getUniqueValues('approverName')} />
+                                                <ReportHeader label="Template Used" id="templateUsed" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateUsed} onFilterChange={handleFilterChange} className="w-[180px]" filterType="dropdown" options={getUniqueValues('templateUsed')} />
+                                                <ReportHeader label="Template Status" id="templateStatusChange" currentSort={sortConfig} onSort={handleSort} className="w-[160px]" filterType="none" />
+                                                <ReportHeader label="Related ID" id="relatedId" currentSort={sortConfig} onSort={handleSort} className="w-[120px]" filterType="none" />
+                                                <ReportHeader label="Attachment" id="attachment" currentSort={sortConfig} onSort={handleSort} className="pr-6 w-[180px]" filterType="none" />
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -577,30 +581,30 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         <TableHeader className="bg-slate-50 border-b">
                                             <TableRow>
                                                 <ReportHeader label="Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" />
-                                                <ReportHeader label="Version No" id="versionNo" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.versionNo} onFilterChange={handleFilterChange} className="w-[100px]" />
-                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" />
-                                                <ReportHeader label="Template Used" id="templateUsed" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateUsed} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Description" id="description" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.description} onFilterChange={handleFilterChange} className="w-[250px]" />
-                                                <ReportHeader label="Created By" id="createdBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdBy} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Last Modified By" id="lastModifiedBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedBy} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Current Owner" id="currentOwner" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentOwner} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Current Status" id="currentStatus" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentStatus} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Created Date" id="createdDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdDate} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Last Modified Date" id="lastModifiedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Submitted Date" id="submittedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.submittedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Approved/Rejected Date" id="decisionDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.decisionDate} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Published Date" id="publishedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.publishedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Archived Date" id="archivedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.archivedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Approver Name" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Approval Comments" id="approvalComments" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approvalComments} onFilterChange={handleFilterChange} className="w-[250px]" />
-                                                <ReportHeader label="Turnaround Time" id="turnaroundTime" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.turnaroundTime} onFilterChange={handleFilterChange} className="w-[150px]" />
+                                                <ReportHeader label="Version No" id="versionNo" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.versionNo} onFilterChange={handleFilterChange} className="w-[100px]" filterType="dropdown" options={getUniqueValues('versionNo')} />
+                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" filterType="dropdown" options={getUniqueValues('module')} />
+                                                <ReportHeader label="Template Used" id="templateUsed" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateUsed} onFilterChange={handleFilterChange} className="w-[180px]" filterType="dropdown" options={getUniqueValues('templateUsed')} />
+                                                <ReportHeader label="Description" id="description" currentSort={sortConfig} onSort={handleSort} className="w-[250px]" filterType="none" />
+                                                <ReportHeader label="Created By" id="createdBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdBy} onFilterChange={handleFilterChange} className="w-[160px]" filterType="dropdown" options={getUniqueValues('createdBy')} />
+                                                <ReportHeader label="Last Modified By" id="lastModifiedBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedBy} onFilterChange={handleFilterChange} className="w-[160px]" filterType="dropdown" options={getUniqueValues('lastModifiedBy')} />
+                                                <ReportHeader label="Current Owner" id="currentOwner" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentOwner} onFilterChange={handleFilterChange} className="w-[160px]" filterType="dropdown" options={getUniqueValues('currentOwner')} />
+                                                <ReportHeader label="Current Status" id="currentStatus" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentStatus} onFilterChange={handleFilterChange} className="w-[160px]" filterType="dropdown" options={getUniqueValues('currentStatus')} />
+                                                <ReportHeader label="Created Date" id="createdDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Last Modified Date" id="lastModifiedDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Submitted Date" id="submittedDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Approved/Rejected Date" id="decisionDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Published Date" id="publishedDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Archived Date" id="archivedDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Approver Name" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="w-[160px]" filterType="dropdown" options={getUniqueValues('approverName')} />
+                                                <ReportHeader label="Approval Comments" id="approvalComments" currentSort={sortConfig} onSort={handleSort} className="w-[250px]" filterType="none" />
+                                                <ReportHeader label="Turnaround Time" id="turnaroundTime" currentSort={sortConfig} onSort={handleSort} className="w-[150px]" filterType="none" />
                                                 <ReportHeader label="Version ID" id="currentVersion" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentVersion} onFilterChange={handleFilterChange} className="w-[140px]" />
-                                                <ReportHeader label="Total Revisions" id="totalRevisions" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.totalRevisions} onFilterChange={handleFilterChange} className="w-[130px]" />
-                                                <ReportHeader label="Is Duplicate" id="isDuplicate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.isDuplicate} onFilterChange={handleFilterChange} className="w-[120px]" />
+                                                <ReportHeader label="Total Revisions" id="totalRevisions" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.totalRevisions} onFilterChange={handleFilterChange} className="w-[130px]" filterType="dropdown" options={getUniqueValues('totalRevisions')} />
+                                                <ReportHeader label="Is Duplicate" id="isDuplicate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.isDuplicate} onFilterChange={handleFilterChange} className="w-[120px]" filterType="dropdown" options={getUniqueValues('isDuplicate')} />
                                                 <ReportHeader label="Duplicated From" id="duplicatedFrom" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.duplicatedFrom} onFilterChange={handleFilterChange} className="w-[140px]" />
-                                                <ReportHeader label="Linked Records" id="linkedRecordsCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.linkedRecordsCount} onFilterChange={handleFilterChange} className="w-[130px]" />
-                                                <ReportHeader label="Attachments" id="attachmentCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.attachmentCount} onFilterChange={handleFilterChange} className="w-[130px]" />
-                                                <ReportHeader label="Active/Inactive Flag" id="isActiveFlag" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.isActiveFlag} onFilterChange={handleFilterChange} className="pr-6 w-[160px]" />
+                                                <ReportHeader label="Linked Records" id="linkedRecordsCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.linkedRecordsCount} onFilterChange={handleFilterChange} className="w-[130px]" filterType="dropdown" options={getUniqueValues('linkedRecordsCount')} />
+                                                <ReportHeader label="Attachments" id="attachmentCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.attachmentCount} onFilterChange={handleFilterChange} className="w-[130px]" filterType="dropdown" options={getUniqueValues('attachmentCount')} />
+                                                <ReportHeader label="Active/Inactive Flag" id="isActiveFlag" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.isActiveFlag} onFilterChange={handleFilterChange} className="pr-6 w-[160px]" filterType="dropdown" options={getUniqueValues('isActiveFlag')} />
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -664,20 +668,20 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                     <Table className="min-w-[2800px]">
                                         <TableHeader className="bg-slate-50 border-b">
                                             <TableRow>
-                                                <ReportHeader label="Approver Name" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="pl-6 w-[180px]" />
+                                                <ReportHeader label="Approver Name" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="pl-6 w-[180px]" filterType="dropdown" options={getUniqueValues('approverName')} />
                                                 <ReportHeader label="Definition Name" id="definitionName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.definitionName} onFilterChange={handleFilterChange} className="w-[200px]" />
-                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" />
+                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" filterType="dropdown" options={getUniqueValues('module')} />
                                                 <ReportHeader label="Version" id="version" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.version} onFilterChange={handleFilterChange} className="w-[140px]" />
-                                                <ReportHeader label="Action" id="action" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.action} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Status" id="status" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.status} onFilterChange={handleFilterChange} className="w-[120px]" />
-                                                <ReportHeader label="Submitted By" id="submittedBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.submittedBy} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Submitted Date" id="submittedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.submittedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Decision Date" id="decisionDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.decisionDate} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Turnaround" id="turnaroundTime" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.turnaroundTime} onFilterChange={handleFilterChange} className="w-[140px]" />
-                                                <ReportHeader label="Days Pending" id="daysPending" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.daysPending} onFilterChange={handleFilterChange} className="w-[140px]" />
-                                                <ReportHeader label="Comments" id="comments" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.comments} onFilterChange={handleFilterChange} className="w-[300px]" />
-                                                <ReportHeader label="Resubs" id="resubmissionCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.resubmissionCount} onFilterChange={handleFilterChange} className="w-[100px]" />
-                                                <ReportHeader label="Prev Decision" id="previousDecision" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.previousDecision} onFilterChange={handleFilterChange} className="pr-6 w-[160px]" />
+                                                <ReportHeader label="Action" id="action" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.action} onFilterChange={handleFilterChange} className="w-[180px]" filterType="dropdown" options={getUniqueValues('action')} />
+                                                <ReportHeader label="Status" id="status" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.status} onFilterChange={handleFilterChange} className="w-[120px]" filterType="dropdown" options={getUniqueValues('status')} />
+                                                <ReportHeader label="Submitted By" id="submittedBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.submittedBy} onFilterChange={handleFilterChange} className="w-[160px]" filterType="dropdown" options={getUniqueValues('submittedBy')} />
+                                                <ReportHeader label="Submitted Date" id="submittedDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Decision Date" id="decisionDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Turnaround" id="turnaroundTime" currentSort={sortConfig} onSort={handleSort} className="w-[140px]" filterType="none" />
+                                                <ReportHeader label="Days Pending" id="daysPending" currentSort={sortConfig} onSort={handleSort} className="w-[140px]" filterType="none" />
+                                                <ReportHeader label="Comments" id="comments" currentSort={sortConfig} onSort={handleSort} className="w-[300px]" filterType="none" />
+                                                <ReportHeader label="Resubs" id="resubmissionCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.resubmissionCount} onFilterChange={handleFilterChange} className="w-[100px]" filterType="dropdown" options={getUniqueValues('resubmissionCount')} />
+                                                <ReportHeader label="Prev Decision" id="previousDecision" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.previousDecision} onFilterChange={handleFilterChange} className="pr-6 w-[160px]" filterType="dropdown" options={getUniqueValues('previousDecision')} />
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -731,17 +735,17 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         <TableHeader className="bg-slate-50 border-b">
                                             <TableRow>
                                                 <ReportHeader label="Template Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 w-[220px]" />
-                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" />
-                                                <ReportHeader label="Status" id="status" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.status} onFilterChange={handleFilterChange} className="w-[130px]" />
-                                                <ReportHeader label="Created By" id="createdBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdBy} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Created Date" id="createdDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdDate} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Last Modified By" id="lastModifiedBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedBy} onFilterChange={handleFilterChange} className="w-[160px]" />
-                                                <ReportHeader label="Last Modified Date" id="lastModifiedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Usage Count" id="usageCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.usageCount} onFilterChange={handleFilterChange} className="w-[130px]" />
-                                                <ReportHeader label="Last Used Date" id="lastUsedDate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastUsedDate} onFilterChange={handleFilterChange} className="w-[180px]" />
-                                                <ReportHeader label="Definitions Using Template" id="definitionsList" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.definitionsList} onFilterChange={handleFilterChange} className="w-[280px]" />
-                                                <ReportHeader label="Status Change History" id="statusHistory" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.statusHistory} onFilterChange={handleFilterChange} className="w-[250px]" />
-                                                <ReportHeader label="Description" id="description" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.description} onFilterChange={handleFilterChange} className="pr-6 w-[300px]" />
+                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" filterType="dropdown" options={getUniqueValues('module')} />
+                                                <ReportHeader label="Status" id="status" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.status} onFilterChange={handleFilterChange} className="w-[130px]" filterType="dropdown" options={getUniqueValues('status')} />
+                                                <ReportHeader label="Created By" id="createdBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.createdBy} onFilterChange={handleFilterChange} className="w-[160px]" filterType="dropdown" options={getUniqueValues('createdBy')} />
+                                                <ReportHeader label="Created Date" id="createdDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Last Modified By" id="lastModifiedBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.lastModifiedBy} onFilterChange={handleFilterChange} className="w-[160px]" filterType="dropdown" options={getUniqueValues('lastModifiedBy')} />
+                                                <ReportHeader label="Last Modified Date" id="lastModifiedDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Usage Count" id="usageCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.usageCount} onFilterChange={handleFilterChange} className="w-[130px]" filterType="dropdown" options={getUniqueValues('usageCount')} />
+                                                <ReportHeader label="Last Used Date" id="lastUsedDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
+                                                <ReportHeader label="Definitions Using Template" id="definitionsList" currentSort={sortConfig} onSort={handleSort} className="w-[280px]" filterType="none" />
+                                                <ReportHeader label="Status Change History" id="statusHistory" currentSort={sortConfig} onSort={handleSort} className="w-[250px]" filterType="none" />
+                                                <ReportHeader label="Description" id="description" currentSort={sortConfig} onSort={handleSort} className="pr-6 w-[300px]" filterType="none" />
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -784,8 +788,20 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     );
 }
 
-function ReportHeader({ label, id, currentSort, onSort, filterValue, onFilterChange, className }: any) {
+function ReportHeader({ 
+    label, 
+    id, 
+    currentSort, 
+    onSort, 
+    filterValue, 
+    onFilterChange, 
+    className,
+    filterType = 'search',
+    options = []
+}: any) {
     const isSorted = currentSort?.key === id;
+    const hasActiveFilter = filterValue && filterValue !== 'ALL_RECORDS';
+
     return (
         <TableHead className={cn("py-4", className)}>
             <div className="flex items-center justify-between gap-1 group/header">
@@ -793,15 +809,56 @@ function ReportHeader({ label, id, currentSort, onSort, filterValue, onFilterCha
                     {label}
                     <ArrowUpDown className={cn("ml-1.5 h-3 w-3 transition-opacity", isSorted ? "text-indigo-600 opacity-100" : "opacity-0 group-hover/header:opacity-40")} />
                 </button>
-                <Popover>
-                    <PopoverTrigger asChild><Button variant="ghost" size="icon" className={cn("h-6 w-6 rounded-md", filterValue ? "text-indigo-600 bg-indigo-50" : "text-slate-300")}><Filter className="h-3 w-3" /></Button></PopoverTrigger>
-                    <PopoverContent className="w-56 p-3 rounded-xl shadow-xl" align="end">
-                        <div className="space-y-2.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400">Filter {label}</Label>
-                            <div className="relative"><Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-300" /><Input className="h-9 pl-8 text-xs font-bold" placeholder={`Search...`} value={filterValue || ''} onChange={(e) => onFilterChange(id, e.target.value)} /></div>
-                        </div>
-                    </PopoverContent>
-                </Popover>
+                
+                {filterType !== 'none' && (
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className={cn("h-6 w-6 rounded-md", hasActiveFilter ? "text-indigo-600 bg-indigo-50" : "text-slate-300")}>
+                                <Filter className="h-3 w-3" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-3 rounded-xl shadow-xl" align="end">
+                            <div className="space-y-2.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400">Filter {label}</Label>
+                                
+                                {filterType === 'search' ? (
+                                    <div className="relative">
+                                        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-300" />
+                                        <Input 
+                                            className="h-9 pl-8 text-xs font-bold" 
+                                            placeholder={`Search...`} 
+                                            value={filterValue || ''} 
+                                            onChange={(e) => onFilterChange(id, e.target.value)} 
+                                        />
+                                    </div>
+                                ) : (
+                                    <Select value={filterValue || 'ALL_RECORDS'} onValueChange={(val) => onFilterChange(id, val)}>
+                                        <SelectTrigger className="h-9 text-xs font-bold rounded-lg border-slate-200">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="ALL_RECORDS" className="text-xs font-bold text-slate-400">All Records</SelectItem>
+                                            {options.map((opt: string) => (
+                                                <SelectItem key={opt} value={opt} className="text-xs font-medium">{opt}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                                
+                                {hasActiveFilter && (
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="w-full h-7 text-[9px] font-black uppercase text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                                        onClick={() => onFilterChange(id, '')}
+                                    >
+                                        Clear Filter
+                                    </Button>
+                                )}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                )}
             </div>
         </TableHead>
     );
