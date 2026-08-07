@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -27,7 +26,7 @@ import {
     AccordionContent, 
     AccordionItem, 
     AccordionTrigger 
-} from "@/components/accordion";
+} from "@/components/ui/accordion";
 import { 
     Folder, 
     Lock, 
@@ -74,9 +73,6 @@ const CONFIG_TYPES = [
     { label: 'Decimal', value: 'decimal' },
 ];
 
-/**
- * Maps technical keys to human-readable names as per the reference UI
- */
 const KEY_DISPLAY_NAMES: Record<string, string> = {
     'SESSION_TIMEOUT': 'Session Timeout',
     'REVISION_RECORD_COUNT': 'Revision History Limit',
@@ -93,7 +89,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
     const [configSearch, setConfigSearch] = useState('');
     const [prefSearch, setPrefSearch] = useState('');
     
-    // Key Edit Modal State (Retained for Add logic even if UI simplified)
     const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
     const [editingKeyEntry, setEditingKeyEntry] = useState<ConfigKey | null>(null);
 
@@ -142,7 +137,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         );
     }, [localConfig.configKeys, configSearch]);
 
-    // Preference Sections for dynamic filtering
     const preferenceSections = [
         {
             id: 'file-storage',
@@ -353,7 +347,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
 
     return (
         <div className="h-full flex flex-col bg-[#F8F9FC]">
-            {/* TOP ACTION HEADER */}
             <div className="bg-white border-b px-8 py-4 flex items-center justify-between shadow-sm shrink-0 z-30">
                 <div className="space-y-1">
                     <p className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.2em] flex items-center gap-1.5">
@@ -375,7 +368,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
 
             <ScrollArea className="flex-1">
                 <div className="p-8 max-w-[1400px] mx-auto space-y-8 pb-32">
-                    {/* APP IDENTITY HEADER CARD */}
                     <Card className="rounded-[24px] border-slate-200 bg-white p-8 shadow-sm overflow-hidden border-l-4 border-l-indigo-600">
                         <div className="flex flex-wrap items-center gap-10">
                             <div className="h-16 w-16 rounded-[20px] bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100">
@@ -402,7 +394,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                         </div>
                     </Card>
 
-                    {/* MAIN CONFIG TABS */}
                     <Tabs defaultValue="preferences" className="space-y-6">
                         <TabsList className="bg-white p-1.5 h-12 rounded-2xl border border-slate-200 inline-flex shadow-sm gap-2">
                             <TabsTrigger 
@@ -428,7 +419,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                         </TabsList>
 
                         <TabsContent value="preferences" className="space-y-6 mt-0">
-                            {/* SEARCH BAR FOR PREFERENCES */}
                             <div className="flex items-center justify-between">
                                 <div className="relative w-full max-w-md">
                                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -482,7 +472,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                         </TabsContent>
 
                         <TabsContent value="parameters" className="space-y-6 mt-0">
-                            {/* SEARCH & ADD ACTION BAR */}
                             <div className="flex items-center justify-between">
                                 <div className="relative w-full max-w-md">
                                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -545,7 +534,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                 </div>
             </ScrollArea>
 
-            {/* KEY ADD MODAL (Retained for extended management) */}
             <Dialog open={isKeyModalOpen} onOpenChange={setIsKeyModalOpen}>
                 <DialogContent className="max-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b bg-white flex items-center gap-4">
@@ -560,7 +548,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                     <div className="p-8 space-y-6 bg-slate-50/30">
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-500">Parameter Display Name</Label>
+                                <Label className="text-[11px] font-black uppercase text-slate-500">Parameter Display Name</Label>
                                 <Input 
                                     value={editingKeyEntry?.description || ''} 
                                     onChange={e => setEditingKeyEntry(p => p ? ({ ...p, description: e.target.value }) : null)} 
@@ -570,7 +558,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-500">Initial Value</Label>
+                                    <Label className="text-[11px] font-black uppercase text-slate-500">Initial Value</Label>
                                     <Input 
                                         value={editingKeyEntry?.value || ''} 
                                         onChange={e => setEditingKeyEntry(p => p ? ({ ...p, value: e.target.value }) : null)} 
@@ -578,7 +566,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-500">Data Type</Label>
+                                    <Label className="text-[11px] font-black uppercase text-slate-500">Data Type</Label>
                                     <select 
                                         value={editingKeyEntry?.type} 
                                         className="flex h-11 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm ring-offset-background font-bold"
