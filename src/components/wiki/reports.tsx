@@ -420,8 +420,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     };
 
     return (
-        <div className="space-y-6 h-full flex flex-col bg-slate-50/30">
-            <div className="bg-white p-6 border-b sticky top-0 z-30 shadow-sm space-y-6 shrink-0">
+        <div className="space-y-4 h-full flex flex-col bg-slate-50/30">
+            <div className="bg-white p-6 border-b sticky top-0 z-30 shadow-sm space-y-4 shrink-0">
                 <div className="flex justify-between items-start">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
@@ -444,11 +444,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     </DropdownMenu>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-6">
-                    <div className="flex-1 min-w-[240px] max-w-sm space-y-1.5">
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex-1 min-w-[240px] max-w-sm space-y-1">
                         <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Report Selection</Label>
                         <Select value={selectedReport} onValueChange={(v) => setSelectedReport(v as ReportType)}>
-                            <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white font-bold">
+                            <SelectTrigger className="h-9 rounded-xl border-slate-200 bg-white font-bold">
                                 <div className="flex items-center gap-2">
                                     <BarChart3 className="h-4 w-4 text-primary" />
                                     <SelectValue />
@@ -463,11 +463,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         </Select>
                     </div>
 
-                    <div className="flex-1 min-w-[220px] max-w-xs space-y-1.5">
+                    <div className="flex-1 min-w-[220px] max-w-xs space-y-1">
                         <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Observation Period</Label>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant="outline" className="w-full h-10 px-4 font-bold text-xs gap-2 rounded-xl border-slate-200 justify-start bg-white">
+                                <Button variant="outline" className="w-full h-9 px-4 font-bold text-xs gap-2 rounded-xl border-slate-200 justify-start bg-white">
                                     <CalendarIcon className="h-3.5 w-3.5 text-primary" />
                                     {dateRange?.from ? (
                                         dateRange.to ? <>{format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd")}</> : format(dateRange.from, "MMM dd, yyyy")
@@ -480,15 +480,15 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         </Popover>
                     </div>
 
-                    <div className="pt-6 flex gap-2">
+                    <div className="pt-4 flex gap-2">
                         <Button 
-                            className="h-10 rounded-xl font-bold gap-2 px-8 bg-primary hover:bg-primary/90 text-white shadow-md shadow-indigo-100 transition-all active:scale-95" 
+                            className="h-9 rounded-xl font-bold gap-2 px-8 bg-primary hover:bg-primary/90 text-white shadow-md shadow-indigo-100 transition-all active:scale-95" 
                             onClick={handleRunReport}
                         >
                             <Play className="h-4 w-4 fill-current" />
                             Run Report
                         </Button>
-                        <Button variant="ghost" className="h-10 rounded-xl font-bold gap-2 text-slate-400 hover:bg-slate-50" onClick={clearAllFilters}>
+                        <Button variant="ghost" className="h-9 rounded-xl font-bold gap-2 text-slate-400 hover:bg-slate-50" onClick={clearAllFilters}>
                             <FilterX className="h-4 w-4" /> 
                             Reset
                         </Button>
@@ -497,7 +497,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             </div>
 
             <div className="flex-1 min-h-0 overflow-hidden">
-                <div className="p-8 h-full max-w-[1600px] mx-auto flex flex-col">
+                <div className="px-8 py-2 h-full max-w-[1600px] mx-auto flex flex-col">
                     {!appliedFilters ? (
                         <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in zoom-in-95 duration-500">
                             <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center">
@@ -509,9 +509,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </div>
                         </div>
                     ) : (
-                      <div className="flex-1 flex flex-col space-y-4 overflow-hidden animate-in fade-in duration-500">
+                      <div className="flex-1 flex flex-col space-y-2 overflow-hidden animate-in fade-in duration-500">
                         {/* HEADER PART */}
-                        <div className="flex items-center gap-2 px-2 shrink-0">
+                        <div className="flex items-center gap-2 px-2 shrink-0 h-8">
                             {appliedFilters.reportType === 'user-activity' ? <Users className="h-4 w-4 text-primary" /> : 
                              appliedFilters.reportType === 'definition-report' ? <Library className="h-4 w-4 text-primary" /> :
                              appliedFilters.reportType === 'approval-report' ? <ClipboardCheck className="h-4 w-4 text-primary" /> :
@@ -527,9 +527,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </Badge>
                         </div>
 
-                        {/* GRID PART - SCROLLABLE */}
-                        <Card className="flex-1 rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white flex flex-col">
-                            <ScrollArea className="flex-1 h-full">
+                        {/* GRID PART - MAXIMIZED VERTICAL SPACE */}
+                        <Card className="flex-1 rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white flex flex-col min-h-0">
+                            <ScrollArea className="flex-1 w-full h-full">
                                 {appliedFilters.reportType === 'user-activity' && (
                                     <Table className="min-w-[2400px]">
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
@@ -760,8 +760,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </ScrollArea>
                         </Card>
                         
-                        {/* PAGINATION PART - FIXED */}
-                        <div className="shrink-0">
+                        {/* PAGINATION PART - FIXED AT BOTTOM */}
+                        <div className="shrink-0 pt-2">
                             <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
                         </div>
                       </div>
@@ -850,7 +850,7 @@ function ReportHeader({
 
 function ReportPagination({ currentPage, totalPages, pageSize, setPageSize, onPageChange, totalItems }: any) {
     return (
-        <div className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between p-4 bg-white rounded-3xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-6">
                 <div className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Showing {totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems} records</div>
                 <div className="flex items-center gap-2">

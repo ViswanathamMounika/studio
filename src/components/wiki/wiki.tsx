@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -720,7 +721,7 @@ export default function Wiki() {
         case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} definitions={safeDefs} templates={safeTemplates} drafts={safeDrafts} /></div>;
         case 'system-configuration': return <div className="p-6 h-full"><SystemConfiguration config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
         case 'reports': return (
-            <div className="p-6 h-full overflow-hidden">
+            <div className="p-0 h-full overflow-hidden">
                 <ReportsDashboard 
                     users={safeUsers} 
                     definitions={safeDefs} 
@@ -918,7 +919,7 @@ export default function Wiki() {
                   </div>
               </div>
              )}
-              <div className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-slate-50/30">
+              <div className={cn("flex-1 w-full bg-slate-50/30", activeView === 'definitions' ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden")}>
                   {renderContent()}
               </div>
           </main>
