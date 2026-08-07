@@ -39,7 +39,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { differenceInDays, parseISO, subDays, format, startOfDay, endOfDay, isWithinInterval, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from 'date-fns';
+import { differenceInDays, parseISO, subDays, format, startOfDay, endOfDay, isWithinInterval, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, isValid } from 'date-fns';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
 import { Input } from '../ui/input';
@@ -159,7 +159,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         velocityData = eachDayOfInterval({ start: startDate, end: endDate }).map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
             const count = creationLogs.filter(l => format(parseISO(l.occurredDate), 'yyyy-MM-dd') === dateKey).length;
-            return { date: dateKey, displayDate: format(day, 'MMM d'), count, fill: '#E0E7FF' };
+            return { date: dateKey, displayDate: format(day, 'MMM d'), count };
         });
     } else if (diffDays <= 90) {
         // Weekly resolution
@@ -171,16 +171,16 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             }).length;
             return { 
                 date: format(weekStart, 'yyyy-MM-dd'), 
-                displayDate: `Week of ${format(weekStart, 'MMM d')}`, 
-                count, 
-                fill: '#E0E7FF' 
+                displayDate: format(weekStart, 'MMM d'), 
+                count
             };
         });
-    } else if (diffDays <= 365) {
-        // 15-day intervals
+    } else {
+        // 15-day intervals or Monthly
         let current = startDate;
+        const intervalSize = diffDays > 365 ? 30 : 15;
         while (current <= endDate) {
-            const intervalEnd = addDays(current, 14);
+            const intervalEnd = addDays(current, intervalSize - 1);
             const actualEnd = intervalEnd > endDate ? endDate : intervalEnd;
             const count = creationLogs.filter(l => {
                 const d = parseISO(l.occurredDate);
@@ -188,28 +188,14 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             }).length;
             velocityData.push({ 
                 date: format(current, 'yyyy-MM-dd'), 
-                displayDate: `${format(current, 'MMM d')} - ${format(actualEnd, 'MMM d')}`, 
-                count, 
-                fill: '#E0E7FF' 
+                displayDate: format(current, 'MMM d'), 
+                count
             });
             current = addDays(actualEnd, 1);
         }
-    } else {
-        // Monthly resolution
-        velocityData = eachMonthOfInterval({ start: startDate, end: endDate }).map(monthStart => {
-            const monthEnd = endOfMonth(monthStart);
-            const count = creationLogs.filter(l => {
-                const d = parseISO(l.occurredDate);
-                return isWithinInterval(d, { start: monthStart, end: monthEnd });
-            }).length;
-            return { 
-                date: format(monthStart, 'yyyy-MM-dd'), 
-                displayDate: format(monthStart, 'MMM yyyy'), 
-                count, 
-                fill: '#E0E7FF' 
-            };
-        });
     }
+
+    const maxCount = Math.max(...velocityData.map(d => d.count), 1);
 
     return {
         totalUsers: safeUsers.length,
@@ -234,6 +220,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         },
         needsAttention,
         velocityData,
+        maxCount,
 
         totalTemplates: safeTemplates.length,
         activeTemplates: safeTemplates.filter(t => t.isActive).length,
@@ -249,6 +236,11 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     const start = parseISO(tempRange.from);
     const end = parseISO(tempRange.to);
 
+    if (!isValid(start) || !isValid(end)) {
+        toast({ variant: 'destructive', title: 'Invalid Date', description: 'Please enter valid dates.' });
+        return;
+    }
+
     if (start > end) {
       toast({
         variant: 'destructive',
@@ -259,11 +251,18 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     }
 
     setVelocityRange(tempRange);
-    toast({
-      title: 'Range Applied',
-      description: `Viewing creation data for the selected period.`
-    });
   };
+
+  const handleQuickFilter = (days: number) => {
+    const newRange = {
+        from: format(subDays(new Date(), days - 1), 'yyyy-MM-dd'),
+        to: format(new Date(), 'yyyy-MM-dd')
+    };
+    setTempRange(newRange);
+    setVelocityRange(newRange);
+  };
+
+  const currentDiffDays = differenceInDays(parseISO(velocityRange.to), parseISO(velocityRange.from)) + 1;
 
   return (
     <div className="p-8 space-y-12 max-w-[1600px] mx-auto pb-32">
@@ -407,57 +406,82 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
       {/* SECTION: DEFINITIONS CREATED (VELOCITY CHART) */}
       <div className="space-y-6">
         <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden p-8">
-            <div className="flex flex-wrap items-center justify-between mb-8 gap-4">
+            <div className="flex flex-wrap items-center justify-between mb-10 gap-6">
                 <h3 className="text-xl font-bold text-slate-900">Definitions Created</h3>
+                
                 <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400">Range:</Label>
-                        <Input 
-                            type="date" 
-                            value={tempRange.from} 
-                            onChange={e => setTempRange(prev => ({ ...prev, from: e.target.value }))}
-                            className="h-10 rounded-xl border-slate-200 text-xs font-bold w-[140px]" 
-                        />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">to</span>
-                        <Input 
-                            type="date" 
-                            value={tempRange.to} 
-                            onChange={e => setTempRange(prev => ({ ...prev, to: e.target.value }))}
-                            className="h-10 rounded-xl border-slate-200 text-xs font-bold w-[140px]" 
-                        />
+                    {/* Quick Filters */}
+                    <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+                        <button 
+                            onClick={() => handleQuickFilter(7)}
+                            className={cn("px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all", currentDiffDays === 7 ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700")}
+                        >
+                            7D
+                        </button>
+                        <button 
+                            onClick={() => handleQuickFilter(30)}
+                            className={cn("px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all", currentDiffDays === 30 ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700")}
+                        >
+                            30D
+                        </button>
+                        <button 
+                            onClick={() => handleQuickFilter(90)}
+                            className={cn("px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all", currentDiffDays === 90 ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700")}
+                        >
+                            90D
+                        </button>
                     </div>
-                    <Button onClick={handleApplyRange} className="h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold px-6 shadow-md shadow-indigo-100">
+
+                    {/* Manual Range */}
+                    <div className="flex items-center gap-3 bg-white border border-slate-200 p-1 rounded-xl">
+                        <div className="relative group">
+                            <Input 
+                                type="date" 
+                                value={tempRange.from} 
+                                onChange={e => setTempRange(prev => ({ ...prev, from: e.target.value }))}
+                                className="h-9 rounded-lg border-none shadow-none text-xs font-bold w-[130px] pr-8 focus-visible:ring-0" 
+                            />
+                            <CalendarIcon className="absolute right-2 top-2.5 h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors pointer-events-none" />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-300 uppercase">to</span>
+                        <div className="relative group">
+                            <Input 
+                                type="date" 
+                                value={tempRange.to} 
+                                onChange={e => setTempRange(prev => ({ ...prev, to: e.target.value }))}
+                                className="h-9 rounded-lg border-none shadow-none text-xs font-bold w-[130px] pr-8 focus-visible:ring-0" 
+                            />
+                            <CalendarIcon className="absolute right-2 top-2.5 h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors pointer-events-none" />
+                        </div>
+                    </div>
+
+                    <Button onClick={handleApplyRange} className="h-10 rounded-xl bg-[#3F51B5] hover:bg-indigo-700 text-white font-black uppercase text-[11px] px-8 shadow-md shadow-indigo-100 transition-all active:scale-95">
                         Apply
                     </Button>
                 </div>
             </div>
 
-            <div className="h-[240px] w-full">
+            <div className="h-[280px] w-full mt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={metrics.velocityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                    <BarChart data={metrics.velocityData} margin={{ top: 0, right: 0, left: 0, bottom: 20 }}>
                         <XAxis 
                             dataKey="displayDate" 
                             axisLine={false} 
                             tickLine={false} 
-                            tick={{ fontSize: 10, fontWeight: 700, fill: '#94A3B8' }}
+                            tick={{ fontSize: 11, fontWeight: 700, fill: '#94A3B8' }}
                             interval="preserveStartEnd"
-                            minTickGap={40}
+                            minTickGap={30}
+                            dy={15}
                         />
-                        <YAxis 
-                            axisLine={false} 
-                            tickLine={false} 
-                            tick={{ fontSize: 10, fontWeight: 700, fill: '#94A3B8' }}
-                            allowDecimals={false}
-                        />
+                        <YAxis hide />
                         <RechartsTooltip 
-                            cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }}
+                            cursor={{ fill: 'rgba(99, 102, 241, 0.03)' }}
                             content={({ active, payload }) => {
                                 if (active && payload && payload.length) {
                                     return (
                                         <div className="bg-slate-900 text-white p-3 rounded-xl shadow-2xl border-none">
                                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{payload[0].payload.displayDate}</p>
-                                            <p className="text-sm font-bold">{payload[0].value} Definitions Created</p>
+                                            <p className="text-sm font-bold">{payload[0].value} Created</p>
                                         </div>
                                     );
                                 }
@@ -466,19 +490,22 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                         />
                         <Bar 
                             dataKey="count" 
-                            radius={[6, 6, 0, 0]} 
-                            barSize={32}
+                            barSize={currentDiffDays > 60 ? 40 : 80}
                         >
-                            {metrics.velocityData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
+                            {metrics.velocityData.map((entry, index) => {
+                                // Highlight the bar with the highest count to match reference style
+                                const isPeak = entry.count === metrics.maxCount && entry.count > 0;
+                                return (
+                                    <Cell 
+                                        key={`cell-${index}`} 
+                                        fill={isPeak ? '#3F51B5' : '#E0E7FF'} 
+                                        className="transition-all duration-500"
+                                    />
+                                );
+                            })}
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
-            </div>
-            <div className="mt-4 flex items-center justify-center gap-2 text-[10px] font-medium text-slate-400 italic">
-                <Info className="h-3 w-3" />
-                Data aggregation is automatically scaled (daily, weekly, bi-weekly, or monthly) based on the observation period.
             </div>
         </Card>
       </div>
@@ -639,7 +666,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
 function LifecycleBlock({ count, label, color }: { count: number, label: string, color: string }) {
     return (
         <div className={cn(
-            "rounded-xl border p-4 flex flex-col justify-center transition-all h-24 flex-1 min-w-[120px] min-w-0",
+            "rounded-xl border p-4 flex flex-col justify-center transition-all h-24 flex-1 min-w-0",
             color
         )}>
             <span className="font-black tabular-nums leading-none text-2xl">{count}</span>
