@@ -335,9 +335,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <BlockArrow />
                 <LifecycleBlock count={metrics.lifecycle.requested} label="Changes Requested" color="bg-pink-50 text-pink-600 border-pink-100" />
                 <LifecycleBlock count={metrics.lifecycle.rejected} label="Rejected" color="bg-red-50 text-red-600 border-red-100" />
-                <div className="flex-1">
-                    <LifecycleBlock count={metrics.lifecycle.published} label="Published" color="bg-emerald-50 text-emerald-600 border-emerald-100" isMain />
-                </div>
+                <LifecycleBlock count={metrics.lifecycle.published} label="Published" color="bg-emerald-50 text-emerald-600 border-emerald-100" />
                 <LifecycleBlock count={metrics.lifecycle.archived} label="Archived" color="bg-slate-50 text-slate-400 border-slate-100" />
             </div>
 
@@ -600,15 +598,14 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
   );
 }
 
-function LifecycleBlock({ count, label, color, isMain = false }: { count: number, label: string, color: string, isMain?: boolean }) {
+function LifecycleBlock({ count, label, color }: { count: number, label: string, color: string }) {
     return (
         <div className={cn(
-            "rounded-xl border p-4 flex flex-col justify-center transition-all h-24",
-            color,
-            isMain ? "min-w-[140px]" : "min-w-[120px]"
+            "rounded-xl border p-4 flex flex-col justify-center transition-all h-24 flex-1 min-w-[120px]",
+            color
         )}>
-            <span className={cn("font-black tabular-nums leading-none", isMain ? "text-4xl" : "text-2xl")}>{count}</span>
-            <span className={cn("font-bold mt-2 leading-tight", isMain ? "text-[14px]" : "text-[11px]")}>{label}</span>
+            <span className="font-black tabular-nums leading-none text-2xl">{count}</span>
+            <span className="font-bold mt-2 leading-tight text-[11px]">{label}</span>
         </div>
     );
 }
