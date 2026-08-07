@@ -29,7 +29,7 @@ import {
     Bar, 
     XAxis, 
     YAxis, 
-    Tooltip as RechartsTooltip, 
+    RechartsTooltip, 
     ResponsiveContainer,
     Legend,
     CartesianGrid
@@ -39,7 +39,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { differenceInDays, parseISO, subDays, format, startOfDay, endOfDay, isWithinInterval, eachDayOfInterval } from 'date-fns';
+import { differenceInDays, parseISO, subDays, format, startOfDay, endOfDay, isWithinInterval, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from 'date-fns';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
 import { Input } from '../ui/input';
@@ -146,23 +146,70 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
 
     const duplicatedCount = safeDrafts.filter(d => d && d.name.includes('(Copy)')).length;
     
-    // Calculate velocity chart data
+    // Calculate velocity chart data with adaptive intervals
     const startDate = parseISO(velocityRange.from);
     const endDate = parseISO(velocityRange.to);
-    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    const diffDays = differenceInDays(endDate, startDate);
+    const creationLogs = (activityLogs || []).filter(l => l.activityType === 'Definition Created');
     
-    const creationLogs = activityLogs.filter(l => l.activityType === 'Definition Created');
-    
-    const velocityData = days.map((day, idx) => {
-        const dateKey = format(day, 'yyyy-MM-dd');
-        const count = creationLogs.filter(l => format(parseISO(l.occurredDate), 'yyyy-MM-dd') === dateKey).length;
-        return {
-            date: dateKey,
-            displayDate: format(day, 'MMM d'),
-            count,
-            fill: '#E0E7FF'
-        };
-    });
+    let velocityData = [];
+
+    if (diffDays <= 31) {
+        // Daily resolution
+        velocityData = eachDayOfInterval({ start: startDate, end: endDate }).map(day => {
+            const dateKey = format(day, 'yyyy-MM-dd');
+            const count = creationLogs.filter(l => format(parseISO(l.occurredDate), 'yyyy-MM-dd') === dateKey).length;
+            return { date: dateKey, displayDate: format(day, 'MMM d'), count, fill: '#E0E7FF' };
+        });
+    } else if (diffDays <= 90) {
+        // Weekly resolution
+        velocityData = eachWeekOfInterval({ start: startDate, end: endDate }).map(weekStart => {
+            const weekEnd = endOfWeek(weekStart);
+            const count = creationLogs.filter(l => {
+                const d = parseISO(l.occurredDate);
+                return isWithinInterval(d, { start: weekStart, end: weekEnd });
+            }).length;
+            return { 
+                date: format(weekStart, 'yyyy-MM-dd'), 
+                displayDate: `Week of ${format(weekStart, 'MMM d')}`, 
+                count, 
+                fill: '#E0E7FF' 
+            };
+        });
+    } else if (diffDays <= 365) {
+        // 15-day intervals
+        let current = startDate;
+        while (current <= endDate) {
+            const intervalEnd = addDays(current, 14);
+            const actualEnd = intervalEnd > endDate ? endDate : intervalEnd;
+            const count = creationLogs.filter(l => {
+                const d = parseISO(l.occurredDate);
+                return isWithinInterval(d, { start: current, end: actualEnd });
+            }).length;
+            velocityData.push({ 
+                date: format(current, 'yyyy-MM-dd'), 
+                displayDate: `${format(current, 'MMM d')} - ${format(actualEnd, 'MMM d')}`, 
+                count, 
+                fill: '#E0E7FF' 
+            });
+            current = addDays(actualEnd, 1);
+        }
+    } else {
+        // Monthly resolution
+        velocityData = eachMonthOfInterval({ start: startDate, end: endDate }).map(monthStart => {
+            const monthEnd = endOfMonth(monthStart);
+            const count = creationLogs.filter(l => {
+                const d = parseISO(l.occurredDate);
+                return isWithinInterval(d, { start: monthStart, end: monthEnd });
+            }).length;
+            return { 
+                date: format(monthStart, 'yyyy-MM-dd'), 
+                displayDate: format(monthStart, 'MMM yyyy'), 
+                count, 
+                fill: '#E0E7FF' 
+            };
+        });
+    }
 
     return {
         totalUsers: safeUsers.length,
@@ -211,19 +258,10 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
       return;
     }
 
-    if (differenceInDays(end, start) > 30) {
-      toast({
-        variant: 'destructive',
-        title: 'Limit Exceeded',
-        description: 'Maximum observation period is 30 days.'
-      });
-      return;
-    }
-
     setVelocityRange(tempRange);
     toast({
       title: 'Range Applied',
-      description: `Viewing creation data for ${differenceInDays(end, start) + 1} days.`
+      description: `Viewing creation data for the selected period.`
     });
   };
 
@@ -326,7 +364,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <span className="text-[13px] font-bold text-slate-500">Total <span className="text-slate-900 font-black">{metrics.totalDefinitions}</span> definitions</span>
             </div>
 
-            <div className="flex items-center gap-2 mb-8">
+            <div className="flex items-center gap-2 mb-8 w-full">
                 <LifecycleBlock count={metrics.lifecycle.draft} label="Draft" color="bg-amber-50 text-amber-600 border-amber-100" />
                 <BlockArrow />
                 <LifecycleBlock count={metrics.lifecycle.sent} label="Sent for Approval" color="bg-purple-50 text-purple-600 border-purple-100" />
@@ -334,7 +372,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <LifecycleBlock count={metrics.lifecycle.pending} label="Pending Approval" color="bg-blue-50 text-blue-600 border-blue-100" />
                 <BlockArrow />
                 <LifecycleBlock count={metrics.lifecycle.requested} label="Changes Requested" color="bg-pink-50 text-pink-600 border-pink-100" />
-                <LifecycleBlock count={metrics.lifecycle.rejected} label="Rejected" color="bg-red-50 text-red-600 border-red-100" />
+                <LifecycleBlock count={metrics.lifecycle.rejected} label="Rejected" color="bg-red-50 text-red-700 border-red-100" />
                 <LifecycleBlock count={metrics.lifecycle.published} label="Published" color="bg-emerald-50 text-emerald-600 border-emerald-100" />
                 <LifecycleBlock count={metrics.lifecycle.archived} label="Archived" color="bg-slate-50 text-slate-400 border-slate-100" />
             </div>
@@ -404,7 +442,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                             tickLine={false} 
                             tick={{ fontSize: 10, fontWeight: 700, fill: '#94A3B8' }}
                             interval="preserveStartEnd"
-                            minTickGap={20}
+                            minTickGap={40}
                         />
                         <YAxis 
                             axisLine={false} 
@@ -418,7 +456,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                                 if (active && payload && payload.length) {
                                     return (
                                         <div className="bg-slate-900 text-white p-3 rounded-xl shadow-2xl border-none">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{payload[0].payload.date}</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{payload[0].payload.displayDate}</p>
                                             <p className="text-sm font-bold">{payload[0].value} Definitions Created</p>
                                         </div>
                                     );
@@ -429,7 +467,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                         <Bar 
                             dataKey="count" 
                             radius={[6, 6, 0, 0]} 
-                            barSize={18}
+                            barSize={32}
                         >
                             {metrics.velocityData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -440,7 +478,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             </div>
             <div className="mt-4 flex items-center justify-center gap-2 text-[10px] font-medium text-slate-400 italic">
                 <Info className="h-3 w-3" />
-                Observation limited to 30 days for optimal data density.
+                Data aggregation is automatically scaled (daily, weekly, bi-weekly, or monthly) based on the observation period.
             </div>
         </Card>
       </div>
@@ -601,7 +639,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
 function LifecycleBlock({ count, label, color }: { count: number, label: string, color: string }) {
     return (
         <div className={cn(
-            "rounded-xl border p-4 flex flex-col justify-center transition-all h-24 flex-1 min-w-[120px]",
+            "rounded-xl border p-4 flex flex-col justify-center transition-all h-24 flex-1 min-w-[120px] min-w-0",
             color
         )}>
             <span className="font-black tabular-nums leading-none text-2xl">{count}</span>
