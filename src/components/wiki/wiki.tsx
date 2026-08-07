@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -716,12 +715,12 @@ export default function Wiki() {
 
     switch (activeView) {
         case 'dashboard': return <Dashboard definitions={safeDefs} drafts={safeDrafts} users={safeUsers} templates={safeTemplates} onNavigate={handleNavigate} activityLogs={Array.isArray(activityLogs) ? activityLogs : []} />;
-        case 'activity-logs': return <div className="p-6"><ActivityLogs isAdmin={isAdmin} users={safeUsers} /></div>;
+        case 'activity-logs': return <div className="p-6 h-full overflow-hidden"><ActivityLogs isAdmin={isAdmin} users={safeUsers} /></div>;
         case 'template-management': return <div className="p-6"><TemplateManagement templates={safeTemplates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
         case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} definitions={safeDefs} templates={safeTemplates} drafts={safeDrafts} /></div>;
         case 'system-configuration': return <div className="p-6 h-full"><SystemConfiguration config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
         case 'reports': return (
-            <div className="p-6 h-full">
+            <div className="p-6 h-full overflow-hidden">
                 <ReportsDashboard 
                     users={safeUsers} 
                     definitions={safeDefs} 
@@ -763,7 +762,7 @@ export default function Wiki() {
             const liveDef = selectedDef?.originalId ? findDefinition(safeDefs, selectedDef.originalId) : null;
 
             return (
-                <div className="relative h-full">
+                <div className="relative h-full overflow-y-auto">
                   {isEditing && selectedDef ? (
                       <DefinitionEdit 
                         definition={selectedDef} 
@@ -919,7 +918,7 @@ export default function Wiki() {
                   </div>
               </div>
              )}
-              <div className="flex-1 w-full overflow-y-auto bg-slate-50/30">
+              <div className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-slate-50/30">
                   {renderContent()}
               </div>
           </main>

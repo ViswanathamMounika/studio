@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -495,7 +494,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 </div>
             </div>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 overflow-x-hidden">
                 <div className="p-8 max-w-[1600px] mx-auto pb-32">
                     {!appliedFilters ? (
                         <div className="h-[500px] flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in zoom-in-95 duration-500">
