@@ -421,7 +421,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
     return (
         <div className="space-y-6 h-full flex flex-col bg-slate-50/30">
-            <div className="bg-white p-6 border-b sticky top-0 z-30 shadow-sm space-y-6">
+            <div className="bg-white p-6 border-b sticky top-0 z-30 shadow-sm space-y-6 shrink-0">
                 <div className="flex justify-between items-start">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
@@ -496,10 +496,10 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 </div>
             </div>
 
-            <ScrollArea className="flex-1 overflow-x-hidden">
-                <div className="p-8 max-w-[1600px] mx-auto pb-32">
+            <div className="flex-1 min-h-0 overflow-hidden">
+                <div className="p-8 h-full max-w-[1600px] mx-auto flex flex-col">
                     {!appliedFilters ? (
-                        <div className="h-[500px] flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                        <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in zoom-in-95 duration-500">
                             <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center">
                                 <Settings2 className="h-10 w-10 text-slate-300" />
                             </div>
@@ -508,19 +508,31 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 <p className="text-sm text-slate-500 max-sm font-medium">Select a report and period above to load analytical data.</p>
                             </div>
                         </div>
-                    ) : appliedFilters.reportType === 'user-activity' ? (
-                        <div className="space-y-4 animate-in fade-in duration-500">
-                            <div className="flex items-center gap-2 px-2">
-                                <Users className="h-4 w-4 text-primary" />
-                                <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">User Activity Audit Ledger</h3>
-                                <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200 ml-auto">
-                                    {filteredAndSortedData.length} Records Found
-                                </Badge>
-                            </div>
-                            <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
-                                <ScrollArea className="w-full">
+                    ) : (
+                      <div className="flex-1 flex flex-col space-y-4 overflow-hidden animate-in fade-in duration-500">
+                        {/* HEADER PART */}
+                        <div className="flex items-center gap-2 px-2 shrink-0">
+                            {appliedFilters.reportType === 'user-activity' ? <Users className="h-4 w-4 text-primary" /> : 
+                             appliedFilters.reportType === 'definition-report' ? <Library className="h-4 w-4 text-primary" /> :
+                             appliedFilters.reportType === 'approval-report' ? <ClipboardCheck className="h-4 w-4 text-primary" /> :
+                             <LayoutTemplate className="h-4 w-4 text-primary" />}
+                            <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">
+                                {appliedFilters.reportType === 'user-activity' ? 'User Activity Audit Ledger' :
+                                 appliedFilters.reportType === 'definition-report' ? 'Definition Report' :
+                                 appliedFilters.reportType === 'approval-report' ? 'Approval Report' :
+                                 'Template Report'}
+                            </h3>
+                            <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200 ml-auto">
+                                {filteredAndSortedData.length} Records Found
+                            </Badge>
+                        </div>
+
+                        {/* GRID PART - SCROLLABLE */}
+                        <Card className="flex-1 rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white flex flex-col">
+                            <ScrollArea className="flex-1 h-full">
+                                {appliedFilters.reportType === 'user-activity' && (
                                     <Table className="min-w-[2400px]">
-                                        <TableHeader className="bg-slate-50 border-b">
+                                        <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
                                                 <ReportHeader label="User Name" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" filterType="dropdown" options={getUniqueValues('userName')} />
                                                 <ReportHeader label="Role" id="role" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.role} onFilterChange={handleFilterChange} className="w-[150px]" filterType="dropdown" options={getUniqueValues('role')} />
@@ -554,7 +566,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                     <TableCell className="font-mono text-[11px] text-slate-400">{d.entityId}</TableCell>
                                                     <TableCell className="text-slate-400 italic text-xs">{d.prevStatus}</TableCell>
                                                     <TableCell><Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-bold text-[10px]">{d.newStatus}</Badge></TableCell>
-                                                    <TableCell className="text-xs font-bold text-slate-500">{d.version}</TableCell>
+                                                    <TableCell className="text-xs font-bold text-slate-50">{d.version}</TableCell>
                                                     <TableCell className="text-slate-500 text-xs italic truncate max-w-[220px]">{d.comments}</TableCell>
                                                     <TableCell className="font-bold text-slate-700">{d.approverName}</TableCell>
                                                     <TableCell className="text-xs font-bold text-slate-500">{d.templateUsed}</TableCell>
@@ -565,24 +577,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                             ))}
                                         </TableBody>
                                     </Table>
-                                    <ScrollBar orientation="horizontal" />
-                                </ScrollArea>
-                            </Card>
-                            <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
-                        </div>
-                    ) : appliedFilters.reportType === 'definition-report' ? (
-                        <div className="space-y-4 animate-in fade-in duration-500">
-                            <div className="flex items-center gap-2 px-2">
-                                <Library className="h-4 w-4 text-primary" />
-                                <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Definition Report</h3>
-                                <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200 ml-auto">
-                                    {filteredAndSortedData.length} Records Found
-                                </Badge>
-                            </div>
-                            <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
-                                <ScrollArea className="w-full">
+                                )}
+
+                                {appliedFilters.reportType === 'definition-report' && (
                                     <Table className="min-w-[4200px]">
-                                        <TableHeader className="bg-slate-50 border-b">
+                                        <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
                                                 <ReportHeader label="Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" />
                                                 <ReportHeader label="Version No" id="versionNo" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.versionNo} onFilterChange={handleFilterChange} className="w-[100px]" filterType="dropdown" options={getUniqueValues('versionNo')} />
@@ -656,24 +655,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                             ))}
                                         </TableBody>
                                     </Table>
-                                    <ScrollBar orientation="horizontal" />
-                                </ScrollArea>
-                            </Card>
-                            <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
-                        </div>
-                    ) : appliedFilters.reportType === 'approval-report' ? (
-                        <div className="space-y-4 animate-in fade-in duration-500">
-                            <div className="flex items-center gap-2 px-2">
-                                <ClipboardCheck className="h-4 w-4 text-primary" />
-                                <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Approval Report</h3>
-                                <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200 ml-auto">
-                                    {filteredAndSortedData.length} Records Found
-                                </Badge>
-                            </div>
-                            <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
-                                <ScrollArea className="w-full">
+                                )}
+
+                                {appliedFilters.reportType === 'approval-report' && (
                                     <Table className="min-w-[2800px]">
-                                        <TableHeader className="bg-slate-50 border-b">
+                                        <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
                                                 <ReportHeader label="Approver Name" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="pl-6 w-[180px]" filterType="dropdown" options={getUniqueValues('approverName')} />
                                                 <ReportHeader label="Definition Name" id="definitionName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.definitionName} onFilterChange={handleFilterChange} className="w-[200px]" />
@@ -725,24 +711,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                             ))}
                                         </TableBody>
                                     </Table>
-                                    <ScrollBar orientation="horizontal" />
-                                </ScrollArea>
-                            </Card>
-                            <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
-                        </div>
-                    ) : appliedFilters.reportType === 'template-report' ? (
-                        <div className="space-y-4 animate-in fade-in duration-500">
-                            <div className="flex items-center gap-2 px-2">
-                                <LayoutTemplate className="h-4 w-4 text-primary" />
-                                <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Template Report</h3>
-                                <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-black uppercase bg-slate-50 text-slate-400 border-slate-200 ml-auto">
-                                    {filteredAndSortedData.length} Records Found
-                                </Badge>
-                            </div>
-                            <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
-                                <ScrollArea className="w-full">
+                                )}
+
+                                {appliedFilters.reportType === 'template-report' && (
                                     <Table className="min-w-[2600px]">
-                                        <TableHeader className="bg-slate-50 border-b">
+                                        <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
                                                 <ReportHeader label="Template Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 w-[220px]" />
                                                 <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[150px]" filterType="dropdown" options={getUniqueValues('module')} />
@@ -781,19 +754,20 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                             ))}
                                         </TableBody>
                                     </Table>
-                                    <ScrollBar orientation="horizontal" />
-                                </ScrollArea>
-                            </Card>
+                                )}
+                                <ScrollBar orientation="horizontal" />
+                                <ScrollBar orientation="vertical" />
+                            </ScrollArea>
+                        </Card>
+                        
+                        {/* PAGINATION PART - FIXED */}
+                        <div className="shrink-0">
                             <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
                         </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-40">
-                            <Activity className="h-12 w-12 text-slate-200 mb-4" />
-                            <p className="text-slate-400 font-medium italic">Detailed visualization for {appliedFilters.reportType} coming soon. Use export functions for raw data.</p>
-                        </div>
+                      </div>
                     )}
                 </div>
-            </ScrollArea>
+            </div>
         </div>
     );
 }
@@ -813,7 +787,7 @@ function ReportHeader({
     const hasActiveFilter = filterValue && filterValue !== 'ALL_RECORDS';
 
     return (
-        <TableHead className={cn("py-4", className)}>
+        <TableHead className={cn("py-4 bg-slate-50", className)}>
             <div className="flex items-center justify-between gap-1 group/header">
                 <button onClick={() => onSort(id)} className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors shrink-0">
                     {label}
@@ -876,7 +850,7 @@ function ReportHeader({
 
 function ReportPagination({ currentPage, totalPages, pageSize, setPageSize, onPageChange, totalItems }: any) {
     return (
-        <div className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-200 shadow-sm mt-2">
+        <div className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-6">
                 <div className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Showing {totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems} records</div>
                 <div className="flex items-center gap-2">
