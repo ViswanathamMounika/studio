@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -52,7 +53,7 @@ import type { SystemConfigurationState, ConfigKey } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, parseISO } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
@@ -119,6 +120,21 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         }));
     };
 
+    const handleToggleParamActive = (id: string, active: boolean) => {
+        setLocalConfig(prev => ({
+            ...prev,
+            configKeys: prev.configKeys.map(k => k.id === id ? { ...k, active } : k)
+        }));
+    };
+
+    const handleDeleteParam = (id: string) => {
+        setLocalConfig(prev => ({
+            ...prev,
+            configKeys: prev.configKeys.filter(k => k.id !== id)
+        }));
+        toast({ title: "Registry Key Removed" });
+    };
+
     const getSettingName = (item: ConfigKey) => {
         return KEY_DISPLAY_NAMES[item.key] || item.description || item.key;
     };
@@ -126,7 +142,12 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
     const filteredConfigKeys = useMemo(() => {
         const sorted = [...localConfig.configKeys].sort((a, b) => {
             const order = Object.keys(KEY_DISPLAY_NAMES);
-            return order.indexOf(a.key) - order.indexOf(b.key);
+            const aIdx = order.indexOf(a.key);
+            const bIdx = order.indexOf(b.key);
+            if (aIdx === -1 && bIdx === -1) return a.key.localeCompare(b.key);
+            if (aIdx === -1) return 1;
+            if (bIdx === -1) return -1;
+            return aIdx - bIdx;
         });
 
         if (!configSearch.trim()) return sorted;
@@ -320,6 +341,11 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         setIsKeyModalOpen(true);
     };
 
+    const handleEditParam = (item: ConfigKey) => {
+        setEditingKeyEntry({ ...item });
+        setIsKeyModalOpen(true);
+    };
+
     const handleSaveKeyEntry = () => {
         if (!editingKeyEntry || !editingKeyEntry.key.trim()) {
             toast({ variant: 'destructive', title: "Validation Error", description: "Configuration Key is required." });
@@ -367,7 +393,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             </div>
 
             <ScrollArea className="flex-1">
-                <div className="p-8 max-w-[1400px] mx-auto space-y-8 pb-32">
+                <div className="p-8 max-w-[1600px] mx-auto space-y-8 pb-32">
                     <Card className="rounded-[24px] border-slate-200 bg-white p-8 shadow-sm overflow-hidden border-l-4 border-l-indigo-600">
                         <div className="flex flex-wrap items-center gap-10">
                             <div className="h-16 w-16 rounded-[20px] bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100">
@@ -489,40 +515,82 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             </div>
 
                             <Card className="rounded-[28px] border-slate-200 shadow-sm overflow-hidden bg-white">
-                                <Table>
-                                    <TableHeader className="bg-slate-50 border-b">
-                                        <TableRow className="h-12 border-none">
-                                            <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-400">SETTING NAME</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">VALUE</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">TYPE</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {filteredConfigKeys.map(item => (
-                                            <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 h-20">
-                                                <TableCell className="px-8 py-5">
-                                                    <span className="font-bold text-slate-900 text-[15px]">
-                                                        {getSettingName(item)}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center">
+                                <div className="overflow-x-auto">
+                                    <Table className="min-w-[1400px]">
+                                        <TableHeader className="bg-slate-50 border-b">
+                                            <TableRow className="h-12 border-none">
+                                                <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-400">SETTING NAME</TableHead>
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">VALUE</TableHead>
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">TYPE</TableHead>
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">EFFECTIVE FROM</TableHead>
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">ACTIVE</TableHead>
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">DESCRIPTION</TableHead>
+                                                <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-400">ACTIONS</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredConfigKeys.map(item => (
+                                                <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 h-20">
+                                                    <TableCell className="px-8 py-5">
+                                                        <span className="font-bold text-slate-900 text-[15px]">
+                                                            {getSettingName(item)}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell>
                                                         <Input 
                                                             value={item.value} 
                                                             onChange={e => handleUpdateParamValue(item.id, e.target.value)}
-                                                            className="h-10 w-48 rounded-xl bg-white border-slate-200 font-bold text-center focus-visible:ring-indigo-100 focus-visible:border-indigo-300"
+                                                            className="h-10 w-32 rounded-xl bg-white border-slate-200 font-bold text-center focus-visible:ring-indigo-100 focus-visible:border-indigo-300"
                                                         />
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="secondary" className="bg-[#F1F3F9] text-slate-500 font-bold text-[11px] px-3.5 h-8 rounded-lg uppercase tracking-tight">
-                                                        {item.type}
-                                                    </Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="secondary" className="bg-[#F1F3F9] text-slate-500 font-bold text-[11px] px-3.5 h-8 rounded-lg uppercase tracking-tight whitespace-nowrap">
+                                                            {item.type}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-col text-[12px] font-medium text-slate-500">
+                                                            <span className="font-bold text-slate-700">{format(parseISO(item.effectiveFrom), 'dd MMM yyyy')}</span>
+                                                            <span className="text-[10px] uppercase text-slate-400">{format(parseISO(item.effectiveFrom), 'hh:mm a')}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Switch 
+                                                            checked={item.active} 
+                                                            onCheckedChange={v => handleToggleParamActive(item.id, v)} 
+                                                            className="data-[state=checked]:bg-emerald-500"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="max-w-md">
+                                                        <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
+                                                            {item.description || 'No description provided.'}
+                                                        </p>
+                                                    </TableCell>
+                                                    <TableCell className="text-right px-8">
+                                                        <div className="flex justify-end gap-1">
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 rounded-lg text-slate-300 hover:text-indigo-600 hover:bg-indigo-50"
+                                                                onClick={() => handleEditParam(item)}
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50"
+                                                                onClick={() => handleDeleteParam(item.id)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                                 <div className="p-6 px-8 border-t bg-slate-50/50 flex items-center justify-between">
                                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                                         Platform Registry Governance • {filteredConfigKeys.length} ACTIVE KEYS
@@ -535,34 +603,26 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             </ScrollArea>
 
             <Dialog open={isKeyModalOpen} onOpenChange={setIsKeyModalOpen}>
-                <DialogContent className="max-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
+                <DialogContent className="max-w-2xl rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b bg-white flex items-center gap-4">
                         <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-inner">
-                            <Plus className="h-5 w-5 text-indigo-600" />
+                            {editingKeyEntry && localConfig.configKeys.some(k => k.id === editingKeyEntry.id) ? <Pencil className="h-5 w-5 text-indigo-600" /> : <Plus className="h-5 w-5 text-indigo-600" />}
                         </div>
                         <div>
-                            <DialogTitle className="text-xl font-bold tracking-tight">New Registry Parameter</DialogTitle>
+                            <DialogTitle className="text-xl font-bold tracking-tight">Registry Parameter</DialogTitle>
                             <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-0.5">Define Application Constant</p>
                         </div>
                     </div>
                     <div className="p-8 space-y-6 bg-slate-50/30">
                         <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label className="text-[11px] font-black uppercase text-slate-500">Parameter Display Name</Label>
-                                <Input 
-                                    value={editingKeyEntry?.description || ''} 
-                                    onChange={e => setEditingKeyEntry(p => p ? ({ ...p, description: e.target.value }) : null)} 
-                                    placeholder="e.g. Session Timeout"
-                                    className="rounded-xl border-slate-200 h-11 font-bold bg-white shadow-sm" 
-                                />
-                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500">Initial Value</Label>
+                                    <Label className="text-[11px] font-black uppercase text-slate-500">Parameter Key (System)</Label>
                                     <Input 
-                                        value={editingKeyEntry?.value || ''} 
-                                        onChange={e => setEditingKeyEntry(p => p ? ({ ...p, value: e.target.value }) : null)} 
-                                        className="rounded-xl border-slate-200 h-11 font-bold bg-white shadow-sm" 
+                                        value={editingKeyEntry?.key || ''} 
+                                        onChange={e => setEditingKeyEntry(p => p ? ({ ...p, key: e.target.value }) : null)} 
+                                        placeholder="e.g. TIMEOUT_LIMIT"
+                                        className="rounded-xl border-slate-200 h-11 font-mono text-xs bg-white shadow-sm" 
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -570,13 +630,54 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                     <select 
                                         value={editingKeyEntry?.type} 
                                         className="flex h-11 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm ring-offset-background font-bold"
-                                        onChange={v => setEditingKeyEntry(p => p ? ({ ...p, type: v.target.value }) : null)}
+                                        onChange={e => setEditingKeyEntry(p => p ? ({ ...p, type: e.target.value }) : null)}
                                     >
                                         {CONFIG_TYPES.map(t => (
                                             <option key={t.value} value={t.value}>{t.label}</option>
                                         ))}
                                     </select>
                                 </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[11px] font-black uppercase text-slate-500">Current Value</Label>
+                                    <Input 
+                                        value={editingKeyEntry?.value || ''} 
+                                        onChange={e => setEditingKeyEntry(p => p ? ({ ...p, value: e.target.value }) : null)} 
+                                        className="rounded-xl border-slate-200 h-11 font-bold bg-white shadow-sm" 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[11px] font-black uppercase text-slate-500">Effective Date</Label>
+                                    <Input 
+                                        type="datetime-local"
+                                        value={editingKeyEntry?.effectiveFrom ? format(parseISO(editingKeyEntry.effectiveFrom), "yyyy-MM-dd'T'HH:mm") : ''} 
+                                        onChange={e => setEditingKeyEntry(p => p ? ({ ...p, effectiveFrom: new Date(e.target.value).toISOString() }) : null)} 
+                                        className="rounded-xl border-slate-200 h-11 font-bold bg-white shadow-sm" 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-[11px] font-black uppercase text-slate-500">Description / Scope</Label>
+                                <Textarea 
+                                    value={editingKeyEntry?.description || ''} 
+                                    onChange={e => setEditingKeyEntry(p => p ? ({ ...p, description: e.target.value }) : null)} 
+                                    placeholder="Enter administrative details..."
+                                    className="rounded-xl border-slate-200 min-h-[80px] bg-white shadow-sm resize-none" 
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-bold text-slate-700">Active Status</span>
+                                    <span className="text-[10px] text-slate-400 uppercase font-black">Enable in Production</span>
+                                </div>
+                                <Switch 
+                                    checked={editingKeyEntry?.active} 
+                                    onCheckedChange={v => setEditingKeyEntry(p => p ? ({ ...p, active: v }) : null)} 
+                                />
                             </div>
                         </div>
                     </div>
