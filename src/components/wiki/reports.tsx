@@ -186,10 +186,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         currentVersion: rev.ticketId,
                         totalRevisions: totalRevisions,
                         isDuplicate: def.name.includes('(Copy)') ? 'Yes' : 'No',
-                        duplicatedFrom: def.originalId || '—',
-                        linkedRecordsCount: def.relatedDefinitions?.length || 0,
-                        attachmentCount: def.attachments?.length || 0,
-                        isActiveFlag: (versionNo === totalRevisions && !def.isArchived && !def.isDraft && !def.isPendingApproval) ? 'Active' : 'Inactive'
+                        attachmentCount: def.attachments?.length || 0
                     });
                 });
 
@@ -216,10 +213,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         currentVersion: 'v.Next (Draft)',
                         totalRevisions: totalRevisions,
                         isDuplicate: def.name.includes('(Copy)') ? 'Yes' : 'No',
-                        duplicatedFrom: def.originalId || '—',
-                        linkedRecordsCount: def.relatedDefinitions?.length || 0,
-                        attachmentCount: def.attachments?.length || 0,
-                        isActiveFlag: 'Inactive'
+                        attachmentCount: def.attachments?.length || 0
                     });
                 }
             });
@@ -524,7 +518,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         </TableBody>
                                     </Table>
                                 ) : appliedFilters.reportType === 'definition-report' ? (
-                                    <Table className="min-w-[4200px]">
+                                    <Table className="min-w-[3500px]">
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
                                                 <ReportHeader label="Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 w-[220px]" options={getUniqueValues('name')} />
@@ -544,14 +538,10 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                 <ReportHeader label="Archived Date" id="archivedDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
                                                 <ReportHeader label="Approver Name" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="w-[180px]" options={getUniqueValues('approverName')} />
                                                 <ReportHeader label="Approval Comments" id="approvalComments" currentSort={sortConfig} onSort={handleSort} className="w-[250px]" filterType="none" />
-                                                <ReportHeader label="Turnaround Time" id="turnaroundTime" currentSort={sortConfig} onSort={handleSort} className="w-[150px]" filterType="none" />
                                                 <ReportHeader label="Version ID" id="currentVersion" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.currentVersion} onFilterChange={handleFilterChange} className="w-[160px]" options={getUniqueValues('currentVersion')} />
                                                 <ReportHeader label="Total Revisions" id="totalRevisions" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.totalRevisions} onFilterChange={handleFilterChange} className="w-[150px]" options={getUniqueValues('totalRevisions')} />
                                                 <ReportHeader label="Is Duplicate" id="isDuplicate" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.isDuplicate} onFilterChange={handleFilterChange} className="w-[140px]" options={getUniqueValues('isDuplicate')} />
-                                                <ReportHeader label="Duplicated From" id="duplicatedFrom" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.duplicatedFrom} onFilterChange={handleFilterChange} className="w-[160px]" options={getUniqueValues('duplicatedFrom')} />
-                                                <ReportHeader label="Linked Records" id="linkedRecordsCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.linkedRecordsCount} onFilterChange={handleFilterChange} className="w-[150px]" options={getUniqueValues('linkedRecordsCount')} />
-                                                <ReportHeader label="Attachments" id="attachmentCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.attachmentCount} onFilterChange={handleFilterChange} className="w-[150px]" options={getUniqueValues('attachmentCount')} />
-                                                <ReportHeader label="Active/Inactive Flag" id="isActiveFlag" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.isActiveFlag} onFilterChange={handleFilterChange} className="pr-6 w-[180px]" options={getUniqueValues('isActiveFlag')} />
+                                                <ReportHeader label="Attachments" id="attachmentCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.attachmentCount} onFilterChange={handleFilterChange} className="pr-6 w-[150px]" options={getUniqueValues('attachmentCount')} />
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -583,18 +573,10 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                     <TableCell className="text-xs font-bold text-slate-300">{d.archivedDate}</TableCell>
                                                     <TableCell className="font-bold text-slate-800">{d.approverName}</TableCell>
                                                     <TableCell className="text-slate-500 text-xs italic truncate max-w-[200px]">{d.approvalComments}</TableCell>
-                                                    <TableCell className="font-black text-indigo-600 text-xs">{d.turnaroundTime}</TableCell>
                                                     <TableCell><Badge variant="outline" className="font-bold text-[10px] border-slate-200">{d.currentVersion}</Badge></TableCell>
                                                     <TableCell className="font-bold text-center">{d.totalRevisions}</TableCell>
                                                     <TableCell className="text-xs font-bold text-slate-400">{d.isDuplicate}</TableCell>
-                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.duplicatedFrom}</TableCell>
-                                                    <TableCell className="font-bold text-center">{d.linkedRecordsCount}</TableCell>
-                                                    <TableCell className="font-bold text-center">{d.attachmentCount}</TableCell>
-                                                    <TableCell className="pr-6">
-                                                        <Badge variant={d.isActiveFlag === 'Active' ? 'success' : 'secondary'} className="font-black text-[9px] uppercase tracking-wider">
-                                                            {d.isActiveFlag}
-                                                        </Badge>
-                                                    </TableCell>
+                                                    <TableCell className="pr-6 font-bold text-center">{d.attachmentCount}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
