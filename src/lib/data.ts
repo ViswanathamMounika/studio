@@ -9,7 +9,7 @@ export const initialDrafts: Definition[] = [
     templateId: '1',
     authorId: 'u2',
     submittedBy: 'Sarah Chen',
-    submittedAt: new Date(Date.now() - 3600000 * 24 * 3).toISOString(), // 3 days ago
+    submittedAt: new Date(Date.now() - 3600000 * 24 * 5).toISOString(), // 5 days ago (Bottleneck)
     isDraft: false,
     isPendingApproval: true,
     keywords: ['mapping', 'codes', 'v2'],
@@ -30,7 +30,7 @@ export const initialDrafts: Definition[] = [
     templateId: '1',
     authorId: 'u4',
     submittedBy: 'Elena Rodriguez',
-    submittedAt: new Date(Date.now() - 3600000 * 24 * 7).toISOString(), // 7 days ago
+    submittedAt: new Date(Date.now() - 3600000 * 24 * 1).toISOString(), // 1 day ago
     isDraft: false,
     isPendingApproval: true,
     keywords: ['provider', 'contract', 'legal'],
@@ -43,6 +43,21 @@ export const initialDrafts: Definition[] = [
       { sectionId: '1', raw: 'Standard provider contract terms.' },
       { sectionId: '2', raw: '<p>Standard legal language for provider network participation.</p>', html: '<p>Standard legal language for provider network participation.</p>' }
     ]
+  },
+  {
+    id: 'draft_orphan_1',
+    name: 'Abandoned Benefit Note',
+    module: 'Member',
+    templateId: '1',
+    authorId: 'u3',
+    isDraft: true,
+    isPendingApproval: false,
+    revisions: [{ ticketId: 'BASE', date: '2023-10-10', developer: 'Mark Wilson', description: 'Draft started', snapshot: {} as any }],
+    isArchived: false,
+    keywords: [],
+    description: 'Empty',
+    supportingTables: [],
+    attachments: []
   }
 ];
 
@@ -205,6 +220,15 @@ export const initialTemplates: Template[] = [
     ]
   },
   {
+    id: 'unused-1',
+    name: 'Obsolete Legacy Blueprint',
+    description: 'A template with 0 associated definitions.',
+    module: 'Other',
+    isDefault: false,
+    isActive: true,
+    sections: []
+  },
+  {
     id: '2',
     name: 'Clinical Authorization Protocol',
     description: 'Structured layout for medical necessity and clinical review guidelines.',
@@ -306,9 +330,9 @@ export const initialTemplates: Template[] = [
   }
 ];
 
-const baselineRevision = (name: string, desc: string): Revision => ({
+const baselineRevision = (name: string, desc: string, date: string = '2023-01-01'): Revision => ({
     ticketId: `MPM-BASE-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
-    date: '2023-01-01',
+    date: date,
     developer: 'System Admin',
     description: 'Baseline documentation imported from master repository.',
     snapshot: {
@@ -348,7 +372,12 @@ export const initialDefinitions: Definition[] = [
         sourceName: 'vw_AuthDecisionDate',
         isArchived: false,
         isDraft: false,
-        revisions: [baselineRevision('Auth Decision Date', 'Baseline definition.')],
+        revisions: [
+            baselineRevision('Auth Decision Date', 'Major update', '2024-02-10'),
+            baselineRevision('Auth Decision Date', 'Baseline definition.', '2023-01-01'),
+            baselineRevision('Auth Decision Date', 'Historical v1', '2022-01-01'),
+            baselineRevision('Auth Decision Date', 'Alpha v0.1', '2021-01-01')
+        ],
         supportingTables: [],
         attachments: [],
         sectionValues: [
@@ -383,7 +412,7 @@ export const initialDefinitions: Definition[] = [
         shortDescription: 'SLA rules for auth decisions.',
         isArchived: false,
         isDraft: false,
-        revisions: [baselineRevision('Prior Auth Turnaround SLA', 'Compliance baseline.')],
+        revisions: [baselineRevision('Prior Auth Turnaround SLA', 'Compliance baseline.', '2023-05-15')], // 9 months ago
         supportingTables: [],
         attachments: [],
         sectionValues: [
@@ -417,7 +446,7 @@ export const initialDefinitions: Definition[] = [
         sourceName: 'usp_GetContractedRates',
         isArchived: false,
         isDraft: false,
-        revisions: [baselineRevision('Contracted Rates', 'Baseline logic.')],
+        revisions: [baselineRevision('Contracted Rates', 'Baseline logic.', '2023-01-01')], // Stale
         supportingTables: [],
         attachments: []
       },
@@ -506,46 +535,21 @@ export const initialDefinitions: Definition[] = [
         ]
       }
     ]
-  },
-  {
-    id: '5',
-    name: 'Core System',
-    module: 'Core',
-    keywords: [],
-    description: '',
-    revisions: [],
-    isArchived: false,
-    isDraft: false,
-    supportingTables: [],
-    attachments: [],
-    children: [
-      {
-        id: '5.1.2',
-        name: 'Line of Business (LOB) Registry',
-        module: 'Core',
-        templateId: '1',
-        keywords: ['LOB', 'Commercial', 'Medicare'],
-        description: '<p>Registry of authorized business lines.</p>',
-        shortDescription: 'Master list of LOB codes.',
-        isArchived: false,
-        isDraft: false,
-        revisions: [baselineRevision('Line of Business Registry', 'System baseline.')],
-        supportingTables: [],
-        attachments: []
-      }
-    ]
   }
 ];
 
 export const initialActivityLogs: ActivityLog[] = [
   { id: '1', userName: 'Dhilip Sagadevan', definitionName: 'System Configuration', activityType: 'System Configuration Updated', occurredDate: new Date(Date.now() - 3600000 * 1).toISOString(), details: 'Updated maximum file upload size to 25MB.' },
   { id: '2', userName: 'Sarah Chen', definitionName: 'Auth Decision Date', activityType: 'Definition Updated', occurredDate: new Date(Date.now() - 3600000 * 5).toISOString(), details: 'Updated SLA logic for urgent requests.' },
-  { id: '3', userName: 'Elena Rodriguez', definitionName: 'Breast Cancer Screening (BCS)', activityType: 'Approval Decision', occurredDate: new Date(Date.now() - 3600000 * 10).toISOString(), details: 'Approved & Published.' }
+  { id: '3', userName: 'Elena Rodriguez', definitionName: 'Breast Cancer Screening (BCS)', activityType: 'Approval Decision', occurredDate: new Date(Date.now() - 3600000 * 10).toISOString(), details: 'Approved & Published.' },
+  { id: '4', userName: 'Administrator', definitionName: 'User Management', activityType: 'User Profile Updated', occurredDate: new Date(Date.now() - 3600000 * 2).toISOString(), details: 'Activated account for Sarah Chen' }
 ];
 
 export const initialApprovalHistory: ApprovalHistoryEntry[] = [
   { id: 'h1', definitionId: '1.1.1', definitionName: 'Auth Decision Date', action: 'Approved', userName: 'Administrator', date: new Date(Date.now() - 3600000 * 24 * 5).toISOString(), comment: 'All metadata verified against EzCAP production schema.' },
-  { id: 'h2', definitionId: '1.1.1', definitionName: 'Auth Decision Date', action: 'Submitted', userName: 'Sarah Chen', date: new Date(Date.now() - 3600000 * 24 * 6).toISOString() }
+  { id: 'h2', definitionId: '1.1.1', definitionName: 'Auth Decision Date', action: 'Submitted', userName: 'Sarah Chen', date: new Date(Date.now() - 3600000 * 24 * 6).toISOString() },
+  { id: 'h3', definitionId: '1.1.2', definitionName: 'Service Type Mapping', action: 'Changes Requested', userName: 'Administrator', date: new Date(Date.now() - 3600000 * 24 * 1).toISOString(), comment: 'Duplication identified: This logic overlaps with the Provider Master mapping table.' },
+  { id: 'h4', definitionId: '1.1.2', definitionName: 'Service Type Mapping', action: 'Rejected', userName: 'Administrator', date: new Date(Date.now() - 3600000 * 24 * 10).toISOString(), comment: 'Formatting issues: Technical SQL snippet is missing required JOIN criteria.' },
 ];
 
 export const initialUsers: UserAccount[] = [
