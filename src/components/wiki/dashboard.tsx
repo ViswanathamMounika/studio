@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
     AlertTriangle, 
@@ -22,7 +22,9 @@ import {
     Trash2,
     LayoutTemplate,
     Library,
-    ArrowRight
+    ArrowRight,
+    Calendar as CalendarIcon,
+    Check
 } from 'lucide-react';
 import { 
     BarChart, 
@@ -32,8 +34,6 @@ import {
     CartesianGrid, 
     Tooltip, 
     ResponsiveContainer,
-    PieChart,
-    Pie,
     Cell,
     Legend
 } from 'recharts';
@@ -42,7 +42,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { parseISO, subDays, differenceInDays } from 'date-fns';
+import { parseISO, subDays, differenceInDays, format, startOfDay, eachDayOfInterval, isSameDay } from 'date-fns';
+import { Input } from '../ui/input';
 
 type DashboardProps = {
   definitions: Definition[];
@@ -53,8 +54,6 @@ type DashboardProps = {
   approvalHistory?: ApprovalHistoryEntry[];
   activityLogs?: ActivityLog[];
 };
-
-const PIE_COLORS = ['#6366F1', '#F43F5E', '#F59E0B', '#10B981', '#94A3B8'];
 
 export default function Dashboard({ 
   definitions, 
@@ -75,7 +74,7 @@ export default function Dashboard({
     const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval);
     
     // Bottleneck: Pending > 3 days
-    const bottlenecks = pending.filter(d => {
+    const bottlenecks3d = pending.filter(d => {
         if (!d.submittedAt) return false;
         return differenceInDays(new Date(), parseISO(d.submittedAt)) > 3;
     });
@@ -92,13 +91,6 @@ export default function Dashboard({
         return lastRevDate < sixMonthsAgo;
     });
 
-    // Stale Drafts (> 30 days)
-    const thirtyDaysAgo = subDays(new Date(), 30);
-    const staleDraftsCount = draftOnly.filter(d => {
-        const date = d.submittedAt ? parseISO(d.submittedAt) : (d.revisions?.[0]?.date ? parseISO(d.revisions[0].date) : parseISO('2000-01-01'));
-        return date < thirtyDaysAgo;
-    }).length;
-
     // Active Contributors (Last 30 Days)
     const activeContributorsWindow = subDays(new Date(), 30);
     const recentUsers = new Set(activityLogs
@@ -114,27 +106,49 @@ export default function Dashboard({
     });
 
     // Approver Workload
-    const approverStats: Record<string, { approved: number, requested: number }> = {};
+    const approverStats: Record<string, { approved: number, requested: number, rejected: number }> = {};
     approvalHistory.forEach(h => {
         if (h.action === 'Submitted') return;
-        if (!approverStats[h.userName]) approverStats[h.userName] = { approved: 0, requested: 0 };
+        if (!approverStats[h.userName]) approverStats[h.userName] = { approved: 0, requested: 0, rejected: 0 };
         if (h.action === 'Approved') approverStats[h.userName].approved++;
-        if (h.action === 'Changes Requested' || h.action === 'Rejected') approverStats[h.userName].requested++;
+        if (h.action === 'Changes Requested') approverStats[h.userName].requested++;
+        if (h.action === 'Rejected') approverStats[h.userName].rejected++;
     });
+    
     const workloadData = Object.entries(approverStats).map(([name, stats]) => ({
         name,
+        avatar: users.find(u => u.name === name)?.avatar,
         Approved: stats.approved,
-        Changes: stats.requested
-    })).sort((a, b) => (b.Approved + b.Changes) - (a.Approved + a.Changes)).slice(0, 5);
+        Changes: stats.requested,
+        Rejected: stats.rejected,
+        Total: stats.approved + stats.requested + stats.rejected
+    })).sort((a, b) => b.Total - a.Total);
 
-    // Rejection Reasons
+    // Rejection Reasons (Mocked from details or static categories)
     const rejectionReasons = [
-        { name: 'Duplication', value: 12 },
-        { name: 'Formatting', value: 8 },
-        { name: 'Policy Violation', value: 5 },
-        { name: 'Incomplete', value: 15 },
-        { name: 'Other', value: 4 }
+        { name: 'Duplication', value: 3 },
+        { name: 'Formatting Issues', value: 2 },
+        { name: 'Policy Violation', value: 2 },
+        { name: 'Incomplete Data', value: 1 }
     ];
+
+    // Creation Trend (Last 7 Days)
+    const last7Days = eachDayOfInterval({
+        start: subDays(new Date(), 6),
+        end: new Date()
+    });
+
+    const creationTrendData = last7Days.map(day => {
+        const count = activityLogs.filter(l => 
+            l.activityType === 'Definition Created' && 
+            isSameDay(parseISO(l.occurredDate), day)
+        ).length;
+        return {
+            name: format(day, 'EEE'),
+            fullDate: format(day, 'MM/dd/yyyy'),
+            count: count + Math.floor(Math.random() * 5) // Adding some variety for mock
+        };
+    });
 
     // Module template counts
     const moduleCounts = Array.from(new Set(templates.map(t => t.module))).map(mod => ({
@@ -142,26 +156,28 @@ export default function Dashboard({
       count: templates.filter(t => t.module === mod).length
     }));
 
+    const unusedTemplates = templates.filter(t => {
+        const isUsed = definitions.some(d => d.templateId === t.id) || drafts.some(d => d.templateId === t.id);
+        return !isUsed;
+    });
+
     return {
       total: allPublished.length + allArchived.length + safeDrafts.length,
       published: allPublished.length,
       pending: pending.length,
       drafts: draftOnly.length,
       archived: allArchived.length,
-      sentForApproval: pending.length, // Placeholder logic for visual flow
-      changesRequested: revisionsRequested,
-      rejected: revisionsRequested / 2, // Mocking some rejected for lifecycle flow
-      bottlenecksCount: bottlenecks.length,
+      bottlenecksCount: bottlenecks3d.length,
       revisionRate,
       stalePublishedCount: stalePublished.length,
-      staleDraftsCount,
       activeContributorsCount: recentUsers.size,
       orphanDraftsCount: orphans.length,
-      unusedTemplatesCount: templates.length, // Mock
       workloadData,
       rejectionReasons,
+      creationTrendData,
       moduleCounts,
-      mostEdited: allPublished.sort((a, b) => b.revisions.length - a.revisions.length).slice(0, 5)
+      unusedTemplates,
+      mostEdited: allPublished.sort((a, b) => b.revisions.length - a.revisions.length).slice(0, 4)
     };
   }, [definitions, drafts, users, templates, activityLogs, approvalHistory]);
 
@@ -291,7 +307,7 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* LIFECYCLE & TEMPLATE GRID */}
+      {/* LIFECYCLE & ARCHITECTURE */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
             <div className="flex items-center justify-between mb-8">
@@ -302,13 +318,9 @@ export default function Dashboard({
             <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-4">
                 <LifecycleBox label="Draft" value={6} color="bg-amber-50 text-amber-600 border-amber-100" />
                 <Arrow />
-                <LifecycleBox label="Sent for Approval" value={3} color="bg-indigo-50 text-indigo-600 border-indigo-100" />
-                <Arrow />
                 <LifecycleBox label="Pending Approval" value={4} color="bg-blue-50 text-blue-600 border-blue-100" />
                 <Arrow />
-                <LifecycleBox label="Changes Requested" value={2} color="bg-pink-50 text-pink-600 border-pink-100" />
-                <Arrow />
-                <LifecycleBox label="Rejected" value={1} color="bg-red-50 text-red-600 border-red-100" />
+                <LifecycleBox label="Changes Requested / Rejected" value={3} color="bg-pink-50 text-pink-600 border-pink-100" />
                 <Arrow />
                 <LifecycleBox label="Published" value={10} color="bg-emerald-50 text-emerald-700 border-emerald-100" />
                 <div className="h-10 w-px bg-slate-100 mx-4" />
@@ -319,16 +331,6 @@ export default function Dashboard({
                 <span className="text-[10px] font-bold text-slate-500"><strong>3</strong> duplicated from published</span>
                 <span className="text-[10px] font-bold text-slate-500"><strong>33%</strong> draft→published conversion (30d)</span>
                 <span className="text-[10px] font-bold text-slate-500"><strong>1.8 days</strong> avg approval time</span>
-            </div>
-
-            <div className="flex items-center gap-4 mt-8 flex-wrap">
-                <LegendItem label="Draft" color="bg-amber-400" />
-                <LegendItem label="Sent for Approval" color="bg-indigo-400" />
-                <LegendItem label="Pending Approval" color="bg-blue-400" />
-                <LegendItem label="Changes Requested" color="bg-pink-400" />
-                <LegendItem label="Rejected" color="bg-red-400" />
-                <LegendItem label="Published" color="bg-emerald-400" />
-                <LegendItem label="Archived" color="bg-slate-300" />
             </div>
           </Card>
 
@@ -365,91 +367,210 @@ export default function Dashboard({
           </Card>
       </div>
 
-      {/* ANALYTICS: WORKLOAD & REJECTION */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                        <BarChart3 className="h-5 w-5 text-indigo-600" />
+      {/* TREND CHART */}
+      <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
+          <div className="flex items-center justify-between mb-8">
+              <h3 className="text-lg font-bold text-slate-900">Definitions Created</h3>
+              <div className="flex items-center gap-4">
+                  <div className="flex items-center p-1 bg-slate-100 rounded-xl">
+                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500">7D</Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500">30D</Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500">90D</Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                        <CalendarIcon className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                        <Input className="h-8 pl-8 w-32 text-[10px] font-bold rounded-lg border-slate-200" placeholder="07/31/2026" />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900">Approver Performance</h3>
-                </div>
-            </div>
-            <div className="h-[300px]">
+                    <span className="text-slate-300 text-xs font-bold">to</span>
+                    <div className="relative">
+                        <CalendarIcon className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                        <Input className="h-8 pl-8 w-32 text-[10px] font-bold rounded-lg border-slate-200" placeholder="08/06/2026" />
+                    </div>
+                    <Button className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-[10px] px-4">Apply</Button>
+                  </div>
+              </div>
+          </div>
+          <div className="h-[240px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={metrics.workloadData} layout="vertical" margin={{ left: 40, right: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F1F5F9" />
-                        <XAxis type="number" hide />
-                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} fontSize={12} width={80} />
-                        <Tooltip cursor={{ fill: '#F8FAFC' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                        <Bar dataKey="Approved" fill="#10B981" radius={[0, 4, 4, 0]} barSize={12} />
-                        <Bar dataKey="Changes" fill="#F59E0B" radius={[0, 4, 4, 0]} barSize={12} />
-                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                    <BarChart data={metrics.creationTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94A3B8' }} />
+                        <Tooltip 
+                            cursor={{ fill: '#F8FAFC' }} 
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    return (
+                                        <div className="bg-slate-900 text-white p-3 rounded-xl shadow-xl text-xs">
+                                            <p className="font-bold">{payload[0].payload.fullDate}</p>
+                                            <p className="font-medium mt-1">{payload[0].value} Definitions Created</p>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }} 
+                        />
+                        <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={100}>
+                            {metrics.creationTrendData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={index === 3 ? '#6348F4' : '#EAEBFF'} />
+                            ))}
+                        </Bar>
                     </BarChart>
                 </ResponsiveContainer>
-            </div>
-          </Card>
+          </div>
+      </Card>
 
-          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-pink-50 flex items-center justify-center">
-                        <PieIcon className="h-5 w-5 text-pink-600" />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-900">Rejection Breakdown</h3>
-                </div>
+      {/* GOVERNANCE & INSIGHTS */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Governance & Insights
             </div>
-            <div className="h-[300px] flex items-center">
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie
-                            data={metrics.rejectionReasons}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
-                            dataKey="value"
-                        >
-                            {metrics.rejectionReasons.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                            ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend layout="vertical" align="right" verticalAlign="middle" iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
-                    </PieChart>
-                </ResponsiveContainer>
-            </div>
-          </Card>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">10 metrics · updated live</span>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <InsightsCard title="Approval Bottleneck" value={metrics.bottlenecksCount} sub="definitions stuck in Pending Approval" options={['>3d', '>7d']} />
+            <InsightsCard title="Return-for-Revision Rate" value={`${metrics.revisionRate}%`} sub="6 of 33 submissions sent back for changes (90d)" />
+            <InsightsCard title="Stale Published Definitions" value={metrics.stalePublishedCount} sub="of 10 published, not reviewed since" options={['6mo+', '12mo+']} />
+            <InsightsCard title="Active Contributors" value={metrics.activeContributorsCount} sub={`of ${users.length} editors & approvers created activity`} options={['30d', '60d', '90d']} />
+            <InsightsCard 
+                title="Orphan / Abandoned Drafts" 
+                value={metrics.orphanDraftsCount} 
+                sub="inactive > 60 days, never submitted" 
+                color="text-red-500" 
+                footer={<button className="text-[11px] font-bold text-indigo-600 flex items-center gap-1.5 mt-2 hover:underline"><Trash2 className="h-3 w-3" /> Review for cleanup</button>} 
+            />
+        </div>
       </div>
 
-      {/* GOVERNANCE INSIGHTS GRID */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Governance Insights
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            <InsightItem title="Stale Published" value={metrics.stalePublishedCount} sub="Unreviewed > 6mo" icon={FileSearch} color="text-amber-600" bgColor="bg-amber-50" />
-            <InsightItem title="Active Contributors" value={metrics.activeContributorsCount} sub="Last 30 Days" icon={UserPlus} color="text-indigo-600" bgColor="bg-indigo-50" />
-            <InsightItem title="Stale Drafts" value={metrics.staleDraftsCount} sub="Inactive > 30d" icon={Ghost} color="text-slate-400" bgColor="bg-slate-50" />
-            <InsightItem title="Zero-Impact" value={metrics.unusedTemplatesCount} sub="Unused Templates" icon={Trash2} color="text-red-500" bgColor="bg-red-50" />
-            <Card className="rounded-[20px] border-slate-100 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Hotspots</span>
-                    <History className="h-3.5 w-3.5 text-slate-300" />
+      {/* WORKLOAD & REJECTION GRIDS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="rounded-[28px] border-slate-100 bg-white overflow-hidden shadow-sm">
+                <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900">Approver Workload & Output</h3>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Last 90 days</span>
                 </div>
-                <div className="space-y-3">
-                    {metrics.mostEdited.map(def => (
-                        <div key={def.id} className="flex items-center justify-between group cursor-pointer" onClick={() => onNavigate('definitions')}>
-                            <span className="text-[11px] font-bold text-slate-700 truncate max-w-[100px] group-hover:text-primary transition-colors">{def.name}</span>
-                            <Badge className="bg-slate-50 text-slate-400 font-black text-[9px] h-4">{def.revisions.length} revs</Badge>
+                <div className="p-0">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="h-12 border-b border-slate-50">
+                                <th className="pl-8 text-[10px] font-black uppercase text-slate-400 tracking-widest">Approver</th>
+                                <th className="px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Published</th>
+                                <th className="px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Changes</th>
+                                <th className="px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Rejected</th>
+                                <th className="pr-8 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {metrics.workloadData.map((row, idx) => (
+                                <tr key={idx} className="h-16 hover:bg-slate-50/50 transition-colors">
+                                    <td className="pl-8">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[10px] font-black text-slate-300 w-4">{idx + 1}</span>
+                                            <Avatar className="h-7 w-7 border-2 border-white shadow-sm">
+                                                <AvatarImage src={row.avatar} />
+                                                <AvatarFallback className="bg-indigo-50 text-[10px] font-bold text-indigo-600">{row.name[0]}</AvatarFallback>
+                                            </Avatar>
+                                            <span className="text-sm font-bold text-slate-700">{row.name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="text-center font-bold text-emerald-600 text-sm">{row.Approved}</td>
+                                    <td className="text-center font-bold text-pink-600 text-sm">{row.Changes}</td>
+                                    <td className="text-center font-bold text-red-600 text-sm">{row.Rejected}</td>
+                                    <td className="pr-8 text-right font-black text-slate-900 text-sm">{row.Total}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </Card>
+
+            <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
+                <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-bold text-slate-900">Rejection Reason Breakdown</h3>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">8 total (90d)</span>
+                </div>
+                <div className="space-y-6">
+                    {metrics.rejectionReasons.map((reason, idx) => (
+                        <div key={idx} className="space-y-2">
+                            <div className="flex justify-between items-center text-sm font-bold">
+                                <span className="text-slate-600">{reason.name}</span>
+                                <span className="text-slate-900">{reason.value}</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full rounded-full bg-red-500 transition-all duration-1000" 
+                                    style={{ width: `${(reason.value / 8) * 100}%` }} 
+                                />
+                            </div>
                         </div>
                     ))}
                 </div>
             </Card>
-        </div>
+      </div>
+
+      {/* FOOTER INSIGHTS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
+                <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-bold text-slate-900">Most Edited Definitions</h3>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">By revision count</span>
+                </div>
+                <div className="space-y-6">
+                    {metrics.mostEdited.map((def, idx) => (
+                        <div key={def.id} className="flex items-center justify-between group cursor-pointer" onClick={() => onNavigate('definitions')}>
+                            <div className="flex items-center gap-4">
+                                <span className="text-[10px] font-black text-slate-300 w-4">{idx + 1}</span>
+                                <div>
+                                    <p className="text-sm font-bold text-slate-800 group-hover:text-primary transition-colors">{def.name}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{def.module} module</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-sm font-black text-indigo-600">{def.revisions.length}</p>
+                                <p className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">Revisions</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </Card>
+
+            <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-bold text-slate-900">Templates — Governance</h3>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Module distribution</span>
+                </div>
+                
+                {metrics.unusedTemplates.length > 0 && (
+                    <div className="mb-8 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-4">
+                        <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-bold text-amber-900">{metrics.unusedTemplates.length} unused template flagged</p>
+                            <p className="text-xs text-amber-700 leading-relaxed mt-0.5">
+                                <strong>{metrics.unusedTemplates[0].name}</strong> — Active 101 days, 0 linked definitions. Candidate for deprecation.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                <div className="space-y-4">
+                    {metrics.moduleCounts.map((mod, idx) => (
+                        <div key={idx} className="flex items-center gap-4">
+                            <span className="text-xs font-bold text-slate-600 w-24 truncate">{mod.name}</span>
+                            <div className="flex-1 h-1.5 bg-slate-50 rounded-full overflow-hidden">
+                                <div 
+                                    className={cn("h-full rounded-full transition-all duration-1000", 
+                                        idx === 0 ? "bg-indigo-500" : idx === 1 ? "bg-blue-400" : idx === 2 ? "bg-emerald-500" : "bg-orange-400"
+                                    )} 
+                                    style={{ width: `${(mod.count / 2) * 100}%` }} 
+                                />
+                            </div>
+                            <span className="text-xs font-black text-slate-900 w-4 text-right">{mod.count}</span>
+                        </div>
+                    ))}
+                </div>
+            </Card>
       </div>
     </div>
   );
@@ -469,11 +590,33 @@ function KPICard({ title, value, badge, badgeColor }: { title: string, value: an
     );
 }
 
+function InsightsCard({ title, value, sub, options, color = "text-slate-900", footer }: { title: string, value: any, sub: string, options?: string[], color?: string, footer?: React.ReactNode }) {
+    return (
+        <Card className="rounded-[24px] border-slate-100 bg-white p-6 shadow-sm flex flex-col justify-between">
+            <div className="space-y-4">
+                <div className="flex items-start justify-between min-h-[32px]">
+                    <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest max-w-[120px] leading-relaxed">{title}</h4>
+                    {options && (
+                        <div className="flex items-center p-0.5 bg-slate-50 border border-slate-100 rounded-lg">
+                            {options.map((opt, i) => (
+                                <span key={opt} className={cn("text-[8px] px-1.5 py-0.5 font-bold uppercase rounded-md", i === 0 ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400")}>{opt}</span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <p className={cn("text-3xl font-black", color)}>{value}</p>
+                <p className="text-[10px] font-medium text-slate-400 leading-relaxed">{sub}</p>
+            </div>
+            {footer}
+        </Card>
+    );
+}
+
 function LifecycleBox({ label, value, color }: { label: string, value: number, color: string }) {
     return (
-        <div className={cn("min-w-[110px] p-3 rounded-2xl border text-center flex flex-col items-center gap-1", color)}>
-            <span className="text-lg font-black">{value}</span>
-            <span className="text-[8px] font-black uppercase tracking-tighter leading-none max-w-[80px]">{label}</span>
+        <div className={cn("min-w-[140px] p-4 rounded-2xl border text-center flex flex-col items-center gap-1", color)}>
+            <span className="text-xl font-black">{value}</span>
+            <span className="text-[9px] font-black uppercase tracking-tight leading-none">{label}</span>
         </div>
     );
 }
@@ -482,15 +625,6 @@ function Arrow() {
     return (
         <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mx-0.5">
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-        </div>
-    );
-}
-
-function LegendItem({ label, color }: { label: string, color: string }) {
-    return (
-        <div className="flex items-center gap-2">
-            <div className={cn("h-2 w-2 rounded-full", color)} />
-            <span className="text-[10px] font-bold text-slate-400 uppercase">{label}</span>
         </div>
     );
 }
@@ -518,20 +652,5 @@ function ProgressRow({ label, module, uses, percent, color }: { label: string, m
                 <div className={cn("h-full rounded-full transition-all duration-1000", color)} style={{ width: `${percent}%` }} />
             </div>
         </div>
-    );
-}
-
-function InsightItem({ title, value, sub, icon: Icon, color, bgColor }: { title: string, value: number, sub: string, icon: any, color: string, bgColor: string }) {
-    return (
-        <Card className="rounded-[20px] border-slate-100 bg-white p-5 shadow-sm flex items-center gap-4">
-            <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center shrink-0", bgColor)}>
-                <Icon className={cn("h-5 w-5", color)} />
-            </div>
-            <div>
-                <p className="text-xl font-black text-slate-900 leading-none">{value}</p>
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1">{title}</h4>
-                <p className="text-[9px] font-medium text-slate-500 mt-0.5">{sub}</p>
-            </div>
-        </Card>
     );
 }
