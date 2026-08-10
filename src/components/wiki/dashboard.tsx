@@ -27,16 +27,6 @@ import {
     Database,
     Zap
 } from 'lucide-react';
-import { 
-    BarChart, 
-    Bar, 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip, 
-    ResponsiveContainer,
-    Cell
-} from 'recharts';
 import type { Definition, UserAccount, Template, View, ApprovalHistoryEntry, ActivityLog, DiscussionMessage } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -66,9 +56,6 @@ export default function Dashboard({
   activityLogs = [] 
 }: DashboardProps) {
   
-  const [chartStartDate, setChartStartDate] = useState<string>(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
-  const [chartEndDate, setChartEndDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-
   const metrics = useMemo(() => {
     const flatten = (items: Definition[]): Definition[] => {
         return items.flatMap(d => [d, ...(d.children ? flatten(d.children) : [])]);
@@ -88,8 +75,6 @@ export default function Dashboard({
     const changesRequestedCount = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'change-request').length;
     const rejectedCount = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'rejection').length;
     
-    const mostEdited = [...allPublished].sort((a, b) => (b.revisions?.length || 0) - (a.revisions?.length || 0)).slice(0, 5);
-
     const sixMonthsAgo = subDays(new Date(), 180);
     const stalePublished = allPublished.filter(d => {
         const lastRevDate = d.revisions[0] ? parseISO(d.revisions[0].date) : parseISO('2000-01-01');
@@ -119,26 +104,6 @@ export default function Dashboard({
         Rejected: stats.rejected,
         Total: stats.approved + stats.requested + stats.rejected
     })).sort((a, b) => b.Total - a.Total);
-
-    const start = parseISO(chartStartDate);
-    const end = parseISO(chartEndDate);
-    let creationTrendData: any[] = [];
-    
-    if (isValid(start) && isValid(end) && start <= end) {
-        creationTrendData = eachDayOfInterval({ start, end }).map(day => {
-            const realCount = activityLogs.filter(l => 
-                l.activityType === 'Definition Created' && 
-                isSameDay(parseISO(l.occurredDate), day)
-            ).length;
-            const dummyCount = Math.floor(Math.random() * 3);
-            const count = realCount > 0 ? realCount : (day.getDay() % 3 === 0 ? dummyCount : 0);
-            return {
-                name: format(day, 'MMM dd'),
-                fullDate: format(day, 'MM/dd/yyyy'),
-                count: count
-            };
-        });
-    }
 
     const activeTemplatesCount = templates.filter(t => t.isActive).length;
     const inactiveTemplatesCount = templates.filter(t => !t.isActive).length;
@@ -175,13 +140,11 @@ export default function Dashboard({
       stalePublishedCount: stalePublished.length,
       orphanDraftsCount: orphans.length,
       workloadData,
-      creationTrendData,
       activeTemplatesCount,
       inactiveTemplatesCount,
       moduleChipData,
       templateUsage,
       unusedTemplates,
-      mostEdited,
       totalUsers: users.length,
       activeUsers: users.filter(u => u.status === 'Active').length,
       inactiveUsers: users.filter(u => u.status === 'Inactive').length,
@@ -192,7 +155,7 @@ export default function Dashboard({
           { id: 'ed', label: 'Editor', desc: 'Creates definitions', icon: 'ED', count: users.filter(u => u.role === 'Admin' || u.role === 'Standard User').length, color: 'text-blue-600 bg-blue-50' }
       ]
     };
-  }, [definitions, drafts, users, templates, activityLogs, approvalHistory, chartStartDate, chartEndDate]);
+  }, [definitions, drafts, users, templates, approvalHistory]);
 
   const attentionItems = [
     { name: 'Loan Eligibility Rule v3', code: 'DEF-2210', status: 'Pending Approval', author: 'Rahul M.', waiting: '5 days', type: 'pending' },
@@ -216,6 +179,64 @@ export default function Dashboard({
 
   return (
     <div className="p-8 space-y-12 max-w-[1600px] mx-auto pb-32">
+      {/* 1. DEFINITION LIFECYCLE */}
+      <div className="space-y-4">
+          <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+              <History className="h-3.5 w-3.5" />
+              Definition Lifecycle
+          </div>
+          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-10">
+                <h3 className="text-lg font-bold text-slate-900">Documentation Pipeline</h3>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> across all states</span>
+            </div>
+            
+            <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-4 justify-between">
+                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-slate-50 text-slate-600 border-slate-100" icon={FileText} />
+                <Arrow />
+                <LifecycleBox label="Sent for Approval" value={metrics.pendingCount} color="bg-blue-50 text-blue-600 border-blue-100" icon={Send} />
+                <Arrow />
+                
+                <div className="flex flex-col gap-3">
+                    <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-amber-50 text-amber-600 border-amber-100" icon={RefreshCw} size="sm" />
+                    <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-red-50 text-red-600 border-red-100" icon={XCircle} size="sm" />
+                </div>
+
+                <Arrow />
+                <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-emerald-50 text-emerald-700 border-emerald-100" icon={CheckCircle2} />
+                <Arrow />
+                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-slate-100 text-slate-400 border-slate-200" icon={Trash2} />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-8 pt-4 border-t border-slate-50">
+                <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-indigo-500" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>33%</strong> conversion rate (30d)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>1.8 days</strong> avg. approval time</span>
+                </div>
+            </div>
+          </Card>
+      </div>
+
+      {/* 2. GOVERNANCE & INSIGHTS */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Governance & Insights
+            </div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active maintenance targets</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <InsightsCard title="Stale Published Definitions" value={metrics.stalePublishedCount} sub="of total published, not reviewed in >6 months" options={['6mo+', '12mo+']} />
+            <InsightsCard title="Orphan / Abandoned Drafts" value={metrics.orphanDraftsCount} sub="inactive > 60 days, never submitted for review" color="text-red-500" footer={<button className="text-[11px] font-bold text-indigo-600 flex items-center gap-1.5 mt-2 hover:underline"><Trash2 className="h-3 w-3" /> Review for cleanup</button>} />
+        </div>
+      </div>
+
+      {/* 3. NEEDS ATTENTION */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
@@ -284,104 +305,58 @@ export default function Dashboard({
         </Card>
       </div>
 
+      {/* 4. WORKFLOW PERFORMANCE */}
       <div className="space-y-4">
           <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-              <History className="h-3.5 w-3.5" />
-              Definition Lifecycle
+              <BarChart3 className="h-3.5 w-3.5" />
+              Workflow Performance
           </div>
-          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-10">
-                <h3 className="text-lg font-bold text-slate-900">Documentation Pipeline</h3>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> across all states</span>
-            </div>
-            
-            <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-4 justify-between">
-                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-slate-50 text-slate-600 border-slate-100" icon={FileText} />
-                <Arrow />
-                <LifecycleBox label="Sent for Approval" value={metrics.pendingCount} color="bg-blue-50 text-blue-600 border-blue-100" icon={Send} />
-                <Arrow />
-                
-                <div className="flex flex-col gap-3">
-                    <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-amber-50 text-amber-600 border-amber-100" icon={RefreshCw} size="sm" />
-                    <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-red-50 text-red-600 border-red-100" icon={XCircle} size="sm" />
+          <Card className="rounded-[28px] border-slate-100 bg-white overflow-hidden shadow-sm">
+                <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900">Approver Workload & Output</h3>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Last 90 days audit</span>
                 </div>
-
-                <Arrow />
-                <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-emerald-50 text-emerald-700 border-emerald-100" icon={CheckCircle2} />
-                <Arrow />
-                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-slate-100 text-slate-400 border-slate-200" icon={Trash2} />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-8 pt-4 border-t border-slate-50">
-                <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-indigo-500" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>33%</strong> conversion rate (30d)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>1.8 days</strong> avg. approval time</span>
-                </div>
-            </div>
-          </Card>
-      </div>
-
-      <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-              <h3 className="text-lg font-bold text-slate-900">Definitions Created</h3>
-              <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                        <CalendarIcon className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                        <Input type="date" className="h-8 pl-8 w-40 text-[10px] font-bold rounded-lg border-slate-200" value={chartStartDate} onChange={(e) => setChartStartDate(e.target.value)} />
-                    </div>
-                    <span className="text-slate-300 text-xs font-bold">to</span>
-                    <div className="relative">
-                        <CalendarIcon className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                        <Input type="date" className="h-8 pl-8 w-40 text-[10px] font-bold rounded-lg border-slate-200" value={chartEndDate} onChange={(e) => setChartEndDate(e.target.value)} />
-                    </div>
-                  </div>
-              </div>
-          </div>
-          <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={metrics.creationTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94A3B8' }} />
-                        <Tooltip cursor={{ fill: '#F8FAFC' }} content={({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                    return (
-                                        <div className="bg-slate-900 text-white p-3 rounded-xl shadow-xl text-xs">
-                                            <p className="font-bold">{payload[0].payload.fullDate}</p>
-                                            <p className="font-medium mt-1">{payload[0].value} Definitions Created</p>
+                <div className="p-0">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="h-12 border-b border-slate-50">
+                                <th className="pl-8 text-[10px] font-black uppercase text-slate-400 tracking-widest">Approver</th>
+                                <th className="px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Published</th>
+                                <th className="px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Changes</th>
+                                <th className="px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Rejected</th>
+                                <th className="pr-8 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {metrics.workloadData.length > 0 ? metrics.workloadData.map((row, idx) => (
+                                <tr key={idx} className="h-16 hover:bg-slate-50/50 transition-colors">
+                                    <td className="pl-8">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[10px] font-black text-slate-300 w-4">{idx + 1}</span>
+                                            <Avatar className="h-7 w-7 border-2 border-white shadow-sm">
+                                                <AvatarImage src={row.avatar} />
+                                                <AvatarFallback className="bg-indigo-50 text-[10px] font-bold text-indigo-600">{row.name[0]}</AvatarFallback>
+                                            </Avatar>
+                                            <span className="text-sm font-bold text-slate-700">{row.name}</span>
                                         </div>
-                                    );
-                                }
-                                return null;
-                            }} 
-                        />
-                        <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={40}>
-                            {metrics.creationTrendData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.count > 0 ? '#3F51B5' : '#EAEBFF'} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-          </div>
-      </Card>
-
-      <div className="space-y-6">
-        <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Governance & Insights
-            </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active maintenance targets</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <InsightsCard title="Stale Published Definitions" value={metrics.stalePublishedCount} sub="of total published, not reviewed in >6 months" options={['6mo+', '12mo+']} />
-            <InsightsCard title="Orphan / Abandoned Drafts" value={metrics.orphanDraftsCount} sub="inactive > 60 days, never submitted for review" color="text-red-500" footer={<button className="text-[11px] font-bold text-indigo-600 flex items-center gap-1.5 mt-2 hover:underline"><Trash2 className="h-3 w-3" /> Review for cleanup</button>} />
-        </div>
+                                    </td>
+                                    <td className="text-center font-bold text-emerald-600 text-sm">{row.Approved}</td>
+                                    <td className="text-center font-bold text-pink-600 text-sm">{row.Changes}</td>
+                                    <td className="text-center font-bold text-red-600 text-sm">{row.Rejected}</td>
+                                    <td className="pr-8 text-right font-black text-slate-900 text-sm">{row.Total}</td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan={5} className="h-32 text-center text-slate-400 text-sm italic">No recent workload data available.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </Card>
       </div>
 
+      {/* 5. TEMPLATE ARCHITECTURE & ACTIVITY */}
       <div className="space-y-6">
           <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
               <LayoutTemplate className="h-3.5 w-3.5" />
@@ -453,7 +428,6 @@ export default function Dashboard({
                   </div>
                   
                   <div className="space-y-8">
-                      {/* ALERT BOX MATCHING IMAGE */}
                       <div className="p-4 rounded-3xl bg-[#FFF9EB] border border-[#FFEBC2] flex items-start gap-3">
                           <AlertTriangle className="h-5 w-5 text-[#B45309] shrink-0 mt-0.5" />
                           <div className="space-y-1">
@@ -466,7 +440,6 @@ export default function Dashboard({
                           </div>
                       </div>
 
-                      {/* MODULE DISTRIBUTION PROGRESS LIST */}
                       <div className="space-y-6 pt-2">
                         {metrics.moduleChipData.sort((a,b) => b.count - a.count).map((mod) => {
                             const maxCount = Math.max(...metrics.moduleChipData.map(m => m.count));
@@ -493,88 +466,9 @@ export default function Dashboard({
                   </div>
               </Card>
           </div>
-
-          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center">
-                          <Zap className="h-5 w-5 text-amber-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-slate-900">Definition Hotspots</h3>
-                        <p className="text-[11px] font-medium text-slate-400 uppercase tracking-tight">Records with highest revision frequency</p>
-                      </div>
-                  </div>
-                  <Button variant="ghost" className="text-indigo-600 font-bold text-xs" onClick={() => onNavigate('definitions')}>View All</Button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                {metrics.mostEdited.map((def, idx) => (
-                    <div key={def.id} className="relative p-5 rounded-2xl bg-white border border-slate-100 shadow-sm group hover:border-amber-200 transition-all cursor-pointer overflow-hidden" onClick={() => onNavigate('definitions')}>
-                        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-100 transition-opacity">
-                            <ArrowUpRight className="h-4 w-4 text-amber-600" />
-                        </div>
-                        <span className="text-[10px] font-black text-slate-300 mb-2 block">{idx + 1}</span>
-                        <p className="font-bold text-slate-900 text-sm truncate mb-3">{def.name}</p>
-                        <div className="flex items-center justify-between">
-                            <Badge className="bg-amber-50 text-amber-700 border-amber-100 font-black text-[10px] px-2">{def.revisions?.length || 0} REVS</Badge>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">{def.module}</span>
-                        </div>
-                    </div>
-                ))}
-              </div>
-          </Card>
       </div>
 
-      <div className="space-y-4">
-          <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-              <BarChart3 className="h-3.5 w-3.5" />
-              Workflow Performance
-          </div>
-          <Card className="rounded-[28px] border-slate-100 bg-white overflow-hidden shadow-sm">
-                <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-slate-900">Approver Workload & Output</h3>
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Last 90 days audit</span>
-                </div>
-                <div className="p-0">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="h-12 border-b border-slate-50">
-                                <th className="pl-8 text-[10px] font-black uppercase text-slate-400 tracking-widest">Approver</th>
-                                <th className="px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Published</th>
-                                <th className="px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Changes</th>
-                                <th className="px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Rejected</th>
-                                <th className="pr-8 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {metrics.workloadData.length > 0 ? metrics.workloadData.map((row, idx) => (
-                                <tr key={idx} className="h-16 hover:bg-slate-50/50 transition-colors">
-                                    <td className="pl-8">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-[10px] font-black text-slate-300 w-4">{idx + 1}</span>
-                                            <Avatar className="h-7 w-7 border-2 border-white shadow-sm">
-                                                <AvatarImage src={row.avatar} />
-                                                <AvatarFallback className="bg-indigo-50 text-[10px] font-bold text-indigo-600">{row.name[0]}</AvatarFallback>
-                                            </Avatar>
-                                            <span className="text-sm font-bold text-slate-700">{row.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="text-center font-bold text-emerald-600 text-sm">{row.Approved}</td>
-                                    <td className="text-center font-bold text-pink-600 text-sm">{row.Changes}</td>
-                                    <td className="text-center font-bold text-red-600 text-sm">{row.Rejected}</td>
-                                    <td className="pr-8 text-right font-black text-slate-900 text-sm">{row.Total}</td>
-                                </tr>
-                            )) : (
-                                <tr>
-                                    <td colSpan={5} className="h-32 text-center text-slate-400 text-sm italic">No recent workload data available.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </Card>
-      </div>
-
+      {/* 6. USERS AND ROLES */}
       <div className="space-y-6">
         <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
             <Users className="h-3.5 w-3.5" />
