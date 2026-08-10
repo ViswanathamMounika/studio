@@ -9,19 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, isWithinInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths, subDays } from 'date-fns';
-import { CalendarIcon, ArrowUpDown, FilterX, Search as SearchIcon, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History, User2 } from 'lucide-react';
+import { CalendarIcon, ArrowUpDown, FilterX, Search as SearchIcon, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, Check, X, History, User2, Library } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityType, UserAccount } from '@/lib/types';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 
 const activityTypes: ActivityType[] = [
@@ -75,7 +70,7 @@ type ActivityLogsProps = {
 export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
     const [logs] = useState<ActivityLog[]>(() => {
         if (typeof window === 'undefined') return [];
-        const saved = window.localStorage.getItem('activity_logs_v19');
+        const saved = window.localStorage.getItem('activity_logs_v20');
         return saved ? JSON.parse(saved) : [];
     });
     
@@ -103,34 +98,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
         direction: 'desc'
     });
     
-    const [isSearchSuggestionsOpen, setIsSearchSuggestionsOpen] = useState(false);
-    const searchRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
-
-    // Close suggestions when clicking outside
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-                setIsSearchSuggestionsOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    // Extract unique definition names for auto-population
-    const uniqueDefinitions = useMemo(() => {
-        if (!Array.isArray(logs)) return [];
-        const names = Array.from(new Set(logs.map(log => log.definitionName)));
-        return names.sort((a, b) => a.localeCompare(b));
-    }, [logs]);
-
-    const suggestions = useMemo(() => {
-        if (!definitionSearch.trim()) return [];
-        return uniqueDefinitions.filter(name => 
-            name.toLowerCase().includes(definitionSearch.toLowerCase())
-        );
-    }, [uniqueDefinitions, definitionSearch]);
 
     const handleSearch = () => {
         setAppliedFilters({
@@ -235,7 +203,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
 
         const XLSX = await import('xlsx');
         const exportData = filteredAndSortedLogs.map(log => ({
-            'User Name': log.userName,
+            'User Account': log.userName,
             'Definition Name': log.definitionName,
             'Activity Type': log.activityType,
             'Details': log.details || '',
@@ -249,25 +217,25 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center px-2">
+        <div className="space-y-6 h-full flex flex-col">
+            <div className="flex justify-between items-center px-2 shrink-0">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900">Activity Logs</h1>
                     <p className="text-muted-foreground font-medium">Complete system telemetry and documentation audit trail.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="rounded-xl font-bold bg-white" onClick={handleExportExcel} disabled={!appliedFilters}>
+                    <Button variant="outline" size="sm" className="rounded-xl font-bold bg-white h-9" onClick={handleExportExcel} disabled={!appliedFilters}>
                         <Download className="h-4 w-4 mr-2" />
                         Export Excel
                     </Button>
-                    <Button variant="outline" size="sm" className="rounded-xl font-bold bg-white" onClick={resetFilters}>
+                    <Button variant="outline" size="sm" className="rounded-xl font-bold bg-white h-9" onClick={resetFilters}>
                         <FilterX className="h-4 w-4 mr-2" />
                         Reset
                     </Button>
                 </div>
             </div>
 
-            <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
+            <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white shrink-0">
                 <CardHeader className="py-3 px-6 bg-slate-50/80 border-b flex flex-row items-center justify-between">
                     <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Governance Filters</CardTitle>
                     {isAdmin && (
@@ -278,7 +246,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                                 onCheckedChange={setIsViewedOnly}
                             />
                             <Label htmlFor="viewed-only" className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1 cursor-pointer">
-                                view as
+                                Audit Views
                             </Label>
                         </div>
                     )}
@@ -287,17 +255,13 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
                         <div className="space-y-2">
                             <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Definition Name</Label>
-                            <div className="relative" ref={searchRef}>
-                                <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                            <div className="relative">
+                                <Library className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                                 <Input 
                                     placeholder="Filter by name..." 
                                     className="pl-9 rounded-xl border-slate-200 h-10"
                                     value={definitionSearch}
-                                    onChange={(e) => {
-                                        setDefinitionSearch(e.target.value);
-                                        setIsSearchSuggestionsOpen(true);
-                                    }}
-                                    onFocus={() => setIsSearchSuggestionsOpen(true)}
+                                    onChange={(e) => setDefinitionSearch(e.target.value)}
                                 />
                             </div>
                         </div>
@@ -330,7 +294,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                                     <SelectValue placeholder="All Activities" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Standard & System Logs</SelectItem>
+                                    <SelectItem value="all">Standard Logs</SelectItem>
                                     {activityTypes
                                         .filter(t => t !== 'Definition Viewed' && t !== 'Definition Searched')
                                         .map(type => (
@@ -395,10 +359,10 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                 </CardContent>
             </Card>
 
-            <Card className="rounded-[28px] border-slate-200 shadow-sm overflow-hidden flex flex-col bg-white">
-                <CardContent className="p-0 overflow-hidden flex-1">
+            <Card className="rounded-[28px] border-slate-200 shadow-sm overflow-hidden flex flex-col bg-white flex-1 min-h-0">
+                <CardContent className="p-0 overflow-hidden flex-1 relative">
                     {!appliedFilters ? (
-                        <div className="h-[400px] flex flex-col items-center justify-center text-center p-12 bg-slate-50/30">
+                        <div className="h-full flex flex-col items-center justify-center text-center p-12 bg-slate-50/30">
                             <div className="h-20 w-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
                                 <History className="h-10 w-10 text-slate-300" />
                             </div>
@@ -408,67 +372,78 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                             </p>
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader className="bg-slate-50 border-b">
-                                <TableRow className="hover:bg-transparent">
-                                    <TableHead className="py-5 px-6 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('userName')}>
-                                        <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-slate-500">
-                                            User Account
-                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'userName' ? "text-primary opacity-100" : "opacity-30")} />
-                                        </div>
-                                    </TableHead>
-                                    <TableHead className="cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('definitionName')}>
-                                        <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-slate-500">
-                                            Definition Name
-                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'definitionName' ? "text-primary opacity-100" : "opacity-30")} />
-                                        </div>
-                                    </TableHead>
-                                    <TableHead className="cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('activityType')}>
-                                        <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-slate-500">
-                                            Event
-                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'activityType' ? "text-primary opacity-100" : "opacity-30")} />
-                                        </div>
-                                    </TableHead>
-                                    {isAdmin && (
+                        <ScrollArea className="h-[650px] w-full">
+                            <Table className="min-w-[1200px]">
+                                <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                                    <TableRow className="hover:bg-transparent border-b">
+                                        <TableHead className="py-5 px-8 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('userName')}>
+                                            <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-slate-500">
+                                                User Account
+                                                <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'userName' ? "text-primary opacity-100" : "opacity-30")} />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('definitionName')}>
+                                            <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-slate-500">
+                                                Definition Name
+                                                <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'definitionName' ? "text-primary opacity-100" : "opacity-30")} />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('activityType')}>
+                                            <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-slate-500">
+                                                Event
+                                                <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'activityType' ? "text-primary opacity-100" : "opacity-30")} />
+                                            </div>
+                                        </TableHead>
                                         <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-500">
                                             Audit Details
                                         </TableHead>
-                                    )}
-                                    <TableHead className="cursor-pointer hover:bg-slate-100 transition-colors text-right px-6" onClick={() => handleSort('occurredDate')}>
-                                        <div className="flex items-center justify-end text-[11px] font-black uppercase tracking-widest text-slate-500">
-                                            Timestamp
-                                            <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'occurredDate' ? "text-primary opacity-100" : "opacity-30")} />
-                                        </div>
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {paginatedLogs.map(log => (
-                                    <TableRow key={log.id} className="hover:bg-slate-50 transition-colors border-slate-100">
-                                        <TableCell className="px-6 py-5 font-bold text-slate-900">{log.userName}</TableCell>
-                                        <TableCell className="text-slate-600 font-medium">{log.definitionName}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className="font-bold text-[10px] uppercase bg-slate-50 text-slate-600 border-slate-200">
-                                                {log.activityType}
-                                            </Badge>
-                                        </TableCell>
-                                        {isAdmin && (
-                                            <TableCell className="text-slate-500 text-xs italic max-w-xs truncate">
+                                        <TableHead className="cursor-pointer hover:bg-slate-100 transition-colors text-right px-8" onClick={() => handleSort('occurredDate')}>
+                                            <div className="flex items-center justify-end text-[11px] font-black uppercase tracking-widest text-slate-500">
+                                                Timestamp
+                                                <ArrowUpDown className={cn("ml-2 h-3 w-3", sortConfig.key === 'occurredDate' ? "text-primary opacity-100" : "opacity-30")} />
+                                            </div>
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {paginatedLogs.map(log => (
+                                        <TableRow key={log.id} className="hover:bg-slate-50 transition-colors border-slate-100 h-16">
+                                            <TableCell className="px-8 font-bold text-slate-900">{log.userName}</TableCell>
+                                            <TableCell className="text-slate-600 font-medium">{log.definitionName}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="font-bold text-[10px] uppercase bg-slate-50 text-slate-600 border-slate-200 px-2 h-6">
+                                                    {log.activityType}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-slate-500 text-xs italic max-w-md truncate">
                                                 {log.details || '—'}
                                             </TableCell>
-                                        )}
-                                        <TableCell className="text-right px-6 text-slate-400 font-bold tabular-nums text-[11px] uppercase whitespace-nowrap">
-                                            {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                            <TableCell className="text-right px-8 text-slate-400 font-bold tabular-nums text-[11px] uppercase whitespace-nowrap">
+                                                {format(new Date(log.occurredDate), 'MMM dd, yyyy HH:mm')}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {paginatedLogs.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="h-64 text-center">
+                                                <div className="flex flex-col items-center justify-center gap-3 py-12">
+                                                    <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center">
+                                                        <SearchIcon className="h-6 w-6 text-slate-300" />
+                                                    </div>
+                                                    <p className="text-slate-400 font-bold text-sm italic">No records found matching filters.</p>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                            <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
                     )}
                 </CardContent>
                 
                 {appliedFilters && filteredAndSortedLogs.length > 0 && (
-                    <div className="flex items-center justify-between p-6 border-t bg-slate-50/50">
+                    <div className="flex items-center justify-between p-6 border-t bg-white shrink-0 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
                         <div className="text-[11px] font-black uppercase text-slate-400 tracking-widest">
                             Showing {paginatedLogs.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedLogs.length)} of {filteredAndSortedLogs.length} records
                         </div>
@@ -476,21 +451,29 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                             <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="rounded-xl h-9 px-4 font-bold border-slate-200"
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                className="rounded-xl h-9 px-4 font-bold border-slate-200 transition-all hover:bg-slate-50"
+                                onClick={() => {
+                                    setCurrentPage(p => Math.max(1, p - 1));
+                                    const scroll = document.querySelector('[data-radix-scroll-area-viewport]');
+                                    if (scroll) scroll.scrollTop = 0;
+                                }}
                                 disabled={currentPage === 1}
                             >
                                 <ChevronLeft className="h-4 w-4 mr-1.5" />
-                                Prev
+                                Previous
                             </Button>
-                            <div className="flex items-center justify-center min-w-[3.5rem] h-9 rounded-xl bg-white border border-slate-200 text-sm font-black text-[#3F51B5]">
+                            <div className="flex items-center justify-center min-w-[3.5rem] h-9 rounded-xl bg-slate-50 border border-slate-200 text-sm font-black text-[#3F51B5]">
                                 {currentPage} / {totalPages || 1}
                             </div>
                             <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="rounded-xl h-9 px-4 font-bold border-slate-200"
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                className="rounded-xl h-9 px-4 font-bold border-slate-200 transition-all hover:bg-slate-50"
+                                onClick={() => {
+                                    setCurrentPage(p => Math.min(totalPages, p + 1));
+                                    const scroll = document.querySelector('[data-radix-scroll-area-viewport]');
+                                    if (scroll) scroll.scrollTop = 0;
+                                }}
                                 disabled={currentPage >= totalPages}
                             >
                                 Next
