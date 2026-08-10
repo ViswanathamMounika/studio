@@ -291,10 +291,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                             usage.some(u => u.name === l.definitionName))
                                                  .sort((a,b) => parseISO(b.occurredDate).getTime() - parseISO(a.occurredDate).getTime())[0];
 
-                const statusLogs = activityLogs.filter(l => l.activityType === 'Template Updated' && (l.details?.includes(template.name) || l.definitionName === template.name) && l.details?.includes('Status'))
-                                              .map(l => `${format(parseISO(l.occurredDate), 'MM/dd')}: ${l.details}`)
-                                              .join('; ');
-
                 return {
                     id: template.id,
                     name: template.name,
@@ -307,7 +303,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     usageCount: usage.length,
                     lastUsedDate: lastUsageLog?.occurredDate || '—',
                     definitionsList: usage.map(u => u.name).slice(0, 3).join(', ') + (usage.length > 3 ? '...' : ''),
-                    statusHistory: statusLogs || 'No changes recorded',
                     description: template.description || '—'
                 };
             });
@@ -617,7 +612,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         </TableBody>
                                     </Table>
                                 ) : (
-                                    <Table className="min-w-[2600px]">
+                                    <Table className="min-w-[2300px]">
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
                                                 <ReportHeader label="Template Name" id="name" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.name} onFilterChange={handleFilterChange} className="pl-6 w-[240px]" options={getUniqueValues('name')} />
@@ -630,7 +625,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                 <ReportHeader label="Usage Count" id="usageCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.usageCount} onFilterChange={handleFilterChange} className="w-[150px]" options={getUniqueValues('usageCount')} />
                                                 <ReportHeader label="Last Used Date" id="lastUsedDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
                                                 <ReportHeader label="Definitions Using Template" id="definitionsList" currentSort={sortConfig} onSort={handleSort} className="w-[280px]" filterType="none" />
-                                                <ReportHeader label="Status Change History" id="statusHistory" currentSort={sortConfig} onSort={handleSort} className="w-[250px]" filterType="none" />
                                                 <ReportHeader label="Description" id="description" currentSort={sortConfig} onSort={handleSort} className="pr-6 w-[300px]" filterType="none" />
                                             </TableRow>
                                         </TableHeader>
@@ -651,7 +645,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                     <TableCell className="font-black text-center text-indigo-600">{d.usageCount}</TableCell>
                                                     <TableCell className="font-mono text-[11px] text-slate-400">{d.lastUsedDate !== '—' ? format(parseISO(d.lastUsedDate), 'yyyy-MM-dd') : '—'}</TableCell>
                                                     <TableCell className="text-xs font-medium text-slate-600 truncate max-w-[260px]">{d.definitionsList || 'None'}</TableCell>
-                                                    <TableCell className="text-xs text-slate-400 italic truncate max-w-[230px]">{d.statusHistory}</TableCell>
                                                     <TableCell className="pr-6 text-slate-500 text-xs leading-relaxed max-w-[280px]">{d.description}</TableCell>
                                                 </TableRow>
                                             ))}
@@ -806,4 +799,3 @@ function ReportPagination({ currentPage, totalPages, pageSize, setPageSize, onPa
         </div>
     );
 }
-
