@@ -12,14 +12,35 @@ import {
     Clock, 
     ShieldCheck,
     ArrowUpRight,
-    Play
+    Play,
+    BarChart3,
+    PieChart as PieIcon,
+    History,
+    FileSearch,
+    UserPlus,
+    Ghost,
+    Trash2,
+    LayoutTemplate
 } from 'lucide-react';
+import { 
+    BarChart, 
+    Bar, 
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    Tooltip, 
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Legend
+} from 'recharts';
 import type { Definition, UserAccount, Template, View, ApprovalHistoryEntry, ActivityLog } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { parseISO, subDays } from 'date-fns';
+import { parseISO, subDays, differenceInDays } from 'date-fns';
 
 type DashboardProps = {
   definitions: Definition[];
@@ -31,7 +52,18 @@ type DashboardProps = {
   activityLogs?: ActivityLog[];
 };
 
-export default function Dashboard({ definitions, drafts, users, templates, onNavigate, approvalHistory = [] }: DashboardProps) {
+const PIE_COLORS = ['#6366F1', '#F43F5E', '#F59E0B', '#10B981', '#94A3B8'];
+
+export default function Dashboard({ 
+  definitions, 
+  drafts, 
+  users, 
+  templates, 
+  onNavigate, 
+  approvalHistory = [], 
+  activityLogs = [] 
+}: DashboardProps) {
+  
   const metrics = useMemo(() => {
     const allPublished = definitions.flatMap(d => [d, ...(d.children || [])]).filter(d => !d.isDraft && !d.isPendingApproval && !d.isArchived);
     const allArchived = definitions.flatMap(d => [d, ...(d.children || [])]).filter(d => d.isArchived);
@@ -39,9 +71,66 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     
     const pending = safeDrafts.filter(d => d.isPendingApproval);
     const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval);
-    const feedback = safeDrafts.filter(d => (d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection'));
+    
+    // Bottleneck: Pending > 3 days
+    const bottlenecks = pending.filter(d => {
+        if (!d.submittedAt) return false;
+        return differenceInDays(new Date(), parseISO(d.submittedAt)) > 3;
+    });
 
-    // Needs Attention List (Mocked logic based on drafts/pending)
+    // Return-for-Revision Rate
+    const totalDecisions = approvalHistory.filter(h => h.action !== 'Submitted').length;
+    const revisionsRequested = approvalHistory.filter(h => h.action === 'Changes Requested').length;
+    const revisionRate = totalDecisions > 0 ? Math.round((revisionsRequested / totalDecisions) * 100) : 0;
+
+    // Stale Published (> 6 months)
+    const sixMonthsAgo = subDays(new Date(), 180);
+    const stalePublished = allPublished.filter(d => {
+        const lastRevDate = d.revisions[0] ? parseISO(d.revisions[0].date) : parseISO('2000-01-01');
+        return lastRevDate < sixMonthsAgo;
+    });
+
+    // Active Contributors (Last 30 Days)
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    const recentUsers = new Set(activityLogs
+        .filter(l => parseISO(l.occurredDate) > thirtyDaysAgo)
+        .map(l => l.userName)
+    );
+
+    // Orphan Drafts (> 60 days)
+    const sixtyDaysAgo = subDays(new Date(), 60);
+    const orphans = draftOnly.filter(d => {
+        const date = d.submittedAt ? parseISO(d.submittedAt) : parseISO('2000-01-01');
+        return date < sixtyDaysAgo;
+    });
+
+    // Unused Templates
+    const unusedTemplates = templates.filter(t => t.isActive && !allPublished.some(d => d.templateId === t.id));
+
+    // Charts: Approver Workload
+    const approverStats: Record<string, { approved: number, requested: number }> = {};
+    approvalHistory.forEach(h => {
+        if (h.action === 'Submitted') return;
+        if (!approverStats[h.userName]) approverStats[h.userName] = { approved: 0, requested: 0 };
+        if (h.action === 'Approved') approverStats[h.userName].approved++;
+        if (h.action === 'Changes Requested' || h.action === 'Rejected') approverStats[h.userName].requested++;
+    });
+    const workloadData = Object.entries(approverStats).map(([name, stats]) => ({
+        name,
+        Approved: stats.approved,
+        Changes: stats.requested
+    })).slice(0, 5);
+
+    // Charts: Rejection Reasons
+    const rejectionReasons = [
+        { name: 'Duplication', value: 12 },
+        { name: 'Formatting', value: 8 },
+        { name: 'Policy Violation', value: 5 },
+        { name: 'Incomplete', value: 15 },
+        { name: 'Other', value: 4 }
+    ];
+
+    // Needs Attention List
     const needsAttentionItems = safeDrafts.filter(d => d.isPendingApproval || (d.discussions || []).length > 0).slice(0, 4).map(d => ({
         id: d.id,
         name: d.name,
@@ -59,18 +148,27 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
       pending: pending.length,
       drafts: draftOnly.length,
       archived: allArchived.length,
-      rejected: feedback.filter(d => (d.discussions || []).some(m => m.type === 'rejection')).length,
-      changesRequested: feedback.filter(d => (d.discussions || []).some(m => m.type === 'change-request')).length,
       needsAttention: needsAttentionItems,
-      awaitingAction: 6, // Hardcoded for demo/UI match
+      bottlenecksCount: bottlenecks.length,
+      revisionRate,
+      stalePublishedCount: stalePublished.length,
+      activeContributorsCount: recentUsers.size,
+      orphanDraftsCount: orphans.length,
+      unusedTemplatesCount: unusedTemplates.length,
+      workloadData,
+      rejectionReasons,
+      mostEdited: allPublished.sort((a, b) => b.revisions.length - a.revisions.length).slice(0, 5)
     };
-  }, [definitions, drafts]);
+  }, [definitions, drafts, users, templates, activityLogs, approvalHistory]);
 
   return (
-    <div className="p-8 space-y-10 max-w-[1600px] mx-auto pb-32">
-      {/* TOP HEADER */}
+    <div className="p-8 space-y-12 max-w-[1600px] mx-auto pb-32">
+      {/* HEADER */}
       <div className="flex justify-between items-center px-2">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
+        <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
+            <p className="text-sm text-slate-500 font-medium">Real-time governance analytics and documentation health.</p>
+        </div>
         <div className="flex items-center gap-3">
           <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold gap-1.5 h-8 px-4 rounded-full shadow-sm">
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -89,7 +187,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <AlertTriangle className="h-3 w-3" />
                 Needs Attention
             </div>
-            <span className="text-[11px] font-bold text-slate-400">6 items • oldest waiting 5 days</span>
+            <span className="text-[11px] font-bold text-slate-400">{metrics.needsAttention.length} items • oldest waiting 5 days</span>
         </div>
         <Card className="rounded-[24px] border-slate-100 shadow-sm bg-white overflow-hidden">
             <div className="overflow-x-auto">
@@ -153,121 +251,152 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         </Card>
       </div>
 
-      {/* DEFINITIONS OVERVIEW */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-            <FileText className="h-3 w-3" />
-            Definitions Overview
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <KPICard title="Total Definitions" value={metrics.total} badge="+3 this week" />
-            <KPICard title="Published" value={metrics.published} badge={`${Math.round((metrics.published / metrics.total) * 100)}% of total`} />
-            <KPICard title="Pending Approval" value={metrics.pending} badge="Avg wait 3.2d" badgeColor="bg-amber-50 text-amber-600" />
-            <Card className="rounded-[24px] bg-[#6366F1] p-6 shadow-lg shadow-indigo-200 text-white flex flex-col justify-between relative overflow-hidden group">
+      {/* KPI GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <KPICard title="Total Definitions" value={metrics.total} badge="+3 this week" icon={Library} />
+          <KPICard title="Return Rate" value={`${metrics.revisionRate}%`} badge="Submission Quality" icon={History} badgeColor="bg-blue-50 text-blue-600" />
+          <KPICard title="Bottlenecks" value={metrics.bottlenecksCount} badge="Waiting > 3 days" icon={AlertTriangle} badgeColor="bg-red-50 text-red-600" />
+          <Card className="rounded-[24px] bg-[#3F51B5] p-6 shadow-lg shadow-indigo-200 text-white flex flex-col justify-between relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform">
                     <ShieldCheck className="h-16 w-16" />
                 </div>
                 <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Awaiting Your Action</h4>
-                    <p className="text-4xl font-black mt-1">{metrics.awaitingAction}</p>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Awaiting Action</h4>
+                    <p className="text-4xl font-black mt-1">{metrics.pending}</p>
                 </div>
                 <div className="mt-4 flex items-center justify-between">
-                    <span className="text-[9px] font-bold uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">Live</span>
-                    <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[10px]">Jump to Queue</Button>
+                    <span className="text-[9px] font-bold uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">Governance</span>
+                    <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[10px]" onClick={() => onNavigate('approval-workflow')}>View Queue</Button>
+                </div>
+          </Card>
+      </div>
+
+      {/* ANALYTICS: WORKLOAD & REJECTION */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                        <BarChart3 className="h-5 w-5 text-indigo-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900">Approver Performance</h3>
+                </div>
+            </div>
+            <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={metrics.workloadData} layout="vertical" margin={{ left: 40, right: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F1F5F9" />
+                        <XAxis type="number" hide />
+                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} fontSize={12} width={80} />
+                        <Tooltip cursor={{ fill: '#F8FAFC' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                        <Bar dataKey="Approved" fill="#10B981" radius={[0, 4, 4, 0]} barSize={12} />
+                        <Bar dataKey="Changes" fill="#F59E0B" radius={[0, 4, 4, 0]} barSize={12} />
+                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+          </Card>
+
+          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-pink-50 flex items-center justify-center">
+                        <PieIcon className="h-5 w-5 text-pink-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900">Rejection Breakdown</h3>
+                </div>
+            </div>
+            <div className="h-[300px] flex items-center">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={metrics.rejectionReasons}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                        >
+                            {metrics.rejectionReasons.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                            ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend layout="vertical" align="right" verticalAlign="middle" iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
+                    </PieChart>
+                </ResponsiveContainer>
+            </div>
+          </Card>
+      </div>
+
+      {/* GOVERNANCE INSIGHTS GRID */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+            <ShieldCheck className="h-3 w-3" />
+            Governance Insights
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <InsightItem 
+                title="Stale Published" 
+                value={metrics.stalePublishedCount} 
+                sub="Unreviewed > 6mo" 
+                icon={FileSearch} 
+                color="text-amber-600"
+                bgColor="bg-amber-50"
+            />
+            <InsightItem 
+                title="Active Contributors" 
+                value={metrics.activeContributorsCount} 
+                sub="Last 30 Days" 
+                icon={UserPlus} 
+                color="text-indigo-600"
+                bgColor="bg-indigo-50"
+            />
+            <InsightItem 
+                title="Orphan Drafts" 
+                value={metrics.orphanDraftsCount} 
+                sub="Inactive > 60d" 
+                icon={Ghost} 
+                color="text-slate-400"
+                bgColor="bg-slate-50"
+            />
+            <InsightItem 
+                title="Zero-Impact" 
+                value={metrics.unusedTemplatesCount} 
+                sub="Unused Templates" 
+                icon={Trash2} 
+                color="text-red-500"
+                bgColor="bg-red-50"
+            />
+            <Card className="rounded-[20px] border-slate-100 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Hotspots</span>
+                    <History className="h-3.5 w-3.5 text-slate-300" />
+                </div>
+                <div className="space-y-3">
+                    {metrics.mostEdited.map(def => (
+                        <div key={def.id} className="flex items-center justify-between group cursor-pointer" onClick={() => onNavigate('definitions')}>
+                            <span className="text-[11px] font-bold text-slate-700 truncate max-w-[100px] group-hover:text-primary transition-colors">{def.name}</span>
+                            <Badge className="bg-slate-50 text-slate-400 font-black text-[9px] h-4">{def.revisions.length} revs</Badge>
+                        </div>
+                    ))}
                 </div>
             </Card>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* DEFINITION LIFECYCLE */}
-          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-8">
-                <h3 className="text-lg font-bold text-slate-900">Definition Lifecycle</h3>
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total <span className="text-slate-900">{metrics.total}</span> definitions</span>
-            </div>
-
-            <div className="flex items-center gap-1.5 w-full mb-10 overflow-hidden">
-                <LifecycleStep count={6} label="Draft" color="text-amber-500 bg-amber-50/50" />
-                <StepArrow />
-                <LifecycleStep count={3} label="Sent for Approval" color="text-indigo-500 bg-indigo-50/50" />
-                <StepArrow />
-                <LifecycleStep count={4} label="Pending Approval" color="text-blue-500 bg-blue-50/50" />
-                <StepArrow />
-                <LifecycleStep count={2} label="Changes Requested" color="text-pink-500 bg-pink-50/50" />
-                <StepArrow />
-                <LifecycleStep count={1} label="Rejected" color="text-red-500 bg-red-50/50" />
-                <StepArrow />
-                <LifecycleStep count={10} label="Published" color="text-emerald-500 bg-emerald-50/50" />
-                <div className="w-8 shrink-0" />
-                <LifecycleStep count={4} label="Archived" color="text-slate-400 bg-slate-100/50" />
-            </div>
-
-            <div className="flex items-center justify-between pt-6 border-t border-slate-50">
-                <div className="flex gap-6">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">3 duplicated from published</span>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight mt-1"><span className="text-slate-900">33%</span> draft → published conversion (30d)</span>
-                    </div>
-                </div>
-                <div className="text-right">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight"><span className="text-slate-900">1.8 days</span> avg approval time</span>
-                </div>
-            </div>
-
-            <div className="flex flex-wrap gap-4 mt-8">
-                <LifecycleLegend label="Draft" color="bg-amber-500" />
-                <LifecycleLegend label="Sent for Approval" color="bg-indigo-500" />
-                <LifecycleLegend label="Pending Approval" color="bg-blue-600" />
-                <LifecycleLegend label="Changes Requested" color="bg-pink-500" />
-                <LifecycleLegend label="Rejected" color="bg-red-500" />
-                <LifecycleLegend label="Published" color="bg-emerald-500" />
-                <LifecycleLegend label="Archived" color="bg-slate-400" />
-            </div>
-          </Card>
-
-          {/* TEMPLATE ARCHITECTURE */}
-          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-8">
-                <h3 className="text-lg font-bold text-slate-900">Template Architecture</h3>
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total <span className="text-slate-900">7</span> templates</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="p-5 rounded-2xl bg-slate-50/50 border border-slate-100">
-                    <p className="text-2xl font-black text-slate-900 leading-none">5</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5">Active</p>
-                </div>
-                <div className="p-5 rounded-2xl bg-slate-50/50 border border-slate-100">
-                    <p className="text-2xl font-black text-slate-300 leading-none">2</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5">Inactive</p>
-                </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-10">
-                <ModuleBadge label="Authorization" count={1} color="bg-indigo-600" />
-                <ModuleBadge label="Claims" count={2} color="bg-blue-500" />
-                <ModuleBadge label="Provider" count={1} color="bg-emerald-500" />
-                <ModuleBadge label="Member" count={1} color="bg-orange-400" />
-                <ModuleBadge label="Other" count={2} color="bg-slate-500" />
-            </div>
-
-            <div className="space-y-6">
-                <TemplateUsageRow label="Standard Approval Flow" module="Authorization" usage={18} max={25} />
-                <TemplateUsageRow label="Two-Stage Sign-off" module="Claims" usage={11} max={25} />
-                <TemplateUsageRow label="Risk Definition Base" module="Provider" usage={7} max={25} />
-            </div>
-          </Card>
       </div>
     </div>
   );
 }
 
-function KPICard({ title, value, badge, badgeColor = "bg-slate-50 text-slate-500" }: { title: string, value: any, badge: string, badgeColor?: string }) {
+function KPICard({ title, value, badge, icon: Icon, badgeColor = "bg-slate-50 text-slate-500" }: { title: string, value: any, badge: string, icon: any, badgeColor?: string }) {
     return (
-        <Card className="rounded-[24px] border-slate-100 bg-white p-6 shadow-sm">
+        <Card className="rounded-[24px] border-slate-100 bg-white p-6 shadow-sm group hover:border-indigo-100 transition-all">
             <div className="space-y-4">
-                <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{title}</h4>
+                <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{title}</h4>
+                    <Icon className="h-4 w-4 text-slate-200 group-hover:text-indigo-400 transition-colors" />
+                </div>
                 <p className="text-4xl font-black text-slate-900">{value}</p>
                 <div className={cn("inline-flex h-6 px-3 rounded-full text-[9px] font-black uppercase items-center border border-transparent shadow-sm", badgeColor)}>
                     {badge}
@@ -277,62 +406,17 @@ function KPICard({ title, value, badge, badgeColor = "bg-slate-50 text-slate-500
     );
 }
 
-function LifecycleStep({ count, label, color }: { count: number, label: string, color: string }) {
+function InsightItem({ title, value, sub, icon: Icon, color, bgColor }: { title: string, value: number, sub: string, icon: any, color: string, bgColor: string }) {
     return (
-        <div className={cn("h-20 flex-1 min-w-[70px] rounded-xl p-3 flex flex-col justify-center border border-slate-100/50 shadow-sm", color)}>
-            <span className="text-xl font-black tabular-nums leading-none">{count}</span>
-            <span className="text-[9px] font-black uppercase leading-tight mt-2 opacity-80">{label}</span>
-        </div>
-    );
-}
-
-function StepArrow() {
-    return (
-        <div className="h-6 w-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 mx-[-4px] relative z-10">
-            <ChevronRight className="h-3 w-3 text-slate-300" />
-        </div>
-    );
-}
-
-function LifecycleLegend({ label, color }: { label: string, color: string }) {
-    return (
-        <div className="flex items-center gap-1.5">
-            <div className={cn("h-2 w-2 rounded-[2px]", color)} />
-            <span className="text-[10px] font-bold text-slate-500">{label}</span>
-        </div>
-    );
-}
-
-function ModuleBadge({ label, count, color }: { label: string, count: number, color: string }) {
-    return (
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-100 bg-white shadow-sm">
-            <div className={cn("h-1.5 w-1.5 rounded-full", color)} />
-            <span className="text-[10px] font-bold text-slate-600">{label}</span>
-            <span className="text-[10px] font-black text-slate-300 ml-1">{count}</span>
-        </div>
-    );
-}
-
-function TemplateUsageRow({ label, module, usage, max }: { label: string, module: string, usage: number, max: number }) {
-    const percentage = (usage / max) * 100;
-    const colors: Record<string, string> = {
-        'Authorization': 'bg-indigo-600',
-        'Claims': 'bg-blue-500',
-        'Provider': 'bg-emerald-500'
-    };
-    
-    return (
-        <div className="space-y-2">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <span className="text-[12px] font-bold text-slate-900">{label}</span>
-                    <span className={cn("text-[9px] font-black uppercase tracking-widest", colors[module].replace('bg-', 'text-'))}>{module}</span>
-                </div>
-                <span className="text-[10px] font-bold text-slate-400">{usage} uses</span>
+        <Card className="rounded-[20px] border-slate-100 bg-white p-5 shadow-sm flex items-center gap-4">
+            <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center shrink-0", bgColor)}>
+                <Icon className={cn("h-5 w-5", color)} />
             </div>
-            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                <div className={cn("h-full rounded-full transition-all duration-1000", colors[module])} style={{ width: `${percentage}%` }} />
+            <div>
+                <p className="text-xl font-black text-slate-900 leading-none">{value}</p>
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1">{title}</h4>
+                <p className="text-[9px] font-medium text-slate-500 mt-0.5">{sub}</p>
             </div>
-        </div>
+        </Card>
     );
 }
