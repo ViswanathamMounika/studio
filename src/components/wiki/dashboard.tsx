@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useMemo } from 'react';
@@ -20,7 +19,8 @@ import {
     UserPlus,
     Ghost,
     Trash2,
-    LayoutTemplate
+    LayoutTemplate,
+    Library
 } from 'lucide-react';
 import { 
     BarChart, 
@@ -90,17 +90,24 @@ export default function Dashboard({
         return lastRevDate < sixMonthsAgo;
     });
 
-    // Active Contributors (Last 30 Days)
+    // Stale Drafts (> 30 days)
     const thirtyDaysAgo = subDays(new Date(), 30);
+    const staleDraftsCount = draftOnly.filter(d => {
+        const date = d.submittedAt ? parseISO(d.submittedAt) : (d.revisions?.[0]?.date ? parseISO(d.revisions[0].date) : parseISO('2000-01-01'));
+        return date < thirtyDaysAgo;
+    }).length;
+
+    // Active Contributors (Last 30 Days)
+    const activeContributorsWindow = subDays(new Date(), 30);
     const recentUsers = new Set(activityLogs
-        .filter(l => parseISO(l.occurredDate) > thirtyDaysAgo)
+        .filter(l => parseISO(l.occurredDate) > activeContributorsWindow)
         .map(l => l.userName)
     );
 
     // Orphan Drafts (> 60 days)
     const sixtyDaysAgo = subDays(new Date(), 60);
     const orphans = draftOnly.filter(d => {
-        const date = d.submittedAt ? parseISO(d.submittedAt) : parseISO('2000-01-01');
+        const date = d.submittedAt ? parseISO(d.submittedAt) : (d.revisions?.[0]?.date ? parseISO(d.revisions[0].date) : parseISO('2000-01-01'));
         return date < sixtyDaysAgo;
     });
 
@@ -119,7 +126,7 @@ export default function Dashboard({
         name,
         Approved: stats.approved,
         Changes: stats.requested
-    })).slice(0, 5);
+    })).sort((a, b) => (b.Approved + b.Changes) - (a.Approved + a.Changes)).slice(0, 5);
 
     // Charts: Rejection Reasons
     const rejectionReasons = [
@@ -152,6 +159,7 @@ export default function Dashboard({
       bottlenecksCount: bottlenecks.length,
       revisionRate,
       stalePublishedCount: stalePublished.length,
+      staleDraftsCount,
       activeContributorsCount: recentUsers.size,
       orphanDraftsCount: orphans.length,
       unusedTemplatesCount: unusedTemplates.length,
@@ -170,7 +178,7 @@ export default function Dashboard({
             <p className="text-sm text-slate-500 font-medium">Real-time governance analytics and documentation health.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold gap-1.5 h-8 px-4 rounded-full shadow-sm">
+          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-bold gap-1.5 h-8 px-4 rounded-full shadow-sm">
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             System Live
           </Badge>
@@ -354,9 +362,9 @@ export default function Dashboard({
                 bgColor="bg-indigo-50"
             />
             <InsightItem 
-                title="Orphan Drafts" 
-                value={metrics.orphanDraftsCount} 
-                sub="Inactive > 60d" 
+                title="Stale Drafts" 
+                value={metrics.staleDraftsCount} 
+                sub="Inactive > 30d" 
                 icon={Ghost} 
                 color="text-slate-400"
                 bgColor="bg-slate-50"
