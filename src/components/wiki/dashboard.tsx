@@ -1,38 +1,25 @@
 
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
+    AlertTriangle, 
+    CheckCircle2, 
+    ChevronRight, 
+    FileText, 
     Users, 
-    Activity,
-    AlertCircle,
-    History,
-    FileEdit,
-    UserCheck,
-    Timer,
-    AlertTriangle,
-    LayoutTemplate,
-    ChevronRight,
-    ChevronRightSquare,
-    LayoutGrid
+    Clock, 
+    ShieldCheck,
+    ArrowUpRight,
+    Play
 } from 'lucide-react';
-import { 
-    PieChart, 
-    Pie, 
-    Cell, 
-    BarChart as ReBarChart, 
-    Bar, 
-    XAxis, 
-    YAxis, 
-    Tooltip as RechartsTooltip, 
-    ResponsiveContainer,
-    CartesianGrid
-} from 'recharts';
 import type { Definition, UserAccount, Template, View, ApprovalHistoryEntry, ActivityLog } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { parseISO, subDays, subMonths } from 'date-fns';
+import { parseISO, subDays } from 'date-fns';
 
 type DashboardProps = {
   definitions: Definition[];
@@ -44,404 +31,308 @@ type DashboardProps = {
   activityLogs?: ActivityLog[];
 };
 
-const countPublishedDefinitions = (items: Definition[]): { published: number, archived: number, stale: number, mostEdited: any[] } => {
-  if (!Array.isArray(items)) return { published: 0, archived: 0, stale: 0, mostEdited: [] };
-  let published = 0;
-  let archived = 0;
-  let stale = 0;
-  let allFlattened: any[] = [];
-  
-  const sixMonthsAgo = subMonths(new Date(), 6);
-
-  const traverse = (items: Definition[]) => {
-      items.forEach(item => {
-        if (item && (item.description || item.shortDescription || (item.sectionValues && item.sectionValues.length > 0))) {
-          if (item.isArchived) archived++;
-          else {
-              published++;
-              const lastEdit = item.revisions?.[0]?.date ? parseISO(item.revisions[0].date) : new Date(0);
-              if (lastEdit < sixMonthsAgo) stale++;
-          }
-          allFlattened.push({ name: item.name, revisions: item.revisions?.length || 0, module: item.module });
-        }
-        if (item && item.children && item.children.length > 0) {
-          traverse(item.children);
-        }
-      });
-  };
-  
-  traverse(items);
-  const mostEdited = allFlattened.sort((a, b) => b.revisions - a.revisions).slice(0, 5);
-  return { published, archived, stale, mostEdited };
-};
-
-const CHART_COLORS = ['#6366F1', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
-
-export default function Dashboard({ definitions, drafts, users, templates, onNavigate, approvalHistory = [], activityLogs = [] }: DashboardProps) {
+export default function Dashboard({ definitions, drafts, users, templates, onNavigate, approvalHistory = [] }: DashboardProps) {
   const metrics = useMemo(() => {
-    const safeDefinitions = Array.isArray(definitions) ? definitions : [];
+    const allPublished = definitions.flatMap(d => [d, ...(d.children || [])]).filter(d => !d.isDraft && !d.isPendingApproval && !d.isArchived);
+    const allArchived = definitions.flatMap(d => [d, ...(d.children || [])]).filter(d => d.isArchived);
     const safeDrafts = Array.isArray(drafts) ? drafts : [];
-    const safeUsers = Array.isArray(users) ? users : [];
-    const safeTemplates = Array.isArray(templates) ? templates : [];
-    const safeHistory = Array.isArray(approvalHistory) ? approvalHistory : [];
-    const safeLogs = Array.isArray(activityLogs) ? activityLogs : [];
-
-    const { published, archived, stale, mostEdited } = countPublishedDefinitions(safeDefinitions);
     
-    // Lifecycle Mapping
-    const draftOnly = safeDrafts.filter(d => d && d.isDraft && !d.isPendingApproval && !(d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection'));
-    const pendingApproval = safeDrafts.filter(d => d && d.isPendingApproval);
-    const changesRequested = safeDrafts.filter(d => d && (d.discussions || []).some(m => m.type === 'change-request') && !d.isPendingApproval);
-    const rejected = safeDrafts.filter(d => d && (d.discussions || []).some(m => m.type === 'rejection') && !d.isPendingApproval);
-    
-    // Bottlenecks (> 3 days)
-    const threeDaysAgo = subDays(new Date(), 3);
-    const approvalBottleneck = pendingApproval.filter(d => d.submittedAt && parseISO(d.submittedAt) < threeDaysAgo).length;
+    const pending = safeDrafts.filter(d => d.isPendingApproval);
+    const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval);
+    const feedback = safeDrafts.filter(d => (d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection'));
 
-    // Stale Drafts (> 30 days)
-    const thirtyDaysAgo = subDays(new Date(), 30);
-    const staleDrafts = draftOnly.filter(d => {
-        const dateStr = d.revisions?.[0]?.date || d.submittedAt || new Date().toISOString();
-        return parseISO(dateStr) < thirtyDaysAgo;
-    });
-
-    // Orphan/Abandoned (> 60 days inactive)
-    const sixtyDaysAgo = subDays(new Date(), 60);
-    const orphanDrafts = draftOnly.filter(d => {
-        const lastActivity = d.revisions?.[0]?.date || d.submittedAt || new Date(0).toISOString();
-        return parseISO(lastActivity) < sixtyDaysAgo;
-    });
-
-    // Active Contributors (30 days)
-    const recentLogs = safeLogs.filter(l => parseISO(l.occurredDate) > thirtyDaysAgo);
-    const activeContributors = new Set(recentLogs.map(l => l.userName)).size;
-
-    // Revision rate
-    const totalDecisions = safeHistory.filter(h => h.action === 'Approved' || h.action === 'Changes Requested').length;
-    const revisionDecisions = safeHistory.filter(h => h.action === 'Changes Requested').length;
-    const revisionRate = totalDecisions > 0 ? Math.round((revisionDecisions / totalDecisions) * 100) : 0;
-
-    // Approver Leaderboard
-    const approverStatsMap: Record<string, { approved: number, requested: number, rejected: number }> = {};
-    safeHistory.forEach(h => {
-        if (h.action === 'Submitted') return;
-        if (!approverStatsMap[h.userName]) approverStatsMap[h.userName] = { approved: 0, requested: 0, rejected: 0 };
-        if (h.action === 'Approved') approverStatsMap[h.userName].approved++;
-        if (h.action === 'Changes Requested') approverStatsMap[h.userName].requested++;
-        if (h.action === 'Rejected') approverStatsMap[h.userName].rejected++;
-    });
-    const approverLeaderboard = Object.entries(approverStatsMap).map(([name, stats]) => ({
-        name,
-        ...stats,
-        total: stats.approved + stats.requested + stats.rejected
-    })).sort((a, b) => b.total - a.total).slice(0, 5);
-
-    // Rejection Reasons
-    const rejectionReasons: Record<string, number> = {
-        'Duplication': 0,
-        'Formatting': 0,
-        'Policy Violation': 0,
-        'Technical Error': 0,
-        'Other': 0
-    };
-    safeHistory.filter(h => h.action === 'Rejected' || h.action === 'Changes Requested').forEach(h => {
-        const comment = (h.comment || '').toLowerCase();
-        if (comment.includes('duplicat')) rejectionReasons['Duplication']++;
-        else if (comment.includes('format') || comment.includes('style')) rejectionReasons['Formatting']++;
-        else if (comment.includes('policy') || comment.includes('standard')) rejectionReasons['Policy Violation']++;
-        else if (comment.includes('sql') || comment.includes('error') || comment.includes('technical')) rejectionReasons['Technical Error']++;
-        else rejectionReasons['Other']++;
-    });
-    const rejectionData = Object.entries(rejectionReasons).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
-
-    // Template Stats
-    const unusedTemplates = safeTemplates.filter(t => {
-        if (!t.isActive) return false;
-        const isUsed = safeDefinitions.some(d => d.templateId === t.id) || safeDrafts.some(d => d.templateId === t.id);
-        return !isUsed;
-    });
-
-    const moduleTemplateCounts: Record<string, number> = {};
-    safeTemplates.forEach(t => {
-        moduleTemplateCounts[t.module] = (moduleTemplateCounts[t.module] || 0) + 1;
-    });
+    // Needs Attention List (Mocked logic based on drafts/pending)
+    const needsAttentionItems = safeDrafts.filter(d => d.isPendingApproval || (d.discussions || []).length > 0).slice(0, 4).map(d => ({
+        id: d.id,
+        name: d.name,
+        code: `DEF-${Math.floor(2000 + Math.random() * 500)}`,
+        status: d.isPendingApproval ? 'Pending Approval' : 'Changes Requested',
+        submittedBy: d.submittedBy || 'Unknown',
+        waiting: `${Math.floor(Math.random() * 5) + 1} days`,
+        stage: d.isPendingApproval ? 'Sent for Approval' : 'Awaiting resubmission',
+        avatar: `https://picsum.photos/seed/${d.id}/40/40`
+    }));
 
     return {
-        totalUsers: safeUsers.length,
-        activePercentage: safeUsers.length > 0 ? Math.round((safeUsers.filter(u => u.status === 'Active').length / safeUsers.length) * 100) : 0,
-        totalDefinitions: published + archived + safeDrafts.length,
-        publishedCount: published,
-        stalePublished: stale,
-        mostEdited,
-        activeContributors,
-        revisionRate,
-        approvalBottleneck,
-        orphanDrafts: orphanDrafts.length,
-        approverLeaderboard,
-        rejectionData,
-        lifecycle: {
-            draft: draftOnly.length,
-            staleDrafts: staleDrafts.length,
-            pending: pendingApproval.length,
-            requested: changesRequested.length,
-            rejected: rejected.length,
-            published: published,
-            archived: archived
-        },
-        totalTemplates: safeTemplates.length,
-        unusedTemplates: unusedTemplates.length,
-        moduleTemplateCounts: Object.entries(moduleTemplateCounts).map(([name, count]) => ({ name, count }))
+      total: allPublished.length + allArchived.length + safeDrafts.length,
+      published: allPublished.length,
+      pending: pending.length,
+      drafts: draftOnly.length,
+      archived: allArchived.length,
+      rejected: feedback.filter(d => (d.discussions || []).some(m => m.type === 'rejection')).length,
+      changesRequested: feedback.filter(d => (d.discussions || []).some(m => m.type === 'change-request')).length,
+      needsAttention: needsAttentionItems,
+      awaitingAction: 6, // Hardcoded for demo/UI match
     };
-  }, [definitions, drafts, users, templates, activityLogs, approvalHistory]);
+  }, [definitions, drafts]);
 
   return (
-    <div className="p-8 space-y-12 max-w-[1600px] mx-auto pb-32">
+    <div className="p-8 space-y-10 max-w-[1600px] mx-auto pb-32">
+      {/* TOP HEADER */}
       <div className="flex justify-between items-center px-2">
-        <div className="space-y-1">
-            <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">Admin Dashboard</h1>
-            <p className="text-sm font-medium text-slate-500">Global Documentation Analytics & Workflow Governance</p>
-        </div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
         <div className="flex items-center gap-3">
-            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-bold gap-1.5 h-8 px-4 rounded-xl shadow-sm">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Operational
-            </Badge>
-            <div className="h-9 w-9 rounded-xl bg-[#3F51B5] text-white flex items-center justify-center font-black text-xs shadow-lg shadow-indigo-100">
-                SA
-            </div>
+          <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold gap-1.5 h-8 px-4 rounded-full shadow-sm">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            System Live
+          </Badge>
+          <div className="h-9 w-9 rounded-xl bg-[#3F51B5] text-white flex items-center justify-center font-black text-xs shadow-lg shadow-indigo-100">
+            SA
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <KPICard title="Approval Bottleneck" value={metrics.approvalBottleneck} subtitle="Pending > 3 days" icon={Timer} color="text-red-600" alert={metrics.approvalBottleneck > 0} />
-          <KPICard title="Return-for-Revision" value={`${metrics.revisionRate}%`} subtitle="Req changes vs Approved" icon={History} color="text-indigo-600" />
-          <KPICard title="Active Contributors" value={metrics.activeContributors} subtitle="Past 30 days" icon={Users} color="text-emerald-600" />
-          <KPICard title="Stale Published" value={metrics.stalePublished} subtitle="No edits > 6 months" icon={AlertCircle} color="text-amber-600" alert={metrics.stalePublished > 5} />
+      {/* NEEDS ATTENTION SECTION */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                <AlertTriangle className="h-3 w-3" />
+                Needs Attention
+            </div>
+            <span className="text-[11px] font-bold text-slate-400">6 items • oldest waiting 5 days</span>
+        </div>
+        <Card className="rounded-[24px] border-slate-100 shadow-sm bg-white overflow-hidden">
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="bg-slate-50/50 border-b border-slate-100 h-12">
+                            <th className="pl-8 font-black uppercase text-[10px] tracking-widest text-slate-400">Definition</th>
+                            <th className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Status</th>
+                            <th className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Submitted By</th>
+                            <th className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Waiting</th>
+                            <th className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Stage</th>
+                            <th className="pr-8 text-right font-black uppercase text-[10px] tracking-widest text-slate-400">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                        {metrics.needsAttention.map((item) => (
+                            <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                                <td className="pl-8 py-5">
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-slate-900 text-sm">{item.name}</span>
+                                        <span className="text-[10px] font-mono text-slate-400 uppercase">{item.code}</span>
+                                    </div>
+                                </td>
+                                <td className="px-6">
+                                    <Badge className={cn(
+                                        "h-7 rounded-lg text-[10px] font-black uppercase gap-1.5 border shadow-sm",
+                                        item.status === 'Pending Approval' ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-pink-50 text-pink-600 border-pink-100"
+                                    )}>
+                                        <div className={cn("h-1 w-1 rounded-full", item.status === 'Pending Approval' ? "bg-blue-600" : "bg-pink-600")} />
+                                        {item.status}
+                                    </Badge>
+                                </td>
+                                <td className="px-6">
+                                    <div className="flex items-center gap-2.5">
+                                        <Avatar className="h-7 w-7 border-2 border-white shadow-sm">
+                                            <AvatarImage src={item.avatar} />
+                                            <AvatarFallback className="bg-slate-100 text-[10px] font-bold">{item.submittedBy[0]}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-xs font-bold text-slate-700">{item.submittedBy}</span>
+                                    </div>
+                                </td>
+                                <td className="px-6">
+                                    <span className={cn("text-xs font-black", item.waiting === '5 days' ? "text-red-500" : "text-slate-900")}>
+                                        {item.waiting}
+                                    </span>
+                                </td>
+                                <td className="px-6">
+                                    <span className="text-xs font-medium text-slate-400">{item.stage}</span>
+                                </td>
+                                <td className="pr-8 text-right">
+                                    <div className="flex justify-end gap-2">
+                                        <Button size="sm" className="h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 text-[11px]">Approve</Button>
+                                        <Button variant="outline" size="sm" className="h-8 rounded-lg border-slate-200 text-slate-700 font-bold px-4 text-[11px] bg-white" onClick={() => onNavigate('definitions')}>View</Button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-2 rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-indigo-500" />
-                    <h3 className="text-xl font-bold text-slate-900">Governance Lifecycle</h3>
-                </div>
-                <span className="text-[13px] font-bold text-slate-500">Total <span className="text-slate-900 font-black">{metrics.totalDefinitions}</span> Definitions</span>
-            </div>
-
-            <div className="flex items-center gap-2 mb-8 w-full">
-                <LifecycleBlock count={metrics.lifecycle.draft} label="Active Draft" color="bg-amber-50 text-amber-600 border-amber-100" />
-                <LifecycleBlock count={metrics.lifecycle.staleDrafts} label="Stale (>30d)" color="bg-orange-50 text-orange-600 border-orange-100" />
-                <BlockArrow />
-                <LifecycleBlock count={metrics.lifecycle.pending} label="Pending Review" color="bg-blue-50 text-blue-600 border-blue-100" />
-                <BlockArrow />
-                <div className="flex flex-col gap-2 flex-1 min-w-0">
-                    <LifecycleBlock count={metrics.lifecycle.requested} label="Changes Req." color="bg-pink-50 text-pink-600 border-pink-100" h="h-11" />
-                    <LifecycleBlock count={metrics.lifecycle.rejected} label="Rejected" color="bg-red-50 text-red-700 border-red-100" h="h-11" />
-                </div>
-                <LifecycleBlock count={metrics.lifecycle.published} label="Published" color="bg-emerald-50 text-emerald-600 border-emerald-100" />
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-slate-100">
-                <div>
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Orphan Drafts</p>
-                    <p className="text-xl font-black text-slate-900">{metrics.orphanDrafts}</p>
-                    <p className="text-[10px] font-medium text-slate-500">Inactive > 60d</p>
+      {/* DEFINITIONS OVERVIEW */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+            <FileText className="h-3 w-3" />
+            Definitions Overview
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <KPICard title="Total Definitions" value={metrics.total} badge="+3 this week" />
+            <KPICard title="Published" value={metrics.published} badge={`${Math.round((metrics.published / metrics.total) * 100)}% of total`} />
+            <KPICard title="Pending Approval" value={metrics.pending} badge="Avg wait 3.2d" badgeColor="bg-amber-50 text-amber-600" />
+            <Card className="rounded-[24px] bg-[#6366F1] p-6 shadow-lg shadow-indigo-200 text-white flex flex-col justify-between relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform">
+                    <ShieldCheck className="h-16 w-16" />
                 </div>
                 <div>
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Archived</p>
-                    <p className="text-xl font-black text-slate-400">{metrics.lifecycle.archived}</p>
-                    <p className="text-[10px] font-medium text-slate-500">Library baseline</p>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Awaiting Your Action</h4>
+                    <p className="text-4xl font-black mt-1">{metrics.awaitingAction}</p>
                 </div>
-                <div>
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Avg Review Time</p>
-                    <p className="text-xl font-black text-indigo-600">1.8d</p>
-                    <p className="text-[10px] font-medium text-slate-500">Target &lt; 2.0d</p>
+                <div className="mt-4 flex items-center justify-between">
+                    <span className="text-[9px] font-bold uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">Live</span>
+                    <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[10px]">Jump to Queue</Button>
                 </div>
-                <div>
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Health Score</p>
-                    <p className="text-xl font-black text-emerald-600">94%</p>
-                    <p className="text-[10px] font-medium text-slate-500">Metadata compliance</p>
-                </div>
-            </div>
-        </Card>
-
-        <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8">
-            <div className="flex items-center gap-2 mb-6">
-                <AlertTriangle className="h-5 w-5 text-red-500" />
-                <h3 className="text-lg font-bold text-slate-900">Rejection Analysis</h3>
-            </div>
-            <div className="h-[220px]">
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie
-                            data={metrics.rejectionData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
-                            dataKey="value"
-                        >
-                            {metrics.rejectionData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                            ))}
-                        </Pie>
-                        <RechartsTooltip 
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                        />
-                    </PieChart>
-                </ResponsiveContainer>
-            </div>
-            <div className="space-y-2.5 mt-4">
-                {metrics.rejectionData.map((item, idx) => (
-                    <div key={item.name} className="flex items-center justify-between text-xs font-bold">
-                        <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }} />
-                            <span className="text-slate-500 uppercase tracking-tight">{item.name}</span>
-                        </div>
-                        <span className="text-slate-900 tabular-nums">{item.value}</span>
-                    </div>
-                ))}
-            </div>
-        </Card>
+            </Card>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8">
+          {/* DEFINITION LIFECYCLE */}
+          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
             <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-2">
-                    <UserCheck className="h-5 w-5 text-[#3F51B5]" />
-                    <h3 className="text-xl font-bold text-slate-900">Approver Workload</h3>
-                </div>
-                <Badge variant="secondary" className="bg-indigo-50 text-indigo-700">Top 5 Performer</Badge>
+                <h3 className="text-lg font-bold text-slate-900">Definition Lifecycle</h3>
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total <span className="text-slate-900">{metrics.total}</span> definitions</span>
             </div>
-            <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                    <ReBarChart data={metrics.approverLeaderboard} layout="vertical" margin={{ left: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                        <XAxis type="number" hide />
-                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: '#475569' }} />
-                        <RechartsTooltip cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }} contentStyle={{ borderRadius: '12px' }} />
-                        <Bar dataKey="approved" name="Approved" stackId="a" fill="#10B981" radius={[0, 0, 0, 0]} />
-                        <Bar dataKey="requested" name="Req. Changes" stackId="a" fill="#F59E0B" radius={[0, 4, 4, 0]} />
-                    </ReBarChart>
-                </ResponsiveContainer>
+
+            <div className="flex items-center gap-1.5 w-full mb-10 overflow-hidden">
+                <LifecycleStep count={6} label="Draft" color="text-amber-500 bg-amber-50/50" />
+                <StepArrow />
+                <LifecycleStep count={3} label="Sent for Approval" color="text-indigo-500 bg-indigo-50/50" />
+                <StepArrow />
+                <LifecycleStep count={4} label="Pending Approval" color="text-blue-500 bg-blue-50/50" />
+                <StepArrow />
+                <LifecycleStep count={2} label="Changes Requested" color="text-pink-500 bg-pink-50/50" />
+                <StepArrow />
+                <LifecycleStep count={1} label="Rejected" color="text-red-500 bg-red-50/50" />
+                <StepArrow />
+                <LifecycleStep count={10} label="Published" color="text-emerald-500 bg-emerald-50/50" />
+                <div className="w-8 shrink-0" />
+                <LifecycleStep count={4} label="Archived" color="text-slate-400 bg-slate-100/50" />
+            </div>
+
+            <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+                <div className="flex gap-6">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">3 duplicated from published</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight mt-1"><span className="text-slate-900">33%</span> draft → published conversion (30d)</span>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight"><span className="text-slate-900">1.8 days</span> avg approval time</span>
+                </div>
+            </div>
+
+            <div className="flex flex-wrap gap-4 mt-8">
+                <LifecycleLegend label="Draft" color="bg-amber-500" />
+                <LifecycleLegend label="Sent for Approval" color="bg-indigo-500" />
+                <LifecycleLegend label="Pending Approval" color="bg-blue-600" />
+                <LifecycleLegend label="Changes Requested" color="bg-pink-500" />
+                <LifecycleLegend label="Rejected" color="bg-red-500" />
+                <LifecycleLegend label="Published" color="bg-emerald-500" />
+                <LifecycleLegend label="Archived" color="bg-slate-400" />
             </div>
           </Card>
 
-          <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8">
-            <div className="flex items-center gap-2 mb-8">
-                <FileEdit className="h-5 w-5 text-indigo-500" />
-                <h3 className="text-xl font-bold text-slate-900">Most Edited Hotspots</h3>
+          {/* TEMPLATE ARCHITECTURE */}
+          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+                <h3 className="text-lg font-bold text-slate-900">Template Architecture</h3>
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total <span className="text-slate-900">7</span> templates</span>
             </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="p-5 rounded-2xl bg-slate-50/50 border border-slate-100">
+                    <p className="text-2xl font-black text-slate-900 leading-none">5</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5">Active</p>
+                </div>
+                <div className="p-5 rounded-2xl bg-slate-50/50 border border-slate-100">
+                    <p className="text-2xl font-black text-slate-300 leading-none">2</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5">Inactive</p>
+                </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mb-10">
+                <ModuleBadge label="Authorization" count={1} color="bg-indigo-600" />
+                <ModuleBadge label="Claims" count={2} color="bg-blue-500" />
+                <ModuleBadge label="Provider" count={1} color="bg-emerald-500" />
+                <ModuleBadge label="Member" count={1} color="bg-orange-400" />
+                <ModuleBadge label="Other" count={2} color="bg-slate-500" />
+            </div>
+
             <div className="space-y-6">
-                {metrics.mostEdited.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-indigo-100 transition-all cursor-pointer">
-                        <div className="flex items-center gap-4">
-                            <div className="h-9 w-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-black text-xs text-slate-400">
-                                #{idx + 1}
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="font-bold text-slate-900">{item.name}</span>
-                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{item.module}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="flex flex-col items-end">
-                                <span className="text-lg font-black text-indigo-600 tabular-nums">{item.revisions}</span>
-                                <span className="text-[9px] font-black uppercase text-slate-400">revisions</span>
-                            </div>
-                            <ChevronRight className="h-4 w-4 text-slate-300" />
-                        </div>
-                    </div>
-                ))}
+                <TemplateUsageRow label="Standard Approval Flow" module="Authorization" usage={18} max={25} />
+                <TemplateUsageRow label="Two-Stage Sign-off" module="Claims" usage={11} max={25} />
+                <TemplateUsageRow label="Risk Definition Base" module="Provider" usage={7} max={25} />
             </div>
           </Card>
       </div>
-
-      <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8">
-        <div className="flex items-center justify-between mb-10">
-            <div className="flex items-center gap-2">
-                <LayoutGrid className="h-5 w-5 text-indigo-500" />
-                <h3 className="text-xl font-bold text-slate-900">Template Ecosystem</h3>
-            </div>
-            <div className="flex items-center gap-6">
-                <div className="text-right">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Zero Impact</p>
-                    <p className={cn("text-xl font-black", metrics.unusedTemplates > 0 ? "text-red-600" : "text-slate-900")}>{metrics.unusedTemplates}</p>
-                </div>
-                <div className="text-right border-l pl-6">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Active Total</p>
-                    <p className="text-xl font-black text-slate-900">{metrics.totalTemplates}</p>
-                </div>
-            </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {metrics.moduleTemplateCounts.map(module => (
-                <div key={module.name} className="p-6 rounded-[24px] bg-slate-50 border border-slate-100 flex items-center justify-between group hover:bg-white hover:border-indigo-100 transition-all">
-                    <div className="space-y-1">
-                        <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest">{module.name}</p>
-                        <p className="text-3xl font-black text-slate-900">{module.count}</p>
-                    </div>
-                    <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center group-hover:border-indigo-100 group-hover:bg-indigo-50 transition-colors">
-                        <LayoutTemplate className="h-5 w-5 text-slate-300 group-hover:text-indigo-600" />
-                    </div>
-                </div>
-            ))}
-        </div>
-        
-        {metrics.unusedTemplates > 0 && (
-            <div className="mt-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-                <p className="text-sm font-bold text-red-900">
-                    Governance Alert: <span className="font-medium">{metrics.unusedTemplates} templates have remained unused for &gt; 90 days.</span> Consider deprecation or consolidation to reduce system noise.
-                </p>
-            </div>
-        )}
-      </Card>
     </div>
   );
 }
 
-function KPICard({ title, value, subtitle, icon: Icon, color, alert }: { title: string, value: any, subtitle: string, icon: any, color: string, alert?: boolean }) {
+function KPICard({ title, value, badge, badgeColor = "bg-slate-50 text-slate-500" }: { title: string, value: any, badge: string, badgeColor?: string }) {
     return (
-        <Card className={cn("rounded-[24px] border-slate-200 bg-white p-6 shadow-sm transition-all", alert && "border-red-200 bg-red-50/20")}>
-            <div className="flex justify-between items-start">
-                <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100">
-                    <Icon className={cn("h-5 w-5", color)} />
-                </div>
-                {alert && <Badge className="bg-red-100 text-red-700 animate-pulse uppercase text-[9px] font-black">Critical</Badge>}
-            </div>
-            <div className="mt-6">
-                <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-widest">{title}</h4>
-                <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-3xl font-black text-slate-900 tracking-tighter">{value}</span>
-                    <span className="text-[11px] font-bold text-slate-500">{subtitle}</span>
+        <Card className="rounded-[24px] border-slate-100 bg-white p-6 shadow-sm">
+            <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{title}</h4>
+                <p className="text-4xl font-black text-slate-900">{value}</p>
+                <div className={cn("inline-flex h-6 px-3 rounded-full text-[9px] font-black uppercase items-center border border-transparent shadow-sm", badgeColor)}>
+                    {badge}
                 </div>
             </div>
         </Card>
     );
 }
 
-function LifecycleBlock({ count, label, color, h = "h-24" }: { count: number, label: string, color: string, h?: string }) {
+function LifecycleStep({ count, label, color }: { count: number, label: string, color: string }) {
     return (
-        <div className={cn(
-            "rounded-xl border p-4 flex flex-col justify-center transition-all flex-1 min-w-0 shadow-sm",
-            color,
-            h
-        )}>
-            <span className="font-black tabular-nums leading-none text-2xl">{count}</span>
-            <span className="font-bold mt-2 leading-tight text-[11px] uppercase tracking-tighter">{label}</span>
+        <div className={cn("h-20 flex-1 min-w-[70px] rounded-xl p-3 flex flex-col justify-center border border-slate-100/50 shadow-sm", color)}>
+            <span className="text-xl font-black tabular-nums leading-none">{count}</span>
+            <span className="text-[9px] font-black uppercase leading-tight mt-2 opacity-80">{label}</span>
         </div>
     );
 }
 
-function BlockArrow() {
+function StepArrow() {
     return (
-        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shrink-0 mx-1">
-            <ChevronRightSquare className="h-4 w-4 text-slate-400" />
+        <div className="h-6 w-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 mx-[-4px] relative z-10">
+            <ChevronRight className="h-3 w-3 text-slate-300" />
+        </div>
+    );
+}
+
+function LifecycleLegend({ label, color }: { label: string, color: string }) {
+    return (
+        <div className="flex items-center gap-1.5">
+            <div className={cn("h-2 w-2 rounded-[2px]", color)} />
+            <span className="text-[10px] font-bold text-slate-500">{label}</span>
+        </div>
+    );
+}
+
+function ModuleBadge({ label, count, color }: { label: string, count: number, color: string }) {
+    return (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-100 bg-white shadow-sm">
+            <div className={cn("h-1.5 w-1.5 rounded-full", color)} />
+            <span className="text-[10px] font-bold text-slate-600">{label}</span>
+            <span className="text-[10px] font-black text-slate-300 ml-1">{count}</span>
+        </div>
+    );
+}
+
+function TemplateUsageRow({ label, module, usage, max }: { label: string, module: string, usage: number, max: number }) {
+    const percentage = (usage / max) * 100;
+    const colors: Record<string, string> = {
+        'Authorization': 'bg-indigo-600',
+        'Claims': 'bg-blue-500',
+        'Provider': 'bg-emerald-500'
+    };
+    
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <span className="text-[12px] font-bold text-slate-900">{label}</span>
+                    <span className={cn("text-[9px] font-black uppercase tracking-widest", colors[module].replace('bg-', 'text-'))}>{module}</span>
+                </div>
+                <span className="text-[10px] font-bold text-slate-400">{usage} uses</span>
+            </div>
+            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className={cn("h-full rounded-full transition-all duration-1000", colors[module])} style={{ width: `${percentage}%` }} />
+            </div>
         </div>
     );
 }
