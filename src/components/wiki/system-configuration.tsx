@@ -53,7 +53,7 @@ import type { SystemConfigurationState, ConfigKey } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, parseISO } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
@@ -140,7 +140,8 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
     };
 
     const filteredConfigKeys = useMemo(() => {
-        const sorted = [...localConfig.configKeys].sort((a, b) => {
+        const keys = localConfig.configKeys || [];
+        const sorted = [...keys].sort((a, b) => {
             const order = Object.keys(KEY_DISPLAY_NAMES);
             const aIdx = order.indexOf(a.key);
             const bIdx = order.indexOf(b.key);
@@ -325,7 +326,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             s.title.toLowerCase().includes(lower) || 
             s.key.toLowerCase().includes(lower)
         );
-    }, [preferenceSections, prefSearch]);
+    }, [prefSearch]);
 
     const handleOpenAddModal = () => {
         const nextIdNum = Math.max(...localConfig.configKeys.map(k => parseInt(k.id) || 0), 0) + 1;
@@ -618,11 +619,11 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-[11px] font-black uppercase text-slate-500">Parameter Key (System)</Label>
-                                    <Input 
+                                    <input 
                                         value={editingKeyEntry?.key || ''} 
                                         onChange={e => setEditingKeyEntry(p => p ? ({ ...p, key: e.target.value }) : null)} 
                                         placeholder="e.g. TIMEOUT_LIMIT"
-                                        className="rounded-xl border-slate-200 h-11 font-mono text-xs bg-white shadow-sm" 
+                                        className="flex h-11 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm ring-offset-background font-mono text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" 
                                     />
                                 </div>
                                 <div className="space-y-2">

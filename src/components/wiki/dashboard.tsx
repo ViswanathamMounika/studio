@@ -5,30 +5,17 @@ import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
     Users, 
-    FileText, 
-    LayoutTemplate, 
     Activity,
-    Users2,
     AlertCircle,
-    CheckCircle2,
-    ShieldCheck,
-    ChevronRight,
-    User2,
-    LayoutGrid,
-    PieChart as PieChartIcon,
-    ChevronRightSquare,
-    Play,
-    Calendar as CalendarIcon,
-    Info,
     History,
     FileEdit,
-    Clock,
     UserCheck,
-    BarChart,
     Timer,
     AlertTriangle,
-    Trash2,
-    Library
+    LayoutTemplate,
+    ChevronRight,
+    ChevronRightSquare,
+    LayoutGrid
 } from 'lucide-react';
 import { 
     PieChart, 
@@ -40,21 +27,12 @@ import {
     YAxis, 
     Tooltip as RechartsTooltip, 
     ResponsiveContainer,
-    Legend,
     CartesianGrid
 } from 'recharts';
 import type { Definition, UserAccount, Template, View, ApprovalHistoryEntry, ActivityLog } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { differenceInDays, parseISO, subDays, format, startOfDay, endOfDay, isWithinInterval, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, isValid, subMonths } from 'date-fns';
-import { Button } from '../ui/button';
-import { Progress } from '../ui/progress';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { ScrollArea } from '../ui/scroll-area';
+import { parseISO, subDays, subMonths } from 'date-fns';
 
 type DashboardProps = {
   definitions: Definition[];
@@ -97,25 +75,9 @@ const countPublishedDefinitions = (items: Definition[]): { published: number, ar
   return { published, archived, stale, mostEdited };
 };
 
-const MODULE_COLORS: Record<string, string> = {
-    'Authorizations': 'bg-indigo-50 text-indigo-700 border-indigo-100 dot-indigo-500',
-    'Claims': 'bg-blue-50 text-blue-700 border-blue-100 dot-blue-500',
-    'Provider': 'bg-emerald-50 text-emerald-700 border-emerald-100 dot-emerald-500',
-    'Member': 'bg-orange-50 text-orange-700 border-orange-100 dot-orange-500',
-    'Core': 'bg-slate-50 text-slate-700 border-slate-100 dot-slate-500',
-    'Other': 'bg-slate-50 text-slate-700 border-slate-100 dot-slate-500'
-};
-
 const CHART_COLORS = ['#6366F1', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 export default function Dashboard({ definitions, drafts, users, templates, onNavigate, approvalHistory = [], activityLogs = [] }: DashboardProps) {
-  const { toast } = useToast();
-  
-  const [velocityRange, setVelocityRange] = useState({
-    from: format(subDays(new Date(), 29), 'yyyy-MM-dd'),
-    to: format(new Date(), 'yyyy-MM-dd')
-  });
-
   const metrics = useMemo(() => {
     const safeDefinitions = Array.isArray(definitions) ? definitions : [];
     const safeDrafts = Array.isArray(drafts) ? drafts : [];
@@ -195,8 +157,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     // Template Stats
     const unusedTemplates = safeTemplates.filter(t => {
         if (!t.isActive) return false;
-        // Simple usage check
-        const isUsed = definitions.some(d => d.templateId === t.id) || drafts.some(d => d.templateId === t.id);
+        const isUsed = safeDefinitions.some(d => d.templateId === t.id) || safeDrafts.some(d => d.templateId === t.id);
         return !isUsed;
     });
 
@@ -208,7 +169,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     return {
         totalUsers: safeUsers.length,
         activePercentage: safeUsers.length > 0 ? Math.round((safeUsers.filter(u => u.status === 'Active').length / safeUsers.length) * 100) : 0,
-        
         totalDefinitions: published + archived + safeDrafts.length,
         publishedCount: published,
         stalePublished: stale,
@@ -219,7 +179,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         orphanDrafts: orphanDrafts.length,
         approverLeaderboard,
         rejectionData,
-
         lifecycle: {
             draft: draftOnly.length,
             staleDrafts: staleDrafts.length,
@@ -229,7 +188,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             published: published,
             archived: archived
         },
-
         totalTemplates: safeTemplates.length,
         unusedTemplates: unusedTemplates.length,
         moduleTemplateCounts: Object.entries(moduleTemplateCounts).map(([name, count]) => ({ name, count }))
@@ -238,7 +196,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
 
   return (
     <div className="p-8 space-y-12 max-w-[1600px] mx-auto pb-32">
-      {/* HEADER */}
       <div className="flex justify-between items-center px-2">
         <div className="space-y-1">
             <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">Admin Dashboard</h1>
@@ -255,7 +212,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         </div>
       </div>
 
-      {/* CORE KPI GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KPICard title="Approval Bottleneck" value={metrics.approvalBottleneck} subtitle="Pending > 3 days" icon={Timer} color="text-red-600" alert={metrics.approvalBottleneck > 0} />
           <KPICard title="Return-for-Revision" value={`${metrics.revisionRate}%`} subtitle="Req changes vs Approved" icon={History} color="text-indigo-600" />
@@ -263,7 +219,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
           <KPICard title="Stale Published" value={metrics.stalePublished} subtitle="No edits > 6 months" icon={AlertCircle} color="text-amber-600" alert={metrics.stalePublished > 5} />
       </div>
 
-      {/* SECTION: DEFINITION LIFECYCLE */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <Card className="lg:col-span-2 rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8">
             <div className="flex items-center justify-between mb-8">
@@ -301,7 +256,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <div>
                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Avg Review Time</p>
                     <p className="text-xl font-black text-indigo-600">1.8d</p>
-                    <p className="text-[10px] font-medium text-slate-500">Target < 2.0d</p>
+                    <p className="text-[10px] font-medium text-slate-500">Target &lt; 2.0d</p>
                 </div>
                 <div>
                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Health Score</p>
@@ -352,7 +307,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         </Card>
       </div>
 
-      {/* WORKLOAD & HOTSPOTS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8">
             <div className="flex items-center justify-between mb-8">
@@ -406,7 +360,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
           </Card>
       </div>
 
-      {/* SECTION: TEMPLATE HEALTH */}
       <Card className="rounded-[28px] border-slate-200 shadow-sm bg-white overflow-hidden p-8">
         <div className="flex items-center justify-between mb-10">
             <div className="flex items-center gap-2">
@@ -443,7 +396,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             <div className="mt-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3">
                 <AlertCircle className="h-5 w-5 text-red-600" />
                 <p className="text-sm font-bold text-red-900">
-                    Governance Alert: <span className="font-medium">{metrics.unusedTemplates} templates have remained unused for > 90 days.</span> Consider deprecation or consolidation to reduce system noise.
+                    Governance Alert: <span className="font-medium">{metrics.unusedTemplates} templates have remained unused for &gt; 90 days.</span> Consider deprecation or consolidation to reduce system noise.
                 </p>
             </div>
         )}
