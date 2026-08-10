@@ -373,7 +373,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <LifecycleBlock count={metrics.lifecycle.archived} label="Archived" color="bg-slate-50 text-slate-400 border-slate-100" />
             </div>
 
-            <div className="flex items-center gap-8 px-2 mb-10">
+            <div className="flex items-center gap-8 px-2">
                 <div className="flex items-center gap-2">
                     <span className="text-[13px] font-black text-slate-900">{metrics.stats.duplicated}</span>
                     <span className="text-[13px] font-medium text-slate-500">duplicated from published</span>
@@ -386,15 +386,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                     <span className="text-[13px] font-black text-slate-900">{metrics.stats.avgApprovalTime} days</span>
                     <span className="text-[13px] font-medium text-slate-500">avg approval time</span>
                 </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-4 pt-6 border-t border-slate-100">
-                <LegendItem label="Draft" dot="bg-amber-500" />
-                <LegendItem label="Pending Approval" dot="bg-blue-500" />
-                <LegendItem label="Changes Requested" dot="bg-pink-500" />
-                <LegendItem label="Rejected" dot="bg-red-500" />
-                <LegendItem label="Published" dot="bg-emerald-500" />
-                <LegendItem label="Archived" dot="bg-slate-400" />
             </div>
         </Card>
       </div>
@@ -675,15 +666,6 @@ function BlockArrow() {
     return (
         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shrink-0">
             <ChevronRightSquare className="h-4 w-4 text-slate-400" />
-        </div>
-    );
-}
-
-function LegendItem({ label, dot }: { label: string, dot: string }) {
-    return (
-        <div className="flex items-center gap-2">
-            <div className={cn("h-2 w-2 rounded-full", dot)} />
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{label}</span>
         </div>
     );
 }
