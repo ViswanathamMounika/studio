@@ -206,7 +206,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         totalDefinitions: published + archived + safeDrafts.length,
         lifecycle: {
             draft: draftOnly.length,
-            sent: safeDrafts.filter(d => d && d.isPendingApproval && d.submittedAt && parseISO(d.submittedAt) > subDays(new Date(), 1)).length,
             pending: pendingApproval.length,
             requested: changesRequested.length,
             rejected: rejected.length,
@@ -366,8 +365,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
             <div className="flex items-center gap-2 mb-8 w-full">
                 <LifecycleBlock count={metrics.lifecycle.draft} label="Draft" color="bg-amber-50 text-amber-600 border-amber-100" />
                 <BlockArrow />
-                <LifecycleBlock count={metrics.lifecycle.sent} label="Sent for Approval" color="bg-purple-50 text-purple-600 border-purple-100" />
-                <BlockArrow />
                 <LifecycleBlock count={metrics.lifecycle.pending} label="Pending Approval" color="bg-blue-50 text-blue-600 border-blue-100" />
                 <BlockArrow />
                 <LifecycleBlock count={metrics.lifecycle.requested} label="Changes Requested" color="bg-pink-50 text-pink-600 border-pink-100" />
@@ -393,7 +390,6 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
 
             <div className="flex flex-wrap items-center gap-4 pt-6 border-t border-slate-100">
                 <LegendItem label="Draft" dot="bg-amber-500" />
-                <LegendItem label="Sent for Approval" dot="bg-purple-500" />
                 <LegendItem label="Pending Approval" dot="bg-blue-500" />
                 <LegendItem label="Changes Requested" dot="bg-pink-500" />
                 <LegendItem label="Rejected" dot="bg-red-500" />
