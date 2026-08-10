@@ -161,6 +161,18 @@ export default function Dashboard({
         return !isUsed;
     });
 
+    // Users & Roles Metrics
+    const totalUsers = users.length;
+    const activeUsers = users.filter(u => u.status === 'Active').length;
+    const inactiveUsers = users.filter(u => u.status === 'Inactive').length;
+    const activePercent = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
+
+    const rolesList = [
+        { id: 'sa', label: 'Super Admin', desc: 'Full system access', icon: 'SA', count: users.filter(u => u.role === 'Super Admin').length, color: 'text-indigo-600 bg-indigo-50' },
+        { id: 'ap', label: 'Approver', desc: 'Reviews & publishes', icon: 'AP', count: users.filter(u => u.role === 'Approver').length, color: 'text-purple-600 bg-purple-50' },
+        { id: 'ed', label: 'Editor', desc: 'Creates definitions', icon: 'ED', count: users.filter(u => u.role === 'Admin' || u.role === 'Standard User').length, color: 'text-blue-600 bg-blue-50' }
+    ];
+
     return {
       total: allPublished.length + allArchived.length + safeDrafts.length,
       published: allPublished.length,
@@ -177,7 +189,12 @@ export default function Dashboard({
       creationTrendData,
       moduleCounts,
       unusedTemplates,
-      mostEdited: allPublished.sort((a, b) => b.revisions.length - a.revisions.length).slice(0, 4)
+      mostEdited: allPublished.sort((a, b) => b.revisions.length - a.revisions.length).slice(0, 4),
+      totalUsers,
+      activeUsers,
+      inactiveUsers,
+      activePercent,
+      rolesList
     };
   }, [definitions, drafts, users, templates, activityLogs, approvalHistory]);
 
@@ -572,6 +589,44 @@ export default function Dashboard({
                 </div>
             </Card>
       </div>
+
+      {/* USERS & ROLES */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+            <Users className="h-3.5 w-3.5" />
+            Users & Roles
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <KPICard title="Total Users" value={metrics.totalUsers} badge="+0" badgeColor="bg-slate-100 text-slate-500" />
+            <KPICard title="Active Users" value={metrics.activeUsers} badge={`${metrics.activePercent}%`} badgeColor="bg-emerald-50 text-emerald-600" />
+            <KPICard title="Inactive Users" value={metrics.inactiveUsers} badge="Review" badgeColor="bg-orange-50 text-orange-600" />
+        </div>
+
+        <Card className="rounded-[28px] border-slate-100 bg-white shadow-sm overflow-hidden">
+            <CardHeader className="p-8 pb-4 border-none">
+                <CardTitle className="text-lg font-bold text-slate-900">Users by Role</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 px-8 pb-8">
+                <div className="divide-y divide-slate-50">
+                    {metrics.rolesList.map(role => (
+                        <div key={role.id} className="py-5 flex items-center justify-between group first:pt-0 last:pb-0">
+                            <div className="flex items-center gap-4">
+                                <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center font-black text-[10px] tracking-tighter shadow-sm", role.color)}>
+                                    {role.icon}
+                                </div>
+                                <div className="space-y-0.5">
+                                    <p className="text-[14px] font-bold text-slate-900">{role.label}</p>
+                                    <p className="text-[11px] font-medium text-slate-400 uppercase tracking-tight">{role.desc}</p>
+                                </div>
+                            </div>
+                            <span className="text-xl font-black text-slate-900 tabular-nums">{role.count}</span>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -581,9 +636,11 @@ function KPICard({ title, value, badge, badgeColor }: { title: string, value: an
         <Card className="rounded-[24px] border-slate-100 bg-white p-6 shadow-sm group hover:border-indigo-100 transition-all">
             <div className="space-y-4">
                 <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{title}</h4>
-                <p className="text-4xl font-black text-slate-900">{value}</p>
-                <div className={cn("inline-flex h-6 px-3 rounded-full text-[9px] font-black uppercase items-center border border-transparent", badgeColor)}>
-                    {badge}
+                <div className="flex items-center justify-between">
+                    <p className="text-4xl font-black text-slate-900">{value}</p>
+                    <div className={cn("inline-flex h-6 px-3 rounded-full text-[10px] font-black uppercase items-center border border-transparent", badgeColor)}>
+                        {badge}
+                    </div>
                 </div>
             </div>
         </Card>
