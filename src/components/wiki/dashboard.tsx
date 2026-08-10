@@ -37,7 +37,7 @@ import {
     ResponsiveContainer,
     Cell
 } from 'recharts';
-import type { Definition, UserAccount, Template, View, ApprovalHistoryEntry, ActivityLog } from '@/lib/types';
+import type { Definition, UserAccount, Template, View, ApprovalHistoryEntry, ActivityLog, DiscussionMessage } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -78,9 +78,15 @@ export default function Dashboard({
     const allArchived = flatten(definitions).filter(d => d.isArchived);
     const safeDrafts = Array.isArray(drafts) ? drafts : [];
     
+    const getLatestFeedbackType = (d: Definition) => {
+        const fb = (d.discussions || []).filter(m => m.type === 'change-request' || m.type === 'rejection');
+        return fb.length > 0 ? fb[fb.length - 1].type : null;
+    };
+
     const pending = safeDrafts.filter(d => d.isPendingApproval);
-    const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval && !(d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection'));
-    const rejectedOrChanges = safeDrafts.filter(d => (d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection'));
+    const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval && !getLatestFeedbackType(d));
+    const changesRequestedCount = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'change-request').length;
+    const rejectedCount = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'rejection').length;
     
     const mostEdited = [...allPublished].sort((a, b) => (b.revisions?.length || 0) - (a.revisions?.length || 0)).slice(0, 5);
 
@@ -163,7 +169,8 @@ export default function Dashboard({
       publishedCount: allPublished.length,
       pendingCount: pending.length,
       draftsCount: draftOnly.length,
-      rejectedOrChangesCount: rejectedOrChanges.length,
+      changesRequestedCount,
+      rejectedCount,
       archivedCount: allArchived.length,
       stalePublishedCount: stalePublished.length,
       orphanDraftsCount: orphans.length,
@@ -188,10 +195,10 @@ export default function Dashboard({
   }, [definitions, drafts, users, templates, activityLogs, approvalHistory, chartStartDate, chartEndDate]);
 
   const attentionItems = [
-    { name: 'Loan Eligibility Rule v3', code: 'DEF-2210', status: 'Pending Approval', author: 'Rahul M.', waiting: '5 days', stage: 'Sent for Approval', type: 'pending' },
-    { name: 'KYC Threshold Policy', code: 'DEF-2198', status: 'Pending Approval', author: 'Priya S.', waiting: '4 days', stage: 'Sent for Approval', type: 'pending' },
-    { name: 'Fraud Flag Composite', code: 'DEF-2205', status: 'Changes Requested', author: 'Arjun K.', waiting: '2 days', stage: 'Awaiting resubmission', type: 'changes' },
-    { name: 'Merchant Risk Score', code: 'DEF-2183', status: 'Pending Approval', author: 'Neha V.', waiting: '1 day', stage: 'Sent for Approval', type: 'pending' },
+    { name: 'Loan Eligibility Rule v3', code: 'DEF-2210', status: 'Pending Approval', author: 'Rahul M.', waiting: '5 days', type: 'pending' },
+    { name: 'KYC Threshold Policy', code: 'DEF-2198', status: 'Pending Approval', author: 'Priya S.', waiting: '4 days', type: 'pending' },
+    { name: 'Fraud Flag Composite', code: 'DEF-2205', status: 'Changes Requested', author: 'Arjun K.', waiting: '2 days', type: 'changes' },
+    { name: 'Merchant Risk Score', code: 'DEF-2183', status: 'Pending Approval', author: 'Neha V.', waiting: '1 day', type: 'pending' },
   ];
 
   return (
@@ -213,7 +220,6 @@ export default function Dashboard({
                             <th className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Status</th>
                             <th className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Submitted By</th>
                             <th className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Waiting</th>
-                            <th className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Stage</th>
                             <th className="pr-8 text-right font-black uppercase text-[10px] tracking-widest text-slate-400">Action</th>
                         </tr>
                     </thead>
@@ -246,9 +252,6 @@ export default function Dashboard({
                                 </td>
                                 <td className="px-6">
                                     <span className="text-xs font-black text-red-500">{item.waiting}</span>
-                                </td>
-                                <td className="px-6">
-                                    <span className="text-xs font-medium text-slate-400">{item.stage}</span>
                                 </td>
                                 <td className="pr-8 text-right">
                                     <div className="flex justify-end gap-2">
@@ -283,7 +286,9 @@ export default function Dashboard({
                 <Arrow />
                 <LifecycleBox label="Sent for Approval" value={metrics.pendingCount} color="bg-blue-50 text-blue-600 border-blue-100" icon={Send} />
                 <Arrow />
-                <LifecycleBox label="Rejected / Changes" value={metrics.rejectedOrChangesCount} color="bg-pink-50 text-pink-600 border-pink-100" icon={RefreshCw} />
+                <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-amber-50 text-amber-600 border-amber-100" icon={RefreshCw} />
+                <Arrow />
+                <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-red-50 text-red-600 border-red-100" icon={XCircle} />
                 <Arrow />
                 <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-emerald-50 text-emerald-700 border-emerald-100" icon={CheckCircle2} />
                 <Arrow />
