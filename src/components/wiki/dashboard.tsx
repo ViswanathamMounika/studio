@@ -44,6 +44,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { parseISO, subDays, differenceInDays, format, startOfDay, eachDayOfInterval, isSameDay, isValid } from 'date-fns';
 import { Input } from '../ui/input';
+import { Label } from '@/components/ui/label';
 
 type DashboardProps = {
   definitions: Definition[];
@@ -66,7 +67,7 @@ export default function Dashboard({
 }: DashboardProps) {
   
   // Chart state for date filters
-  const [chartStartDate, setChartStartDate] = useState<string>(format(subDays(new Date(), 6), 'yyyy-MM-dd'));
+  const [chartStartDate, setChartStartDate] = useState<string>(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [chartEndDate, setChartEndDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
 
   const metrics = useMemo(() => {
@@ -77,12 +78,6 @@ export default function Dashboard({
     const pending = safeDrafts.filter(d => d.isPendingApproval);
     const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval);
     
-    // Bottleneck: Pending > 3 days
-    const bottlenecks3d = pending.filter(d => {
-        if (!d.submittedAt) return false;
-        return differenceInDays(new Date(), parseISO(d.submittedAt)) > 3;
-    });
-
     // Stale Published (> 6 months)
     const sixMonthsAgo = subDays(new Date(), 180);
     const stalePublished = allPublished.filter(d => {
@@ -130,7 +125,7 @@ export default function Dashboard({
             return {
                 name: format(day, 'MMM dd'),
                 fullDate: format(day, 'MM/dd/yyyy'),
-                count: count // Using real logs count
+                count: count
             };
         });
     }
@@ -146,18 +141,6 @@ export default function Dashboard({
         return !isUsed;
     });
 
-    // Users & Roles Metrics
-    const totalUsers = users.length;
-    const activeUsers = users.filter(u => u.status === 'Active').length;
-    const inactiveUsers = users.filter(u => u.status === 'Inactive').length;
-    const activePercent = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
-
-    const rolesList = [
-        { id: 'sa', label: 'Super Admin', desc: 'Full system access', icon: 'SA', count: users.filter(u => u.role === 'Super Admin').length, color: 'text-indigo-600 bg-indigo-50' },
-        { id: 'ap', label: 'Approver', desc: 'Reviews & publishes', icon: 'AP', count: users.filter(u => u.role === 'Approver').length, color: 'text-purple-600 bg-purple-50' },
-        { id: 'ed', label: 'Editor', desc: 'Creates definitions', icon: 'ED', count: users.filter(u => u.role === 'Admin' || u.role === 'Standard User').length, color: 'text-blue-600 bg-blue-50' }
-    ];
-
     return {
       total: allPublished.length + allArchived.length + safeDrafts.length,
       publishedCount: allPublished.length,
@@ -170,12 +153,16 @@ export default function Dashboard({
       creationTrendData,
       moduleCounts,
       unusedTemplates,
-      mostEdited: allPublished.sort((a, b) => b.revisions.length - a.revisions.length).slice(0, 4),
-      totalUsers,
-      activeUsers,
-      inactiveUsers,
-      activePercent,
-      rolesList
+      mostEdited: allPublished.sort((a, b) => b.revisions.length - a.revisions.length).slice(0, 5),
+      totalUsers: users.length,
+      activeUsers: users.filter(u => u.status === 'Active').length,
+      inactiveUsers: users.filter(u => u.status === 'Inactive').length,
+      activePercent: users.length > 0 ? Math.round((users.filter(u => u.status === 'Active').length / users.length) * 100) : 0,
+      rolesList: [
+          { id: 'sa', label: 'Super Admin', desc: 'Full system access', icon: 'SA', count: users.filter(u => u.role === 'Super Admin').length, color: 'text-indigo-600 bg-indigo-50' },
+          { id: 'ap', label: 'Approver', desc: 'Reviews & publishes', icon: 'AP', count: users.filter(u => u.role === 'Approver').length, color: 'text-purple-600 bg-purple-50' },
+          { id: 'ed', label: 'Editor', desc: 'Creates definitions', icon: 'ED', count: users.filter(u => u.role === 'Admin' || u.role === 'Standard User').length, color: 'text-blue-600 bg-blue-50' }
+      ]
     };
   }, [definitions, drafts, users, templates, activityLogs, approvalHistory, chartStartDate, chartEndDate]);
 
@@ -202,6 +189,45 @@ export default function Dashboard({
             SA
           </div>
         </div>
+      </div>
+
+      {/* DEFINITION LIFECYCLE - FULL WIDTH TOP */}
+      <div className="space-y-4">
+          <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+              <History className="h-3.5 w-3.5" />
+              Definition Lifecycle
+          </div>
+          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-10">
+                <h3 className="text-lg font-bold text-slate-900">Pipeline Distribution</h3>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> active records</span>
+            </div>
+            
+            <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-4 justify-between">
+                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-amber-50 text-amber-600 border-amber-100" />
+                <Arrow />
+                <LifecycleBox label="Pending Review" value={metrics.pendingCount} color="bg-blue-50 text-blue-600 border-blue-100" />
+                <Arrow />
+                <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-emerald-50 text-emerald-700 border-emerald-100" />
+                <Arrow />
+                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-slate-50 text-slate-400 border-slate-100" />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-8 pt-4 border-t border-slate-50">
+                <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-indigo-500" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>33%</strong> conversion rate (30d)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>1.8 days</strong> avg. approval time</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-amber-500" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>4</strong> records require maintenance</span>
+                </div>
+            </div>
+          </Card>
       </div>
 
       {/* NEEDS ATTENTION SECTION */}
@@ -279,114 +305,21 @@ export default function Dashboard({
         </Card>
       </div>
 
-      {/* DEFINITION LIFECYCLE - FULL WIDTH */}
-      <div className="space-y-4">
-          <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-              <History className="h-3.5 w-3.5" />
-              Definition Lifecycle
-          </div>
-          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-10">
-                <h3 className="text-lg font-bold text-slate-900">Pipeline Distribution</h3>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> active records</span>
-            </div>
-            
-            <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-4 justify-between">
-                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-amber-50 text-amber-600 border-amber-100" />
-                <Arrow />
-                <LifecycleBox label="Pending Review" value={metrics.pendingCount} color="bg-blue-50 text-blue-600 border-blue-100" />
-                <Arrow />
-                <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-emerald-50 text-emerald-700 border-emerald-100" />
-                <Arrow />
-                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-slate-50 text-slate-400 border-slate-100" />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-8 pt-4 border-t border-slate-50">
-                <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-indigo-500" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>33%</strong> conversion rate (30d)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>1.8 days</strong> avg. approval time</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-amber-500" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>4</strong> records require maintenance</span>
-                </div>
-            </div>
-          </Card>
-      </div>
-
-      {/* TEMPLATE ARCHITECTURE - FULL WIDTH */}
-      <div className="space-y-4">
-          <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-              <LayoutTemplate className="h-3.5 w-3.5" />
-              Template Architecture
-          </div>
-          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-              <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-lg font-bold text-slate-900">Blueprint Registry</h3>
-                  <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-4 p-2 px-4 bg-slate-50 rounded-xl border border-slate-100">
-                          <div className="flex items-center gap-2">
-                              <span className="text-xs font-black text-indigo-600">5</span>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Active</span>
-                          </div>
-                          <div className="h-3 w-px bg-slate-200" />
-                          <div className="flex items-center gap-2">
-                              <span className="text-xs font-black text-slate-400">2</span>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Inactive</span>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  <div className="space-y-6">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-4">Module Adoption</Label>
-                      <div className="flex flex-wrap items-center gap-2">
-                          <ModuleChip label="Authorization" count={1} color="bg-[#6348F4]" />
-                          <ModuleChip label="Claims" count={2} color="bg-[#3BB7F4]" />
-                          <ModuleChip label="Provider" count={1} color="bg-[#34D399]" />
-                          <ModuleChip label="Member" count={1} color="bg-[#F59E0B]" />
-                          <ModuleChip label="Other" count={2} color="bg-slate-400" />
-                      </div>
-                      {metrics.unusedTemplates.length > 0 && (
-                          <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3 mt-4">
-                              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                              <p className="text-[11px] text-amber-800 leading-relaxed">
-                                  <strong>{metrics.unusedTemplates.length} unused template flagged:</strong> "{metrics.unusedTemplates[0].name}" is a candidate for deprecation.
-                              </p>
-                          </div>
-                      )}
-                  </div>
-
-                  <div className="space-y-4">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-4">Top Utilization</Label>
-                      <ProgressRow label="Standard Approval Flow" module="Authorization" uses={18} percent={80} color="bg-[#6348F4]" />
-                      <ProgressRow label="Two-Stage Sign-off" module="Claims" uses={11} percent={50} color="bg-[#3BB7F4]" />
-                      <ProgressRow label="Risk Definition Base" module="Provider" uses={7} percent={30} color="bg-[#34D399]" />
-                  </div>
-              </div>
-          </Card>
-      </div>
-
       {/* TREND CHART */}
       <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
           <div className="flex items-center justify-between mb-8">
               <h3 className="text-lg font-bold text-slate-900">Definitions Created</h3>
               <div className="flex items-center gap-4">
                   <div className="flex items-center p-1 bg-slate-100 rounded-xl">
-                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500" onClick={() => {
+                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-50" onClick={() => {
                           setChartStartDate(format(subDays(new Date(), 7), 'yyyy-MM-dd'));
                           setChartEndDate(format(new Date(), 'yyyy-MM-dd'));
                       }}>7D</Button>
-                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500" onClick={() => {
+                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-50" onClick={() => {
                           setChartStartDate(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
                           setChartEndDate(format(new Date(), 'yyyy-MM-dd'));
                       }}>30D</Button>
-                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500" onClick={() => {
+                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-50" onClick={() => {
                           setChartStartDate(format(subDays(new Date(), 90), 'yyyy-MM-dd'));
                           setChartEndDate(format(new Date(), 'yyyy-MM-dd'));
                       }}>90D</Button>
@@ -414,7 +347,7 @@ export default function Dashboard({
                   </div>
               </div>
           </div>
-          <div className="h-[240px] w-full">
+          <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={metrics.creationTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94A3B8' }} />
@@ -511,12 +444,12 @@ export default function Dashboard({
             </Card>
       </div>
 
-      {/* FOOTER INSIGHTS */}
+      {/* TEMPLATES & HOTSPOTS - FULL WIDTH */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
                 <div className="flex items-center justify-between mb-8">
                     <h3 className="text-lg font-bold text-slate-900">Most Edited Definitions</h3>
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">By revision count</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Library Hotspots</span>
                 </div>
                 <div className="space-y-6">
                     {metrics.mostEdited.map((def, idx) => (
@@ -559,6 +492,14 @@ export default function Dashboard({
                         </div>
                     ))}
                 </div>
+                {metrics.unusedTemplates.length > 0 && (
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3 mt-8">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-amber-800 leading-relaxed">
+                            <strong>{metrics.unusedTemplates.length} unused templates flagged:</strong> Candidate blueprints for deprecation audit.
+                        </p>
+                    </div>
+                )}
             </Card>
       </div>
 
@@ -654,32 +595,6 @@ function Arrow() {
     return (
         <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mx-0.5">
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-        </div>
-    );
-}
-
-function ModuleChip({ label, count, color }: { label: string, count: number, color: string }) {
-    return (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-100 bg-slate-50/50">
-            <div className={cn("h-1.5 w-1.5 rounded-full", color)} />
-            <span className="text-[10px] font-bold text-slate-600 uppercase">{label} · {count}</span>
-        </div>
-    );
-}
-
-function ProgressRow({ label, module, uses, percent, color }: { label: string, module: string, uses: number, percent: number, color: string }) {
-    return (
-        <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-800">{label}</span>
-                    <Badge variant="outline" className="text-[8px] font-black uppercase h-4 px-1.5 border-indigo-100 text-indigo-600 bg-indigo-50">{module}</Badge>
-                </div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase">{uses} uses</span>
-            </div>
-            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                <div className={cn("h-full rounded-full transition-all duration-1000", color)} style={{ width: `${percent}%` }} />
-            </div>
         </div>
     );
 }
