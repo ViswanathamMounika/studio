@@ -82,24 +82,20 @@ export default function Dashboard({
     const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval && !(d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection'));
     const rejectedOrChanges = safeDrafts.filter(d => (d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection'));
     
-    // Most Edited Definitions
     const mostEdited = [...allPublished].sort((a, b) => (b.revisions?.length || 0) - (a.revisions?.length || 0)).slice(0, 5);
 
-    // Stale Published (> 6 months)
     const sixMonthsAgo = subDays(new Date(), 180);
     const stalePublished = allPublished.filter(d => {
         const lastRevDate = d.revisions[0] ? parseISO(d.revisions[0].date) : parseISO('2000-01-01');
         return lastRevDate < sixMonthsAgo;
     });
 
-    // Orphan Drafts (> 60 days)
     const sixtyDaysAgo = subDays(new Date(), 60);
     const orphans = draftOnly.filter(d => {
         const date = d.submittedAt ? parseISO(d.submittedAt) : (d.revisions?.[0]?.date ? parseISO(d.revisions[0].date) : parseISO('2000-01-01'));
         return date < sixtyDaysAgo;
     });
 
-    // Approver Workload
     const approverStats: Record<string, { approved: number, requested: number, rejected: number }> = {};
     approvalHistory.forEach(h => {
         if (h.action === 'Submitted') return;
@@ -118,7 +114,6 @@ export default function Dashboard({
         Total: stats.approved + stats.requested + stats.rejected
     })).sort((a, b) => b.Total - a.Total);
 
-    // Creation Trend based on filters with Dummy Data Seeding
     const start = parseISO(chartStartDate);
     const end = parseISO(chartEndDate);
     let creationTrendData: any[] = [];
@@ -129,11 +124,8 @@ export default function Dashboard({
                 l.activityType === 'Definition Created' && 
                 isSameDay(parseISO(l.occurredDate), day)
             ).length;
-            
-            // Seed dummy data for visual density if real logs are low
             const dummyCount = Math.floor(Math.random() * 3);
             const count = realCount > 0 ? realCount : (day.getDay() % 3 === 0 ? dummyCount : 0);
-
             return {
                 name: format(day, 'MMM dd'),
                 fullDate: format(day, 'MM/dd/yyyy'),
@@ -142,11 +134,24 @@ export default function Dashboard({
         });
     }
 
-    // Module template counts
-    const moduleCounts = Array.from(new Set(templates.map(t => t.module))).map(mod => ({
+    const activeTemplatesCount = templates.filter(t => t.isActive).length;
+    const inactiveTemplatesCount = templates.filter(t => !t.isActive).length;
+
+    const moduleChipData = Array.from(new Set(templates.map(t => t.module))).map(mod => ({
       name: mod,
       count: templates.filter(t => t.module === mod).length
     }));
+
+    const templateUsage = templates.map(t => {
+      const uses = flatten(definitions).filter(d => d.templateId === t.id).length + 
+                   safeDrafts.filter(d => d.templateId === t.id).length;
+      return {
+        id: t.id,
+        name: t.name,
+        module: t.module,
+        uses
+      };
+    }).sort((a, b) => b.uses - a.uses).slice(0, 3);
 
     const unusedTemplates = templates.filter(t => {
         const isUsed = flatten(definitions).some(d => d.templateId === t.id) || safeDrafts.some(d => d.templateId === t.id);
@@ -164,7 +169,10 @@ export default function Dashboard({
       orphanDraftsCount: orphans.length,
       workloadData,
       creationTrendData,
-      moduleCounts,
+      activeTemplatesCount,
+      inactiveTemplatesCount,
+      moduleChipData,
+      templateUsage,
       unusedTemplates,
       mostEdited,
       totalUsers: users.length,
@@ -188,7 +196,6 @@ export default function Dashboard({
 
   return (
     <div className="p-8 space-y-12 max-w-[1600px] mx-auto pb-32">
-      {/* 1. NEEDS ATTENTION (TOP) */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
@@ -238,9 +245,7 @@ export default function Dashboard({
                                     </div>
                                 </td>
                                 <td className="px-6">
-                                    <span className="text-xs font-black text-red-500">
-                                        {item.waiting}
-                                    </span>
+                                    <span className="text-xs font-black text-red-500">{item.waiting}</span>
                                 </td>
                                 <td className="px-6">
                                     <span className="text-xs font-medium text-slate-400">{item.stage}</span>
@@ -263,7 +268,6 @@ export default function Dashboard({
         </Card>
       </div>
 
-      {/* 2. DEFINITION LIFECYCLE (FULL WIDTH) */}
       <div className="space-y-4">
           <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
               <History className="h-3.5 w-3.5" />
@@ -274,7 +278,6 @@ export default function Dashboard({
                 <h3 className="text-lg font-bold text-slate-900">Documentation Pipeline</h3>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> across all states</span>
             </div>
-            
             <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-4 justify-between">
                 <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-slate-50 text-slate-600 border-slate-100" icon={FileText} />
                 <Arrow />
@@ -286,7 +289,6 @@ export default function Dashboard({
                 <Arrow />
                 <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-slate-100 text-slate-400 border-slate-200" icon={Trash2} />
             </div>
-
             <div className="flex flex-wrap items-center gap-8 pt-4 border-t border-slate-50">
                 <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-indigo-500" />
@@ -300,7 +302,6 @@ export default function Dashboard({
           </Card>
       </div>
 
-      {/* 3. DEFINITIONS CREATED TREND */}
       <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
           <div className="flex items-center justify-between mb-8">
               <h3 className="text-lg font-bold text-slate-900">Definitions Created</h3>
@@ -308,22 +309,12 @@ export default function Dashboard({
                   <div className="flex items-center gap-2">
                     <div className="relative">
                         <CalendarIcon className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                        <Input 
-                            type="date" 
-                            className="h-8 pl-8 w-40 text-[10px] font-bold rounded-lg border-slate-200" 
-                            value={chartStartDate}
-                            onChange={(e) => setChartStartDate(e.target.value)}
-                        />
+                        <Input type="date" className="h-8 pl-8 w-40 text-[10px] font-bold rounded-lg border-slate-200" value={chartStartDate} onChange={(e) => setChartStartDate(e.target.value)} />
                     </div>
                     <span className="text-slate-300 text-xs font-bold">to</span>
                     <div className="relative">
                         <CalendarIcon className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                        <Input 
-                            type="date" 
-                            className="h-8 pl-8 w-40 text-[10px] font-bold rounded-lg border-slate-200" 
-                            value={chartEndDate}
-                            onChange={(e) => setChartEndDate(e.target.value)}
-                        />
+                        <Input type="date" className="h-8 pl-8 w-40 text-[10px] font-bold rounded-lg border-slate-200" value={chartEndDate} onChange={(e) => setChartEndDate(e.target.value)} />
                     </div>
                   </div>
               </div>
@@ -332,9 +323,7 @@ export default function Dashboard({
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={metrics.creationTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94A3B8' }} />
-                        <Tooltip 
-                            cursor={{ fill: '#F8FAFC' }} 
-                            content={({ active, payload }) => {
+                        <Tooltip cursor={{ fill: '#F8FAFC' }} content={({ active, payload }) => {
                                 if (active && payload && payload.length) {
                                     return (
                                         <div className="bg-slate-900 text-white p-3 rounded-xl shadow-xl text-xs">
@@ -356,7 +345,6 @@ export default function Dashboard({
           </div>
       </Card>
 
-      {/* 4. GOVERNANCE & INSIGHTS */}
       <div className="space-y-6">
         <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
@@ -365,20 +353,12 @@ export default function Dashboard({
             </div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active maintenance targets</span>
         </div>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <InsightsCard title="Stale Published Definitions" value={metrics.stalePublishedCount} sub="of total published, not reviewed in >6 months" options={['6mo+', '12mo+']} />
-            <InsightsCard 
-                title="Orphan / Abandoned Drafts" 
-                value={metrics.orphanDraftsCount} 
-                sub="inactive > 60 days, never submitted for review" 
-                color="text-red-500" 
-                footer={<button className="text-[11px] font-bold text-indigo-600 flex items-center gap-1.5 mt-2 hover:underline"><Trash2 className="h-3 w-3" /> Review for cleanup</button>} 
-            />
+            <InsightsCard title="Orphan / Abandoned Drafts" value={metrics.orphanDraftsCount} sub="inactive > 60 days, never submitted for review" color="text-red-500" footer={<button className="text-[11px] font-bold text-indigo-600 flex items-center gap-1.5 mt-2 hover:underline"><Trash2 className="h-3 w-3" /> Review for cleanup</button>} />
         </div>
       </div>
 
-      {/* 5. TEMPLATE ARCHITECTURE & ACTIVITY */}
       <div className="space-y-6">
           <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
               <LayoutTemplate className="h-3.5 w-3.5" />
@@ -386,29 +366,65 @@ export default function Dashboard({
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Template Architecture */}
               <Card className="lg:col-span-2 rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-                  <div className="flex items-center justify-between mb-8">
-                      <h3 className="text-lg font-bold text-slate-900">Blueprint Distribution</h3>
-                      <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 font-bold px-3">Total {templates.length}</Badge>
+                  <div className="flex items-center justify-between mb-10">
+                      <h3 className="text-xl font-bold text-slate-900">Template Architecture</h3>
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{templates.length}</strong> templates</span>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {metrics.moduleCounts.map(mod => (
-                        <div key={mod.name} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-4">
-                            <div className="flex justify-between items-center">
-                                <span className="text-xs font-black uppercase text-slate-500 tracking-wider">{mod.name}</span>
-                                <span className="text-lg font-black text-slate-900">{mod.count}</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-indigo-500 transition-all" style={{ width: `${(mod.count / templates.length) * 100}%` }} />
-                            </div>
-                            <p className="text-[10px] font-bold text-slate-400">Functional standards defined</p>
-                        </div>
-                    ))}
+
+                  <div className="grid grid-cols-2 gap-6 mb-10">
+                      <div className="p-8 rounded-[24px] bg-[#F5F3FF] border border-indigo-50">
+                          <p className="text-5xl font-black text-[#3F51B5] mb-2">{metrics.activeTemplatesCount}</p>
+                          <p className="text-[11px] font-black text-[#3F51B5]/60 uppercase tracking-[0.2em]">Active</p>
+                      </div>
+                      <div className="p-8 rounded-[24px] bg-slate-50 border border-slate-100">
+                          <p className="text-5xl font-black text-slate-400 mb-2">{metrics.inactiveTemplatesCount}</p>
+                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Inactive</p>
+                      </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 mb-12">
+                      {metrics.moduleChipData.map((mod, i) => {
+                          const colors = ['#7E22CE', '#3B82F6', '#22C55E', '#F59E0B', '#94A3B8'];
+                          const color = colors[i % colors.length];
+                          return (
+                              <div key={mod.name} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-full shadow-sm">
+                                  <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+                                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight">
+                                      {mod.name} · {mod.count}
+                                  </span>
+                              </div>
+                          );
+                      })}
+                  </div>
+
+                  <div className="space-y-8">
+                      {metrics.templateUsage.map((item, i) => {
+                          const colors = ['#7E22CE', '#3B82F6', '#22C55E'];
+                          const color = colors[i % colors.length];
+                          const maxUses = Math.max(...metrics.templateUsage.map(u => u.uses)) || 1;
+                          const percent = (item.uses / maxUses) * 100;
+
+                          return (
+                              <div key={item.id} className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                          <span className="font-bold text-slate-800">{item.name}</span>
+                                          <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-100 font-black text-[9px] h-5 px-1.5 uppercase">
+                                              {item.module}
+                                          </Badge>
+                                      </div>
+                                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.uses} Uses</span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                      <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${percent}%`, backgroundColor: color }} />
+                                  </div>
+                              </div>
+                          );
+                      })}
                   </div>
               </Card>
 
-              {/* Template Governance */}
               <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm flex flex-col">
                   <div className="flex items-center justify-between mb-8">
                       <h3 className="text-lg font-bold text-slate-900">Governance Audit</h3>
@@ -434,7 +450,6 @@ export default function Dashboard({
               </Card>
           </div>
 
-          {/* Most Edited Definitions */}
           <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm overflow-hidden">
               <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center gap-3">
@@ -466,7 +481,6 @@ export default function Dashboard({
           </Card>
       </div>
 
-      {/* 6. WORKFLOW PERFORMANCE */}
       <div className="space-y-4">
           <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
               <BarChart3 className="h-3.5 w-3.5" />
@@ -517,19 +531,16 @@ export default function Dashboard({
             </Card>
       </div>
 
-      {/* 7. USERS AND ROLES (BOTTOM) */}
       <div className="space-y-6">
         <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
             <Users className="h-3.5 w-3.5" />
             Users & Roles
         </div>
-        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <KPICard title="Total Users" value={metrics.totalUsers} badge="+0" badgeColor="bg-slate-100 text-slate-500" />
             <KPICard title="Active Users" value={metrics.activeUsers} badge={`${metrics.activePercent}%`} badgeColor="bg-emerald-50 text-emerald-600" />
             <KPICard title="Inactive Users" value={metrics.inactiveUsers} badge="Review" badgeColor="bg-orange-50 text-orange-600" />
         </div>
-
         <Card className="rounded-[28px] border-slate-100 bg-white shadow-sm overflow-hidden">
             <CardHeader className="p-8 pb-4 border-none">
                 <CardTitle className="text-lg font-bold text-slate-900">Users by Role</CardTitle>
