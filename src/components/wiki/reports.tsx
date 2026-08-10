@@ -141,35 +141,14 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 } catch (e) { return false; }
             });
 
-            const allItems = [...definitions, ...drafts];
-            const findInTree = (items: Definition[], idOrName: string): Definition | undefined => {
-                for (const item of items) {
-                    if (item.id === idOrName || item.name === idOrName) return item;
-                    if (item.children) {
-                        const found = findInTree(item.children, idOrName);
-                        if (found) return found;
-                    }
-                }
-            };
-
             return filteredLogs.map(log => {
                 const user = users.find(u => u.name === log.userName);
-                const def = findInTree(allItems, log.definitionName);
-                const template = templates.find(t => t.id === def?.templateId);
-
                 return {
                     id: log.id,
                     userName: log.userName,
                     role: user?.role || 'N/A',
-                    actionType: log.activityType,
+                    permissions: log.activityType,
                     timestamp: log.occurredDate,
-                    module: def?.module || 'Core',
-                    permissionName: log.activityType.includes('Permission') ? (log.details?.replace('Permission: ', '') || '—') : '—',
-                    permissionScope: log.activityType.includes('Permission') ? log.activityType : '—',
-                    templateUsed: template?.name || 'Standard Definition',
-                    templateStatusChange: log.activityType.includes('Template') ? 'Status Updated' : '—',
-                    relatedId: (def?.relatedDefinitions && def.relatedDefinitions.length > 0) ? def.relatedDefinitions[0] : '—',
-                    attachment: (def?.attachments && def.attachments.length > 0) ? def.attachments[0].name : '—'
                 };
             });
         }
@@ -523,21 +502,14 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
                         <Card className="flex-1 rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white flex flex-col min-h-0">
                             <ScrollArea className="flex-1 w-full h-full">
-                                {appliedFilters.reportType === 'user-activity' && (
-                                    <Table className="min-w-[1900px]">
+                                {appliedFilters.reportType === 'user-activity' ? (
+                                    <Table>
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
-                                                <ReportHeader label="User Name" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" options={getUniqueValues('userName')} />
-                                                <ReportHeader label="Role" id="role" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.role} onFilterChange={handleFilterChange} className="w-[180px]" options={getUniqueValues('role')} />
-                                                <ReportHeader label="Action Type" id="actionType" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.actionType} onFilterChange={handleFilterChange} className="w-[200px]" options={getUniqueValues('actionType')} />
-                                                <ReportHeader label="Timestamp" id="timestamp" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
-                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[160px]" options={getUniqueValues('module')} />
-                                                <ReportHeader label="Permission Name" id="permissionName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.permissionName} onFilterChange={handleFilterChange} className="w-[200px]" options={getUniqueValues('permissionName')} />
-                                                <ReportHeader label="Permission Scope" id="permissionScope" currentSort={sortConfig} onSort={handleSort} className="w-[250px]" filterType="none" />
-                                                <ReportHeader label="Template Used" id="templateUsed" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateUsed} onFilterChange={handleFilterChange} className="w-[200px]" options={getUniqueValues('templateUsed')} />
-                                                <ReportHeader label="Template Status" id="templateStatusChange" currentSort={sortConfig} onSort={handleSort} className="w-[160px]" filterType="none" />
-                                                <ReportHeader label="Related ID" id="relatedId" currentSort={sortConfig} onSort={handleSort} className="w-[120px]" filterType="none" />
-                                                <ReportHeader label="Attachment" id="attachment" currentSort={sortConfig} onSort={handleSort} className="pr-6 w-[180px]" filterType="none" />
+                                                <ReportHeader label="User Name" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6" options={getUniqueValues('userName')} />
+                                                <ReportHeader label="Role" id="role" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.role} onFilterChange={handleFilterChange} options={getUniqueValues('role')} />
+                                                <ReportHeader label="Permissions" id="permissions" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.permissions} onFilterChange={handleFilterChange} options={getUniqueValues('permissions')} />
+                                                <ReportHeader label="Timestamp" id="timestamp" currentSort={sortConfig} onSort={handleSort} className="pr-6" filterType="none" />
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -545,22 +517,13 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                 <TableRow key={d.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
                                                     <TableCell className="pl-6 font-bold text-slate-900">{d.userName}</TableCell>
                                                     <TableCell><Badge variant="outline" className="font-bold text-[10px] uppercase border-slate-200">{d.role}</Badge></TableCell>
-                                                    <TableCell><Badge className="bg-indigo-50 text-indigo-700 font-bold border-indigo-100">{d.actionType}</Badge></TableCell>
-                                                    <TableCell className="font-mono text-xs text-slate-500">{format(parseISO(d.timestamp), 'yyyy-MM-dd HH:mm')}</TableCell>
-                                                    <TableCell className="font-bold text-slate-700">{d.module}</TableCell>
-                                                    <TableCell className="font-bold text-indigo-600">{d.permissionName}</TableCell>
-                                                    <TableCell className="text-xs italic text-slate-500">{d.permissionScope}</TableCell>
-                                                    <TableCell className="text-xs font-bold text-slate-500">{d.templateUsed}</TableCell>
-                                                    <TableCell className="text-xs text-slate-400">{d.templateStatusChange}</TableCell>
-                                                    <TableCell className="text-[11px] font-mono text-slate-400">{d.relatedId}</TableCell>
-                                                    <TableCell className="pr-6 text-xs text-primary font-bold">{d.attachment}</TableCell>
+                                                    <TableCell><Badge className="bg-indigo-50 text-indigo-700 font-bold border-indigo-100">{d.permissions}</Badge></TableCell>
+                                                    <TableCell className="pr-6 font-mono text-xs text-slate-500">{format(parseISO(d.timestamp), 'yyyy-MM-dd HH:mm')}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
                                     </Table>
-                                )}
-
-                                {appliedFilters.reportType === 'definition-report' && (
+                                ) : appliedFilters.reportType === 'definition-report' ? (
                                     <Table className="min-w-[4200px]">
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
@@ -636,9 +599,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                             ))}
                                         </TableBody>
                                     </Table>
-                                )}
-
-                                {appliedFilters.reportType === 'approval-report' && (
+                                ) : appliedFilters.reportType === 'approval-report' ? (
                                     <Table className="min-w-[2800px]">
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
@@ -692,9 +653,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                             ))}
                                         </TableBody>
                                     </Table>
-                                )}
-
-                                {appliedFilters.reportType === 'template-report' && (
+                                ) : (
                                     <Table className="min-w-[2600px]">
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
