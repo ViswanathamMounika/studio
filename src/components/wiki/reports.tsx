@@ -165,7 +165,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     timestamp: log.occurredDate,
                     module: def?.module || 'Core',
                     permissionName: log.activityType.includes('Permission') ? (log.details?.replace('Permission: ', '') || '—') : '—',
-                    permissionId: log.activityType.includes('Permission') ? `P-${log.id.slice(-4).toUpperCase()}` : '—',
                     permissionScope: log.activityType.includes('Permission') ? log.activityType : '—',
                     templateUsed: template?.name || 'Standard Definition',
                     templateStatusChange: log.activityType.includes('Template') ? 'Status Updated' : '—',
@@ -525,7 +524,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         <Card className="flex-1 rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white flex flex-col min-h-0">
                             <ScrollArea className="flex-1 w-full h-full">
                                 {appliedFilters.reportType === 'user-activity' && (
-                                    <Table className="min-w-[2200px]">
+                                    <Table className="min-w-[1900px]">
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
                                                 <ReportHeader label="User Name" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" options={getUniqueValues('userName')} />
@@ -533,12 +532,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                 <ReportHeader label="Action Type" id="actionType" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.actionType} onFilterChange={handleFilterChange} className="w-[200px]" options={getUniqueValues('actionType')} />
                                                 <ReportHeader label="Timestamp" id="timestamp" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
                                                 <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[160px]" options={getUniqueValues('module')} />
-                                                
-                                                {/* Security & Permission Related Columns */}
                                                 <ReportHeader label="Permission Name" id="permissionName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.permissionName} onFilterChange={handleFilterChange} className="w-[200px]" options={getUniqueValues('permissionName')} />
-                                                <ReportHeader label="Permission ID" id="permissionId" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.permissionId} onFilterChange={handleFilterChange} className="w-[150px]" options={getUniqueValues('permissionId')} />
                                                 <ReportHeader label="Permission Scope" id="permissionScope" currentSort={sortConfig} onSort={handleSort} className="w-[250px]" filterType="none" />
-                                                
                                                 <ReportHeader label="Template Used" id="templateUsed" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateUsed} onFilterChange={handleFilterChange} className="w-[200px]" options={getUniqueValues('templateUsed')} />
                                                 <ReportHeader label="Template Status" id="templateStatusChange" currentSort={sortConfig} onSort={handleSort} className="w-[160px]" filterType="none" />
                                                 <ReportHeader label="Related ID" id="relatedId" currentSort={sortConfig} onSort={handleSort} className="w-[120px]" filterType="none" />
@@ -553,12 +548,8 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                     <TableCell><Badge className="bg-indigo-50 text-indigo-700 font-bold border-indigo-100">{d.actionType}</Badge></TableCell>
                                                     <TableCell className="font-mono text-xs text-slate-500">{format(parseISO(d.timestamp), 'yyyy-MM-dd HH:mm')}</TableCell>
                                                     <TableCell className="font-bold text-slate-700">{d.module}</TableCell>
-                                                    
-                                                    {/* Permission Related Data */}
                                                     <TableCell className="font-bold text-indigo-600">{d.permissionName}</TableCell>
-                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.permissionId}</TableCell>
                                                     <TableCell className="text-xs italic text-slate-500">{d.permissionScope}</TableCell>
-                                                    
                                                     <TableCell className="text-xs font-bold text-slate-500">{d.templateUsed}</TableCell>
                                                     <TableCell className="text-xs text-slate-400">{d.templateStatusChange}</TableCell>
                                                     <TableCell className="text-[11px] font-mono text-slate-400">{d.relatedId}</TableCell>
@@ -750,7 +741,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                             </ScrollArea>
                         </Card>
                         
-                        <div className="shrink-0 pt-2">
+                        <div className="shrink-0 pt-2 pb-12">
                             <ReportPagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} setPageSize={setPageSize} onPageChange={setCurrentPage} totalItems={filteredAndSortedData.length} />
                         </div>
                       </div>
