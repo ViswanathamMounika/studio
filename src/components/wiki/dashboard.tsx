@@ -34,7 +34,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { parseISO, subDays, format, isSameDay, eachDayOfInterval, isValid } from 'date-fns';
+import { parseISO, subDays, format, isSameDay, eachDayOfInterval, isValid, isAfter } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 type DashboardProps = {
@@ -74,8 +74,13 @@ export default function Dashboard({
         return fb.length > 0 ? fb[fb.length - 1].type : null;
     };
 
-    const pending = safeDrafts.filter(d => d.isPendingApproval);
+    // Stage logic
     const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval && !getLatestFeedbackType(d));
+    
+    const oneDayAgo = subDays(new Date(), 1);
+    const sentForApproval = safeDrafts.filter(d => d.isPendingApproval && d.submittedAt && isAfter(parseISO(d.submittedAt), oneDayAgo));
+    const pendingApproval = safeDrafts.filter(d => d.isPendingApproval && (!d.submittedAt || !isAfter(parseISO(d.submittedAt), oneDayAgo)));
+    
     const changesRequestedCount = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'change-request').length;
     const rejectedCount = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'rejection').length;
     
@@ -136,7 +141,8 @@ export default function Dashboard({
     return {
       total: allPublished.length + allArchived.length + safeDrafts.length,
       publishedCount: allPublished.length,
-      pendingCount: pending.length,
+      sentCount: sentForApproval.length,
+      pendingCount: pendingApproval.length,
       draftsCount: draftOnly.length,
       changesRequestedCount,
       rejectedCount,
@@ -208,41 +214,32 @@ export default function Dashboard({
 
   return (
     <div className="p-8 space-y-12 max-w-[1600px] mx-auto pb-32">
-      {/* 1. DEFINITION LIFECYCLE */}
+      {/* 1. DEFINITION LIFECYCLE (TOP) */}
       <div className="space-y-4">
           <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
               <History className="h-3.5 w-3.5" />
               Definition Lifecycle
           </div>
-          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-10">
+          <Card className="rounded-[28px] border-slate-100 bg-white p-6 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between mb-8 px-2">
                 <h3 className="text-lg font-bold text-slate-900">Documentation Pipeline</h3>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> across all states</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> active units</span>
             </div>
             
-            <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-4 justify-between">
-                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" icon={FileText} />
+            <div className="flex items-center gap-1.5 justify-between">
+                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" isWide />
                 <Arrow />
-                <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#F5F3FF] text-[#7E22CE] border-[#E9E3FF]" icon={Clock} />
+                <LifecycleBox label="Sent for Approval" value={metrics.sentCount} color="bg-[#F5F3FF] text-[#7E22CE] border-[#E9E3FF]" />
                 <Arrow />
-                <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" icon={RefreshCw} />
+                <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" />
                 <Arrow />
-                <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" icon={XCircle} />
+                <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" />
                 <Arrow />
-                <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" icon={CheckCircle2} />
+                <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" />
                 <Arrow />
-                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-[#F8FAFC] text-[#64748B] border-[#F1F5F9]" icon={Trash2} />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-8 pt-4 border-t border-slate-50">
-                <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-indigo-500" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>33%</strong> conversion rate (30d)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>1.8 days</strong> avg. approval time</span>
-                </div>
+                <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" isWide />
+                <Arrow />
+                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-[#F8FAFC] text-[#64748B] border-[#F1F5F9]" />
             </div>
           </Card>
       </div>
@@ -614,25 +611,24 @@ function InsightsCard({ title, value, sub, options, color = "text-slate-900", fo
     );
 }
 
-function LifecycleBox({ label, value, color, icon: Icon }: { label: string, value: number, color: string, icon: any }) {
+function LifecycleBox({ label, value, color, isWide }: { label: string, value: number, color: string, isWide?: boolean }) {
     return (
         <div className={cn(
-            "rounded-[24px] border flex flex-col gap-4 items-start p-6 transition-all hover:shadow-md flex-1 min-w-[160px]", 
-            color
+            "rounded-[20px] border flex flex-col justify-between p-4 transition-all hover:shadow-md h-32 relative", 
+            color,
+            isWide ? "flex-[2]" : "flex-1"
         )}>
-            <span className="text-5xl font-black block tracking-tighter">{value}</span>
-            <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4 opacity-70" />
-                <span className="font-bold text-[13px] leading-none">{label}</span>
-            </div>
+            <span className="text-4xl font-black block tracking-tighter leading-none">{value}</span>
+            <span className="font-bold text-[12px] leading-tight max-w-[80px]">{label}</span>
         </div>
     );
 }
 
 function Arrow() {
     return (
-        <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mx-1 shadow-sm border border-slate-200">
+        <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mx-0.5 shadow-sm border border-slate-200">
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
         </div>
     );
 }
+
