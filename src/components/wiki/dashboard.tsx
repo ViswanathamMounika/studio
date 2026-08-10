@@ -201,6 +201,19 @@ export default function Dashboard({
     { name: 'Merchant Risk Score', code: 'DEF-2183', status: 'Pending Approval', author: 'Neha V.', waiting: '1 day', type: 'pending' },
   ];
 
+  const getModuleColor = (modName: string) => {
+    switch (modName) {
+        case 'Core': return '#3F51B5';
+        case 'Other': return '#3B82F6';
+        case 'Authorizations': return '#10B981';
+        case 'Member': return '#F59E0B';
+        case 'Provider': return '#F59E0B';
+        case 'Quality': return '#F59E0B';
+        case 'Infrastructure': return '#F59E0B';
+        default: return '#94A3B8';
+    }
+  };
+
   return (
     <div className="p-8 space-y-12 max-w-[1600px] mx-auto pb-32">
       <div className="space-y-4">
@@ -288,7 +301,6 @@ export default function Dashboard({
                 <LifecycleBox label="Sent for Approval" value={metrics.pendingCount} color="bg-blue-50 text-blue-600 border-blue-100" icon={Send} />
                 <Arrow />
                 
-                {/* BRANCHED FEEDBACK STAGE */}
                 <div className="flex flex-col gap-3">
                     <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-amber-50 text-amber-600 border-amber-100" icon={RefreshCw} size="sm" />
                     <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-red-50 text-red-600 border-red-100" icon={XCircle} size="sm" />
@@ -396,8 +408,7 @@ export default function Dashboard({
 
                   <div className="flex flex-wrap gap-3 mb-12">
                       {metrics.moduleChipData.map((mod, i) => {
-                          const colors = ['#7E22CE', '#3B82F6', '#22C55E', '#F59E0B', '#94A3B8'];
-                          const color = colors[i % colors.length];
+                          const color = getModuleColor(mod.name);
                           return (
                               <div key={mod.name} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-full shadow-sm">
                                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
@@ -411,8 +422,7 @@ export default function Dashboard({
 
                   <div className="space-y-8">
                       {metrics.templateUsage.map((item, i) => {
-                          const colors = ['#7E22CE', '#3B82F6', '#22C55E'];
-                          const color = colors[i % colors.length];
+                          const color = getModuleColor(item.module);
                           const maxUses = Math.max(...metrics.templateUsage.map(u => u.uses)) || 1;
                           const percent = (item.uses / maxUses) * 100;
 
@@ -437,27 +447,50 @@ export default function Dashboard({
               </Card>
 
               <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm flex flex-col">
-                  <div className="flex items-center justify-between mb-8">
-                      <h3 className="text-lg font-bold text-slate-900">Governance Audit</h3>
-                      <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                  <div className="flex items-center justify-between mb-8 px-1">
+                      <h3 className="text-xl font-bold text-slate-900">Templates — Governance</h3>
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Module Distribution</span>
                   </div>
-                  <div className="space-y-6 flex-1">
-                      <div className="p-5 rounded-2xl bg-orange-50 border border-orange-100 border-l-4 border-l-orange-400">
-                          <p className="text-[10px] font-black uppercase text-orange-800 tracking-widest mb-1">Alert: Unused Templates</p>
-                          <p className="text-2xl font-black text-orange-900">{metrics.unusedTemplates.length}</p>
-                          <p className="text-[11px] font-medium text-orange-700/80 mt-1">Found active blueprints with zero associated definitions.</p>
+                  
+                  <div className="space-y-8">
+                      {/* ALERT BOX MATCHING IMAGE */}
+                      <div className="p-4 rounded-3xl bg-[#FFF9EB] border border-[#FFEBC2] flex items-start gap-3">
+                          <AlertTriangle className="h-5 w-5 text-[#B45309] shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                              <p className="text-sm font-bold text-[#B45309] leading-none">
+                                  {metrics.unusedTemplates.length} unused template flagged
+                              </p>
+                              <p className="text-[11px] font-medium text-[#B45309]/80 leading-relaxed">
+                                  Obsolete Legacy Blueprint — Active 101 days, 0 linked definitions. Candidate for deprecation.
+                              </p>
+                          </div>
                       </div>
-                      <div className="space-y-4">
-                          <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Maintenance Queue</h4>
-                          {metrics.unusedTemplates.slice(0, 3).map(t => (
-                              <div key={t.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0 group">
-                                  <span className="text-xs font-bold text-slate-600 truncate max-w-[140px]">{t.name}</span>
-                                  <Button variant="ghost" size="sm" className="h-6 text-[9px] font-black uppercase text-slate-400 hover:text-red-600">Review</Button>
-                              </div>
-                          ))}
+
+                      {/* MODULE DISTRIBUTION PROGRESS LIST */}
+                      <div className="space-y-6 pt-2">
+                        {metrics.moduleChipData.sort((a,b) => b.count - a.count).map((mod) => {
+                            const maxCount = Math.max(...metrics.moduleChipData.map(m => m.count));
+                            const percent = (mod.count / maxCount) * 100;
+                            const color = getModuleColor(mod.name);
+                            
+                            return (
+                                <div key={mod.name} className="flex items-center gap-4">
+                                    <span className="text-xs font-bold text-slate-600 w-24 shrink-0 truncate">{mod.name}</span>
+                                    <div className="flex-1 h-1 bg-slate-50 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: color }} />
+                                    </div>
+                                    <span className="text-sm font-black text-slate-900 w-4 text-right">{mod.count}</span>
+                                </div>
+                            );
+                        })}
                       </div>
                   </div>
-                  <Button variant="outline" className="w-full mt-6 rounded-xl font-bold text-indigo-600 border-indigo-100 hover:bg-indigo-50" onClick={() => onNavigate('template-management')}>Manage Blueprints</Button>
+                  
+                  <div className="mt-auto pt-8">
+                      <Button variant="ghost" className="w-full h-11 rounded-xl font-bold text-indigo-600 bg-indigo-50/50 hover:bg-indigo-50" onClick={() => onNavigate('template-management')}>
+                          System Management
+                      </Button>
+                  </div>
               </Card>
           </div>
 
