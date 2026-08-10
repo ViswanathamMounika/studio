@@ -42,7 +42,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { parseISO, subDays, differenceInDays, format, startOfDay, eachDayOfInterval, isSameDay } from 'date-fns';
+import { parseISO, subDays, differenceInDays, format, startOfDay, eachDayOfInterval, isSameDay, isValid } from 'date-fns';
 import { Input } from '../ui/input';
 
 type DashboardProps = {
@@ -65,6 +65,10 @@ export default function Dashboard({
   activityLogs = [] 
 }: DashboardProps) {
   
+  // Chart state for date filters
+  const [chartStartDate, setChartStartDate] = useState<string>(format(subDays(new Date(), 6), 'yyyy-MM-dd'));
+  const [chartEndDate, setChartEndDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+
   const metrics = useMemo(() => {
     const allPublished = definitions.flatMap(d => [d, ...(d.children || [])]).filter(d => !d.isDraft && !d.isPendingApproval && !d.isArchived);
     const allArchived = definitions.flatMap(d => [d, ...(d.children || [])]).filter(d => d.isArchived);
@@ -79,24 +83,12 @@ export default function Dashboard({
         return differenceInDays(new Date(), parseISO(d.submittedAt)) > 3;
     });
 
-    // Return-for-Revision Rate
-    const totalDecisions = approvalHistory.filter(h => h.action !== 'Submitted').length;
-    const revisionsRequested = approvalHistory.filter(h => h.action === 'Changes Requested').length;
-    const revisionRate = totalDecisions > 0 ? Math.round((revisionsRequested / totalDecisions) * 100) : 0;
-
     // Stale Published (> 6 months)
     const sixMonthsAgo = subDays(new Date(), 180);
     const stalePublished = allPublished.filter(d => {
         const lastRevDate = d.revisions[0] ? parseISO(d.revisions[0].date) : parseISO('2000-01-01');
         return lastRevDate < sixMonthsAgo;
     });
-
-    // Active Contributors (Last 30 Days)
-    const activeContributorsWindow = subDays(new Date(), 30);
-    const recentUsers = new Set(activityLogs
-        .filter(l => parseISO(l.occurredDate) > activeContributorsWindow)
-        .map(l => l.userName)
-    );
 
     // Orphan Drafts (> 60 days)
     const sixtyDaysAgo = subDays(new Date(), 60);
@@ -124,31 +116,24 @@ export default function Dashboard({
         Total: stats.approved + stats.requested + stats.rejected
     })).sort((a, b) => b.Total - a.Total);
 
-    // Rejection Reasons (Mocked from details or static categories)
-    const rejectionReasons = [
-        { name: 'Duplication', value: 3 },
-        { name: 'Formatting Issues', value: 2 },
-        { name: 'Policy Violation', value: 2 },
-        { name: 'Incomplete Data', value: 1 }
-    ];
-
-    // Creation Trend (Last 7 Days)
-    const last7Days = eachDayOfInterval({
-        start: subDays(new Date(), 6),
-        end: new Date()
-    });
-
-    const creationTrendData = last7Days.map(day => {
-        const count = activityLogs.filter(l => 
-            l.activityType === 'Definition Created' && 
-            isSameDay(parseISO(l.occurredDate), day)
-        ).length;
-        return {
-            name: format(day, 'EEE'),
-            fullDate: format(day, 'MM/dd/yyyy'),
-            count: count + Math.floor(Math.random() * 5) // Adding some variety for mock
-        };
-    });
+    // Creation Trend based on filters
+    const start = parseISO(chartStartDate);
+    const end = parseISO(chartEndDate);
+    let creationTrendData: any[] = [];
+    
+    if (isValid(start) && isValid(end) && start <= end) {
+        creationTrendData = eachDayOfInterval({ start, end }).map(day => {
+            const count = activityLogs.filter(l => 
+                l.activityType === 'Definition Created' && 
+                isSameDay(parseISO(l.occurredDate), day)
+            ).length;
+            return {
+                name: format(day, 'MMM dd'),
+                fullDate: format(day, 'MM/dd/yyyy'),
+                count: count // Using real logs count
+            };
+        });
+    }
 
     // Module template counts
     const moduleCounts = Array.from(new Set(templates.map(t => t.module))).map(mod => ({
@@ -175,17 +160,13 @@ export default function Dashboard({
 
     return {
       total: allPublished.length + allArchived.length + safeDrafts.length,
-      published: allPublished.length,
-      pending: pending.length,
-      drafts: draftOnly.length,
-      archived: allArchived.length,
-      bottlenecksCount: bottlenecks3d.length,
-      revisionRate,
+      publishedCount: allPublished.length,
+      pendingCount: pending.length,
+      draftsCount: draftOnly.length,
+      archivedCount: allArchived.length,
       stalePublishedCount: stalePublished.length,
-      activeContributorsCount: recentUsers.size,
       orphanDraftsCount: orphans.length,
       workloadData,
-      rejectionReasons,
       creationTrendData,
       moduleCounts,
       unusedTemplates,
@@ -196,7 +177,7 @@ export default function Dashboard({
       activePercent,
       rolesList
     };
-  }, [definitions, drafts, users, templates, activityLogs, approvalHistory]);
+  }, [definitions, drafts, users, templates, activityLogs, approvalHistory, chartStartDate, chartEndDate]);
 
   const attentionItems = [
     { name: 'Loan Eligibility Rule v3', code: 'DEF-2210', status: 'Pending Approval', author: 'Rahul M.', waiting: '5 days', stage: 'Sent for Approval', type: 'pending' },
@@ -298,88 +279,95 @@ export default function Dashboard({
         </Card>
       </div>
 
-      {/* DEFINITIONS OVERVIEW */}
+      {/* DEFINITION LIFECYCLE - FULL WIDTH */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-            <FileText className="h-3.5 w-3.5" />
-            Definitions Overview
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <KPICard title="Total Definitions" value="30" badge="+3 this week" badgeColor="bg-slate-100 text-slate-500" />
-            <KPICard title="Published" value="10" badge="33% of total" badgeColor="bg-emerald-50 text-emerald-600" />
-            <KPICard title="Pending Approval" value="4" badge="Avg wait 3.2d" badgeColor="bg-amber-50 text-amber-600" />
-            <Card className="rounded-[24px] bg-[#6348F4] p-6 shadow-lg text-white flex flex-col justify-between relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-20">
-                      <ShieldCheck className="h-16 w-16" />
-                  </div>
-                  <div>
-                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Awaiting Your Action</h4>
-                      <p className="text-4xl font-black mt-1">6</p>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between">
-                      <span className="text-[9px] font-bold uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">Live</span>
-                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[10px]" onClick={() => onNavigate('approval-workflow')}>View Queue</Button>
-                  </div>
-            </Card>
-        </div>
-      </div>
-
-      {/* LIFECYCLE & ARCHITECTURE */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+              <History className="h-3.5 w-3.5" />
+              Definition Lifecycle
+          </div>
           <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-8">
-                <h3 className="text-lg font-bold text-slate-900">Definition Lifecycle</h3>
-                <span className="text-[10px] font-bold text-slate-400">Total <strong>30</strong> definitions</span>
+            <div className="flex items-center justify-between mb-10">
+                <h3 className="text-lg font-bold text-slate-900">Pipeline Distribution</h3>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> active records</span>
             </div>
             
-            <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-4">
-                <LifecycleBox label="Draft" value={6} color="bg-amber-50 text-amber-600 border-amber-100" />
+            <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-4 justify-between">
+                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-amber-50 text-amber-600 border-amber-100" />
                 <Arrow />
-                <LifecycleBox label="Pending Approval" value={4} color="bg-blue-50 text-blue-600 border-blue-100" />
+                <LifecycleBox label="Pending Review" value={metrics.pendingCount} color="bg-blue-50 text-blue-600 border-blue-100" />
                 <Arrow />
-                <LifecycleBox label="Changes Requested / Rejected" value={3} color="bg-pink-50 text-pink-600 border-pink-100" />
+                <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-emerald-50 text-emerald-700 border-emerald-100" />
                 <Arrow />
-                <LifecycleBox label="Published" value={10} color="bg-emerald-50 text-emerald-700 border-emerald-100" />
-                <div className="h-10 w-px bg-slate-100 mx-4" />
-                <LifecycleBox label="Archived" value={4} color="bg-slate-50 text-slate-400 border-slate-100" />
+                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-slate-50 text-slate-400 border-slate-100" />
             </div>
 
-            <div className="flex flex-wrap items-center gap-6">
-                <span className="text-[10px] font-bold text-slate-500"><strong>3</strong> duplicated from published</span>
-                <span className="text-[10px] font-bold text-slate-500"><strong>33%</strong> draft→published conversion (30d)</span>
-                <span className="text-[10px] font-bold text-slate-500"><strong>1.8 days</strong> avg approval time</span>
+            <div className="flex flex-wrap items-center gap-8 pt-4 border-t border-slate-50">
+                <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-indigo-500" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>33%</strong> conversion rate (30d)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>1.8 days</strong> avg. approval time</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-amber-500" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight"><strong>4</strong> records require maintenance</span>
+                </div>
             </div>
           </Card>
+      </div>
 
+      {/* TEMPLATE ARCHITECTURE - FULL WIDTH */}
+      <div className="space-y-4">
+          <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+              <LayoutTemplate className="h-3.5 w-3.5" />
+              Template Architecture
+          </div>
           <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
               <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-lg font-bold text-slate-900">Template Architecture</h3>
-                  <span className="text-[10px] font-bold text-slate-400">Total <strong>7</strong> templates</span>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-50">
-                      <p className="text-2xl font-black text-indigo-600">5</p>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Active</p>
-                  </div>
-                  <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-                      <p className="text-2xl font-black text-slate-400">2</p>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Inactive</p>
+                  <h3 className="text-lg font-bold text-slate-900">Blueprint Registry</h3>
+                  <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 p-2 px-4 bg-slate-50 rounded-xl border border-slate-100">
+                          <div className="flex items-center gap-2">
+                              <span className="text-xs font-black text-indigo-600">5</span>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Active</span>
+                          </div>
+                          <div className="h-3 w-px bg-slate-200" />
+                          <div className="flex items-center gap-2">
+                              <span className="text-xs font-black text-slate-400">2</span>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Inactive</span>
+                          </div>
+                      </div>
                   </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 mb-10">
-                  <ModuleChip label="Authorization" count={1} color="bg-[#6348F4]" />
-                  <ModuleChip label="Claims" count={2} color="bg-[#3BB7F4]" />
-                  <ModuleChip label="Provider" count={1} color="bg-[#34D399]" />
-                  <ModuleChip label="Member" count={1} color="bg-[#F59E0B]" />
-                  <ModuleChip label="Other" count={2} color="bg-slate-400" />
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="space-y-6">
+                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-4">Module Adoption</Label>
+                      <div className="flex flex-wrap items-center gap-2">
+                          <ModuleChip label="Authorization" count={1} color="bg-[#6348F4]" />
+                          <ModuleChip label="Claims" count={2} color="bg-[#3BB7F4]" />
+                          <ModuleChip label="Provider" count={1} color="bg-[#34D399]" />
+                          <ModuleChip label="Member" count={1} color="bg-[#F59E0B]" />
+                          <ModuleChip label="Other" count={2} color="bg-slate-400" />
+                      </div>
+                      {metrics.unusedTemplates.length > 0 && (
+                          <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3 mt-4">
+                              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                              <p className="text-[11px] text-amber-800 leading-relaxed">
+                                  <strong>{metrics.unusedTemplates.length} unused template flagged:</strong> "{metrics.unusedTemplates[0].name}" is a candidate for deprecation.
+                              </p>
+                          </div>
+                      )}
+                  </div>
 
-              <div className="space-y-4">
-                  <ProgressRow label="Standard Approval Flow" module="Authorization" uses={18} percent={80} color="bg-[#6348F4]" />
-                  <ProgressRow label="Two-Stage Sign-off" module="Claims" uses={11} percent={50} color="bg-[#3BB7F4]" />
-                  <ProgressRow label="Risk Definition Base" module="Provider" uses={7} percent={30} color="bg-[#34D399]" />
+                  <div className="space-y-4">
+                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-4">Top Utilization</Label>
+                      <ProgressRow label="Standard Approval Flow" module="Authorization" uses={18} percent={80} color="bg-[#6348F4]" />
+                      <ProgressRow label="Two-Stage Sign-off" module="Claims" uses={11} percent={50} color="bg-[#3BB7F4]" />
+                      <ProgressRow label="Risk Definition Base" module="Provider" uses={7} percent={30} color="bg-[#34D399]" />
+                  </div>
               </div>
           </Card>
       </div>
@@ -390,21 +378,39 @@ export default function Dashboard({
               <h3 className="text-lg font-bold text-slate-900">Definitions Created</h3>
               <div className="flex items-center gap-4">
                   <div className="flex items-center p-1 bg-slate-100 rounded-xl">
-                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500">7D</Button>
-                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500">30D</Button>
-                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500">90D</Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500" onClick={() => {
+                          setChartStartDate(format(subDays(new Date(), 7), 'yyyy-MM-dd'));
+                          setChartEndDate(format(new Date(), 'yyyy-MM-dd'));
+                      }}>7D</Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500" onClick={() => {
+                          setChartStartDate(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
+                          setChartEndDate(format(new Date(), 'yyyy-MM-dd'));
+                      }}>30D</Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-3 rounded-lg font-bold text-[10px] text-slate-500" onClick={() => {
+                          setChartStartDate(format(subDays(new Date(), 90), 'yyyy-MM-dd'));
+                          setChartEndDate(format(new Date(), 'yyyy-MM-dd'));
+                      }}>90D</Button>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="relative">
                         <CalendarIcon className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                        <Input className="h-8 pl-8 w-32 text-[10px] font-bold rounded-lg border-slate-200" placeholder="07/31/2026" />
+                        <Input 
+                            type="date" 
+                            className="h-8 pl-8 w-40 text-[10px] font-bold rounded-lg border-slate-200" 
+                            value={chartStartDate}
+                            onChange={(e) => setChartStartDate(e.target.value)}
+                        />
                     </div>
                     <span className="text-slate-300 text-xs font-bold">to</span>
                     <div className="relative">
                         <CalendarIcon className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                        <Input className="h-8 pl-8 w-32 text-[10px] font-bold rounded-lg border-slate-200" placeholder="08/06/2026" />
+                        <Input 
+                            type="date" 
+                            className="h-8 pl-8 w-40 text-[10px] font-bold rounded-lg border-slate-200" 
+                            value={chartEndDate}
+                            onChange={(e) => setChartEndDate(e.target.value)}
+                        />
                     </div>
-                    <Button className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-[10px] px-4">Apply</Button>
                   </div>
               </div>
           </div>
@@ -426,9 +432,9 @@ export default function Dashboard({
                                 return null;
                             }} 
                         />
-                        <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={100}>
+                        <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={80}>
                             {metrics.creationTrendData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={index === 3 ? '#6348F4' : '#EAEBFF'} />
+                                <Cell key={`cell-${index}`} fill={index === metrics.creationTrendData.length - 1 ? '#6348F4' : '#EAEBFF'} />
                             ))}
                         </Bar>
                     </BarChart>
@@ -436,37 +442,38 @@ export default function Dashboard({
           </div>
       </Card>
 
-      {/* GOVERNANCE & INSIGHTS */}
+      {/* GOVERNANCE & INSIGHTS - STREAMLINED */}
       <div className="space-y-6">
         <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Governance & Insights
             </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">10 metrics · updated live</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active cleanup targets</span>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <InsightsCard title="Approval Bottleneck" value={metrics.bottlenecksCount} sub="definitions stuck in Pending Approval" options={['>3d', '>7d']} />
-            <InsightsCard title="Return-for-Revision Rate" value={`${metrics.revisionRate}%`} sub="6 of 33 submissions sent back for changes (90d)" />
-            <InsightsCard title="Stale Published Definitions" value={metrics.stalePublishedCount} sub="of 10 published, not reviewed since" options={['6mo+', '12mo+']} />
-            <InsightsCard title="Active Contributors" value={metrics.activeContributorsCount} sub={`of ${users.length} editors & approvers created activity`} options={['30d', '60d', '90d']} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <InsightsCard title="Stale Published Definitions" value={metrics.stalePublishedCount} sub="of total published, not reviewed in >6 months" options={['6mo+', '12mo+']} />
             <InsightsCard 
                 title="Orphan / Abandoned Drafts" 
                 value={metrics.orphanDraftsCount} 
-                sub="inactive > 60 days, never submitted" 
+                sub="inactive > 60 days, never submitted for review" 
                 color="text-red-500" 
                 footer={<button className="text-[11px] font-bold text-indigo-600 flex items-center gap-1.5 mt-2 hover:underline"><Trash2 className="h-3 w-3" /> Review for cleanup</button>} 
             />
         </div>
       </div>
 
-      {/* WORKLOAD & REJECTION GRIDS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="rounded-[28px] border-slate-100 bg-white overflow-hidden shadow-sm">
+      {/* WORKLOAD - FULL WIDTH */}
+      <div className="space-y-4">
+          <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+              <BarChart3 className="h-3.5 w-3.5" />
+              Workflow Performance
+          </div>
+          <Card className="rounded-[28px] border-slate-100 bg-white overflow-hidden shadow-sm">
                 <div className="p-8 border-b border-slate-50 flex items-center justify-between">
                     <h3 className="text-lg font-bold text-slate-900">Approver Workload & Output</h3>
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Last 90 days</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Last 90 days audit</span>
                 </div>
                 <div className="p-0">
                     <table className="w-full text-left">
@@ -500,29 +507,6 @@ export default function Dashboard({
                             ))}
                         </tbody>
                     </table>
-                </div>
-            </Card>
-
-            <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
-                <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-lg font-bold text-slate-900">Rejection Reason Breakdown</h3>
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">8 total (90d)</span>
-                </div>
-                <div className="space-y-6">
-                    {metrics.rejectionReasons.map((reason, idx) => (
-                        <div key={idx} className="space-y-2">
-                            <div className="flex justify-between items-center text-sm font-bold">
-                                <span className="text-slate-600">{reason.name}</span>
-                                <span className="text-slate-900">{reason.value}</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full rounded-full bg-red-500 transition-all duration-1000" 
-                                    style={{ width: `${(reason.value / 8) * 100}%` }} 
-                                />
-                            </div>
-                        </div>
-                    ))}
                 </div>
             </Card>
       </div>
@@ -559,19 +543,7 @@ export default function Dashboard({
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Module distribution</span>
                 </div>
                 
-                {metrics.unusedTemplates.length > 0 && (
-                    <div className="mb-8 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-4">
-                        <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                        <div>
-                            <p className="text-sm font-bold text-amber-900">{metrics.unusedTemplates.length} unused template flagged</p>
-                            <p className="text-xs text-amber-700 leading-relaxed mt-0.5">
-                                <strong>{metrics.unusedTemplates[0].name}</strong> — Active 101 days, 0 linked definitions. Candidate for deprecation.
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                <div className="space-y-4">
+                <div className="space-y-4 pt-4">
                     {metrics.moduleCounts.map((mod, idx) => (
                         <div key={idx} className="flex items-center gap-4">
                             <span className="text-xs font-bold text-slate-600 w-24 truncate">{mod.name}</span>
@@ -580,7 +552,7 @@ export default function Dashboard({
                                     className={cn("h-full rounded-full transition-all duration-1000", 
                                         idx === 0 ? "bg-indigo-500" : idx === 1 ? "bg-blue-400" : idx === 2 ? "bg-emerald-500" : "bg-orange-400"
                                     )} 
-                                    style={{ width: `${(mod.count / 2) * 100}%` }} 
+                                    style={{ width: `${(mod.count / Math.max(...metrics.moduleCounts.map(m => m.count))) * 100}%` }} 
                                 />
                             </div>
                             <span className="text-xs font-black text-slate-900 w-4 text-right">{mod.count}</span>
@@ -652,7 +624,7 @@ function InsightsCard({ title, value, sub, options, color = "text-slate-900", fo
         <Card className="rounded-[24px] border-slate-100 bg-white p-6 shadow-sm flex flex-col justify-between">
             <div className="space-y-4">
                 <div className="flex items-start justify-between min-h-[32px]">
-                    <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest max-w-[120px] leading-relaxed">{title}</h4>
+                    <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest max-w-[200px] leading-relaxed">{title}</h4>
                     {options && (
                         <div className="flex items-center p-0.5 bg-slate-50 border border-slate-100 rounded-lg">
                             {options.map((opt, i) => (
@@ -671,9 +643,9 @@ function InsightsCard({ title, value, sub, options, color = "text-slate-900", fo
 
 function LifecycleBox({ label, value, color }: { label: string, value: number, color: string }) {
     return (
-        <div className={cn("min-w-[140px] p-4 rounded-2xl border text-center flex flex-col items-center gap-1", color)}>
-            <span className="text-xl font-black">{value}</span>
-            <span className="text-[9px] font-black uppercase tracking-tight leading-none">{label}</span>
+        <div className={cn("min-w-[180px] p-6 rounded-2xl border text-center flex flex-col items-center gap-2", color)}>
+            <span className="text-2xl font-black">{value}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest leading-none">{label}</span>
         </div>
     );
 }
