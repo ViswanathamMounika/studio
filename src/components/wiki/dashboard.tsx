@@ -175,7 +175,6 @@ export default function Dashboard({
                 log.occurredDate.startsWith(dateStr)
             ).length;
             
-            // For visual demo, add some random noise if data is sparse
             const visualSeeding = Math.floor(Math.random() * 3);
             return {
                 date: format(day, 'MMM dd'),
@@ -221,21 +220,18 @@ export default function Dashboard({
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> across all states</span>
             </div>
             
-            <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-4 justify-between">
-                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-slate-50 text-slate-600 border-slate-100" icon={FileText} />
+            <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-4 justify-between">
+                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" icon={FileText} />
                 <Arrow />
-                <LifecycleBox label="Sent for Approval" value={metrics.pendingCount} color="bg-blue-50 text-blue-600 border-blue-100" icon={Send} />
+                <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#F5F3FF] text-[#7E22CE] border-[#E9E3FF]" icon={Clock} />
                 <Arrow />
-                
-                <div className="flex flex-col gap-3">
-                    <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-amber-50 text-amber-600 border-amber-100" icon={RefreshCw} size="sm" />
-                    <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-red-50 text-red-600 border-red-100" icon={XCircle} size="sm" />
-                </div>
-
+                <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" icon={RefreshCw} />
                 <Arrow />
-                <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-emerald-50 text-emerald-700 border-emerald-100" icon={CheckCircle2} />
+                <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" icon={XCircle} />
                 <Arrow />
-                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-slate-100 text-slate-400 border-slate-200" icon={Trash2} />
+                <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" icon={CheckCircle2} />
+                <Arrow />
+                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-[#F8FAFC] text-[#64748B] border-[#F1F5F9]" icon={Trash2} />
             </div>
 
             <div className="flex flex-wrap items-center gap-8 pt-4 border-t border-slate-50">
@@ -618,23 +614,16 @@ function InsightsCard({ title, value, sub, options, color = "text-slate-900", fo
     );
 }
 
-function LifecycleBox({ label, value, color, icon: Icon, size = "default" }: { label: string, value: number, color: string, icon: any, size?: "default" | "sm" }) {
-    const isSm = size === "sm";
+function LifecycleBox({ label, value, color, icon: Icon }: { label: string, value: number, color: string, icon: any }) {
     return (
         <div className={cn(
-            "rounded-3xl border text-center flex flex-col items-center transition-all hover:shadow-md", 
-            isSm ? "min-w-[160px] p-3 gap-1.5" : "min-w-[180px] p-6 gap-3",
+            "rounded-[24px] border flex flex-col gap-4 items-start p-6 transition-all hover:shadow-md flex-1 min-w-[160px]", 
             color
         )}>
-            <div className={cn(
-                "rounded-2xl bg-white/50 flex items-center justify-center border border-white",
-                isSm ? "h-7 w-7" : "h-10 w-10"
-            )}>
-                <Icon className={isSm ? "h-3.5 w-3.5" : "h-5 w-5"} />
-            </div>
-            <div className="space-y-1">
-                <span className={cn("font-black block", isSm ? "text-xl" : "text-3xl")}>{value}</span>
-                <span className={cn("font-black uppercase tracking-[0.1em] leading-none opacity-80", isSm ? "text-[8px]" : "text-[9px]")}>{label}</span>
+            <span className="text-5xl font-black block tracking-tighter">{value}</span>
+            <div className="flex items-center gap-2">
+                <Icon className="h-4 w-4 opacity-70" />
+                <span className="font-bold text-[13px] leading-none">{label}</span>
             </div>
         </div>
     );
@@ -642,7 +631,7 @@ function LifecycleBox({ label, value, color, icon: Icon, size = "default" }: { l
 
 function Arrow() {
     return (
-        <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mx-0.5 shadow-sm border border-slate-200">
+        <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mx-1 shadow-sm border border-slate-200">
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
         </div>
     );
