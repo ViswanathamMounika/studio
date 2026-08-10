@@ -19,7 +19,8 @@ import {
     ChevronRightSquare,
     Play,
     Calendar as CalendarIcon,
-    Info
+    Info,
+    History
 } from 'lucide-react';
 import { 
     PieChart, 
@@ -107,6 +108,15 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
     const changesRequested = safeDrafts.filter(d => d && (d.discussions || []).some(m => m.type === 'change-request') && !d.isPendingApproval);
     const rejected = safeDrafts.filter(d => d && (d.discussions || []).some(m => m.type === 'rejection') && !d.isPendingApproval);
     
+    // Stale Drafts (Available more than 30 days)
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    const staleDrafts = draftOnly.filter(d => {
+        // Heuristic: If it has revisions, check the latest. If not, check if we have a creation date or assume from ID.
+        // For mock stability, we check the latest revision date or a fallback.
+        const dateStr = d.revisions?.[0]?.date || d.submittedAt || new Date().toISOString();
+        return parseISO(dateStr) < thirtyDaysAgo;
+    });
+
     // Needs Attention
     const needsAttention = safeDrafts.filter(d => 
         d?.isPendingApproval || 
@@ -206,6 +216,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
         totalDefinitions: published + archived + safeDrafts.length,
         lifecycle: {
             draft: draftOnly.length,
+            staleDrafts: staleDrafts.length,
             pending: pendingApproval.length,
             requested: changesRequested.length,
             rejected: rejected.length,
@@ -364,11 +375,14 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
 
             <div className="flex items-center gap-2 mb-8 w-full">
                 <LifecycleBlock count={metrics.lifecycle.draft} label="Draft" color="bg-amber-50 text-amber-600 border-amber-100" />
+                <LifecycleBlock count={metrics.lifecycle.staleDrafts} label="Stale Drafts (>30d)" color="bg-orange-50 text-orange-600 border-orange-100" />
                 <BlockArrow />
                 <LifecycleBlock count={metrics.lifecycle.pending} label="Pending Approval" color="bg-blue-50 text-blue-600 border-blue-100" />
                 <BlockArrow />
-                <LifecycleBlock count={metrics.lifecycle.requested} label="Changes Requested" color="bg-pink-50 text-pink-600 border-pink-100" />
-                <LifecycleBlock count={metrics.lifecycle.rejected} label="Rejected" color="bg-red-50 text-red-700 border-red-100" />
+                <div className="flex flex-col gap-2 flex-1 min-w-0">
+                    <LifecycleBlock count={metrics.lifecycle.requested} label="Changes Requested" color="bg-pink-50 text-pink-600 border-pink-100" />
+                    <LifecycleBlock count={metrics.lifecycle.rejected} label="Rejected" color="bg-red-50 text-red-700 border-red-100" />
+                </div>
                 <LifecycleBlock count={metrics.lifecycle.published} label="Published" color="bg-emerald-50 text-emerald-600 border-emerald-100" />
                 <LifecycleBlock count={metrics.lifecycle.archived} label="Archived" color="bg-slate-50 text-slate-400 border-slate-100" />
             </div>
@@ -595,7 +609,7 @@ export default function Dashboard({ definitions, drafts, users, templates, onNav
                 <Card className="rounded-[24px] border-slate-200 bg-white p-8 flex flex-col justify-between shadow-sm">
                     <div className="flex justify-between items-start">
                         <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Active Users</span>
-                        <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold text-[9px] h-5 px-2">{metrics.activePercentage}%</Badge>
+                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-bold text-[9px] h-5 px-2">{metrics.activePercentage}%</Badge>
                     </div>
                     <h2 className="text-5xl font-black tracking-tighter text-slate-900 mt-6">{metrics.activeUsers}</h2>
                 </Card>
