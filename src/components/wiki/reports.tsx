@@ -36,7 +36,8 @@ import {
     Library,
     ClipboardCheck,
     LayoutTemplate,
-    Check
+    Check,
+    ShieldAlert
 } from 'lucide-react';
 import { format, isWithinInterval, startOfDay, endOfDay, subMonths, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -155,7 +156,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 const user = users.find(u => u.name === log.userName);
                 const def = findInTree(allItems, log.definitionName);
                 const template = templates.find(t => t.id === def?.templateId);
-                const history = approvalHistory.find(h => h.definitionId === def?.id && Math.abs(parseISO(h.date).getTime() - parseISO(log.occurredDate).getTime()) < 60000);
 
                 return {
                     id: log.id,
@@ -164,14 +164,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     actionType: log.activityType,
                     timestamp: log.occurredDate,
                     module: def?.module || 'Core',
-                    entityType: log.activityType.includes('Template') ? 'Template' : 'Definition',
-                    entityName: log.definitionName,
-                    entityId: def?.id || 'DEF-AUTO',
-                    prevStatus: log.activityType === 'Definition Created' ? 'None' : (def?.isDraft ? 'Draft' : 'Published'),
-                    newStatus: log.activityType.includes('Published') || log.activityType === 'Approval Decision' ? 'Published' : (log.activityType.includes('Archived') ? 'Archived' : 'Draft'),
-                    version: def?.revisions?.[0]?.ticketId || 'v1.0',
-                    comments: log.details || '—',
-                    approverName: history?.action !== 'Submitted' ? history?.userName || '—' : '—',
+                    permissionName: log.activityType.includes('Permission') ? (log.details?.replace('Permission: ', '') || '—') : '—',
+                    permissionId: log.activityType.includes('Permission') ? `P-${log.id.slice(-4).toUpperCase()}` : '—',
+                    permissionScope: log.activityType.includes('Permission') ? log.activityType : '—',
                     templateUsed: template?.name || 'Standard Definition',
                     templateStatusChange: log.activityType.includes('Template') ? 'Status Updated' : '—',
                     relatedId: (def?.relatedDefinitions && def.relatedDefinitions.length > 0) ? def.relatedDefinitions[0] : '—',
@@ -530,22 +525,20 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                         <Card className="flex-1 rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white flex flex-col min-h-0">
                             <ScrollArea className="flex-1 w-full h-full">
                                 {appliedFilters.reportType === 'user-activity' && (
-                                    <Table className="min-w-[2400px]">
+                                    <Table className="min-w-[2200px]">
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
-                                                <ReportHeader label="User Name" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6 w-[220px]" options={getUniqueValues('userName')} />
+                                                <ReportHeader label="User Name" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" options={getUniqueValues('userName')} />
                                                 <ReportHeader label="Role" id="role" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.role} onFilterChange={handleFilterChange} className="w-[180px]" options={getUniqueValues('role')} />
                                                 <ReportHeader label="Action Type" id="actionType" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.actionType} onFilterChange={handleFilterChange} className="w-[200px]" options={getUniqueValues('actionType')} />
                                                 <ReportHeader label="Timestamp" id="timestamp" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
-                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[180px]" options={getUniqueValues('module')} />
-                                                <ReportHeader label="Entity Type" id="entityType" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.entityType} onFilterChange={handleFilterChange} className="w-[160px]" options={getUniqueValues('entityType')} />
-                                                <ReportHeader label="Entity Name" id="entityName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.entityName} onFilterChange={handleFilterChange} className="w-[220px]" options={getUniqueValues('entityName')} />
-                                                <ReportHeader label="Entity ID" id="entityId" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.entityId} onFilterChange={handleFilterChange} className="w-[140px]" options={getUniqueValues('entityId')} />
-                                                <ReportHeader label="Prev Status" id="prevStatus" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.prevStatus} onFilterChange={handleFilterChange} className="w-[160px]" options={getUniqueValues('prevStatus')} />
-                                                <ReportHeader label="New Status" id="newStatus" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.newStatus} onFilterChange={handleFilterChange} className="w-[160px]" options={getUniqueValues('newStatus')} />
-                                                <ReportHeader label="Version" id="version" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.version} onFilterChange={handleFilterChange} className="w-[140px]" options={getUniqueValues('version')} />
-                                                <ReportHeader label="Comments" id="comments" currentSort={sortConfig} onSort={handleSort} className="w-[250px]" filterType="none" />
-                                                <ReportHeader label="Approver" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="w-[180px]" options={getUniqueValues('approverName')} />
+                                                <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[160px]" options={getUniqueValues('module')} />
+                                                
+                                                {/* Security & Permission Related Columns */}
+                                                <ReportHeader label="Permission Name" id="permissionName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.permissionName} onFilterChange={handleFilterChange} className="w-[200px]" options={getUniqueValues('permissionName')} />
+                                                <ReportHeader label="Permission ID" id="permissionId" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.permissionId} onFilterChange={handleFilterChange} className="w-[150px]" options={getUniqueValues('permissionId')} />
+                                                <ReportHeader label="Permission Scope" id="permissionScope" currentSort={sortConfig} onSort={handleSort} className="w-[250px]" filterType="none" />
+                                                
                                                 <ReportHeader label="Template Used" id="templateUsed" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.templateUsed} onFilterChange={handleFilterChange} className="w-[200px]" options={getUniqueValues('templateUsed')} />
                                                 <ReportHeader label="Template Status" id="templateStatusChange" currentSort={sortConfig} onSort={handleSort} className="w-[160px]" filterType="none" />
                                                 <ReportHeader label="Related ID" id="relatedId" currentSort={sortConfig} onSort={handleSort} className="w-[120px]" filterType="none" />
@@ -560,14 +553,12 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                     <TableCell><Badge className="bg-indigo-50 text-indigo-700 font-bold border-indigo-100">{d.actionType}</Badge></TableCell>
                                                     <TableCell className="font-mono text-xs text-slate-500">{format(parseISO(d.timestamp), 'yyyy-MM-dd HH:mm')}</TableCell>
                                                     <TableCell className="font-bold text-slate-700">{d.module}</TableCell>
-                                                    <TableCell><Badge variant="secondary" className="font-black text-[9px] uppercase">{d.entityType}</Badge></TableCell>
-                                                    <TableCell className="font-bold text-primary truncate max-w-[180px]">{d.entityName}</TableCell>
-                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.entityId}</TableCell>
-                                                    <TableCell className="text-slate-400 italic text-xs">{d.prevStatus}</TableCell>
-                                                    <TableCell><Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-bold text-[10px]">{d.newStatus}</Badge></TableCell>
-                                                    <TableCell className="text-xs font-bold text-slate-50">{d.version}</TableCell>
-                                                    <TableCell className="text-slate-500 text-xs italic truncate max-w-[220px]">{d.comments}</TableCell>
-                                                    <TableCell className="font-bold text-slate-700">{d.approverName}</TableCell>
+                                                    
+                                                    {/* Permission Related Data */}
+                                                    <TableCell className="font-bold text-indigo-600">{d.permissionName}</TableCell>
+                                                    <TableCell className="font-mono text-[11px] text-slate-400">{d.permissionId}</TableCell>
+                                                    <TableCell className="text-xs italic text-slate-500">{d.permissionScope}</TableCell>
+                                                    
                                                     <TableCell className="text-xs font-bold text-slate-500">{d.templateUsed}</TableCell>
                                                     <TableCell className="text-xs text-slate-400">{d.templateStatusChange}</TableCell>
                                                     <TableCell className="text-[11px] font-mono text-slate-400">{d.relatedId}</TableCell>
