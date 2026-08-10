@@ -235,8 +235,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                 const lastSubmission = prevActions.filter(p => p.action === 'Submitted').sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0];
                 const prevDecision = lastSubmission ? prevActions.filter(p => p.action !== 'Submitted' && parseISO(p.date) < parseISO(lastSubmission.date)).sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0] : null;
 
-                const tTime = submission ? differenceInDays(parseISO(h.date), parseISO(submission.date)) : 0;
-
                 return {
                     id: h.id,
                     approverName: h.userName,
@@ -244,12 +242,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     module: def?.module || '—',
                     version: def?.revisions?.[0]?.ticketId || 'v1.0',
                     action: h.action,
-                    status: 'Resolved',
                     submittedBy: submission?.userName || 'Author',
                     submittedDate: submission?.date || '—',
                     decisionDate: h.date,
-                    turnaroundTime: `${tTime} days`,
-                    daysPending: '—',
                     comments: h.comment || '—',
                     resubmissionCount: resubmissionCount > 1 ? resubmissionCount - 1 : 0,
                     previousDecision: prevDecision?.action || 'Initial'
@@ -259,7 +254,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             const pendingRows = drafts.filter(d => d.isPendingApproval).map(d => {
                 const submission = history.filter(s => s.action === 'Submitted' && s.definitionId === d.id)
                                           .sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())[0];
-                const daysPend = submission ? differenceInDays(new Date(), parseISO(submission.date)) : 0;
                 
                 const prevActions = history.filter(p => p.definitionId === d.id);
                 const resubCount = prevActions.filter(p => p.action === 'Submitted').length;
@@ -272,12 +266,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     module: d.module,
                     version: d.revisions?.[0]?.ticketId || 'v1.0 (Draft)',
                     action: 'Pending',
-                    status: 'Pending',
                     submittedBy: d.submittedBy || 'Author',
                     submittedDate: d.submittedAt || submission?.date || '—',
                     decisionDate: '—',
-                    turnaroundTime: '—',
-                    daysPending: `${daysPend} days`,
                     comments: 'Awaiting Review',
                     resubmissionCount: resubCount > 1 ? resubCount - 1 : 0,
                     previousDecision: prevDec?.action || 'Initial'
@@ -582,7 +573,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                         </TableBody>
                                     </Table>
                                 ) : appliedFilters.reportType === 'approval-report' ? (
-                                    <Table className="min-w-[2800px]">
+                                    <Table className="min-w-[2400px]">
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
                                                 <ReportHeader label="Approver Name" id="approverName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.approverName} onFilterChange={handleFilterChange} className="pl-6 w-[200px]" options={getUniqueValues('approverName')} />
@@ -590,12 +581,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                 <ReportHeader label="Module" id="module" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.module} onFilterChange={handleFilterChange} className="w-[180px]" options={getUniqueValues('module')} />
                                                 <ReportHeader label="Version" id="version" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.version} onFilterChange={handleFilterChange} className="w-[160px]" options={getUniqueValues('version')} />
                                                 <ReportHeader label="Action" id="action" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.action} onFilterChange={handleFilterChange} className="w-[180px]" options={getUniqueValues('action')} />
-                                                <ReportHeader label="Status" id="status" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.status} onFilterChange={handleFilterChange} className="w-[140px]" options={getUniqueValues('status')} />
                                                 <ReportHeader label="Submitted By" id="submittedBy" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.submittedBy} onFilterChange={handleFilterChange} className="w-[180px]" options={getUniqueValues('submittedBy')} />
                                                 <ReportHeader label="Submitted Date" id="submittedDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
                                                 <ReportHeader label="Decision Date" id="decisionDate" currentSort={sortConfig} onSort={handleSort} className="w-[180px]" filterType="none" />
-                                                <ReportHeader label="Turnaround" id="turnaroundTime" currentSort={sortConfig} onSort={handleSort} className="w-[140px]" filterType="none" />
-                                                <ReportHeader label="Days Pending" id="daysPending" currentSort={sortConfig} onSort={handleSort} className="w-[140px]" filterType="none" />
                                                 <ReportHeader label="Comments" id="comments" currentSort={sortConfig} onSort={handleSort} className="w-[300px]" filterType="none" />
                                                 <ReportHeader label="Resubs" id="resubmissionCount" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.resubmissionCount} onFilterChange={handleFilterChange} className="w-[120px]" options={getUniqueValues('resubmissionCount')} />
                                                 <ReportHeader label="Prev Decision" id="previousDecision" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.previousDecision} onFilterChange={handleFilterChange} className="pr-6 w-[180px]" options={getUniqueValues('previousDecision')} />
@@ -618,16 +606,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                                             {d.action}
                                                         </Badge>
                                                     </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={d.status === 'Resolved' ? 'secondary' : 'outline'} className={cn("text-[9px] font-black uppercase", d.status === 'Pending' && "animate-pulse border-blue-200 text-blue-600")}>
-                                                            {d.status}
-                                                        </Badge>
-                                                    </TableCell>
                                                     <TableCell className="font-bold text-slate-700">{d.submittedBy}</TableCell>
                                                     <TableCell className="font-mono text-[11px] text-slate-400">{d.submittedDate !== '—' ? format(parseISO(d.submittedDate), 'yyyy-MM-dd') : '—'}</TableCell>
                                                     <TableCell className="font-mono text-[11px] text-slate-400">{d.decisionDate !== '—' ? format(parseISO(d.decisionDate), 'yyyy-MM-dd') : '—'}</TableCell>
-                                                    <TableCell className="font-black text-indigo-600 text-xs">{d.turnaroundTime}</TableCell>
-                                                    <TableCell className="font-black text-red-600 text-xs">{d.daysPending}</TableCell>
                                                     <TableCell className="text-slate-500 text-xs italic truncate max-w-[280px]">{d.comments}</TableCell>
                                                     <TableCell className="font-bold text-center">{d.resubmissionCount}</TableCell>
                                                     <TableCell className="pr-6 italic text-slate-400 text-xs">{d.previousDecision}</TableCell>
@@ -825,3 +806,4 @@ function ReportPagination({ currentPage, totalPages, pageSize, setPageSize, onPa
         </div>
     );
 }
+
