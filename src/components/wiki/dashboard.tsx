@@ -22,7 +22,10 @@ import {
     Calendar as CalendarIcon,
     XCircle,
     Send,
-    RefreshCw
+    RefreshCw,
+    Box,
+    Database,
+    Zap
 } from 'lucide-react';
 import { 
     BarChart, 
@@ -41,7 +44,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { parseISO, subDays, format, isSameDay, eachDayOfInterval, isValid, startOfDay } from 'date-fns';
+import { parseISO, subDays, format, isSameDay, eachDayOfInterval, isValid } from 'date-fns';
 
 type DashboardProps = {
   definitions: Definition[];
@@ -67,14 +70,21 @@ export default function Dashboard({
   const [chartEndDate, setChartEndDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
 
   const metrics = useMemo(() => {
-    const allPublished = definitions.flatMap(d => [d, ...(d.children || [])]).filter(d => !d.isDraft && !d.isPendingApproval && !d.isArchived);
-    const allArchived = definitions.flatMap(d => [d, ...(d.children || [])]).filter(d => d.isArchived);
+    const flatten = (items: Definition[]): Definition[] => {
+        return items.flatMap(d => [d, ...(d.children ? flatten(d.children) : [])]);
+    };
+
+    const allPublished = flatten(definitions).filter(d => !d.isDraft && !d.isPendingApproval && !d.isArchived);
+    const allArchived = flatten(definitions).filter(d => d.isArchived);
     const safeDrafts = Array.isArray(drafts) ? drafts : [];
     
     const pending = safeDrafts.filter(d => d.isPendingApproval);
     const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval && !(d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection'));
     const rejectedOrChanges = safeDrafts.filter(d => (d.discussions || []).some(m => m.type === 'change-request' || m.type === 'rejection'));
     
+    // Most Edited Definitions
+    const mostEdited = [...allPublished].sort((a, b) => (b.revisions?.length || 0) - (a.revisions?.length || 0)).slice(0, 5);
+
     // Stale Published (> 6 months)
     const sixMonthsAgo = subDays(new Date(), 180);
     const stalePublished = allPublished.filter(d => {
@@ -122,7 +132,7 @@ export default function Dashboard({
             
             // Seed dummy data for visual density if real logs are low
             const dummyCount = Math.floor(Math.random() * 3);
-            const count = realCount > 0 ? realCount : dummyCount;
+            const count = realCount > 0 ? realCount : (day.getDay() % 3 === 0 ? dummyCount : 0);
 
             return {
                 name: format(day, 'MMM dd'),
@@ -139,7 +149,7 @@ export default function Dashboard({
     }));
 
     const unusedTemplates = templates.filter(t => {
-        const isUsed = definitions.some(d => d.templateId === t.id) || drafts.some(d => d.templateId === t.id);
+        const isUsed = flatten(definitions).some(d => d.templateId === t.id) || safeDrafts.some(d => d.templateId === t.id);
         return !isUsed;
     });
 
@@ -156,6 +166,7 @@ export default function Dashboard({
       creationTrendData,
       moduleCounts,
       unusedTemplates,
+      mostEdited,
       totalUsers: users.length,
       activeUsers: users.filter(u => u.status === 'Active').length,
       inactiveUsers: users.filter(u => u.status === 'Inactive').length,
@@ -269,7 +280,7 @@ export default function Dashboard({
                 <Arrow />
                 <LifecycleBox label="Sent for Approval" value={metrics.pendingCount} color="bg-blue-50 text-blue-600 border-blue-100" icon={Send} />
                 <Arrow />
-                <LifecycleBox label="Feedback / Rejected" value={metrics.rejectedOrChangesCount} color="bg-pink-50 text-pink-600 border-pink-100" icon={RefreshCw} />
+                <LifecycleBox label="Rejected / Changes" value={metrics.rejectedOrChangesCount} color="bg-pink-50 text-pink-600 border-pink-100" icon={RefreshCw} />
                 <Arrow />
                 <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-emerald-50 text-emerald-700 border-emerald-100" icon={CheckCircle2} />
                 <Arrow />
@@ -289,7 +300,7 @@ export default function Dashboard({
           </Card>
       </div>
 
-      {/* 3. DEFINITION CREATED GRAPH */}
+      {/* 3. DEFINITIONS CREATED TREND */}
       <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
           <div className="flex items-center justify-between mb-8">
               <h3 className="text-lg font-bold text-slate-900">Definitions Created</h3>
@@ -352,7 +363,7 @@ export default function Dashboard({
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Governance & Insights
             </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active cleanup targets</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active maintenance targets</span>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -367,7 +378,95 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* 5. WORKFLOW PERFORMANCE */}
+      {/* 5. TEMPLATE ARCHITECTURE & ACTIVITY */}
+      <div className="space-y-6">
+          <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+              <LayoutTemplate className="h-3.5 w-3.5" />
+              Template Architecture & Activity
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Template Architecture */}
+              <Card className="lg:col-span-2 rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
+                  <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-lg font-bold text-slate-900">Blueprint Distribution</h3>
+                      <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 font-bold px-3">Total {templates.length}</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {metrics.moduleCounts.map(mod => (
+                        <div key={mod.name} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-4">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-black uppercase text-slate-500 tracking-wider">{mod.name}</span>
+                                <span className="text-lg font-black text-slate-900">{mod.count}</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                                <div className="h-full bg-indigo-500 transition-all" style={{ width: `${(mod.count / templates.length) * 100}%` }} />
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-400">Functional standards defined</p>
+                        </div>
+                    ))}
+                  </div>
+              </Card>
+
+              {/* Template Governance */}
+              <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm flex flex-col">
+                  <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-lg font-bold text-slate-900">Governance Audit</h3>
+                      <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                  </div>
+                  <div className="space-y-6 flex-1">
+                      <div className="p-5 rounded-2xl bg-orange-50 border border-orange-100 border-l-4 border-l-orange-400">
+                          <p className="text-[10px] font-black uppercase text-orange-800 tracking-widest mb-1">Alert: Unused Templates</p>
+                          <p className="text-2xl font-black text-orange-900">{metrics.unusedTemplates.length}</p>
+                          <p className="text-[11px] font-medium text-orange-700/80 mt-1">Found active blueprints with zero associated definitions.</p>
+                      </div>
+                      <div className="space-y-4">
+                          <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Maintenance Queue</h4>
+                          {metrics.unusedTemplates.slice(0, 3).map(t => (
+                              <div key={t.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0 group">
+                                  <span className="text-xs font-bold text-slate-600 truncate max-w-[140px]">{t.name}</span>
+                                  <Button variant="ghost" size="sm" className="h-6 text-[9px] font-black uppercase text-slate-400 hover:text-red-600">Review</Button>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+                  <Button variant="outline" className="w-full mt-6 rounded-xl font-bold text-indigo-600 border-indigo-100 hover:bg-indigo-50" onClick={() => onNavigate('template-management')}>Manage Blueprints</Button>
+              </Card>
+          </div>
+
+          {/* Most Edited Definitions */}
+          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                          <Zap className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900">Definition Hotspots</h3>
+                        <p className="text-[11px] font-medium text-slate-400 uppercase tracking-tight">Records with highest revision frequency</p>
+                      </div>
+                  </div>
+                  <Button variant="ghost" className="text-indigo-600 font-bold text-xs" onClick={() => onNavigate('definitions')}>View All</Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                {metrics.mostEdited.map((def, idx) => (
+                    <div key={def.id} className="relative p-5 rounded-2xl bg-white border border-slate-100 shadow-sm group hover:border-amber-200 transition-all cursor-pointer overflow-hidden" onClick={() => onNavigate('definitions')}>
+                        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-100 transition-opacity">
+                            <ArrowUpRight className="h-4 w-4 text-amber-600" />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-300 mb-2 block">{idx + 1}</span>
+                        <p className="font-bold text-slate-900 text-sm truncate mb-3">{def.name}</p>
+                        <div className="flex items-center justify-between">
+                            <Badge className="bg-amber-50 text-amber-700 border-amber-100 font-black text-[10px] px-2">{def.revisions?.length || 0} REVS</Badge>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">{def.module}</span>
+                        </div>
+                    </div>
+                ))}
+              </div>
+          </Card>
+      </div>
+
+      {/* 6. WORKFLOW PERFORMANCE */}
       <div className="space-y-4">
           <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
               <BarChart3 className="h-3.5 w-3.5" />
@@ -418,7 +517,7 @@ export default function Dashboard({
             </Card>
       </div>
 
-      {/* 6. USERS AND ROLES (BOTTOM) */}
+      {/* 7. USERS AND ROLES (BOTTOM) */}
       <div className="space-y-6">
         <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
             <Users className="h-3.5 w-3.5" />
