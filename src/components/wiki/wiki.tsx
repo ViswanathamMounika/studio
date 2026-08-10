@@ -116,10 +116,10 @@ export default function Wiki() {
     if (impersonatedUser) return impersonatedUser;
     return {
         id: originalAdminState ? "user_admin" : "user_std",
-        name: originalAdminState ? "Administrator" : "Standard User",
-        avatar: originalAdminState ? "https://picsum.photos/seed/admin/40/40" : "https://picsum.photos/seed/std/40/40",
+        name: originalAdminState ? "Dhilip Sagadevan" : "Mark Wilson",
+        avatar: originalAdminState ? "https://picsum.photos/seed/dhilip/40/40" : "https://picsum.photos/seed/mark/40/40",
         role: originalAdminState ? 'Super Admin' : 'Standard User',
-        email: originalAdminState ? 'admin@medpoint.com' : 'user@medpoint.com',
+        email: originalAdminState ? 'dhilip.s@medpoint.com' : 'mark.w@medpoint.com',
         status: 'Active' as const
     };
   }, [originalAdminState, impersonatedUser]);

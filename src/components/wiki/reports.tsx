@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -142,11 +141,9 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
             });
 
             return filteredLogs.map(log => {
-                const user = users.find(u => u.name === log.userName);
                 return {
                     id: log.id,
                     userName: log.userName,
-                    role: user?.role || 'N/A',
                     permissions: log.activityType,
                     timestamp: log.occurredDate,
                 };
@@ -486,8 +483,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                     <Table>
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
-                                                <ReportHeader label="User Name" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6" options={getUniqueValues('userName')} />
-                                                <ReportHeader label="Role" id="role" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.role} onFilterChange={handleFilterChange} options={getUniqueValues('role')} />
+                                                <ReportHeader label="User Account" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6" options={getUniqueValues('userName')} />
                                                 <ReportHeader label="Permissions" id="permissions" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.permissions} onFilterChange={handleFilterChange} options={getUniqueValues('permissions')} />
                                                 <ReportHeader label="Timestamp" id="timestamp" currentSort={sortConfig} onSort={handleSort} className="pr-6" filterType="none" />
                                             </TableRow>
@@ -496,7 +492,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                             {paginatedData.map((d: any) => (
                                                 <TableRow key={d.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
                                                     <TableCell className="pl-6 font-bold text-slate-900">{d.userName}</TableCell>
-                                                    <TableCell><Badge variant="outline" className="font-bold text-[10px] uppercase border-slate-200">{d.role}</Badge></TableCell>
                                                     <TableCell><Badge className="bg-indigo-50 text-indigo-700 font-bold border-indigo-100">{d.permissions}</Badge></TableCell>
                                                     <TableCell className="pr-6 font-mono text-xs text-slate-500">{format(parseISO(d.timestamp), 'yyyy-MM-dd HH:mm')}</TableCell>
                                                 </TableRow>

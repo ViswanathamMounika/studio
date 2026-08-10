@@ -287,7 +287,7 @@ export const initialTemplates: Template[] = [
         { id: 'fo3', templateSectionId: 'f1', label: 'Case Rate', value: 'CASE', sortOrder: 3, isDefault: false }
       ]},
       { id: 'f2', templateId: '5', name: 'Base Rate Table', fieldType: 'KeyValue', isMulti: false, isRequired: true, order: 2, columns: [
-        { id: 'fc1', templateSectionId: 'f2', name: 'Code Type', inputType: 'TextBox', isMulti: false, sortOrder: 1, isRequired: true },
+        { id: 'fc1', templateSectionId: 'f2', name: 'Column Name', inputType: 'TextBox', isMulti: false, sortOrder: 1, isRequired: true },
         { id: 'fc2', templateSectionId: 'f2', name: 'Percent of Medicare', inputType: 'TextBox', isMulti: false, sortOrder: 2, isRequired: true }
       ]},
       { id: 'f3', templateId: '5', name: 'Modifier Adjustments', fieldType: 'RichText', isMulti: false, isRequired: false, order: 3 }
@@ -542,14 +542,14 @@ export const initialActivityLogs: ActivityLog[] = [
   { id: '1', userName: 'Dhilip Sagadevan', definitionName: 'System Configuration', activityType: 'System Configuration Updated', occurredDate: new Date(Date.now() - 3600000 * 1).toISOString(), details: 'Updated maximum file upload size to 25MB.' },
   { id: '2', userName: 'Sarah Chen', definitionName: 'Auth Decision Date', activityType: 'Definition Updated', occurredDate: new Date(Date.now() - 3600000 * 5).toISOString(), details: 'Updated SLA logic for urgent requests.' },
   { id: '3', userName: 'Elena Rodriguez', definitionName: 'Breast Cancer Screening (BCS)', activityType: 'Approval Decision', occurredDate: new Date(Date.now() - 3600000 * 10).toISOString(), details: 'Approved & Published.' },
-  { id: '4', userName: 'Administrator', definitionName: 'User Management', activityType: 'User Profile Updated', occurredDate: new Date(Date.now() - 3600000 * 2).toISOString(), details: 'Activated account for Sarah Chen' }
+  { id: '4', userName: 'Dhilip Sagadevan', definitionName: 'User Management', activityType: 'User Profile Updated', occurredDate: new Date(Date.now() - 3600000 * 2).toISOString(), details: 'Activated account for Sarah Chen' }
 ];
 
 export const initialApprovalHistory: ApprovalHistoryEntry[] = [
-  { id: 'h1', definitionId: '1.1.1', definitionName: 'Auth Decision Date', action: 'Approved', userName: 'Administrator', date: new Date(Date.now() - 3600000 * 24 * 5).toISOString(), comment: 'All metadata verified against EzCAP production schema.' },
+  { id: 'h1', definitionId: '1.1.1', definitionName: 'Auth Decision Date', action: 'Approved', userName: 'Dhilip Sagadevan', date: new Date(Date.now() - 3600000 * 24 * 5).toISOString(), comment: 'All metadata verified against EzCAP production schema.' },
   { id: 'h2', definitionId: '1.1.1', definitionName: 'Auth Decision Date', action: 'Submitted', userName: 'Sarah Chen', date: new Date(Date.now() - 3600000 * 24 * 6).toISOString() },
-  { id: 'h3', definitionId: '1.1.2', definitionName: 'Service Type Mapping', action: 'Changes Requested', userName: 'Administrator', date: new Date(Date.now() - 3600000 * 24 * 1).toISOString(), comment: 'Duplication identified: This logic overlaps with the Provider Master mapping table.' },
-  { id: 'h4', definitionId: '1.1.2', definitionName: 'Service Type Mapping', action: 'Rejected', userName: 'Administrator', date: new Date(Date.now() - 3600000 * 24 * 10).toISOString(), comment: 'Formatting issues: Technical SQL snippet is missing required JOIN criteria.' },
+  { id: 'h3', definitionId: '1.1.2', definitionName: 'Service Type Mapping', action: 'Changes Requested', userName: 'Dhilip Sagadevan', date: new Date(Date.now() - 3600000 * 24 * 1).toISOString(), comment: 'Duplication identified: This logic overlaps with the Provider Master mapping table.' },
+  { id: 'h4', definitionId: '1.1.2', definitionName: 'Service Type Mapping', action: 'Rejected', userName: 'Dhilip Sagadevan', date: new Date(Date.now() - 3600000 * 24 * 10).toISOString(), comment: 'Formatting issues: Technical SQL snippet is missing required JOIN criteria.' },
 ];
 
 export const initialUsers: UserAccount[] = [
