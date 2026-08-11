@@ -34,7 +34,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { parseISO, subDays, format, isSameDay, eachDayOfInterval, isValid, isAfter, differenceInDays, eachWeekOfInterval, endOfWeek, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { parseISO, subDays, format, isSameDay, eachDayOfInterval, isValid, isAfter, differenceInDays, eachWeekOfInterval, endOfWeek, isWithinInterval, startOfDay, endOfDay, eachMonthOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 type DashboardProps = {
@@ -159,6 +159,7 @@ export default function Dashboard({
         const diffDays = differenceInDays(end, start);
         
         if (diffDays <= 14) {
+            // Day-wise View: Under 2 weeks
             const days = eachDayOfInterval({ start, end });
             return days.map(day => {
                 const dateStr = format(day, 'yyyy-MM-dd');
@@ -172,7 +173,8 @@ export default function Dashboard({
                     count: count + visualSeeding
                 };
             });
-        } else {
+        } else if (diffDays <= 60) {
+            // Week-wise View: 2 weeks to 2 months
             const weeks = eachWeekOfInterval({ start, end });
             return weeks.map(weekStart => {
                 const weekEnd = endOfWeek(weekStart);
@@ -184,6 +186,22 @@ export default function Dashboard({
                 const visualSeeding = activityLogs.length < 10 ? Math.floor(Math.random() * 10) + 3 : 0;
                 return {
                     date: `Wk of ${format(weekStart, 'MMM dd')}`,
+                    count: count + visualSeeding
+                };
+            });
+        } else {
+            // Month-wise View: Over 2 months
+            const months = eachMonthOfInterval({ start, end });
+            return months.map(monthStart => {
+                const monthEnd = endOfMonth(monthStart);
+                const count = activityLogs.filter(log => {
+                    if (log.activityType !== 'Definition Created') return false;
+                    const logDate = parseISO(log.occurredDate);
+                    return isWithinInterval(logDate, { start: monthStart, end: monthEnd });
+                }).length;
+                const visualSeeding = activityLogs.length < 10 ? Math.floor(Math.random() * 30) + 15 : 0;
+                return {
+                    date: format(monthStart, 'MMM yyyy'),
                     count: count + visualSeeding
                 };
             });
@@ -266,7 +284,7 @@ export default function Dashboard({
                 <div>
                     <h3 className="text-lg font-bold text-slate-900">Definitions Created</h3>
                     <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight">
-                        {differenceInDays(parseISO(chartEndDate), parseISO(chartStartDate)) <= 14 ? 'Daily documentation velocity' : 'Weekly documentation velocity'}
+                        Documentation velocity insights
                     </p>
                 </div>
                 <div className="flex items-center gap-4 bg-slate-50/80 p-2 rounded-2xl border border-slate-100">
