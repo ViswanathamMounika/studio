@@ -74,9 +74,7 @@ export default function Dashboard({
         return fb.length > 0 ? fb[fb.length - 1].type : null;
     };
 
-    // Stage logic
     const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval && !getLatestFeedbackType(d));
-    
     const oneDayAgo = subDays(new Date(), 1);
     const sentForApproval = safeDrafts.filter(d => d.isPendingApproval && d.submittedAt && isAfter(parseISO(d.submittedAt), oneDayAgo));
     const pendingApproval = safeDrafts.filter(d => d.isPendingApproval && (!d.submittedAt || !isAfter(parseISO(d.submittedAt), oneDayAgo)));
@@ -170,7 +168,6 @@ export default function Dashboard({
         const diffDays = differenceInDays(end, start);
         
         if (diffDays <= 14) {
-            // Day-wise logic
             const days = eachDayOfInterval({ start, end });
             return days.map(day => {
                 const dateStr = format(day, 'yyyy-MM-dd');
@@ -178,8 +175,6 @@ export default function Dashboard({
                     log.activityType === 'Definition Created' && 
                     log.occurredDate.startsWith(dateStr)
                 ).length;
-                
-                // Visual seeding for demo if logs are sparse
                 const visualSeeding = activityLogs.length < 10 ? Math.floor(Math.random() * 3) : 0;
                 return {
                     date: format(day, 'MMM dd'),
@@ -187,7 +182,6 @@ export default function Dashboard({
                 };
             });
         } else {
-            // Week-wise logic
             const weeks = eachWeekOfInterval({ start, end });
             return weeks.map(weekStart => {
                 const weekEnd = endOfWeek(weekStart);
@@ -196,8 +190,6 @@ export default function Dashboard({
                     const logDate = parseISO(log.occurredDate);
                     return isWithinInterval(logDate, { start: weekStart, end: weekEnd });
                 }).length;
-
-                // Visual seeding for demo (weekly scale is larger)
                 const visualSeeding = activityLogs.length < 10 ? Math.floor(Math.random() * 10) + 3 : 0;
                 return {
                     date: `Wk of ${format(weekStart, 'MMM dd')}`,
@@ -245,21 +237,21 @@ export default function Dashboard({
             </div>
             
             <div className="flex items-center gap-2 w-full">
-                {/* DRAFT STAGE */}
+                {/* DRAFT STAGE - 1 box width */}
                 <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" />
                 
                 <Arrow />
 
-                {/* SUBMISSION GROUP - UNIFIED */}
-                <div className="flex items-center gap-2 flex-1 p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
+                {/* SUBMISSION GROUP - 2 boxes width */}
+                <div className="flex items-center gap-2 flex-[2] p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
                     <LifecycleBox label="Sent for Approval" value={metrics.sentCount} color="bg-[#F5F3FF] text-[#7E22CE] border-[#E9E3FF]" />
                     <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" />
                 </div>
                 
                 <Arrow />
 
-                {/* OUTCOME GROUP - UNIFIED */}
-                <div className="flex items-center gap-2 flex-1 p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
+                {/* OUTCOME GROUP - 3 boxes width */}
+                <div className="flex items-center gap-2 flex-[3] p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
                     <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" />
                     <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" />
                     <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" />
@@ -267,7 +259,7 @@ export default function Dashboard({
 
                 <Arrow />
 
-                {/* ARCHIVE STAGE */}
+                {/* ARCHIVE STAGE - 1 box width */}
                 <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-[#F8FAFC] text-[#64748B] border-[#F1F5F9]" />
             </div>
           </Card>
