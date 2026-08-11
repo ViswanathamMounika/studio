@@ -131,12 +131,7 @@ export default function Dashboard({
         module: t.module,
         uses
       };
-    }).sort((a, b) => b.uses - a.uses).slice(0, 3);
-
-    const unusedTemplates = templates.filter(t => {
-        const isUsed = flatten(definitions).some(d => d.templateId === t.id) || safeDrafts.some(d => d.templateId === t.id);
-        return !isUsed;
-    });
+    }).sort((a, b) => b.uses - a.uses).slice(0, 5);
 
     return {
       total: allPublished.length + allArchived.length + safeDrafts.length,
@@ -154,7 +149,6 @@ export default function Dashboard({
       inactiveTemplatesCount,
       moduleChipData,
       templateUsage,
-      unusedTemplates,
       totalUsers: users.length,
       activeUsers: users.filter(u => u.status === 'Active').length,
       inactiveUsers: users.filter(u => u.status === 'Inactive').length,
@@ -247,7 +241,7 @@ export default function Dashboard({
           <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between mb-8 px-2">
                 <h3 className="text-lg font-bold text-slate-900">Documentation Pipeline</h3>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> active documentation units</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> documentation units</span>
             </div>
             
             <div className="flex items-center gap-2 w-full">
@@ -256,16 +250,16 @@ export default function Dashboard({
                 
                 <Arrow />
 
-                {/* SUBMISSION GROUP */}
-                <div className="flex items-center gap-3 flex-1 p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
+                {/* SUBMISSION GROUP - UNIFIED */}
+                <div className="flex items-center gap-2 flex-1 p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
                     <LifecycleBox label="Sent for Approval" value={metrics.sentCount} color="bg-[#F5F3FF] text-[#7E22CE] border-[#E9E3FF]" />
                     <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" />
                 </div>
                 
                 <Arrow />
 
-                {/* OUTCOME GROUP */}
-                <div className="flex items-center gap-3 flex-1 p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
+                {/* OUTCOME GROUP - UNIFIED */}
+                <div className="flex items-center gap-2 flex-1 p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
                     <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" />
                     <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" />
                     <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" />
@@ -451,28 +445,28 @@ export default function Dashboard({
             </Card>
       </div>
 
-      {/* 6. TEMPLATE ARCHITECTURE & ACTIVITY */}
+      {/* 6. TEMPLATE ARCHITECTURE */}
       <div className="space-y-6">
           <div className="flex items-center gap-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
               <LayoutTemplate className="h-3.5 w-3.5" />
-              Template Architecture & Activity
+              Template Architecture
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <Card className="lg:col-span-2 rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
+          <div className="w-full">
+              <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
                   <div className="flex items-center justify-between mb-10">
-                      <h3 className="text-xl font-bold text-slate-900">Template Architecture</h3>
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{templates.length}</strong> templates</span>
+                      <h3 className="text-xl font-bold text-slate-900">Template Usage Architecture</h3>
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{templates.length}</strong> active blueprints</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 mb-10">
-                      <div className="p-8 rounded-[24px] bg-[#F5F3FF] border border-indigo-50">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
+                      <div className="p-8 rounded-[24px] bg-[#F5F3FF] border border-indigo-50 flex flex-col justify-center">
                           <p className="text-5xl font-black text-[#3F51B5] mb-2">{metrics.activeTemplatesCount}</p>
-                          <p className="text-[11px] font-black text-[#3F51B5]/60 uppercase tracking-[0.2em]">Active</p>
+                          <p className="text-[11px] font-black text-[#3F51B5]/60 uppercase tracking-[0.2em]">Active Records</p>
                       </div>
-                      <div className="p-8 rounded-[24px] bg-slate-50 border border-slate-100">
+                      <div className="p-8 rounded-[24px] bg-slate-50 border border-slate-100 flex flex-col justify-center">
                           <p className="text-5xl font-black text-slate-400 mb-2">{metrics.inactiveTemplatesCount}</p>
-                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Inactive</p>
+                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Inactive/Legacy</p>
                       </div>
                   </div>
 
@@ -513,45 +507,6 @@ export default function Dashboard({
                               </div>
                           );
                       })}
-                  </div>
-              </Card>
-
-              <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm flex flex-col">
-                  <div className="flex items-center justify-between mb-8 px-1">
-                      <h3 className="text-xl font-bold text-slate-900">Templates — Governance</h3>
-                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Module Distribution</span>
-                  </div>
-                  
-                  <div className="space-y-8">
-                      <div className="p-4 rounded-3xl bg-[#FFF9EB] border border-[#FFEBC2] flex items-start gap-3">
-                          <AlertTriangle className="h-5 w-5 text-[#B45309] shrink-0 mt-0.5" />
-                          <div className="space-y-1">
-                              <p className="text-sm font-bold text-[#B45309] leading-none">
-                                {metrics.unusedTemplates.length} unused templates flagged
-                              </p>
-                              <p className="text-[11px] font-medium text-[#B45309]/80 leading-relaxed">
-                                Review recommended for blueprints with zero active associations to maintain system performance.
-                              </p>
-                          </div>
-                      </div>
-
-                      <div className="space-y-6 pt-2">
-                        {metrics.moduleChipData.sort((a,b) => b.count - a.count).map((mod) => {
-                            const maxCount = Math.max(...metrics.moduleChipData.map(m => m.count));
-                            const percent = (mod.count / maxCount) * 100;
-                            const color = getModuleColor(mod.name);
-                            
-                            return (
-                                <div key={mod.name} className="flex items-center gap-4">
-                                    <span className="text-xs font-bold text-slate-600 w-24 shrink-0 truncate">{mod.name}</span>
-                                    <div className="flex-1 h-1 bg-slate-50 rounded-full overflow-hidden">
-                                        <div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: color }} />
-                                    </div>
-                                    <span className="text-sm font-black text-slate-900 w-4 text-right">{mod.count}</span>
-                                </div>
-                            );
-                        })}
-                      </div>
                   </div>
               </Card>
           </div>
@@ -637,11 +592,11 @@ function InsightsCard({ title, value, sub, options, color = "text-slate-900", fo
 function LifecycleBox({ label, value, color }: { label: string, value: number, color: string }) {
     return (
         <div className={cn(
-            "rounded-[20px] border flex flex-col justify-between p-4 transition-all hover:shadow-md h-28 relative flex-1", 
+            "rounded-[20px] border flex flex-col justify-between p-4 transition-all hover:shadow-md h-28 relative flex-1 min-w-0", 
             color
         )}>
             <span className="text-3xl font-black block tracking-tighter leading-none">{value}</span>
-            <span className="font-bold text-[11px] leading-tight max-w-[80px]">{label}</span>
+            <span className="font-bold text-[11px] leading-tight mt-auto truncate w-full">{label}</span>
         </div>
     );
 }
