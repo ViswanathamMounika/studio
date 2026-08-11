@@ -233,11 +233,14 @@ export default function Dashboard({
                 <Arrow />
                 <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" />
                 <Arrow />
-                <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" />
-                <Arrow />
-                <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" />
-                <Arrow />
-                <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" isWide />
+                
+                {/* Decision Outcomes Group (No internal arrows) */}
+                <div className="flex items-center gap-1.5 flex-[4.5] p-1.5 bg-slate-50/40 rounded-[24px] border border-dashed border-slate-200">
+                    <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" />
+                    <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" />
+                    <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" isWide />
+                </div>
+
                 <Arrow />
                 <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-[#F8FAFC] text-[#64748B] border-[#F1F5F9]" />
             </div>
@@ -631,4 +634,3 @@ function Arrow() {
         </div>
     );
 }
-
