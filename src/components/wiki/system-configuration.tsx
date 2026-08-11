@@ -427,7 +427,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                 className="rounded-xl px-6 h-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold text-xs gap-3 transition-all data-[state=active]:text-[#3F51B5] group"
                             >
                                 <SlidersHorizontal className="h-4 w-4 group-data-[state=active]:text-[#3F51B5] text-slate-400" />
-                                Preferences
+                                Web App Configuration
                                 <Badge variant="secondary" className="ml-1 h-5 px-2 bg-indigo-50 text-[#3F51B5] border-transparent font-bold text-[10px] rounded-lg">
                                     {sectionCount} sections
                                 </Badge>
@@ -437,7 +437,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                 className="rounded-xl px-6 h-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold text-xs gap-3 transition-all data-[state=active]:text-[#3F51B5] group"
                             >
                                 <TableIcon className="h-4 w-4 group-data-[state=active]:text-[#3F51B5] text-slate-400" />
-                                Parameters
+                                System Parameters
                                 <Badge variant="secondary" className="ml-1 h-5 px-2 bg-slate-100 text-slate-500 border-transparent font-bold text-[10px] rounded-lg group-data-[state=active]:bg-indigo-50 group-data-[state=active]:text-[#3F51B5]">
                                     {keysCount} keys
                                 </Badge>
@@ -449,7 +449,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                 <div className="relative w-full max-w-md">
                                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                                     <Input 
-                                        placeholder="Find a preference section..." 
+                                        placeholder="Find a configuration section..." 
                                         value={prefSearch}
                                         onChange={e => setPrefSearch(e.target.value)}
                                         className="pl-9 h-10 rounded-xl bg-white border-slate-200 shadow-sm"
@@ -488,7 +488,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                             <SearchX className="h-8 w-8 text-slate-300" />
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-lg font-bold text-slate-900">No matching preferences</p>
+                                            <p className="text-lg font-bold text-slate-900">No matching configuration</p>
                                             <p className="text-sm text-slate-500">We couldn't find any configuration sections matching your search.</p>
                                         </div>
                                         <Button variant="ghost" className="text-indigo-600 font-bold" onClick={() => setPrefSearch('')}>Clear Search</Button>
@@ -502,7 +502,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                 <div className="relative w-full max-w-md">
                                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                                     <Input 
-                                        placeholder="Filter settings..." 
+                                        placeholder="Filter parameters..." 
                                         value={configSearch}
                                         onChange={e => setConfigSearch(e.target.value)}
                                         className="pl-9 h-10 rounded-xl bg-white border-slate-200 shadow-sm"
@@ -630,7 +630,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                     <select 
                                         value={editingKeyEntry?.type} 
                                         className="flex h-11 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm ring-offset-background font-bold"
-                                        onChange={e => setEditingKeyEntry(p => p ? ({ ...p, type: e.target.value }) : null)}
+                                        onChange={e => setEditingKeyEntry(p => p ? ({ ...p, type: e.target.value }) : null)} 
                                     >
                                         {CONFIG_TYPES.map(t => (
                                             <option key={t.value} value={t.value}>{t.label}</option>
