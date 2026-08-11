@@ -228,25 +228,23 @@ export default function Dashboard({
             
             <div className="flex items-center gap-1.5 w-full">
                 {/* DRAFT STAGE */}
-                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" isWide />
+                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" />
                 
                 <Arrow />
 
-                {/* SUBMISSION STAGE */}
-                <LifecycleBox label="Sent for Approval" value={metrics.sentCount} color="bg-[#F5F3FF] text-[#7E22CE] border-[#E9E3FF]" />
+                {/* SUBMISSION GROUP (SENT + PENDING) */}
+                <div className="flex items-center gap-2 flex-[2] p-2 bg-slate-50/40 rounded-[24px] border border-dashed border-slate-200">
+                    <LifecycleBox label="Sent for Approval" value={metrics.sentCount} color="bg-[#F5F3FF] text-[#7E22CE] border-[#E9E3FF]" />
+                    <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" />
+                </div>
                 
                 <Arrow />
 
-                {/* PENDING STAGE */}
-                <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" />
-                
-                <Arrow />
-
-                {/* OUTCOME STAGE (Dashed Container) */}
-                <div className="flex items-center gap-2 flex-[4] p-2 bg-slate-50/40 rounded-[28px] border border-dashed border-slate-200">
+                {/* OUTCOME GROUP (CHANGES + REJECTED + PUBLISHED) */}
+                <div className="flex items-center gap-2 flex-[3] p-2 bg-slate-50/40 rounded-[24px] border border-dashed border-slate-200">
                     <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" />
                     <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" />
-                    <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" isWide />
+                    <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" />
                 </div>
 
                 <Arrow />
@@ -626,12 +624,11 @@ function InsightsCard({ title, value, sub, options, color = "text-slate-900", fo
     );
 }
 
-function LifecycleBox({ label, value, color, isWide }: { label: string, value: number, color: string, isWide?: boolean }) {
+function LifecycleBox({ label, value, color }: { label: string, value: number, color: string }) {
     return (
         <div className={cn(
-            "rounded-[20px] border flex flex-col justify-between p-4 transition-all hover:shadow-md h-32 relative", 
-            color,
-            isWide ? "flex-[2]" : "flex-1"
+            "rounded-[20px] border flex flex-col justify-between p-4 transition-all hover:shadow-md h-32 relative flex-1", 
+            color
         )}>
             <span className="text-4xl font-black block tracking-tighter leading-none">{value}</span>
             <span className="font-bold text-[12px] leading-tight max-w-[80px]">{label}</span>
