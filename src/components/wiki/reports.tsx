@@ -66,7 +66,7 @@ type SortConfig = {
     direction: 'asc' | 'desc';
 } | null;
 
-type ReportType = 'user-activity' | 'definition-report' | 'approval-report' | 'template-report';
+type ReportType = 'definition-report' | 'approval-report' | 'template-report';
 
 type AppliedFilters = {
     reportType: ReportType;
@@ -74,7 +74,7 @@ type AppliedFilters = {
 };
 
 export default function ReportsDashboard({ users, definitions, drafts, activityLogs, approvalHistory, templates, masterData }: ReportsDashboardProps) {
-    const [selectedReport, setSelectedReport] = useState<ReportType>('user-activity');
+    const [selectedReport, setSelectedReport] = useState<ReportType>('definition-report');
     const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>({
         from: subMonths(new Date(), 12),
         to: new Date()
@@ -83,7 +83,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
     const [appliedFilters, setAppliedFilters] = useState<AppliedFilters | null>(null);
     
     const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
-    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'timestamp', direction: 'desc' });
+    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     
@@ -98,7 +98,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
         setColumnFilters({});
         
         const defaultSort: Record<ReportType, SortConfig> = {
-            'user-activity': { key: 'timestamp', direction: 'desc' },
             'definition-report': { key: 'name', direction: 'asc' },
             'approval-report': { key: 'submittedDate', direction: 'desc' },
             'template-report': { key: 'name', direction: 'asc' }
@@ -127,28 +126,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
     const processedReportData = useMemo(() => {
         if (!appliedFilters) return [];
-
-        if (appliedFilters.reportType === 'user-activity') {
-            const filteredLogs = activityLogs.filter(log => {
-                if (!log || !log.occurredDate || !appliedFilters.dateRange?.from) return true;
-                try {
-                    const logDate = parseISO(log.occurredDate);
-                    return isWithinInterval(logDate, { 
-                        start: startOfDay(appliedFilters.dateRange.from), 
-                        end: endOfDay(appliedFilters.dateRange.to || appliedFilters.dateRange.from) 
-                    });
-                } catch (e) { return false; }
-            });
-
-            return filteredLogs.map(log => {
-                return {
-                    id: log.id,
-                    userName: log.userName,
-                    permissions: log.activityType,
-                    timestamp: log.occurredDate,
-                };
-            });
-        }
 
         if (appliedFilters.reportType === 'definition-report') {
             const allItems = [...flattenDefinitions(definitions), ...drafts];
@@ -406,7 +383,6 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                                 </div>
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="user-activity" className="font-medium">User Activity Report</SelectItem>
                                 <SelectItem value="definition-report" className="font-medium">Definition Report</SelectItem>
                                 <SelectItem value="approval-report" className="font-medium">Approval Report</SelectItem>
                                 <SelectItem value="template-report" className="font-medium">Template Report</SelectItem>
@@ -462,13 +438,11 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
                     ) : (
                       <div className="flex-1 flex flex-col space-y-2 overflow-hidden animate-in fade-in duration-500">
                         <div className="flex items-center gap-2 px-2 shrink-0 h-8">
-                            {appliedFilters.reportType === 'user-activity' ? <Users className="h-4 w-4 text-primary" /> : 
-                             appliedFilters.reportType === 'definition-report' ? <Library className="h-4 w-4 text-primary" /> :
+                            {appliedFilters.reportType === 'definition-report' ? <Library className="h-4 w-4 text-primary" /> :
                              appliedFilters.reportType === 'approval-report' ? <ClipboardCheck className="h-4 w-4 text-primary" /> :
                              <LayoutTemplate className="h-4 w-4 text-primary" />}
                             <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">
-                                {appliedFilters.reportType === 'user-activity' ? 'User Activity Audit Ledger' :
-                                 appliedFilters.reportType === 'definition-report' ? 'Definition Report' :
+                                {appliedFilters.reportType === 'definition-report' ? 'Definition Report' :
                                  appliedFilters.reportType === 'approval-report' ? 'Approval Report' :
                                  'Template Report'}
                             </h3>
@@ -479,26 +453,7 @@ export default function ReportsDashboard({ users, definitions, drafts, activityL
 
                         <Card className="flex-1 rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white flex flex-col min-h-0">
                             <ScrollArea className="flex-1 w-full h-full">
-                                {appliedFilters.reportType === 'user-activity' ? (
-                                    <Table>
-                                        <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
-                                            <TableRow>
-                                                <ReportHeader label="User Account" id="userName" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.userName} onFilterChange={handleFilterChange} className="pl-6" options={getUniqueValues('userName')} />
-                                                <ReportHeader label="Permissions" id="permissions" currentSort={sortConfig} onSort={handleSort} filterValue={columnFilters.permissions} onFilterChange={handleFilterChange} options={getUniqueValues('permissions')} />
-                                                <ReportHeader label="Timestamp" id="timestamp" currentSort={sortConfig} onSort={handleSort} className="pr-6" filterType="none" />
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {paginatedData.map((d: any) => (
-                                                <TableRow key={d.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
-                                                    <TableCell className="pl-6 font-bold text-slate-900">{d.userName}</TableCell>
-                                                    <TableCell><Badge className="bg-indigo-50 text-indigo-700 font-bold border-indigo-100">{d.permissions}</Badge></TableCell>
-                                                    <TableCell className="pr-6 font-mono text-xs text-slate-500">{format(parseISO(d.timestamp), 'yyyy-MM-dd HH:mm')}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                ) : appliedFilters.reportType === 'definition-report' ? (
+                                {appliedFilters.reportType === 'definition-report' ? (
                                     <Table className="min-w-[3500px]">
                                         <TableHeader className="bg-slate-50 border-b sticky top-0 z-20">
                                             <TableRow>
