@@ -75,9 +75,7 @@ export default function Dashboard({
     };
 
     const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval && !getLatestFeedbackType(d));
-    const oneDayAgo = subDays(new Date(), 1);
-    const sentForApproval = safeDrafts.filter(d => d.isPendingApproval && d.submittedAt && isAfter(parseISO(d.submittedAt), oneDayAgo));
-    const pendingApproval = safeDrafts.filter(d => d.isPendingApproval && (!d.submittedAt || !isAfter(parseISO(d.submittedAt), oneDayAgo)));
+    const pendingApproval = safeDrafts.filter(d => d.isPendingApproval);
     
     const changesRequestedCount = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'change-request').length;
     const rejectedCount = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'rejection').length;
@@ -115,11 +113,6 @@ export default function Dashboard({
     const activeTemplatesCount = templates.filter(t => t.isActive).length;
     const inactiveTemplatesCount = templates.filter(t => !t.isActive).length;
 
-    const moduleChipData = Array.from(new Set(templates.map(t => t.module))).map(mod => ({
-      name: mod,
-      count: templates.filter(t => t.module === mod).length
-    }));
-
     const templateUsage = templates.map(t => {
       const uses = flatten(definitions).filter(d => d.templateId === t.id).length + 
                    safeDrafts.filter(d => d.templateId === t.id).length;
@@ -134,7 +127,6 @@ export default function Dashboard({
     return {
       total: allPublished.length + allArchived.length + safeDrafts.length,
       publishedCount: allPublished.length,
-      sentCount: sentForApproval.length,
       pendingCount: pendingApproval.length,
       draftsCount: draftOnly.length,
       changesRequestedCount,
@@ -145,7 +137,6 @@ export default function Dashboard({
       workloadData,
       activeTemplatesCount,
       inactiveTemplatesCount,
-      moduleChipData,
       templateUsage,
       totalUsers: users.length,
       activeUsers: users.filter(u => u.status === 'Active').length,
@@ -237,20 +228,17 @@ export default function Dashboard({
             </div>
             
             <div className="flex items-center gap-2 w-full">
-                {/* DRAFT STAGE - 1 box width */}
+                {/* DRAFT STAGE */}
                 <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" />
                 
                 <Arrow />
 
-                {/* SUBMISSION GROUP - 2 boxes width */}
-                <div className="flex items-center gap-2 flex-[2] p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
-                    <LifecycleBox label="Sent for Approval" value={metrics.sentCount} color="bg-[#F5F3FF] text-[#7E22CE] border-[#E9E3FF]" />
-                    <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" />
-                </div>
+                {/* SUBMISSION GROUP */}
+                <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" />
                 
                 <Arrow />
 
-                {/* OUTCOME GROUP - 3 boxes width */}
+                {/* REVIEW OUTCOME GROUP - Combined stages with standardized width */}
                 <div className="flex items-center gap-2 flex-[3] p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
                     <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" />
                     <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" />
@@ -259,7 +247,7 @@ export default function Dashboard({
 
                 <Arrow />
 
-                {/* ARCHIVE STAGE - 1 box width */}
+                {/* ARCHIVE STAGE */}
                 <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-[#F8FAFC] text-[#64748B] border-[#F1F5F9]" />
             </div>
           </Card>
@@ -447,7 +435,7 @@ export default function Dashboard({
           <div className="w-full">
               <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm">
                   <div className="flex items-center justify-between mb-10">
-                      <h3 className="text-xl font-bold text-slate-900">Template Usage Architecture</h3>
+                      <h3 className="text-xl font-bold text-slate-900">Template Usage Heatmap</h3>
                       <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{templates.length}</strong> active blueprints</span>
                   </div>
 
@@ -460,20 +448,6 @@ export default function Dashboard({
                           <p className="text-5xl font-black text-slate-400 mb-2">{metrics.inactiveTemplatesCount}</p>
                           <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Inactive/Legacy</p>
                       </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3 mb-12">
-                      {metrics.moduleChipData.map((mod, i) => {
-                          const color = getModuleColor(mod.name);
-                          return (
-                              <div key={mod.name} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-full shadow-sm">
-                                  <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
-                                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight">
-                                      {mod.name} · {mod.count}
-                                  </span>
-                              </div>
-                          );
-                      })}
                   </div>
 
                   <div className="space-y-8">
