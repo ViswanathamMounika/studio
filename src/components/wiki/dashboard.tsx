@@ -220,28 +220,38 @@ export default function Dashboard({
               <History className="h-3.5 w-3.5" />
               Definition Lifecycle
           </div>
-          <Card className="rounded-[28px] border-slate-100 bg-white p-6 shadow-sm overflow-hidden">
+          <Card className="rounded-[28px] border-slate-100 bg-white p-8 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between mb-8 px-2">
                 <h3 className="text-lg font-bold text-slate-900">Documentation Pipeline</h3>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> active units</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total <strong>{metrics.total}</strong> active documentation units</span>
             </div>
             
-            <div className="flex items-center gap-1.5 justify-between">
+            <div className="flex items-center gap-1.5 w-full">
+                {/* DRAFT STAGE */}
                 <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" isWide />
-                <Arrow />
-                <LifecycleBox label="Sent for Approval" value={metrics.sentCount} color="bg-[#F5F3FF] text-[#7E22CE] border-[#E9E3FF]" />
-                <Arrow />
-                <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" />
-                <Arrow />
                 
-                {/* Decision Outcomes Group (No internal arrows) */}
-                <div className="flex items-center gap-1.5 flex-[4.5] p-1.5 bg-slate-50/40 rounded-[24px] border border-dashed border-slate-200">
+                <Arrow />
+
+                {/* SUBMISSION STAGE */}
+                <LifecycleBox label="Sent for Approval" value={metrics.sentCount} color="bg-[#F5F3FF] text-[#7E22CE] border-[#E9E3FF]" />
+                
+                <Arrow />
+
+                {/* PENDING STAGE */}
+                <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" />
+                
+                <Arrow />
+
+                {/* OUTCOME STAGE (Dashed Container) */}
+                <div className="flex items-center gap-2 flex-[4] p-2 bg-slate-50/40 rounded-[28px] border border-dashed border-slate-200">
                     <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" />
                     <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" />
                     <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" isWide />
                 </div>
 
                 <Arrow />
+
+                {/* ARCHIVE STAGE */}
                 <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-[#F8FAFC] text-[#64748B] border-[#F1F5F9]" />
             </div>
           </Card>
@@ -501,10 +511,12 @@ export default function Dashboard({
                           <AlertTriangle className="h-5 w-5 text-[#B45309] shrink-0 mt-0.5" />
                           <div className="space-y-1">
                               <p className="text-sm font-bold text-[#B45309] leading-none">
-                                  {metrics.unusedTemplates.length} unused template flagged
+                                  {metrics.unusedTemplates.length} unused template{metrics.unusedTemplates.length !== 1 ? 's' : ''} flagged
                               </p>
                               <p className="text-[11px] font-medium text-[#B45309]/80 leading-relaxed">
-                                  Obsolete Legacy Blueprint — Active 101 days, 0 linked definitions. Candidate for deprecation.
+                                  {metrics.unusedTemplates.length > 0 
+                                    ? `Review recommended for the ${metrics.unusedTemplates.length} blueprint(s) with zero active associations. Streamlining templates reduces administrative overhead.`
+                                    : "All defined documentation templates are currently associated with active or draft definitions."}
                               </p>
                           </div>
                       </div>
