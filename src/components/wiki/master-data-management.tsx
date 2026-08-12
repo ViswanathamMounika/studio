@@ -291,7 +291,6 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                 <TableHeader className="bg-slate-50 border-b">
                                     <TableRow>
                                         <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-500 h-14">Record Name</TableHead>
-                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Internal Reference ID</TableHead>
                                         <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Status</TableHead>
                                         <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Actions</TableHead>
                                     </TableRow>
@@ -316,7 +315,6 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell><code className="text-[11px] font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded">{item.id}</code></TableCell>
                                                 <TableCell>
                                                     <Badge 
                                                         className={cn(
@@ -366,7 +364,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                     })}
                                     {filteredItems.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={4} className="h-64 text-center">
+                                            <TableCell colSpan={3} className="h-64 text-center">
                                                 <div className="flex flex-col items-center justify-center gap-3">
                                                     <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
                                                         <Database className="h-6 w-6 text-slate-300" />
