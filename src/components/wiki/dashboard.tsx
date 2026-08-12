@@ -645,7 +645,7 @@ export default function Dashboard({
 
       {/* DRILL-DOWN DIALOG */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden border-none rounded-[28px] shadow-2xl">
+        <DialogContent className="max-w-4xl h-[85vh] max-h-[85vh] flex flex-col p-0 overflow-hidden border-none rounded-[28px] shadow-2xl">
             <DialogHeader className="p-8 border-b bg-white shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -675,7 +675,7 @@ export default function Dashboard({
                 </div>
             </DialogHeader>
             
-            <div className="flex-1 min-h-0 bg-slate-50/30">
+            <div className="flex-1 min-h-0 bg-slate-50/30 overflow-hidden">
                 <ScrollArea className="h-full w-full">
                     <div className="p-8">
                         <div className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden overflow-x-auto">
