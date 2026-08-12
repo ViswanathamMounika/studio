@@ -163,9 +163,9 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             title: 'File Storage',
             key: 'FileStorage',
             icon: Folder,
-            fields: 4,
+            fields: 1,
             content: (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
+                <div className="grid grid-cols-1 gap-8 max-w-5xl">
                     <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Network Path</Label>
                         <Input 
@@ -173,84 +173,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             onChange={e => updateSettings({ fileStoragePath: e.target.value })}
                             className="rounded-xl h-11 bg-white border-slate-200 font-medium"
                         />
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 self-end h-11">
-                        <div className="flex flex-col">
-                            <span className="text-xs font-bold text-slate-700">Use Credentials</span>
-                            <span className="text-[9px] font-mono text-slate-400">UseCredentials</span>
-                        </div>
-                        <Switch checked={localConfig.settings.fileStorageEnabled} onCheckedChange={v => updateSettings({ fileStorageEnabled: v })} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Username</Label>
-                        <Input 
-                            value={localConfig.settings.fileStorageUser} 
-                            onChange={e => updateSettings({ fileStorageUser: e.target.value })}
-                            className="rounded-xl h-11 bg-white border-slate-200 font-medium"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Password</Label>
-                        <div className="relative">
-                            <Input 
-                                type={showPassword ? "text" : "password"}
-                                value={localConfig.settings.fileStoragePass} 
-                                onChange={e => updateSettings({ fileStoragePass: e.target.value })}
-                                className="rounded-xl h-11 bg-white border-slate-200 font-medium pr-10"
-                            />
-                            <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-slate-400 hover:text-indigo-600 transition-colors">
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )
-        },
-        {
-            id: 'lock-cleanup',
-            title: 'Lock Cleanup Settings',
-            key: 'LockCleanupSettings',
-            icon: Lock,
-            fields: 2,
-            content: (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400">Cleanup Interval</Label>
-                        <div className="relative">
-                            <Input 
-                                type="number" 
-                                value={localConfig.settings.lockCleanupInterval} 
-                                onChange={e => updateSettings({ lockCleanupInterval: parseInt(e.target.value) || 0 })}
-                                className="rounded-xl h-11 bg-white border-slate-200 font-black pr-20"
-                            />
-                            <span className="absolute right-4 top-3 text-[10px] font-bold text-slate-400 uppercase">minutes</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 self-end h-11">
-                        <div className="flex flex-col">
-                            <span className="text-xs font-bold text-slate-700">Enabled</span>
-                            <span className="text-[9px] font-mono text-slate-400">Enabled</span>
-                        </div>
-                        <Switch checked={localConfig.settings.lockCleanupEnabled} onCheckedChange={v => updateSettings({ lockCleanupEnabled: v })} />
-                    </div>
-                </div>
-            )
-        },
-        {
-            id: 'approval-settings',
-            title: 'Approval Settings',
-            key: 'ApprovalSettings',
-            icon: Check,
-            fields: 2,
-            content: (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400">Approval Requests Count</Label>
-                        <Input type="number" value={localConfig.settings.approvalRequestLimit} onChange={e => updateSettings({ approvalRequestLimit: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400">Approval History Count</Label>
-                        <Input type="number" value={localConfig.settings.approvalHistoryLimit} onChange={e => updateSettings({ approvalHistoryLimit: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
                     </div>
                 </div>
             )
@@ -602,7 +524,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             </ScrollArea>
 
             <Dialog open={isKeyModalOpen} onOpenChange={setIsKeyModalOpen}>
-                <DialogContent className="max-w-2xl rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
+                <DialogContent className="max-w-[500px] rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b bg-white flex items-center gap-4">
                         <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-inner">
                             {editingKeyEntry && localConfig.configKeys.some(k => k.id === editingKeyEntry.id) ? <Pencil className="h-5 w-5 text-indigo-600" /> : <Plus className="h-5 w-5 text-indigo-600" />}
