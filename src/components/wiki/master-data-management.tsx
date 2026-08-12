@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -69,7 +68,7 @@ const CATEGORY_LABELS: Record<MasterDataCategory, { label: string; icon: any; de
   versionStatuses: { label: 'Version Indicators', icon: History, description: 'Indicators for superseding or deprecated revisions.' }
 };
 
-// Define categories that are restricted from adding new records
+// Define categories that are restricted from adding new records and toggling status
 const IMMUTABLE_CATEGORIES: MasterDataCategory[] = ['definitionStatuses', 'versionStatuses'];
 
 export default function MasterDataManagement({ masterData, onSaveMasterData, onLogAction, definitions, drafts, templates }: MasterDataManagementProps) {
@@ -167,6 +166,8 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
     };
 
     const handleToggleStatus = (id: string, currentStatus: boolean) => {
+        if (IMMUTABLE_CATEGORIES.includes(activeCategory)) return;
+
         const item = masterData[activeCategory].find(i => i.id === id);
         if (!item) return;
 
@@ -227,7 +228,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                     {isCategoryRestricted && (
                         <div className="bg-amber-50 border border-amber-100 px-6 py-2.5 rounded-xl flex items-center gap-3">
                             <Lock className="h-4 w-4 text-amber-600" />
-                            <span className="text-[11px] font-black uppercase text-amber-700 tracking-wider">Status Definitions Locked</span>
+                            <span className="text-[11px] font-black uppercase text-amber-700 tracking-wider">Registry Entries Locked</span>
                         </div>
                     )}
                 </div>
@@ -341,37 +342,39 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                 </TableCell>
                                                 <TableCell className="text-right px-8">
                                                     <div className="flex justify-end gap-1">
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="icon" 
-                                                            className={cn("h-8 w-8 rounded-lg", item.isActive ? "text-slate-300 hover:text-amber-600 hover:bg-amber-50" : "text-emerald-300 hover:text-emerald-600 hover:bg-emerald-50")}
-                                                            onClick={() => handleToggleStatus(item.id, item.isActive)}
-                                                        >
-                                                            {item.isActive ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-                                                        </Button>
                                                         {!isCategoryRestricted && (
-                                                          <AlertDialog>
-                                                              <AlertDialogTrigger asChild>
-                                                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-red-50 rounded-lg">
-                                                                      <Trash2 className="h-4 w-4" />
-                                                                  </Button>
-                                                              </AlertDialogTrigger>
-                                                              <AlertDialogContent className="rounded-[32px] border-none p-10 shadow-2xl">
-                                                                  <AlertDialogHeader className="space-y-4">
-                                                                      <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
-                                                                          <Trash2 className="h-8 w-8 text-red-600" />
-                                                                      </div>
-                                                                      <AlertDialogTitle className="text-2xl font-bold text-slate-900">Confirm Deletion</AlertDialogTitle>
-                                                                      <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
-                                                                          Are you sure you want to permanently remove <strong>{item.name}</strong>? This will remove the reference from the global system registry.
-                                                                      </AlertDialogDescription>
-                                                                  </AlertDialogHeader>
-                                                                  <AlertDialogFooter className="mt-10 gap-3">
-                                                                      <AlertDialogCancel className="rounded-xl font-bold h-11 px-8">Cancel</AlertDialogCancel>
-                                                                      <AlertDialogAction onClick={() => handleDeleteRecord(item.id)} className="rounded-xl bg-red-600 hover:bg-red-700 font-bold h-11 px-8">Delete Record</AlertDialogAction>
-                                                                  </AlertDialogFooter>
-                                                              </AlertDialogContent>
-                                                          </AlertDialog>
+                                                          <>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className={cn("h-8 w-8 rounded-lg", item.isActive ? "text-slate-300 hover:text-amber-600 hover:bg-amber-50" : "text-emerald-300 hover:text-emerald-600 hover:bg-emerald-50")}
+                                                                onClick={() => handleToggleStatus(item.id, item.isActive)}
+                                                            >
+                                                                {item.isActive ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                                                            </Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-red-50 rounded-lg">
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent className="rounded-[32px] border-none p-10 shadow-2xl">
+                                                                    <AlertDialogHeader className="space-y-4">
+                                                                        <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
+                                                                            <Trash2 className="h-8 w-8 text-red-600" />
+                                                                        </div>
+                                                                        <AlertDialogTitle className="text-2xl font-bold text-slate-900">Confirm Deletion</AlertDialogTitle>
+                                                                        <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
+                                                                            Are you sure you want to permanently remove <strong>{item.name}</strong>? This will remove the reference from the global system registry.
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter className="mt-10 gap-3">
+                                                                        <AlertDialogCancel className="rounded-xl font-bold h-11 px-8">Cancel</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => handleDeleteRecord(item.id)} className="rounded-xl bg-red-600 hover:bg-red-700 font-bold h-11 px-8">Delete Record</AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                          </>
                                                         )}
                                                     </div>
                                                 </TableCell>
