@@ -27,7 +27,7 @@ import {
     AccordionContent, 
     AccordionItem, 
     AccordionTrigger 
-} from "@/accordion";
+} from "@/components/ui/accordion";
 import { 
     Folder, 
     Lock, 
@@ -35,8 +35,6 @@ import {
     Search, 
     Save, 
     Plus, 
-    Eye, 
-    EyeOff,
     Terminal,
     Settings2,
     ShieldCheck,
@@ -220,13 +218,13 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
                     <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Global Security API URL</Label>
-                        <div className="h-11 flex items-center px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-medium text-slate-500 cursor-not-allowed">
+                        <div className="h-11 flex items-center px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-medium text-slate-500">
                             {localConfig.settings.globalSecurityApiUrl}
                         </div>
                     </div>
                     <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Global Security App ID</Label>
-                        <div className="h-11 flex items-center px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-bold text-slate-500 cursor-not-allowed">
+                        <div className="h-11 flex items-center px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-bold text-slate-500">
                             {localConfig.settings.globalSecurityAppId}
                         </div>
                     </div>
