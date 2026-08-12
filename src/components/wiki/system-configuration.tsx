@@ -242,20 +242,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
         );
     }, [prefSearch]);
 
-    const handleOpenAddModal = () => {
-        const nextIdNum = Math.max(...localConfig.configKeys.map(k => parseInt(k.id) || 0), 0) + 1;
-        setEditingKeyEntry({
-            id: nextIdNum.toString(),
-            key: '',
-            value: '',
-            type: 'int',
-            description: '',
-            effectiveFrom: new Date().toISOString(),
-            active: true
-        });
-        setIsKeyModalOpen(true);
-    };
-
     const handleEditParam = (item: ConfigKey) => {
         setEditingKeyEntry({ ...item });
         setIsKeyModalOpen(true);
@@ -423,10 +409,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                         className="pl-9 h-10 rounded-xl bg-white border-slate-200 shadow-sm"
                                     />
                                 </div>
-                                <Button onClick={handleOpenAddModal} className="bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white rounded-xl h-10 px-6 gap-2 font-bold shadow-md transition-all active:scale-95">
-                                    <Plus className="h-4 w-4" />
-                                    Add Custom
-                                </Button>
                             </div>
 
                             <Card className="rounded-[28px] border-slate-200 shadow-sm overflow-hidden bg-white">
