@@ -279,8 +279,7 @@ export default function Dashboard({
             'Name': u.name,
             'Email': u.email,
             'Role': u.role,
-            'Status': u.status,
-            'Department': u.department || '—'
+            'Status': u.status
           }));
         } else if (drillDownType === 'templates') {
           exportData = drillDownItems.map(t => ({
@@ -694,7 +693,6 @@ export default function Dashboard({
                                           <>
                                             <TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">User Identity</TableHead>
                                             <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Role</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Department</TableHead>
                                             <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Status</TableHead>
                                           </>
                                         ) : (
@@ -750,7 +748,6 @@ export default function Dashboard({
                                                   </div>
                                                 </TableCell>
                                                 <TableCell><Badge variant="outline" className="text-[10px] font-bold uppercase">{item.role}</Badge></TableCell>
-                                                <TableCell><span className="text-xs font-medium text-slate-600">{item.department || 'General'}</span></TableCell>
                                                 <TableCell className="text-right px-6">
                                                   <Badge variant={item.status === 'Active' ? 'success' : 'secondary'} className="text-[10px] uppercase font-bold">{item.status}</Badge>
                                                 </TableCell>
