@@ -69,6 +69,9 @@ const CATEGORY_LABELS: Record<MasterDataCategory, { label: string; icon: any; de
   versionStatuses: { label: 'Version Indicators', icon: History, description: 'Indicators for superseding or deprecated revisions.' }
 };
 
+// Define categories that are restricted from adding new records
+const IMMUTABLE_CATEGORIES: MasterDataCategory[] = ['definitionStatuses', 'versionStatuses'];
+
 export default function MasterDataManagement({ masterData, onSaveMasterData, onLogAction, definitions, drafts, templates }: MasterDataManagementProps) {
     const [activeCategory, setActiveCategory] = useState<MasterDataCategory>('modules');
     const [searchQuery, setSearchQuery] = useState('');
@@ -203,6 +206,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
 
     const activeLabelConfig = CATEGORY_LABELS[activeCategory];
     const ActiveIcon = activeLabelConfig.icon;
+    const isCategoryRestricted = IMMUTABLE_CATEGORIES.includes(activeCategory);
 
     return (
         <TooltipProvider>
@@ -212,10 +216,18 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Master Data Management</h1>
                         <p className="text-muted-foreground font-medium">Govern global system constants, business modules, and reference categories.</p>
                     </div>
-                    <Button onClick={handleAddItem} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
-                        <LayoutGrid className="mr-2 h-4 w-4" />
-                        Manage Category
-                    </Button>
+                    {!isCategoryRestricted && (
+                        <Button onClick={handleAddItem} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
+                            <LayoutGrid className="mr-2 h-4 w-4" />
+                            Manage Category
+                        </Button>
+                    )}
+                    {isCategoryRestricted && (
+                        <div className="bg-amber-50 border border-amber-100 px-6 py-2.5 rounded-xl flex items-center gap-3">
+                            <Lock className="h-4 w-4 text-amber-600" />
+                            <span className="text-[11px] font-black uppercase text-amber-700 tracking-wider">Status Definitions Locked</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-8 flex-1 flex flex-col min-h-0">
@@ -335,28 +347,30 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                         >
                                                             {item.isActive ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                                                         </Button>
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-red-50 rounded-lg">
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </AlertDialogTrigger>
-                                                            <AlertDialogContent className="rounded-[32px] border-none p-10 shadow-2xl">
-                                                                <AlertDialogHeader className="space-y-4">
-                                                                    <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
-                                                                        <Trash2 className="h-8 w-8 text-red-600" />
-                                                                    </div>
-                                                                    <AlertDialogTitle className="text-2xl font-bold text-slate-900">Confirm Deletion</AlertDialogTitle>
-                                                                    <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
-                                                                        Are you sure you want to permanently remove <strong>{item.name}</strong>? This will remove the reference from the global system registry.
-                                                                    </AlertDialogDescription>
-                                                                </AlertDialogHeader>
-                                                                <AlertDialogFooter className="mt-10 gap-3">
-                                                                    <AlertDialogCancel className="rounded-xl font-bold h-11 px-8">Cancel</AlertDialogCancel>
-                                                                    <AlertDialogAction onClick={() => handleDeleteRecord(item.id)} className="rounded-xl bg-red-600 hover:bg-red-700 font-bold h-11 px-8">Delete Record</AlertDialogAction>
-                                                                </AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
+                                                        {!isCategoryRestricted && (
+                                                          <AlertDialog>
+                                                              <AlertDialogTrigger asChild>
+                                                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-red-50 rounded-lg">
+                                                                      <Trash2 className="h-4 w-4" />
+                                                                  </Button>
+                                                              </AlertDialogTrigger>
+                                                              <AlertDialogContent className="rounded-[32px] border-none p-10 shadow-2xl">
+                                                                  <AlertDialogHeader className="space-y-4">
+                                                                      <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
+                                                                          <Trash2 className="h-8 w-8 text-red-600" />
+                                                                      </div>
+                                                                      <AlertDialogTitle className="text-2xl font-bold text-slate-900">Confirm Deletion</AlertDialogTitle>
+                                                                      <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
+                                                                          Are you sure you want to permanently remove <strong>{item.name}</strong>? This will remove the reference from the global system registry.
+                                                                      </AlertDialogDescription>
+                                                                  </AlertDialogHeader>
+                                                                  <AlertDialogFooter className="mt-10 gap-3">
+                                                                      <AlertDialogCancel className="rounded-xl font-bold h-11 px-8">Cancel</AlertDialogCancel>
+                                                                      <AlertDialogAction onClick={() => handleDeleteRecord(item.id)} className="rounded-xl bg-red-600 hover:bg-red-700 font-bold h-11 px-8">Delete Record</AlertDialogAction>
+                                                                  </AlertDialogFooter>
+                                                              </AlertDialogContent>
+                                                          </AlertDialog>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -420,16 +434,17 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                     <div className="p-5 min-h-[160px] bg-white border border-slate-200 rounded-[24px] shadow-inner flex flex-wrap gap-2.5 content-start">
                                         {localItems.map(item => {
                                             const referred = isItemReferred(item, modalCategory);
+                                            const isModalCategoryRestricted = IMMUTABLE_CATEGORIES.includes(modalCategory);
                                             return (
                                                 <Badge 
                                                     key={item.id} 
                                                     className={cn(
                                                         "h-9 px-3.5 rounded-xl gap-2 font-bold text-sm transition-all group",
-                                                        referred ? "bg-slate-100 text-slate-400 border-slate-200" : "bg-indigo-50 text-indigo-700 border-indigo-100"
+                                                        (referred || isModalCategoryRestricted) ? "bg-slate-100 text-slate-400 border-slate-200" : "bg-indigo-50 text-indigo-700 border-indigo-100"
                                                     )}
                                                 >
                                                     {item.name}
-                                                    {!referred && (
+                                                    {(!referred && !isModalCategoryRestricted) && (
                                                         <button 
                                                             onClick={() => removeLocalRecord(item.id)}
                                                             className="hover:text-red-500 transition-colors"
@@ -437,7 +452,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                             <X className="h-3.5 w-3.5" />
                                                         </button>
                                                     )}
-                                                    {referred && <Lock className="h-3 w-3 opacity-40" />}
+                                                    {(referred || isModalCategoryRestricted) && <Lock className="h-3 w-3 opacity-40" />}
                                                 </Badge>
                                             );
                                         })}
@@ -450,28 +465,39 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                     </div>
                                 </div>
 
-                                <div className="space-y-2.5">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">Add New Identity</Label>
-                                    <div className="relative">
-                                        <Input 
-                                            value={newItemName}
-                                            onChange={e => setNewItemName(e.target.value)}
-                                            onKeyDown={handleAddRecordChip}
-                                            placeholder="Enter identity name and press Enter..."
-                                            className="h-12 rounded-2xl border-slate-200 bg-white font-bold pl-4 pr-32 shadow-sm text-base focus-visible:ring-primary/20"
-                                        />
-                                        <Button 
-                                            variant="ghost" 
-                                            size="sm" 
-                                            className="absolute right-2 top-2 h-8 rounded-xl font-black uppercase text-[10px] text-primary hover:bg-primary/5 px-4"
-                                            onClick={() => handleAddRecordChip()}
-                                            disabled={!newItemName.trim()}
-                                        >
-                                            Append Chip
-                                        </Button>
+                                {!IMMUTABLE_CATEGORIES.includes(modalCategory) && (
+                                    <div className="space-y-2.5">
+                                        <Label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">Add New Identity</Label>
+                                        <div className="relative">
+                                            <Input 
+                                                value={newItemName}
+                                                onChange={e => setNewItemName(e.target.value)}
+                                                onKeyDown={handleAddRecordChip}
+                                                placeholder="Enter identity name and press Enter..."
+                                                className="h-12 rounded-2xl border-slate-200 bg-white font-bold pl-4 pr-32 shadow-sm text-base focus-visible:ring-primary/20"
+                                            />
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="absolute right-2 top-2 h-8 rounded-xl font-black uppercase text-[10px] text-primary hover:bg-primary/5 px-4"
+                                                onClick={() => handleAddRecordChip()}
+                                                disabled={!newItemName.trim()}
+                                            >
+                                                Append Chip
+                                            </Button>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 italic px-1">Newly appended chips will be finalized once you click the sync button.</p>
                                     </div>
-                                    <p className="text-[10px] text-slate-400 italic px-1">Newly appended chips will be finalized once you click the sync button.</p>
-                                </div>
+                                )}
+                                
+                                {IMMUTABLE_CATEGORIES.includes(modalCategory) && (
+                                    <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-3">
+                                        <Info className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                                        <p className="text-xs text-amber-700 leading-relaxed">
+                                            The <span className="font-bold">{CATEGORY_LABELS[modalCategory].label}</span> category is used for core platform logic. Creation of new statuses is restricted to maintain lifecycle integrity.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
