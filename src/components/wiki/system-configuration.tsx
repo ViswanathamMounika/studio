@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -78,7 +77,9 @@ const KEY_DISPLAY_NAMES: Record<string, string> = {
     'DATA_PREVIEW_COUNT': 'Data Preview Row Limit',
     'DEF_RECENT_COUNT': 'Recent Definitions Count',
     'INITIAL_DEF_COUNT': 'Initial Definition Load Count',
-    'ACTIVITY_LOGS_GRID_RECORDS_COUNT': 'Activity Log Records Per Page'
+    'ACTIVITY_LOGS_GRID_RECORDS_COUNT': 'Activity Log Records Per Page',
+    'DASHBOARD_CHART_DAY_THRESHOLD': 'Dashboard Chart Daily Limit (Days)',
+    'DASHBOARD_CHART_WEEK_THRESHOLD': 'Dashboard Chart Weekly Limit (Days)'
 };
 
 export default function SystemConfiguration({ config, onSaveConfig, onLogAction }: SystemConfigurationProps) {
