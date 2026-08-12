@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -26,7 +27,7 @@ import {
     AccordionContent, 
     AccordionItem, 
     AccordionTrigger 
-} from "@/components/ui/accordion";
+} from "@/accordion";
 import { 
     Folder, 
     Lock, 
@@ -84,7 +85,6 @@ const KEY_DISPLAY_NAMES: Record<string, string> = {
 
 export default function SystemConfiguration({ config, onSaveConfig, onLogAction }: SystemConfigurationProps) {
     const [localConfig, setLocalConfig] = useState<SystemConfigurationState>(config);
-    const [showPassword, setShowPassword] = useState(false);
     const [configSearch, setConfigSearch] = useState('');
     const [prefSearch, setPrefSearch] = useState('');
     
@@ -192,7 +192,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                     <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 self-end h-11">
                         <div className="flex flex-col">
                             <span className="text-xs font-bold text-slate-700">Enabled</span>
-                            <span className="text-[9px] font-mono text-slate-400">Enabled</span>
+                            <span className="text-[9px] font-mono text-slate-400">Search Sync Active</span>
                         </div>
                         <Switch checked={localConfig.settings.searchSyncEnabled} onCheckedChange={v => updateSettings({ searchSyncEnabled: v })} />
                     </div>
@@ -220,19 +220,15 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
                     <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Global Security API URL</Label>
-                        <Input 
-                            value={localConfig.settings.globalSecurityApiUrl} 
-                            onChange={e => updateSettings({ globalSecurityApiUrl: e.target.value })}
-                            className="rounded-xl h-11 bg-white border-slate-200 font-medium"
-                        />
+                        <div className="h-11 flex items-center px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-medium text-slate-500 cursor-not-allowed">
+                            {localConfig.settings.globalSecurityApiUrl}
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Global Security App ID</Label>
-                        <Input 
-                            value={localConfig.settings.globalSecurityAppId} 
-                            onChange={e => updateSettings({ globalSecurityAppId: e.target.value })}
-                            className="rounded-xl h-11 bg-white border-slate-200 font-bold"
-                        />
+                        <div className="h-11 flex items-center px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-bold text-slate-500 cursor-not-allowed">
+                            {localConfig.settings.globalSecurityAppId}
+                        </div>
                     </div>
                 </div>
             )
