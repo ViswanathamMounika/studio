@@ -134,9 +134,12 @@ export const initialMasterData: MasterDataState = {
     { id: 'ds5', name: 'Rejected', isActive: true },
   ],
   versionStatuses: [
-    { id: 'vs1', name: 'Current', isActive: true },
-    { id: 'vs2', name: 'Superseded', isActive: true },
-    { id: 'vs3', name: 'Deprecated', isActive: true },
+    { id: 'vs1', name: 'Draft', isActive: true },
+    { id: 'vs2', name: 'Pending Approval', isActive: true },
+    { id: 'vs3', name: 'Published', isActive: true },
+    { id: 'vs4', name: 'Rejected', isActive: true },
+    { id: 'vs5', name: 'Sent back for changes', isActive: true },
+    { id: 'vs6', name: 'Deleted', isActive: true },
   ]
 };
 
