@@ -45,8 +45,16 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const modules = useMemo(() => {
-    return masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Core'];
-  }, [masterData]);
+    // For existing definitions, we show active modules PLUS the one currently assigned 
+    // even if it was marked as inactive (legacy support).
+    const activeModules = masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
+    
+    if (definition.module && !activeModules.includes(definition.module)) {
+        return [...activeModules, definition.module].sort();
+    }
+    
+    return activeModules;
+  }, [masterData, definition.module]);
 
   const selectedTemplate = useMemo(() => (templates || initialTemplates).find(t => t.id === definition.templateId) || (templates || initialTemplates)[0], [definition.templateId, templates]);
 

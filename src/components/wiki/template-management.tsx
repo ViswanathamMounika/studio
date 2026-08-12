@@ -109,8 +109,15 @@ export default function TemplateManagement({ templates, onSaveTemplates, onLogAc
   const { toast } = useToast();
 
   const moduleOptions = useMemo(() => {
-    return masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Core'];
-  }, [masterData]);
+    // For existing templates, we show active modules PLUS the one currently assigned
+    const activeModules = masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
+    
+    if (currentTemplate.module && !activeModules.includes(currentTemplate.module)) {
+        return [...activeModules, currentTemplate.module].sort();
+    }
+
+    return activeModules;
+  }, [masterData, currentTemplate.module]);
 
   const handleCreateNew = () => {
     setIsEditing(false);
