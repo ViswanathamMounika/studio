@@ -307,7 +307,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                     <TableRow>
                                         <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-500 h-14">Record Name</TableHead>
                                         <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Status</TableHead>
-                                        <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Actions</TableHead>
+                                        {!isCategoryRestricted && <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-500">Actions</TableHead>}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -340,10 +340,9 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                         {item.isActive ? 'Active' : 'Inactive'}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-right px-8">
-                                                    <div className="flex justify-end gap-1">
-                                                        {!isCategoryRestricted && (
-                                                          <>
+                                                {!isCategoryRestricted && (
+                                                    <TableCell className="text-right px-8">
+                                                        <div className="flex justify-end gap-1">
                                                             <Button 
                                                                 variant="ghost" 
                                                                 size="icon" 
@@ -374,10 +373,9 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                                     </AlertDialogFooter>
                                                                 </AlertDialogContent>
                                                             </AlertDialog>
-                                                          </>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
+                                                        </div>
+                                                    </TableCell>
+                                                )}
                                             </TableRow>
                                         );
                                     })}
