@@ -42,7 +42,7 @@ type NewDefinitionModalProps = {
 
 export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [], isAdmin, masterData, systemConfig }: NewDefinitionModalProps) {
   const [name, setName] = useState('');
-  const [module, setModule] = useState('Core');
+  const [module, setModule] = useState('Other');
   const [keywords, setKeywords] = useState<string[]>([]);
   const [currentKeyword, setCurrentKeyword] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -54,7 +54,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const { toast } = useToast();
 
   const modules = useMemo(() => {
-    return masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Core'];
+    return masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
   }, [masterData]);
 
   const selectedTemplate = useMemo(() => 
@@ -64,7 +64,7 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   useEffect(() => {
     if (open) {
       setName(initialData?.name || '');
-      setModule(initialData?.module || 'Core');
+      setModule(initialData?.module || 'Other');
       setKeywords(initialData?.keywords || []);
       setAttachments(initialData?.attachments || []);
       

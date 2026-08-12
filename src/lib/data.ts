@@ -105,10 +105,7 @@ export const initialMasterData: MasterDataState = {
     { id: 'm2', name: 'Claims', isActive: true, description: 'Financial adjudication and processing.' },
     { id: 'm3', name: 'Provider', isActive: true, description: 'Network and contract management.' },
     { id: 'm4', name: 'Member', isActive: true, description: 'Eligibility and benefits.' },
-    { id: 'm5', name: 'Core', isActive: true, description: 'Cross-functional system reference.' },
-    { id: 'm6', name: 'Infrastructure', isActive: true },
-    { id: 'm7', name: 'Quality', isActive: true },
-    { id: 'm8', name: 'Compliance', isActive: true },
+    { id: 'm5', name: 'Other', isActive: true, description: 'General or miscellaneous documentation categories.' },
   ],
   sourcesOfTruth: [
     { id: 's1', name: 'EzCAP', isActive: true },
@@ -203,7 +200,7 @@ export const initialTemplates: Template[] = [
     id: '1',
     name: 'Standard Definition',
     description: 'Default MPM Wiki definition structure',
-    module: 'Core',
+    module: 'Other',
     isDefault: true,
     isActive: true,
     sections: [
@@ -248,7 +245,7 @@ export const initialTemplates: Template[] = [
     id: '3',
     name: 'Technical API Specification',
     description: 'Documentation blueprint for system integration endpoints and data mapping.',
-    module: 'Core',
+    module: 'Other',
     isDefault: false,
     isActive: true,
     sections: [
@@ -299,7 +296,7 @@ export const initialTemplates: Template[] = [
     id: '7',
     name: 'HEDIS Quality Measure',
     description: 'Documentation for clinical quality reporting and NCQA metrics.',
-    module: 'Quality',
+    module: 'Other',
     isDefault: false,
     isActive: true,
     sections: [
@@ -313,7 +310,7 @@ export const initialTemplates: Template[] = [
     id: '8',
     name: 'Infrastructure Configuration',
     description: 'Registry for system environments, servers, and technical endpoints.',
-    module: 'Infrastructure',
+    module: 'Other',
     isDefault: false,
     isActive: true,
     sections: [
@@ -342,7 +339,7 @@ const baselineRevision = (name: string, desc: string, date: string = '2023-01-01
         name,
         description: desc,
         keywords: [],
-        module: 'System',
+        module: 'Other',
         isArchived: false,
         supportingTables: [],
         attachments: [],
@@ -477,7 +474,7 @@ export const initialDefinitions: Definition[] = [
   {
     id: '7',
     name: 'Quality Metrics',
-    module: 'Quality',
+    module: 'Other',
     keywords: [],
     description: '',
     revisions: [],
@@ -489,7 +486,7 @@ export const initialDefinitions: Definition[] = [
       {
         id: '7.1.1',
         name: 'Breast Cancer Screening (BCS)',
-        module: 'Quality',
+        module: 'Other',
         templateId: '7',
         keywords: ['HEDIS', 'HMO', 'Quality'],
         description: '<p>HEDIS measure for breast cancer screening compliance.</p>',
@@ -509,7 +506,7 @@ export const initialDefinitions: Definition[] = [
   {
     id: '8',
     name: 'System Infrastructure',
-    module: 'Infrastructure',
+    module: 'Other',
     keywords: [],
     description: '',
     revisions: [],
@@ -521,7 +518,7 @@ export const initialDefinitions: Definition[] = [
       {
         id: '8.1.1',
         name: 'SQL Production Cluster',
-        module: 'Infrastructure',
+        module: 'Other',
         templateId: '8',
         keywords: ['DB', 'SQL', 'Server'],
         description: '<p>Core production SQL server environment.</p>',

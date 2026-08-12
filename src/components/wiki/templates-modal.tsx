@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -31,7 +30,7 @@ export default function TemplatesModal({ open, onOpenChange, onUseTemplate, mana
   const handleUseTemplateInternal = (templateId: string, templateName: string) => {
     onUseTemplate({
       name: `New ${templateName}`,
-      module: 'Core',
+      module: 'Other',
     }, templateId);
   };
 
