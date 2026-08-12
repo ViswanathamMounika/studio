@@ -55,8 +55,6 @@ export default function AppHeader({
     switch (activeView) {
       case 'dashboard':
         return 'Admin Dashboard';
-      case 'reports':
-        return 'Reports';
       case 'definitions':
         return 'MPM Data Definitions';
       case 'activity-logs':

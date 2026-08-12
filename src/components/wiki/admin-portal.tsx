@@ -31,13 +31,6 @@ export default function AdminPortal({ onNavigate }: AdminPortalProps) {
             color: 'text-indigo-600 bg-indigo-50 border-indigo-100'
         },
         {
-            id: 'reports',
-            label: 'Reports',
-            description: 'Generate and export detailed audits for user engagement, library growth, and workflow performance.',
-            icon: PieChart,
-            color: 'text-blue-600 bg-blue-50 border-blue-100'
-        },
-        {
             id: 'approval-workflow',
             label: 'Approvals',
             description: 'Govern the documentation lifecycle by reviewing, approving, or requesting changes for submissions.',

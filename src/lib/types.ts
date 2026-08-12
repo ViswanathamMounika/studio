@@ -192,8 +192,7 @@ export type View =
   | 'user-management' 
   | 'master-data-management'
   | 'system-configuration'
-  | 'dashboard'
-  | 'reports';
+  | 'dashboard';
 
 export type ActivityType = 
   | 'Definition Created'

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -85,7 +84,7 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
     }
 
     const isAdminConsoleActive = (view: View) => {
-        return ['dashboard', 'reports', 'master-data-management', 'user-management', 'system-configuration'].includes(view);
+        return ['dashboard', 'master-data-management', 'user-management', 'system-configuration'].includes(view);
     };
 
     const isDefinitionsSectionActive = activeView === 'definitions' || activeView === 'approval-workflow' || activeView === 'template-management' || activeView === 'activity-logs' || isAdminConsoleActive(activeView);
@@ -227,16 +226,6 @@ export default function AppSidebar({ activeView, onNavigate, isAdmin, onToggleAd
                                                                 >
                                                                     <LayoutDashboard className="h-3 w-3 mr-1.5" />
                                                                     Dashboard
-                                                                </SidebarMenuSubButton>
-                                                            </SidebarMenuSubItem>
-                                                            <SidebarMenuSubItem>
-                                                                <SidebarMenuSubButton 
-                                                                    isActive={activeView === 'reports'}
-                                                                    onClick={() => handleNavigate('reports')}
-                                                                    className="h-7 text-[11px]"
-                                                                >
-                                                                    <PieChart className="h-3 w-3 mr-1.5" />
-                                                                    Reports
                                                                 </SidebarMenuSubButton>
                                                             </SidebarMenuSubItem>
                                                             <SidebarMenuSubItem>

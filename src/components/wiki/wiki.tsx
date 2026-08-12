@@ -39,7 +39,6 @@ const SecurityManagement = dynamic(() => import('@/components/wiki/user-manageme
 const MasterDataManagement = dynamic(() => import('@/components/wiki/master-data-management'), { ssr: false });
 const SystemConfiguration = dynamic(() => import('@/components/wiki/system-configuration'), { ssr: false });
 const Dashboard = dynamic(() => import('@/components/wiki/dashboard'), { ssr: false });
-const ReportsDashboard = dynamic(() => import('@/components/wiki/reports'), { ssr: false });
 
 type ViewingMode = 'live' | 'draft';
 const LOCK_TIMEOUT_MINUTES = 30;
@@ -189,7 +188,7 @@ export default function Wiki() {
   const handleNavigate = useCallback((view: View, shouldUpdateUrl = true) => {
     const userRole = currentUser.role;
 
-    const superAdminViews = ['dashboard', 'reports', 'master-data-management', 'user-management', 'system-configuration'];
+    const superAdminViews = ['dashboard', 'master-data-management', 'user-management', 'system-configuration'];
     if (superAdminViews.includes(view) && userRole !== 'Super Admin') {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Access to the Admin Console is restricted to Super Administrators.' });
         return;
@@ -719,19 +718,6 @@ export default function Wiki() {
         case 'template-management': return <div className="p-6"><TemplateManagement templates={safeTemplates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
         case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} definitions={safeDefs} templates={safeTemplates} drafts={safeDrafts} /></div>;
         case 'system-configuration': return <div className="p-6 h-full"><SystemConfiguration config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
-        case 'reports': return (
-            <div className="p-0 h-full overflow-hidden">
-                <ReportsDashboard 
-                    users={safeUsers} 
-                    definitions={safeDefs} 
-                    drafts={safeDrafts} 
-                    activityLogs={Array.isArray(activityLogs) ? activityLogs : []} 
-                    approvalHistory={Array.isArray(approvalHistory) ? approvalHistory : []} 
-                    templates={safeTemplates}
-                    masterData={masterData}
-                />
-            </div>
-        );
         case 'user-management': return (
             <div className="p-6 h-full">
                 <SecurityManagement 
