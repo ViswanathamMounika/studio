@@ -27,7 +27,8 @@ import {
     Database,
     Zap,
     Download,
-    Search
+    Search,
+    User2
 } from 'lucide-react';
 import type { Definition, UserAccount, Template, View, ApprovalHistoryEntry, ActivityLog, DiscussionMessage } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -67,7 +68,7 @@ type DashboardProps = {
   activityLogs?: ActivityLog[];
 };
 
-type LifecycleStage = 'Draft' | 'Pending Approval' | 'Changes Requested' | 'Rejected' | 'Published' | 'Archived';
+type DrillDownType = 'definitions' | 'users' | 'templates';
 
 export default function Dashboard({ 
   definitions, 
@@ -82,8 +83,11 @@ export default function Dashboard({
   const [chartStartDate, setChartStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [chartEndDate, setChartEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   
-  const [selectedStage, setSelectedStage] = useState<LifecycleStage | null>(null);
-  const [isDialogOpen, setIsStageDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [drillDownTitle, setDrillDownTitle] = useState('');
+  const [drillDownType, setDrillDownType] = useState<DrillDownType>('definitions');
+  const [drillDownItems, setDrillDownItems] = useState<any[]>([]);
+
   const { toast } = useToast();
 
   const metrics = useMemo(() => {
@@ -106,13 +110,13 @@ export default function Dashboard({
     const rejectedList = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'rejection');
     
     const sixMonthsAgo = subDays(new Date(), 180);
-    const stalePublished = allPublished.filter(d => {
+    const stalePublishedList = allPublished.filter(d => {
         const lastRevDate = d.revisions[0] ? parseISO(d.revisions[0].date) : parseISO('2000-01-01');
         return lastRevDate < sixMonthsAgo;
     });
 
     const sixtyDaysAgo = subDays(new Date(), 60);
-    const orphans = draftOnlyList.filter(d => {
+    const orphansList = draftOnlyList.filter(d => {
         const date = d.submittedAt ? parseISO(d.submittedAt) : (d.revisions?.[0]?.date ? parseISO(d.revisions[0].date) : parseISO('2000-01-01'));
         return date < sixtyDaysAgo;
     });
@@ -135,9 +139,6 @@ export default function Dashboard({
         Total: stats.approved + stats.requested + stats.rejected
     })).sort((a, b) => b.Total - a.Total);
 
-    const activeTemplatesCount = templates.filter(t => t.isActive).length;
-    const inactiveTemplatesCount = templates.filter(t => !t.isActive).length;
-
     const templateUsage = templates.map(t => {
       const uses = flatten(definitions).filter(d => d.templateId === t.id).length + 
                    safeDrafts.filter(d => d.templateId === t.id).length;
@@ -145,9 +146,13 @@ export default function Dashboard({
         id: t.id,
         name: t.name,
         module: t.module,
+        isActive: t.isActive,
         uses
       };
-    }).sort((a, b) => b.uses - a.uses).slice(0, 5);
+    }).sort((a, b) => b.uses - a.uses);
+
+    const activeTemplatesCount = templates.filter(t => t.isActive).length;
+    const inactiveTemplatesCount = templates.filter(t => !t.isActive).length;
 
     return {
       total: allPublished.length + allArchived.length + safeDrafts.length,
@@ -157,8 +162,8 @@ export default function Dashboard({
       changesRequestedCount: changesRequestedList.length,
       rejectedCount: rejectedList.length,
       archivedCount: allArchived.length,
-      stalePublishedCount: stalePublished.length,
-      orphanDraftsCount: orphans.length,
+      stalePublishedCount: stalePublishedList.length,
+      orphanDraftsCount: orphansList.length,
       workloadData,
       activeTemplatesCount,
       inactiveTemplatesCount,
@@ -172,14 +177,21 @@ export default function Dashboard({
           { id: 'ap', label: 'Approver', desc: 'Reviews & publishes', icon: 'AP', count: users.filter(u => u.role === 'Approver').length, color: 'text-purple-600 bg-purple-50' },
           { id: 'ed', label: 'Editor', desc: 'Creates definitions', icon: 'ED', count: users.filter(u => u.role === 'Admin' || u.role === 'Standard User').length, color: 'text-blue-600 bg-blue-50' }
       ],
-      // Lists for the drill-down
       lists: {
         'Draft': draftOnlyList,
         'Pending Approval': pendingApprovalList,
         'Changes Requested': changesRequestedList,
         'Rejected': rejectedList,
         'Published': allPublished,
-        'Archived': allArchived
+        'Archived': allArchived,
+        'Stale Published': stalePublishedList,
+        'Orphan Drafts': orphansList,
+        'Total Users': users,
+        'Active Users': users.filter(u => u.status === 'Active'),
+        'Inactive Users': users.filter(u => u.status === 'Inactive'),
+        'Super Admin': users.filter(u => u.role === 'Super Admin'),
+        'Approver': users.filter(u => u.role === 'Approver'),
+        'Editor': users.filter(u => u.role === 'Admin' || u.role === 'Standard User')
       }
     };
   }, [definitions, drafts, users, templates, approvalHistory]);
@@ -243,31 +255,48 @@ export default function Dashboard({
     }
   }, [activityLogs, chartStartDate, chartEndDate]);
 
-  const handleStageClick = (stage: LifecycleStage) => {
-    setSelectedStage(stage);
-    setIsStageDialogOpen(true);
+  const handleDrillDown = (title: string, type: DrillDownType, items: any[]) => {
+    setDrillDownTitle(title);
+    setDrillDownType(type);
+    setDrillDownItems(items);
+    setIsDialogOpen(true);
   };
 
   const handleDownloadAudit = async () => {
-    if (!selectedStage) return;
-    const list = metrics.lists[selectedStage];
-    
     try {
         const XLSX = await import('xlsx');
-        const exportData = list.map(d => ({
+        let exportData: any[] = [];
+
+        if (drillDownType === 'definitions') {
+          exportData = drillDownItems.map(d => ({
             'Name': d.name,
             'Module': d.module,
-            'Status': selectedStage,
             'Author': users.find(u => u.id === d.authorId)?.name || d.submittedBy || 'System',
             'Last Update': d.submittedAt ? format(parseISO(d.submittedAt), 'yyyy-MM-dd HH:mm') : (d.revisions?.[0]?.date || '—')
-        }));
+          }));
+        } else if (drillDownType === 'users') {
+          exportData = drillDownItems.map(u => ({
+            'Name': u.name,
+            'Email': u.email,
+            'Role': u.role,
+            'Status': u.status,
+            'Department': u.department || '—'
+          }));
+        } else if (drillDownType === 'templates') {
+          exportData = drillDownItems.map(t => ({
+            'Template Name': t.name,
+            'Module': t.module,
+            'Usage Count': t.uses,
+            'Status': t.isActive ? 'Active' : 'Inactive'
+          }));
+        }
         
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Audit');
-        XLSX.writeFile(workbook, `Lifecycle_Audit_${selectedStage.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+        XLSX.writeFile(workbook, `Dashboard_Audit_${drillDownTitle.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.xlsx`);
         
-        toast({ title: 'Audit Exported', description: `Download complete for ${selectedStage} records.` });
+        toast({ title: 'Audit Exported', description: `Download complete for ${drillDownTitle}.` });
     } catch (error) {
         console.error("Export error:", error);
         toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not generate audit file.' });
@@ -283,12 +312,10 @@ export default function Dashboard({
 
   const getModuleColor = (modName: string) => {
     switch (modName) {
-        case 'Core': return '#3F51B5';
         case 'Authorizations': return '#10B981';
+        case 'Claims': return '#3F51B5';
         case 'Member': return '#F59E0B';
         case 'Provider': return '#EF4444';
-        case 'Quality': return '#8B5CF6';
-        case 'Infrastructure': return '#64748B';
         default: return '#94A3B8';
     }
   };
@@ -308,27 +335,28 @@ export default function Dashboard({
             </div>
             
             <div className="flex items-center gap-2 w-full">
-                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" onClick={() => handleStageClick('Draft')} />
+                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" onClick={() => handleDrillDown('Draft Records', 'definitions', metrics.lists['Draft'])} />
                 <Arrow />
-                <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" onClick={() => handleStageClick('Pending Approval')} />
+                <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" onClick={() => handleDrillDown('Pending Approval Records', 'definitions', metrics.lists['Pending Approval'])} />
                 <Arrow />
                 <div className="flex items-center gap-2 flex-[3] p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
-                    <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" onClick={() => handleStageClick('Changes Requested')} />
-                    <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" onClick={() => handleStageClick('Rejected')} />
-                    <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" onClick={() => handleStageClick('Published')} />
+                    <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" onClick={() => handleDrillDown('Changes Requested Records', 'definitions', metrics.lists['Changes Requested'])} />
+                    <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" onClick={() => handleDrillDown('Rejected Records', 'definitions', metrics.lists['Rejected'])} />
+                    <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" onClick={() => handleDrillDown('Published Records', 'definitions', metrics.lists['Published'])} />
                 </div>
                 <Arrow />
-                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-[#F8FAFC] text-[#64748B] border-[#F1F5F9]" onClick={() => handleStageClick('Archived')} />
+                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-[#F8FAFC] text-[#64748B] border-[#F1F5F9]" onClick={() => handleDrillDown('Archived Records', 'definitions', metrics.lists['Archived'])} />
             </div>
           </Card>
       </div>
 
       {/* 2. DEFINITIONS CREATED TREND */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+        <div className="flex items-center justify-between px-2 cursor-pointer group" onClick={() => handleDrillDown('Created in Current Period', 'definitions', activityLogs.filter(l => l.activityType === 'Definition Created').map(l => ({ name: l.definitionName, module: 'N/A', submittedBy: l.userName, submittedAt: l.occurredDate })))}>
+            <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest group-hover:text-primary transition-colors">
                 <BarChart3 className="h-3.5 w-3.5" />
-                Documentation Activity
+                Documentation Activity Velocity
+                <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all" />
             </div>
         </div>
         <Card className="rounded-[24px] border-slate-100 bg-white p-8 shadow-sm">
@@ -377,8 +405,21 @@ export default function Dashboard({
             </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <InsightsCard title="Stale Published Definitions" value={metrics.stalePublishedCount} sub="of total published, not reviewed in >6 months" options={['6mo+', '12mo+']} />
-            <InsightsCard title="Orphan / Abandoned Drafts" value={metrics.orphanDraftsCount} sub="inactive > 60 days, never submitted for review" color="text-red-500" footer={<button className="text-[11px] font-bold text-indigo-600 flex items-center gap-1.5 mt-2 hover:underline"><Trash2 className="h-3 w-3" /> Review for cleanup</button>} />
+            <InsightsCard 
+              title="Stale Published Definitions" 
+              value={metrics.stalePublishedCount} 
+              sub="of total published, not reviewed in >6 months" 
+              options={['6mo+', '12mo+']} 
+              onClick={() => handleDrillDown('Stale Published Definitions', 'definitions', metrics.lists['Stale Published'])}
+            />
+            <InsightsCard 
+              title="Orphan / Abandoned Drafts" 
+              value={metrics.orphanDraftsCount} 
+              sub="inactive > 60 days, never submitted for review" 
+              color="text-red-500" 
+              onClick={() => handleDrillDown('Orphan / Abandoned Drafts', 'definitions', metrics.lists['Orphan Drafts'])}
+              footer={<button className="text-[11px] font-bold text-indigo-600 flex items-center gap-1.5 mt-2 hover:underline"><Trash2 className="h-3 w-3" /> Review for cleanup</button>} 
+            />
         </div>
       </div>
 
@@ -526,16 +567,28 @@ export default function Dashboard({
                           const maxUses = Math.max(...metrics.templateUsage.map(u => u.uses)) || 1;
                           const percent = (item.uses / maxUses) * 100;
 
+                          const flatten = (items: Definition[]): Definition[] => {
+                              return items.flatMap(d => [d, ...(d.children ? flatten(d.children) : [])]);
+                          };
+
+                          const definitionsUsing = [
+                            ...flatten(definitions),
+                            ...drafts
+                          ].filter(d => d.templateId === item.id);
+
                           return (
-                              <div key={item.id} className="space-y-3">
+                              <div key={item.id} className="space-y-3 cursor-pointer group" onClick={() => handleDrillDown(`Usage Audit: ${item.name}`, 'definitions', definitionsUsing)}>
                                   <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-3">
-                                          <span className="font-bold text-slate-800">{item.name}</span>
+                                          <span className="font-bold text-slate-800 group-hover:text-primary transition-colors">{item.name}</span>
                                           <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-100 font-black text-[9px] h-5 px-1.5 uppercase">
                                               {item.module}
                                           </Badge>
                                       </div>
-                                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.uses} Uses</span>
+                                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                          {item.uses} Uses
+                                          <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all" />
+                                      </span>
                                   </div>
                                   <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                                       <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${percent}%`, backgroundColor: color }} />
@@ -555,9 +608,9 @@ export default function Dashboard({
             Users & Roles
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <KPICard title="Total Users" value={metrics.totalUsers} badge="+0" badgeColor="bg-slate-100 text-slate-500" />
-            <KPICard title="Active Users" value={metrics.activeUsers} badge={`${metrics.activePercent}%`} badgeColor="bg-emerald-50 text-emerald-600" />
-            <KPICard title="Inactive Users" value={metrics.inactiveUsers} badge="Review" badgeColor="bg-orange-50 text-orange-600" />
+            <KPICard title="Total Users" value={metrics.totalUsers} badge="+0" badgeColor="bg-slate-100 text-slate-500" onClick={() => handleDrillDown('Total Users Registry', 'users', metrics.lists['Total Users'])} />
+            <KPICard title="Active Users" value={metrics.activeUsers} badge={`${metrics.activePercent}%`} badgeColor="bg-emerald-50 text-emerald-600" onClick={() => handleDrillDown('Active Users Registry', 'users', metrics.lists['Active Users'])} />
+            <KPICard title="Inactive Users" value={metrics.inactiveUsers} badge="Review" badgeColor="bg-orange-50 text-orange-600" onClick={() => handleDrillDown('Inactive Users Registry', 'users', metrics.lists['Inactive Users'])} />
         </div>
         <Card className="rounded-[28px] border-slate-100 bg-white shadow-sm overflow-hidden">
             <CardHeader className="p-8 pb-4 border-none">
@@ -566,17 +619,24 @@ export default function Dashboard({
             <CardContent className="p-0 px-8 pb-8">
                 <div className="divide-y divide-slate-50">
                     {metrics.rolesList.map(role => (
-                        <div key={role.id} className="py-5 flex items-center justify-between group first:pt-0 last:pb-0">
+                        <div 
+                          key={role.id} 
+                          className="py-5 flex items-center justify-between group first:pt-0 last:pb-0 cursor-pointer hover:bg-slate-50 transition-all px-4 rounded-xl -mx-4"
+                          onClick={() => handleDrillDown(`${role.label} Assignments`, 'users', metrics.lists[role.label as keyof typeof metrics.lists])}
+                        >
                             <div className="flex items-center gap-4">
                                 <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center font-black text-[10px] tracking-tighter shadow-sm", role.color)}>
                                     {role.icon}
                                 </div>
                                 <div className="space-y-0.5">
-                                    <p className="text-[14px] font-bold text-slate-900">{role.label}</p>
+                                    <p className="text-[14px] font-bold text-slate-900 group-hover:text-primary transition-colors">{role.label}</p>
                                     <p className="text-[11px] font-medium text-slate-400 uppercase tracking-tight">{role.desc}</p>
                                 </div>
                             </div>
-                            <span className="text-xl font-black text-slate-900 tabular-nums">{role.count}</span>
+                            <div className="flex items-center gap-4">
+                              <span className="text-xl font-black text-slate-900 tabular-nums">{role.count}</span>
+                              <ChevronRight className="h-4 w-4 text-slate-200 group-hover:text-primary transition-colors" />
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -585,20 +645,22 @@ export default function Dashboard({
       </div>
 
       {/* DRILL-DOWN DIALOG */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsStageDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden border-none rounded-[28px] shadow-2xl">
             <DialogHeader className="p-8 border-b bg-white shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
-                            <Library className="h-6 w-6 text-[#3F51B5]" />
+                            {drillDownType === 'definitions' ? <Library className="h-6 w-6 text-[#3F51B5]" /> :
+                             drillDownType === 'users' ? <Users className="h-6 w-6 text-[#3F51B5]" /> :
+                             <LayoutTemplate className="h-6 w-6 text-[#3F51B5]" />}
                         </div>
                         <div>
                             <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">
-                                {selectedStage} Records
+                                {drillDownTitle}
                             </DialogTitle>
                             <DialogDescription className="text-sm text-slate-500 font-medium">
-                                Auditing all documentation units currently in the {selectedStage?.toLowerCase()} stage.
+                                Detailed system audit for all records matching current selection.
                             </DialogDescription>
                         </div>
                     </div>
@@ -609,7 +671,7 @@ export default function Dashboard({
                         onClick={handleDownloadAudit}
                     >
                         <Download className="h-4 w-4" />
-                        Download Stage Audit
+                        Download Selection Audit
                     </Button>
                 </div>
             </DialogHeader>
@@ -621,43 +683,96 @@ export default function Dashboard({
                             <Table>
                                 <TableHeader className="bg-slate-50 border-b">
                                     <TableRow className="hover:bg-transparent border-none">
-                                        <TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Definition Name</TableHead>
-                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Module</TableHead>
-                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Author / Submitter</TableHead>
-                                        <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Timestamp</TableHead>
+                                        {drillDownType === 'definitions' ? (
+                                          <>
+                                            <TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Definition Name</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Module</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Author / Submitter</TableHead>
+                                            <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Timestamp</TableHead>
+                                          </>
+                                        ) : drillDownType === 'users' ? (
+                                          <>
+                                            <TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">User Identity</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Role</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Department</TableHead>
+                                            <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Status</TableHead>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Template Blueprint</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Module Scope</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Usage Count</TableHead>
+                                            <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Status</TableHead>
+                                          </>
+                                        )}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {selectedStage && metrics.lists[selectedStage].map((def, idx) => (
-                                        <TableRow key={def.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
-                                            <TableCell className="px-6 py-4">
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-slate-900 text-[14px]">{def.name}</span>
-                                                    <span className="text-[10px] font-mono text-slate-400 uppercase">{def.id}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-100 font-bold text-[9px] h-5 px-1.5 uppercase">
-                                                    {def.module}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <Avatar className="h-6 w-6">
-                                                        <AvatarImage src={users.find(u => u.id === def.authorId)?.avatar} />
-                                                        <AvatarFallback className="text-[8px] font-bold">{(users.find(u => u.id === def.authorId)?.name || 'S')[0]}</AvatarFallback>
-                                                    </Avatar>
-                                                    <span className="text-xs font-bold text-slate-700">
-                                                        {users.find(u => u.id === def.authorId)?.name || def.submittedBy || 'System'}
-                                                    </span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-right px-6 font-mono text-[11px] text-slate-400 uppercase">
-                                                {def.submittedAt ? format(parseISO(def.submittedAt), 'MMM dd, yyyy') : (def.revisions?.[0]?.date || 'Baseline')}
-                                            </TableCell>
+                                    {drillDownItems.map((item, idx) => (
+                                        <TableRow key={idx} className="hover:bg-slate-50/50 border-slate-100 h-16">
+                                            {drillDownType === 'definitions' ? (
+                                              <>
+                                                <TableCell className="px-6 py-4">
+                                                  <div className="flex flex-col">
+                                                      <span className="font-bold text-slate-900 text-[14px]">{item.name}</span>
+                                                      <span className="text-[10px] font-mono text-slate-400 uppercase">{item.id || 'N/A'}</span>
+                                                  </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-100 font-bold text-[9px] h-5 px-1.5 uppercase">
+                                                      {item.module}
+                                                  </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <div className="flex items-center gap-2">
+                                                      <Avatar className="h-6 w-6">
+                                                          <AvatarImage src={users.find(u => u.id === item.authorId)?.avatar} />
+                                                          <AvatarFallback className="text-[8px] font-bold">{(users.find(u => u.id === item.authorId)?.name || item.submittedBy || 'S')[0]}</AvatarFallback>
+                                                      </Avatar>
+                                                      <span className="text-xs font-bold text-slate-700">
+                                                          {users.find(u => u.id === item.authorId)?.name || item.submittedBy || 'System'}
+                                                      </span>
+                                                  </div>
+                                                </TableCell>
+                                                <TableCell className="text-right px-6 font-mono text-[11px] text-slate-400 uppercase">
+                                                  {item.submittedAt ? format(parseISO(item.submittedAt), 'MMM dd, yyyy') : (item.revisions?.[0]?.date || 'Baseline')}
+                                                </TableCell>
+                                              </>
+                                            ) : drillDownType === 'users' ? (
+                                              <>
+                                                <TableCell className="px-6">
+                                                  <div className="flex items-center gap-3">
+                                                    <Avatar className="h-8 w-8"><AvatarImage src={item.avatar}/><AvatarFallback>{item.name[0]}</AvatarFallback></Avatar>
+                                                    <div className="flex flex-col">
+                                                      <span className="font-bold text-slate-900 text-sm">{item.name}</span>
+                                                      <span className="text-[10px] text-slate-400 lowercase">{item.email}</span>
+                                                    </div>
+                                                  </div>
+                                                </TableCell>
+                                                <TableCell><Badge variant="outline" className="text-[10px] font-bold uppercase">{item.role}</Badge></TableCell>
+                                                <TableCell><span className="text-xs font-medium text-slate-600">{item.department || 'General'}</span></TableCell>
+                                                <TableCell className="text-right px-6">
+                                                  <Badge variant={item.status === 'Active' ? 'success' : 'secondary'} className="text-[10px] uppercase font-bold">{item.status}</Badge>
+                                                </TableCell>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <TableCell className="px-6">
+                                                  <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-900 text-sm">{item.name}</span>
+                                                    <span className="text-[10px] font-mono text-slate-400 uppercase">{item.id}</span>
+                                                  </div>
+                                                </TableCell>
+                                                <TableCell><Badge variant="outline" className="text-[10px] font-bold uppercase">{item.module}</Badge></TableCell>
+                                                <TableCell className="text-center font-black text-indigo-600">{item.uses}</TableCell>
+                                                <TableCell className="text-right px-6">
+                                                  <Badge variant={item.isActive ? 'success' : 'secondary'} className="text-[10px] uppercase font-bold">{item.isActive ? 'Active' : 'Inactive'}</Badge>
+                                                </TableCell>
+                                              </>
+                                            )}
                                         </TableRow>
                                     ))}
-                                    {selectedStage && metrics.lists[selectedStage].length === 0 && (
+                                    {drillDownItems.length === 0 && (
                                         <TableRow>
                                             <TableCell colSpan={4} className="h-48 text-center">
                                                 <div className="flex flex-col items-center justify-center gap-2 opacity-30">
@@ -675,7 +790,7 @@ export default function Dashboard({
             </div>
             
             <DialogFooter className="p-4 border-t bg-white shrink-0">
-                <Button variant="ghost" onClick={() => setIsStageDialogOpen(false)} className="rounded-xl font-bold text-slate-500">
+                <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-xl font-bold text-slate-500">
                     Close Audit
                 </Button>
             </DialogFooter>
@@ -685,11 +800,20 @@ export default function Dashboard({
   );
 }
 
-function KPICard({ title, value, badge, badgeColor }: { title: string, value: any, badge: string, badgeColor: string }) {
+function KPICard({ title, value, badge, badgeColor, onClick }: { title: string, value: any, badge: string, badgeColor: string, onClick?: () => void }) {
     return (
-        <Card className="rounded-[24px] border-slate-100 bg-white p-6 shadow-sm group hover:border-indigo-100 transition-all">
+        <Card 
+          className={cn(
+            "rounded-[24px] border-slate-100 bg-white p-6 shadow-sm group hover:border-indigo-100 transition-all",
+            onClick && "cursor-pointer active:scale-95"
+          )}
+          onClick={onClick}
+        >
             <div className="space-y-4">
-                <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{title}</h4>
+                <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center justify-between">
+                  {title}
+                  {onClick && <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all" />}
+                </h4>
                 <div className="flex items-center justify-between">
                     <p className="text-4xl font-black text-slate-900">{value}</p>
                     <div className={cn("inline-flex h-6 px-3 rounded-full text-[10px] font-black uppercase items-center border border-transparent", badgeColor)}>
@@ -701,12 +825,21 @@ function KPICard({ title, value, badge, badgeColor }: { title: string, value: an
     );
 }
 
-function InsightsCard({ title, value, sub, options, color = "text-slate-900", footer }: { title: string, value: any, sub: string, options?: string[], color?: string, footer?: React.ReactNode }) {
+function InsightsCard({ title, value, sub, options, color = "text-slate-900", footer, onClick }: { title: string, value: any, sub: string, options?: string[], color?: string, footer?: React.ReactNode, onClick?: () => void }) {
     return (
-        <Card className="rounded-[24px] border-slate-100 bg-white p-6 shadow-sm flex flex-col justify-between">
+        <Card 
+          className={cn(
+            "rounded-[24px] border-slate-100 bg-white p-6 shadow-sm flex flex-col justify-between group hover:border-indigo-100 transition-all",
+            onClick && "cursor-pointer active:scale-95"
+          )}
+          onClick={onClick}
+        >
             <div className="space-y-4">
                 <div className="flex items-start justify-between min-h-[32px]">
-                    <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest max-w-[200px] leading-relaxed">{title}</h4>
+                    <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest max-w-[200px] leading-relaxed flex items-center gap-2">
+                      {title}
+                      {onClick && <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all" />}
+                    </h4>
                     {options && (
                         <div className="flex items-center p-0.5 bg-slate-50 border border-slate-100 rounded-lg">
                             {options.map((opt, i) => (
