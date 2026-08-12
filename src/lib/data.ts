@@ -128,7 +128,7 @@ export const initialMasterData: MasterDataState = {
   ],
   definitionStatuses: [
     { id: 'ds1', name: 'Draft', isActive: true },
-    { id: 'ds2', name: 'Pending Review', isActive: true },
+    { id: 'ds2', name: 'Pending Approval', isActive: true },
     { id: 'ds3', name: 'Published', isActive: true },
     { id: 'ds4', name: 'Archived', isActive: true },
     { id: 'ds5', name: 'Rejected', isActive: true },
@@ -286,7 +286,7 @@ export const initialTemplates: Template[] = [
       { id: 'f1', templateId: '5', name: 'Reimbursement Model', fieldType: 'Dropdown', isMulti: false, isRequired: true, order: 1, options: [
         { id: 'fo1', templateSectionId: 'f1', label: 'Fee-For-Service', value: 'FFS', sortOrder: 1, isDefault: true },
         { id: 'fo2', templateSectionId: 'f1', label: 'Capitation', value: 'CAP', sortOrder: 2, isDefault: false },
-        { id: 'fo3', templateSectionId: 'f1', label: 'Case Rate', value: 'CASE', sortOrder: 3, isDefault: false }
+        { id: 'fo3', templateSectionId: 'f1', label: 'CASE Rate', value: 'CASE', sortOrder: 3, isDefault: false }
       ]},
       { id: 'f2', templateId: '5', name: 'Base Rate Table', fieldType: 'KeyValue', isMulti: false, isRequired: true, order: 2, columns: [
         { id: 'fc1', templateSectionId: 'f2', name: 'Column Name', inputType: 'TextBox', isMulti: false, sortOrder: 1, isRequired: true },
