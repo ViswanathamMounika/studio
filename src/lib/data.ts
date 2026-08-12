@@ -9,7 +9,7 @@ export const initialDrafts: Definition[] = [
     templateId: '1',
     authorId: 'u2',
     submittedBy: 'Sarah Chen',
-    submittedAt: new Date(Date.now() - 3600000 * 24 * 5).toISOString(), // 5 days ago (Bottleneck)
+    submittedAt: new Date(Date.now() - 3600000 * 24 * 7).toISOString(), // 7 days ago (Bottleneck)
     isDraft: false,
     isPendingApproval: true,
     keywords: ['mapping', 'codes', 'v2'],
@@ -30,7 +30,7 @@ export const initialDrafts: Definition[] = [
     templateId: '1',
     authorId: 'u4',
     submittedBy: 'Elena Rodriguez',
-    submittedAt: new Date(Date.now() - 3600000 * 24 * 1).toISOString(), // 1 day ago
+    submittedAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString(), // 2 days ago
     isDraft: false,
     isPendingApproval: true,
     keywords: ['provider', 'contract', 'legal'],
@@ -193,7 +193,8 @@ export const initialSystemConfig: SystemConfigurationState = {
     { id: '9', key: 'INITIAL_DEF_COUNT', value: '300', type: 'int', effectiveFrom: '2026-01-21T23:05:00Z', active: true, description: 'Initial definition count' },
     { id: '10', key: 'ACTIVITY_LOGS_GRID_RECORDS_COUNT', value: '500', type: 'int', effectiveFrom: '2026-05-29T09:10:00Z', active: true, description: 'Activity logs search results count' },
     { id: '11', key: 'DASHBOARD_CHART_DAY_THRESHOLD', value: '14', type: 'int', effectiveFrom: '2026-02-15T09:00:00Z', active: true, description: 'Day limit for daily chart view' },
-    { id: '12', key: 'DASHBOARD_CHART_WEEK_THRESHOLD', value: '60', type: 'int', effectiveFrom: '2026-02-15T09:00:00Z', active: true, description: 'Day limit for weekly chart view' }
+    { id: '12', key: 'DASHBOARD_CHART_WEEK_THRESHOLD', value: '60', type: 'int', effectiveFrom: '2026-02-15T09:00:00Z', active: true, description: 'Day limit for weekly chart view' },
+    { id: '13', key: 'DASHBOARD_NEEDS_ATTENTION_DAYS', value: '5', type: 'int', effectiveFrom: '2026-03-01T09:00:00Z', active: true, description: 'Days after which a pending definition appears in Needs Attention' }
   ]
 };
 

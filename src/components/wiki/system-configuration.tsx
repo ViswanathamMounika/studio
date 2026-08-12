@@ -79,7 +79,8 @@ const KEY_DISPLAY_NAMES: Record<string, string> = {
     'INITIAL_DEF_COUNT': 'Initial Definition Load Count',
     'ACTIVITY_LOGS_GRID_RECORDS_COUNT': 'Activity Log Records Per Page',
     'DASHBOARD_CHART_DAY_THRESHOLD': 'Dashboard Chart Daily Limit (Days)',
-    'DASHBOARD_CHART_WEEK_THRESHOLD': 'Dashboard Chart Weekly Limit (Days)'
+    'DASHBOARD_CHART_WEEK_THRESHOLD': 'Dashboard Chart Weekly Limit (Days)',
+    'DASHBOARD_NEEDS_ATTENTION_DAYS': 'Needs Attention Threshold (Days)'
 };
 
 export default function SystemConfiguration({ config, onSaveConfig, onLogAction }: SystemConfigurationProps) {
