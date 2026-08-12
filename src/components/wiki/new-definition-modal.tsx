@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -54,8 +55,8 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const { toast } = useToast();
 
   const modules = useMemo(() => {
-    // Show all modules, regardless of active status
-    return masterData?.modules.map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
+    // For NEW definitions, only show ACTIVE modules
+    return masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
   }, [masterData]);
 
   const selectedTemplate = useMemo(() => 
