@@ -169,7 +169,6 @@ export const initialSystemConfig: SystemConfigurationState = {
     
     searchIndexName: 'mpm-service-wiki-wikis-local',
     searchSyncInterval: 15,
-    searchResultSize: 10000,
     searchSyncEnabled: true,
 
     // Global Security

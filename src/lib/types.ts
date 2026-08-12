@@ -336,7 +336,6 @@ export interface SystemSettings {
   // Search Sync
   searchIndexName: string;
   searchSyncInterval: number;
-  searchResultSize: number;
   searchSyncEnabled: boolean;
 
   // Global Security

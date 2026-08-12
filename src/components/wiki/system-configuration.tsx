@@ -182,7 +182,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             title: 'Search Sync — Wiki',
             key: 'SearchSync.Wiki',
             icon: Search,
-            fields: 4,
+            fields: 3,
             content: (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
                     <div className="space-y-2">
@@ -202,10 +202,6 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             <Input type="number" value={localConfig.settings.searchSyncInterval} onChange={e => updateSettings({ searchSyncInterval: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold pr-16" />
                             <span className="absolute right-4 top-3 text-[10px] font-bold text-slate-400 uppercase">minutes</span>
                         </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400">Search Result Size</Label>
-                        <Input type="number" value={localConfig.settings.searchResultSize} onChange={e => updateSettings({ searchResultSize: parseInt(e.target.value) || 0 })} className="rounded-xl h-11 bg-white border-slate-200 font-bold" />
                     </div>
                 </div>
             )
