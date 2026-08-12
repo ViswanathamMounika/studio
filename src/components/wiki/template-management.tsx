@@ -109,15 +109,9 @@ export default function TemplateManagement({ templates, onSaveTemplates, onLogAc
   const { toast } = useToast();
 
   const moduleOptions = useMemo(() => {
-    // For existing templates, we show active modules PLUS the one currently assigned
-    const activeModules = masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
-    
-    if (currentTemplate.module && !activeModules.includes(currentTemplate.module)) {
-        return [...activeModules, currentTemplate.module].sort();
-    }
-
-    return activeModules;
-  }, [masterData, currentTemplate.module]);
+    // Show all modules, regardless of active status
+    return masterData?.modules.map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
+  }, [masterData]);
 
   const handleCreateNew = () => {
     setIsEditing(false);

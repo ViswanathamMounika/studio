@@ -54,7 +54,8 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const { toast } = useToast();
 
   const modules = useMemo(() => {
-    return masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
+    // Show all modules, regardless of active status
+    return masterData?.modules.map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
   }, [masterData]);
 
   const selectedTemplate = useMemo(() => 
