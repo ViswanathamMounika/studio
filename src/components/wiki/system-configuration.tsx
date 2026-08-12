@@ -77,7 +77,6 @@ const KEY_DISPLAY_NAMES: Record<string, string> = {
     'SESSION_TIMEOUT': 'Session Timeout',
     'REVISION_RECORD_COUNT': 'Revision History Limit',
     'DATA_PREVIEW_COUNT': 'Data Preview Row Limit',
-    'DEF_EDIT_LOCK_DURATION': 'Definition Edit Lock Duration',
     'DEF_RECENT_COUNT': 'Recent Definitions Count',
     'INITIAL_DEF_COUNT': 'Initial Definition Load Count',
     'ACTIVITY_LOGS_GRID_RECORDS_COUNT': 'Activity Log Records Per Page'

@@ -189,7 +189,6 @@ export const initialSystemConfig: SystemConfigurationState = {
     { id: '1', key: 'SESSION_TIMEOUT', value: '20', type: 'minutes', effectiveFrom: '2025-12-23T00:00:00Z', active: true, description: 'Session timeout setting for the application' },
     { id: '2', key: 'REVISION_RECORD_COUNT', value: '10', type: 'record count', effectiveFrom: '2025-12-23T00:00:00Z', active: true, description: 'No. of revisions to show for each definition' },
     { id: '3', key: 'DATA_PREVIEW_COUNT', value: '10', type: 'int', effectiveFrom: '2026-01-06T05:03:00Z', active: true, description: 'Support table data preview count' },
-    { id: '7', key: 'DEF_EDIT_LOCK_DURATION', value: '15', type: 'minutes', effectiveFrom: '2026-01-06T21:52:00Z', active: true, description: 'Lock the edit definition' },
     { id: '8', key: 'DEF_RECENT_COUNT', value: '10', type: 'int', effectiveFrom: '2026-01-07T05:21:00Z', active: true, description: 'Recent definitions count' },
     { id: '9', key: 'INITIAL_DEF_COUNT', value: '300', type: 'int', effectiveFrom: '2026-01-21T23:05:00Z', active: true, description: 'Initial definition count' },
     { id: '10', key: 'ACTIVITY_LOGS_GRID_RECORDS_COUNT', value: '500', type: 'int', effectiveFrom: '2026-05-29T09:10:00Z', active: true, description: 'Activity logs search results count' }
