@@ -25,7 +25,9 @@ import {
     RefreshCw,
     Box,
     Database,
-    Zap
+    Zap,
+    Download,
+    Search
 } from 'lucide-react';
 import type { Definition, UserAccount, Template, View, ApprovalHistoryEntry, ActivityLog, DiscussionMessage } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +38,24 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { parseISO, subDays, format, isSameDay, eachDayOfInterval, isValid, isAfter, differenceInDays, eachWeekOfInterval, endOfWeek, isWithinInterval, startOfDay, endOfDay, eachMonthOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
 
 type DashboardProps = {
   definitions: Definition[];
@@ -46,6 +66,8 @@ type DashboardProps = {
   approvalHistory?: ApprovalHistoryEntry[];
   activityLogs?: ActivityLog[];
 };
+
+type LifecycleStage = 'Draft' | 'Pending Approval' | 'Changes Requested' | 'Rejected' | 'Published' | 'Archived';
 
 export default function Dashboard({ 
   definitions, 
@@ -59,6 +81,10 @@ export default function Dashboard({
   
   const [chartStartDate, setChartStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [chartEndDate, setChartEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  
+  const [selectedStage, setSelectedStage] = useState<LifecycleStage | null>(null);
+  const [isDialogOpen, setIsStageDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const metrics = useMemo(() => {
     const flatten = (items: Definition[]): Definition[] => {
@@ -74,11 +100,10 @@ export default function Dashboard({
         return fb.length > 0 ? fb[fb.length - 1].type : null;
     };
 
-    const draftOnly = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval && !getLatestFeedbackType(d));
-    const pendingApproval = safeDrafts.filter(d => d.isPendingApproval);
-    
-    const changesRequestedCount = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'change-request').length;
-    const rejectedCount = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'rejection').length;
+    const draftOnlyList = safeDrafts.filter(d => d.isDraft && !d.isPendingApproval && !getLatestFeedbackType(d));
+    const pendingApprovalList = safeDrafts.filter(d => d.isPendingApproval);
+    const changesRequestedList = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'change-request');
+    const rejectedList = safeDrafts.filter(d => !d.isPendingApproval && getLatestFeedbackType(d) === 'rejection');
     
     const sixMonthsAgo = subDays(new Date(), 180);
     const stalePublished = allPublished.filter(d => {
@@ -87,7 +112,7 @@ export default function Dashboard({
     });
 
     const sixtyDaysAgo = subDays(new Date(), 60);
-    const orphans = draftOnly.filter(d => {
+    const orphans = draftOnlyList.filter(d => {
         const date = d.submittedAt ? parseISO(d.submittedAt) : (d.revisions?.[0]?.date ? parseISO(d.revisions[0].date) : parseISO('2000-01-01'));
         return date < sixtyDaysAgo;
     });
@@ -127,10 +152,10 @@ export default function Dashboard({
     return {
       total: allPublished.length + allArchived.length + safeDrafts.length,
       publishedCount: allPublished.length,
-      pendingCount: pendingApproval.length,
-      draftsCount: draftOnly.length,
-      changesRequestedCount,
-      rejectedCount,
+      pendingCount: pendingApprovalList.length,
+      draftsCount: draftOnlyList.length,
+      changesRequestedCount: changesRequestedList.length,
+      rejectedCount: rejectedList.length,
       archivedCount: allArchived.length,
       stalePublishedCount: stalePublished.length,
       orphanDraftsCount: orphans.length,
@@ -146,7 +171,16 @@ export default function Dashboard({
           { id: 'sa', label: 'Super Admin', desc: 'Full system access', icon: 'SA', count: users.filter(u => u.role === 'Super Admin').length, color: 'text-indigo-600 bg-indigo-50' },
           { id: 'ap', label: 'Approver', desc: 'Reviews & publishes', icon: 'AP', count: users.filter(u => u.role === 'Approver').length, color: 'text-purple-600 bg-purple-50' },
           { id: 'ed', label: 'Editor', desc: 'Creates definitions', icon: 'ED', count: users.filter(u => u.role === 'Admin' || u.role === 'Standard User').length, color: 'text-blue-600 bg-blue-50' }
-      ]
+      ],
+      // Lists for the drill-down
+      lists: {
+        'Draft': draftOnlyList,
+        'Pending Approval': pendingApprovalList,
+        'Changes Requested': changesRequestedList,
+        'Rejected': rejectedList,
+        'Published': allPublished,
+        'Archived': allArchived
+      }
     };
   }, [definitions, drafts, users, templates, approvalHistory]);
 
@@ -159,7 +193,6 @@ export default function Dashboard({
         const diffDays = differenceInDays(end, start);
         
         if (diffDays <= 14) {
-            // Day-wise View: Under 2 weeks
             const days = eachDayOfInterval({ start, end });
             return days.map(day => {
                 const dateStr = format(day, 'yyyy-MM-dd');
@@ -174,7 +207,6 @@ export default function Dashboard({
                 };
             });
         } else if (diffDays <= 60) {
-            // Week-wise View: 2 weeks to 2 months
             const weeks = eachWeekOfInterval({ start, end });
             return weeks.map(weekStart => {
                 const weekEnd = endOfWeek(weekStart);
@@ -190,7 +222,6 @@ export default function Dashboard({
                 };
             });
         } else {
-            // Month-wise View: Over 2 months
             const months = eachMonthOfInterval({ start, end });
             return months.map(monthStart => {
                 const monthEnd = endOfMonth(monthStart);
@@ -211,6 +242,37 @@ export default function Dashboard({
         return [];
     }
   }, [activityLogs, chartStartDate, chartEndDate]);
+
+  const handleStageClick = (stage: LifecycleStage) => {
+    setSelectedStage(stage);
+    setIsStageDialogOpen(true);
+  };
+
+  const handleDownloadAudit = async () => {
+    if (!selectedStage) return;
+    const list = metrics.lists[selectedStage];
+    
+    try {
+        const XLSX = await import('xlsx');
+        const exportData = list.map(d => ({
+            'Name': d.name,
+            'Module': d.module,
+            'Status': selectedStage,
+            'Author': users.find(u => u.id === d.authorId)?.name || d.submittedBy || 'System',
+            'Last Update': d.submittedAt ? format(parseISO(d.submittedAt), 'yyyy-MM-dd HH:mm') : (d.revisions?.[0]?.date || '—')
+        }));
+        
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Audit');
+        XLSX.writeFile(workbook, `Lifecycle_Audit_${selectedStage.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+        
+        toast({ title: 'Audit Exported', description: `Download complete for ${selectedStage} records.` });
+    } catch (error) {
+        console.error("Export error:", error);
+        toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not generate audit file.' });
+    }
+  };
 
   const attentionItems = [
     { name: 'Loan Eligibility Rule v3', code: 'DEF-2210', status: 'Pending Approval', author: 'Rahul M.', waiting: '5 days', type: 'pending' },
@@ -246,27 +308,17 @@ export default function Dashboard({
             </div>
             
             <div className="flex items-center gap-2 w-full">
-                {/* DRAFT STAGE */}
-                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" />
-                
+                <LifecycleBox label="Draft" value={metrics.draftsCount} color="bg-[#FFF9EB] text-[#F59E0B] border-[#FFEBC2]" onClick={() => handleStageClick('Draft')} />
                 <Arrow />
-
-                {/* SUBMISSION GROUP */}
-                <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" />
-                
+                <LifecycleBox label="Pending Approval" value={metrics.pendingCount} color="bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]" onClick={() => handleStageClick('Pending Approval')} />
                 <Arrow />
-
-                {/* REVIEW OUTCOME GROUP - Combined stages with standardized width */}
                 <div className="flex items-center gap-2 flex-[3] p-2 bg-slate-50/40 rounded-[20px] border border-dashed border-slate-200">
-                    <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" />
-                    <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" />
-                    <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" />
+                    <LifecycleBox label="Changes Requested" value={metrics.changesRequestedCount} color="bg-[#FFF1F2] text-[#DB2777] border-[#FFE4E6]" onClick={() => handleStageClick('Changes Requested')} />
+                    <LifecycleBox label="Rejected" value={metrics.rejectedCount} color="bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]" onClick={() => handleStageClick('Rejected')} />
+                    <LifecycleBox label="Published" value={metrics.publishedCount} color="bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]" onClick={() => handleStageClick('Published')} />
                 </div>
-
                 <Arrow />
-
-                {/* ARCHIVE STAGE */}
-                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-[#F8FAFC] text-[#64748B] border-[#F1F5F9]" />
+                <LifecycleBox label="Archived" value={metrics.archivedCount} color="bg-[#F8FAFC] text-[#64748B] border-[#F1F5F9]" onClick={() => handleStageClick('Archived')} />
             </div>
           </Card>
       </div>
@@ -531,6 +583,104 @@ export default function Dashboard({
             </CardContent>
         </Card>
       </div>
+
+      {/* DRILL-DOWN DIALOG */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsStageDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden border-none rounded-[28px] shadow-2xl">
+            <DialogHeader className="p-8 border-b bg-white shrink-0">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
+                            <Library className="h-6 w-6 text-[#3F51B5]" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">
+                                {selectedStage} Records
+                            </DialogTitle>
+                            <DialogDescription className="text-sm text-slate-500 font-medium">
+                                Auditing all documentation units currently in the {selectedStage?.toLowerCase()} stage.
+                            </DialogDescription>
+                        </div>
+                    </div>
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="rounded-xl font-bold h-10 px-6 border-slate-200 gap-2 hover:bg-slate-50 transition-all"
+                        onClick={handleDownloadAudit}
+                    >
+                        <Download className="h-4 w-4" />
+                        Download Stage Audit
+                    </Button>
+                </div>
+            </DialogHeader>
+            
+            <div className="flex-1 min-h-0 bg-slate-50/30">
+                <ScrollArea className="h-full">
+                    <div className="p-8">
+                        <div className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden">
+                            <Table>
+                                <TableHeader className="bg-slate-50 border-b">
+                                    <TableRow className="hover:bg-transparent border-none">
+                                        <TableHead className="px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Definition Name</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Module</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Author / Submitter</TableHead>
+                                        <TableHead className="text-right px-6 font-black uppercase text-[10px] tracking-widest text-slate-400 h-12">Timestamp</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {selectedStage && metrics.lists[selectedStage].map((def, idx) => (
+                                        <TableRow key={def.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
+                                            <TableCell className="px-6 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-900 text-[14px]">{def.name}</span>
+                                                    <span className="text-[10px] font-mono text-slate-400 uppercase">{def.id}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-100 font-bold text-[9px] h-5 px-1.5 uppercase">
+                                                    {def.module}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="h-6 w-6">
+                                                        <AvatarImage src={users.find(u => u.id === def.authorId)?.avatar} />
+                                                        <AvatarFallback className="text-[8px] font-bold">{(users.find(u => u.id === def.authorId)?.name || 'S')[0]}</AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="text-xs font-bold text-slate-700">
+                                                        {users.find(u => u.id === def.authorId)?.name || def.submittedBy || 'System'}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right px-6 font-mono text-[11px] text-slate-400 uppercase">
+                                                {def.submittedAt ? format(parseISO(def.submittedAt), 'MMM dd, yyyy') : (def.revisions?.[0]?.date || 'Baseline')}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {selectedStage && metrics.lists[selectedStage].length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-48 text-center">
+                                                <div className="flex flex-col items-center justify-center gap-2 opacity-30">
+                                                    <Search className="h-8 w-8" />
+                                                    <p className="text-xs font-bold uppercase tracking-widest">No matching records</p>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+                </ScrollArea>
+            </div>
+            
+            <DialogFooter className="p-4 border-t bg-white shrink-0">
+                <Button variant="ghost" onClick={() => setIsStageDialogOpen(false)} className="rounded-xl font-bold text-slate-500">
+                    Close Audit
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -573,15 +723,22 @@ function InsightsCard({ title, value, sub, options, color = "text-slate-900", fo
     );
 }
 
-function LifecycleBox({ label, value, color }: { label: string, value: number, color: string }) {
+function LifecycleBox({ label, value, color, onClick }: { label: string, value: number, color: string, onClick?: () => void }) {
     return (
-        <div className={cn(
-            "rounded-[20px] border flex flex-col justify-between p-4 transition-all hover:shadow-md h-28 relative flex-1 min-w-0", 
-            color
-        )}>
-            <span className="text-3xl font-black block tracking-tighter leading-none">{value}</span>
-            <span className="font-bold text-[11px] leading-tight mt-auto truncate w-full">{label}</span>
-        </div>
+        <button 
+            onClick={onClick}
+            className={cn(
+                "rounded-[20px] border flex flex-col justify-between p-4 transition-all hover:shadow-lg h-28 relative flex-1 min-w-0 group", 
+                color,
+                onClick && "cursor-pointer active:scale-95"
+            )}
+        >
+            <div className="flex items-start justify-between w-full">
+                <span className="text-3xl font-black block tracking-tighter leading-none">{value}</span>
+                {onClick && <ArrowUpRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-all" />}
+            </div>
+            <span className="font-bold text-[11px] leading-tight mt-auto text-left truncate w-full">{label}</span>
+        </button>
     );
 }
 
