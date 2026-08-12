@@ -55,7 +55,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 
 type DashboardProps = {
@@ -676,10 +676,10 @@ export default function Dashboard({
             </DialogHeader>
             
             <div className="flex-1 min-h-0 bg-slate-50/30">
-                <ScrollArea className="h-full">
+                <ScrollArea className="h-full w-full">
                     <div className="p-8">
-                        <div className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden">
-                            <Table>
+                        <div className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden overflow-x-auto">
+                            <Table className="min-w-full">
                                 <TableHeader className="bg-slate-50 border-b">
                                     <TableRow className="hover:bg-transparent border-none">
                                         {drillDownType === 'definitions' ? (
@@ -783,6 +783,8 @@ export default function Dashboard({
                             </Table>
                         </div>
                     </div>
+                    <ScrollBar orientation="horizontal" />
+                    <ScrollBar orientation="vertical" />
                 </ScrollArea>
             </div>
             
