@@ -1,5 +1,6 @@
 
 "use client";
+
 import React, { useState, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import type { Definition, Attachment, Template, SectionValue, TemplateSection, MasterDataState } from '@/lib/types';
@@ -12,12 +13,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { initialTemplates } from '@/lib/data';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { ScrollArea } from '../ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AttachmentList from './attachments';
-import { Textarea } from '../ui/textarea';
+import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -40,7 +41,18 @@ type DefinitionEditProps = {
 const DATABASE_OPTIONS = ['EzCAp', 'SupportTbls', 'NetApps', 'AuditTables', 'Other'];
 const SOURCE_TYPE_OPTIONS = ['Tables', 'Stored Procedures', 'Views', 'SQL Functions', 'None'];
 
-export default function DefinitionEdit({ definition, liveVersion, onSave, onDiscard, onDelete, onAcceptLiveChanges, isAdmin, templates, isNewBranch, masterData }: DefinitionEditProps) {
+export default function DefinitionEdit({ 
+  definition, 
+  liveVersion, 
+  onSave, 
+  onDiscard, 
+  onDelete, 
+  onAcceptLiveChanges, 
+  isAdmin, 
+  templates, 
+  isNewBranch, 
+  masterData 
+}: DefinitionEditProps) {
   const [name, setName] = useState(definition.name);
   const [module, setModule] = useState(definition.module);
   const [keywords, setKeywords] = useState<string[]>(definition.keywords || []);
@@ -50,7 +62,6 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
   const [showConflictDiff, setShowConflictDiff] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Custom Source of Truth fields
   const [selectedDbs, setSelectedDbs] = useState<string[]>(definition.sourceDb?.split(', ').filter(Boolean) || []);
   const [sourceType, setSourceType] = useState<string>(definition.sourceType || '');
   const [sourceName, setSourceName] = useState(definition.sourceName || '');
@@ -59,13 +70,17 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
     return masterData?.modules.map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
   }, [masterData]);
 
-  const selectedTemplate = useMemo(() => (templates || initialTemplates).find(t => t.id === definition.templateId) || (templates || initialTemplates)[0], [definition.templateId, templates]);
+  const selectedTemplate = useMemo(() => 
+    (templates || initialTemplates).find(t => t.id === definition.templateId) || (templates || initialTemplates)[0], 
+    [definition.templateId, templates]
+  );
 
   const updateSectionValue = (sectionId: string, updates: Partial<SectionValue>) => {
     setSectionValues(prev => {
         const idx = prev.findIndex(v => v.sectionId === sectionId);
         if (idx === -1) return [...prev, { sectionId, raw: '', ...updates } as SectionValue];
-        const next = [...prev]; next[idx] = { ...next[idx], ...updates };
+        const next = [...prev]; 
+        next[idx] = { ...next[idx], ...updates };
         return next;
     });
   };
@@ -79,7 +94,6 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
 
   const groupedSections = useMemo(() => {
     let allSections = selectedTemplate.sections || [];
-    // EXCLUDE 'Technical Details' (3) and 'Source of Truth' (8) for template '1'
     if (selectedTemplate.id === '1') {
       allSections = allSections.filter(s => s.id !== '3' && s.id !== '8');
     }
@@ -87,11 +101,19 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
     const standaloneSections = allSections.filter(s => !s.group);
     const uniqueGroupNames = Array.from(new Set(allSections.filter(s => s.group).map(s => s.group as string)));
     const units: Array<{ type: 'section' | 'group', order: number, name?: string, sections: TemplateSection[] }> = [];
+    
     standaloneSections.forEach(s => units.push({ type: 'section', order: s.order, sections: [s] }));
+    
     uniqueGroupNames.forEach(name => {
       const groupSections = allSections.filter(s => s.group === name);
-      units.push({ type: 'group', name, order: groupSections[0]?.groupOrder || 0, sections: groupSections.sort((a, b) => a.order - b.order) });
+      units.push({ 
+        type: 'group', 
+        name, 
+        order: groupSections[0]?.groupOrder || 0, 
+        sections: groupSections.sort((a, b) => a.order - b.order) 
+      });
     });
+    
     return units.sort((a, b) => a.order - b.order);
   }, [selectedTemplate]);
 
@@ -185,7 +207,27 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                           </div>
                       </div>
                       <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-400">Keywords</Label>
-                          <div className="flex flex-wrap gap-2 p-3 border border-slate-200 rounded-xl bg-white min-h-[44px]">{keywords.map(k => <Badge key={k} className="bg-slate-100 text-slate-700 gap-1.5 px-2.5 py-1">{k}<button onClick={() => setKeywords(keywords.filter(kw => kw !== k))}><X className="h-3 w-3" /></button></Badge>)}<Input placeholder="Add keyword..." value={currentKeyword} onChange={e => setCurrentKeyword(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && currentKeyword) { e.preventDefault(); if (!keywords.includes(currentKeyword.trim())) setKeywords([...keywords, currentKeyword.trim()]); setCurrentKeyword(''); } }} className="flex-1 border-none shadow-none p-0 h-auto text-sm" /></div>
+                          <div className="flex flex-wrap gap-2 p-3 border border-slate-200 rounded-xl bg-white min-h-[44px]">
+                            {keywords.map(k => (
+                              <Badge key={k} className="bg-slate-100 text-slate-700 gap-1.5 px-2.5 py-1">
+                                {k}
+                                <button onClick={() => setKeywords(keywords.filter(kw => kw !== k))}><X className="h-3 w-3" /></button>
+                              </Badge>
+                            ))}
+                            <Input 
+                              placeholder="Add keyword..." 
+                              value={currentKeyword} 
+                              onChange={e => setCurrentKeyword(e.target.value)} 
+                              onKeyDown={e => { 
+                                if (e.key === 'Enter' && currentKeyword) { 
+                                  e.preventDefault(); 
+                                  if (!keywords.includes(currentKeyword.trim())) setKeywords([...keywords, currentKeyword.trim()]); 
+                                  setCurrentKeyword(''); 
+                                } 
+                              }} 
+                              className="flex-1 border-none shadow-none p-0 h-auto text-sm" 
+                            />
+                          </div>
                       </div>
                   </CardContent>
               </Card>
@@ -193,7 +235,8 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
               {groupedSections.map((unit, idx) => (
                   <div key={idx} className="space-y-6">
                       {unit.type === 'group' && unit.name && <div className="flex items-center gap-3"><h3 className="text-lg font-bold text-slate-900">{unit.name}</h3><div className="h-px bg-slate-200 flex-1" /></div>}
-                      <div className="space-y-6">{unit.sections.map(section => {
+                      <div className="space-y-6">
+                        {unit.sections.map(section => {
                           const value = sectionValues.find(v => v.sectionId === section.id);
                           return (
                               <Card key={section.id} className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
@@ -212,12 +255,42 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                                   <CardContent className="p-6">
                                       {section.fieldType === 'RichText' && <WysiwygEditor value={value?.html || ''} onChange={html => updateSectionValue(section.id, { html, raw: html.replace(/<[^>]+>/g, '') })} />}
                                       {section.fieldType === 'PlainText' && <Textarea value={value?.raw || ''} onChange={e => updateSectionValue(section.id, { raw: e.target.value })} maxLength={section.maxLength} className="rounded-xl min-h-[120px]" />}
-                                      {section.fieldType === 'Dropdown' && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                          {section.isMulti ? <div className="flex flex-wrap gap-2">{section.options?.map(opt => {
-                                              const isSelected = value?.multiValues?.includes(opt.value);
-                                              return <button key={opt.id} type="button" className={cn("flex items-center gap-2 px-4 py-2 border rounded-xl font-medium text-sm transition-all", isSelected ? "bg-primary/10 border-primary text-primary" : "bg-white border-slate-200 text-slate-600")} onClick={() => { const current = value?.multiValues || []; const next = isSelected ? current.filter(v => v !== opt.value) : [...current, opt.value]; updateSectionValue(section.id, { multiValues: next, raw: next.join(', ') }); }}><div className={cn("h-4 w-4 rounded-md border flex items-center justify-center transition-colors", isSelected ? "bg-primary border-primary" : "border-slate-300")}>{isSelected && <Check className="h-3 w-3 text-white" />}</div>{opt.label}</button>;
-                                          })}</div> : <Select value={value?.raw} onValueChange={v => updateSectionValue(section.id, { raw: v })}><SelectTrigger className="rounded-xl"><SelectValue placeholder="Select..." /></SelectTrigger><SelectContent>{section.options?.map(opt => <SelectItem key={opt.id} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select>}
-                                      </div>}
+                                      {section.fieldType === 'Dropdown' && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          {section.isMulti ? (
+                                            <div className="flex flex-wrap gap-2">
+                                              {section.options?.map(opt => {
+                                                const isSelected = value?.multiValues?.includes(opt.value);
+                                                return (
+                                                  <button 
+                                                    key={opt.id} 
+                                                    type="button" 
+                                                    className={cn(
+                                                      "flex items-center gap-2 px-4 py-2 border rounded-xl font-medium text-sm transition-all", 
+                                                      isSelected ? "bg-primary/10 border-primary text-primary" : "bg-white border-slate-200 text-slate-600"
+                                                    )} 
+                                                    onClick={() => { 
+                                                      const current = value?.multiValues || []; 
+                                                      const next = isSelected ? current.filter(v => v !== opt.value) : [...current, opt.value]; 
+                                                      updateSectionValue(section.id, { multiValues: next, raw: next.join(', ') }); 
+                                                    }}
+                                                  >
+                                                    <div className={cn("h-4 w-4 rounded-md border flex items-center justify-center transition-colors", isSelected ? "bg-primary border-primary" : "border-slate-300")}>
+                                                      {isSelected && <Check className="h-3 w-3 text-white" />}
+                                                    </div>
+                                                    {opt.label}
+                                                  </button>
+                                                );
+                                              })}
+                                            </div>
+                                          ) : (
+                                            <Select value={value?.raw} onValueChange={v => updateSectionValue(section.id, { raw: v })}>
+                                              <SelectTrigger className="rounded-xl"><SelectValue placeholder="Select..." /></SelectTrigger>
+                                              <SelectContent>{section.options?.map(opt => <SelectItem key={opt.id} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
+                                            </Select>
+                                          )}
+                                        </div>
+                                      )}
                                       {section.fieldType === 'KeyValue' && (
                                         <div className="space-y-4">
                                           <Table>
@@ -262,11 +335,11 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                                   </CardContent>
                               </Card>
                           );
-                      })}</div>
+                        })}
+                      </div>
                   </div>
               ))}
 
-              {/* SPECIFIC TO STANDARD TEMPLATE: Technical Details & Source of Truth */}
               {selectedTemplate?.id === '1' && (
                 <>
                   <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
@@ -354,8 +427,22 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
               )}
 
               <Card className="rounded-2xl border-slate-200 shadow-sm">
-                  <CardHeader className="bg-slate-50/50 border-b p-6 flex items-center justify-between"><CardTitle className="text-sm font-black uppercase text-slate-500 tracking-wider">Attachments</CardTitle><Button variant="outline" size="sm" onClick={()=>fileInputRef.current?.click()} className="rounded-xl font-bold bg-white"><Upload className="mr-2 h-4 w-4" />Upload</Button><input type="file" ref={fileInputRef} onChange={e=>{ const files = e.target.files; if (files?.length) { const file = files[0]; setAttachments([...attachments, { name: file.name, url: URL.createObjectURL(file), size: `${(file.size / 1024).toFixed(2)} KB`, type: file.type.split('/')[1]?.toUpperCase() || 'FILE' }]); } }} className="hidden" /></CardHeader>
-                  <CardContent className="p-6"><AttachmentList attachments={attachments} onRemove={n=>setAttachments(attachments.filter(a=>a.name!==n))} isEditing /></CardContent>
+                  <CardHeader className="bg-slate-50/50 border-b p-6 flex items-center justify-between">
+                    <CardTitle className="text-sm font-black uppercase text-slate-500 tracking-wider">Attachments</CardTitle>
+                    <Button variant="outline" size="sm" onClick={()=>fileInputRef.current?.click()} className="rounded-xl font-bold bg-white">
+                      <Upload className="mr-2 h-4 w-4" />Upload
+                    </Button>
+                    <input type="file" ref={fileInputRef} onChange={e=>{ 
+                      const files = e.target.files; 
+                      if (files?.length) { 
+                        const file = files[0]; 
+                        setAttachments([...attachments, { name: file.name, url: URL.createObjectURL(file), size: `${(file.size / 1024).toFixed(2)} KB`, type: file.type.split('/')[1]?.toUpperCase() || 'FILE' }]); 
+                      } 
+                    }} className="hidden" />
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <AttachmentList attachments={attachments} onRemove={n=>setAttachments(attachments.filter(a=>a.name!==n))} isEditing />
+                  </CardContent>
               </Card>
           </div>
         </ScrollArea>
@@ -370,7 +457,7 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
                 <AlertDialogTitle className="text-2xl font-bold">{isNewBranch ? "Discard This Branch?" : "Cancel Changes?"}</AlertDialogTitle>
                 <AlertDialogDescription className="text-slate-500 text-sm">
                   {isNewBranch ? "This will exit edit mode and discard this temporary draft." : "This will exit edit mode and discard your unsaved progress."}
-                </AccordionDescription>
+                </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="mt-8 gap-3">
                 <AlertDialogCancel className="rounded-xl font-bold">Continue Editing</AlertDialogCancel>
@@ -398,3 +485,4 @@ export default function DefinitionEdit({ definition, liveVersion, onSave, onDisc
     </TooltipProvider>
   );
 }
+

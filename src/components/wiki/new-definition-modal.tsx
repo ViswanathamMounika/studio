@@ -560,3 +560,4 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     </TooltipProvider>
   );
 }
+

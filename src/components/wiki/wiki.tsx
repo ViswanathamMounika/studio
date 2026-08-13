@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -268,7 +267,7 @@ export default function Wiki() {
         if (user === '') {
             setImpersonatedUser(null);
             sessionStorage.removeItem('mpm_impersonated_user_v1');
-            logAction('User Logout', 'Ended Act as proxy session.');
+            logAction('User Logout', 'Ended Act as session.');
             toast({ title: 'Impersonation Ended' });
         }
     } else {
@@ -342,8 +341,8 @@ export default function Wiki() {
 
         const updateTree = (items: Definition[]): Definition[] => {
             return (Array.isArray(items) ? items : []).map(item => {
-                if (item.id === targetId) return finalDef;
-                if (item.children) return { ...item, children: updateTree(item.children) };
+                if (item && item.id === targetId) return finalDef;
+                if (item && item.children) return { ...item, children: updateTree(item.children) };
                 return item;
             });
         };
