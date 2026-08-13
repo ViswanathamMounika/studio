@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useMemo, useState } from 'react';
@@ -155,8 +156,8 @@ export default function Dashboard({
     const activeTemplatesCount = templates.filter(t => t.isActive).length;
     const inactiveTemplatesCount = templates.filter(t => !t.isActive).length;
 
-    // NEEDS ATTENTION LOGIC: Derived from active data + aging threshold config
-    const thresholdDaysStr = systemConfig?.configKeys.find(k => k.key === 'DASHBOARD_NEEDS_ATTENTION_DAYS')?.value || '5';
+    // SAFE ACCESS: Fixes crash if systemConfig is null or configKeys is missing
+    const thresholdDaysStr = systemConfig?.configKeys?.find(k => k.key === 'DASHBOARD_NEEDS_ATTENTION_DAYS')?.value || '5';
     const thresholdDays = parseInt(thresholdDaysStr);
 
     const attentionItems = safeDrafts
@@ -230,12 +231,13 @@ export default function Dashboard({
 
         const diffDays = differenceInDays(end, start);
         
-        // SAMPLE DATA SEEDING: Added to ensure visual feedback when real logs are sparse
-        const seedValue = (day: Date) => {
+        // SAMPLE DATA SEEDING: Deterministic based on date to avoid hydration mismatches
+        const getSeedValue = (day: Date) => {
             const dayNum = day.getDay();
-            // Seed a bell curve-like distribution for visual engagement
-            if (dayNum === 0 || dayNum === 6) return Math.floor(Math.random() * 2); // Weekends
-            return 2 + Math.floor(Math.random() * 5); // Workdays
+            const time = day.getTime();
+            const seed = (time % 5) + 1; // Basic deterministic offset
+            if (dayNum === 0 || dayNum === 6) return Math.min(2, seed); // Weekends
+            return 2 + seed; // Workdays
         };
 
         if (diffDays <= 14) {
@@ -249,7 +251,7 @@ export default function Dashboard({
                 
                 return {
                     date: format(day, 'MMM dd'),
-                    count: realCount > 0 ? realCount : seedValue(day)
+                    count: realCount > 0 ? realCount : getSeedValue(day)
                 };
             });
         } else if (diffDays <= 60) {
@@ -264,7 +266,7 @@ export default function Dashboard({
 
                 return {
                     date: `Wk of ${format(weekStart, 'MMM dd')}`,
-                    count: realCount > 0 ? realCount : (10 + Math.floor(Math.random() * 15))
+                    count: realCount > 0 ? realCount : (10 + (weekStart.getTime() % 15))
                 };
             });
         } else {
@@ -279,7 +281,7 @@ export default function Dashboard({
 
                 return {
                     date: format(monthStart, 'MMM yyyy'),
-                    count: realCount > 0 ? realCount : (45 + Math.floor(Math.random() * 30))
+                    count: realCount > 0 ? realCount : (45 + (monthStart.getTime() % 30))
                 };
             });
         }
