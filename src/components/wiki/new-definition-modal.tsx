@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Save, Send, Plus, Info, Check } from 'lucide-react';
+import { X, Upload, Save, Send, Plus, Info, Check, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const WysiwygEditor = dynamic(() => import('./wysiwyg-editor'), { ssr: false });
 
@@ -41,6 +42,9 @@ type NewDefinitionModalProps = {
   systemConfig?: SystemConfigurationState;
 };
 
+const DATABASE_OPTIONS = ['EzCAp', 'SupportTbls', 'NetApps', 'AuditTables', 'Other'];
+const SOURCE_TYPE_OPTIONS = ['Tables', 'Stored Procedures', 'Views', 'SQL Functions', 'None'];
+
 export default function NewDefinitionModal({ open, onOpenChange, onSave, initialData, templates = [], isAdmin, masterData, systemConfig }: NewDefinitionModalProps) {
   const [name, setName] = useState('');
   const [module, setModule] = useState('Other');
@@ -51,11 +55,15 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
   const [templateId, setTemplateId] = useState<string | undefined>();
   const [sectionValues, setSectionValues] = useState<SectionValue[]>([]);
   
+  // Custom Source of Truth fields
+  const [selectedDbs, setSelectedDbs] = useState<string[]>([]);
+  const [sourceType, setSourceType] = useState<string>('');
+  const [sourceName, setSourceName] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const modules = useMemo(() => {
-    // For NEW definitions, only show ACTIVE modules
     return masterData?.modules.filter(m => m.isActive).map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
   }, [masterData]);
 
@@ -75,6 +83,9 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
         : templates.find(t => t.isDefault)?.id || templates[0]?.id;
       
       setTemplateId(tId);
+      setSelectedDbs([]);
+      setSourceType('');
+      setSourceName('');
     }
   }, [open, initialData, templates]);
 
@@ -104,6 +115,9 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
       attachments,
       isDraft,
       description: sectionValues.find(v => v.sectionId === '2')?.raw || '',
+      sourceDb: selectedDbs.join(', '),
+      sourceType,
+      sourceName,
       supportingTables: []
     });
   };
@@ -130,8 +144,6 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      
-      // CONFIG CHECK: Allowed File Types & Size
       const config = systemConfig?.settings;
       if (config) {
         const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
@@ -160,8 +172,13 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
 
   const displayGroups = useMemo(() => {
     if (!selectedTemplate) return [];
-    const allSections = selectedTemplate.sections || [];
+    let allSections = selectedTemplate.sections || [];
     
+    // EXCLUDE 'Technical Details' (3) and 'Source of Truth' (8) for template '1'
+    if (selectedTemplate.id === '1') {
+      allSections = allSections.filter(s => s.id !== '3' && s.id !== '8');
+    }
+
     const standaloneSections = allSections.filter(s => !s.group);
     const uniqueGroupNames = Array.from(new Set(allSections.filter(s => s.group).map(s => s.group as string)));
 
@@ -184,6 +201,10 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
 
     return units.sort((a, b) => a.order - b.order);
   }, [selectedTemplate]);
+
+  const toggleDb = (db: string) => {
+    setSelectedDbs(prev => prev.includes(db) ? prev.filter(d => d !== db) : [...prev, db]);
+  };
 
   return (
     <TooltipProvider>
@@ -431,6 +452,93 @@ export default function NewDefinitionModal({ open, onOpenChange, onSave, initial
                   </div>
                 </div>
               ))}
+
+              {/* SPECIFIC TO STANDARD TEMPLATE: Technical Details & Source of Truth */}
+              {selectedTemplate?.id === '1' && (
+                <>
+                  <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
+                    <CardHeader className="py-3 bg-white border-b px-6 flex flex-row items-center justify-between">
+                      <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
+                        Technical Details
+                        <Tooltip>
+                          <TooltipTrigger asChild><Info className="h-4 w-4 text-slate-400 cursor-help" /></TooltipTrigger>
+                          <TooltipContent><p className="text-xs">Technical implementation and logic.</p></TooltipContent>
+                        </Tooltip>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <WysiwygEditor 
+                        value={sectionValues.find(v => v.sectionId === '3')?.html || ''} 
+                        onChange={html => updateSectionValue('3', { html, raw: html.replace(/<[^>]+>/g, '') })} 
+                        placeholder="Type technical details here..."
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
+                    <CardHeader className="py-3 bg-white border-b px-6 flex flex-row items-center justify-between">
+                      <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
+                        Source of Truth
+                        <Tooltip>
+                          <TooltipTrigger asChild><Info className="h-4 w-4 text-slate-400 cursor-help" /></TooltipTrigger>
+                          <TooltipContent><p className="text-xs">Data origin and object details.</p></TooltipContent>
+                        </Tooltip>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1 relative">
+                          <div className="absolute -top-2 left-3 bg-white px-1 z-10">
+                             <Label className="text-[10px] text-slate-400 font-medium">Databases</Label>
+                          </div>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-full h-12 justify-between border-slate-200 rounded-xl font-medium bg-white">
+                                <span className="truncate">{selectedDbs.length > 0 ? selectedDbs.join(', ') : 'Select Databases'}</span>
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-0 rounded-xl" align="start">
+                               <div className="p-2 space-y-1">
+                                  {DATABASE_OPTIONS.map(db => (
+                                    <div key={db} className="flex items-center space-x-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer" onClick={() => toggleDb(db)}>
+                                      <Checkbox checked={selectedDbs.includes(db)} id={`db-${db}`} />
+                                      <Label htmlFor={`db-${db}`} className="flex-1 cursor-pointer font-medium">{db}</Label>
+                                    </div>
+                                  ))}
+                               </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <div className="space-y-1 relative">
+                           <div className="absolute -top-2 left-3 bg-white px-1 z-10">
+                             <Label className="text-[10px] text-red-500 font-medium">Source Type*</Label>
+                          </div>
+                          <Select value={sourceType} onValueChange={setSourceType}>
+                            <SelectTrigger className="h-12 border-slate-200 rounded-xl font-medium bg-white">
+                              <SelectValue placeholder="Select Source Type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SOURCE_TYPE_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-1 relative">
+                        <div className="absolute -top-2 left-3 bg-white px-1 z-10">
+                          <Label className="text-[10px] text-slate-400 font-medium">Source Name</Label>
+                        </div>
+                        <Input 
+                          value={sourceName} 
+                          onChange={e => setSourceName(e.target.value)} 
+                          placeholder="Source Name" 
+                          className="h-12 border-slate-200 rounded-xl bg-white font-medium" 
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
 
               <Card className="rounded-2xl border-slate-200 shadow-sm">
                   <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center justify-between">
