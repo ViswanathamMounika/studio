@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -19,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-// Dynamic imports for heavy components to prevent initial bundle bloat
+// Dynamic imports with unique variable names to prevent name collision with components
 const DefinitionTree = dynamic(() => import('@/components/wiki/definition-tree'), { 
   ssr: false,
   loading: () => <div className="space-y-2 p-4"><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-full"/></div>
@@ -29,16 +30,16 @@ const DefinitionView = dynamic(() => import('@/components/wiki/definition-view')
   loading: () => <div className="space-y-4 p-6"><Skeleton className="h-12 w-1/2"/><Skeleton className="h-[400px] w-full"/></div>
 });
 const DefinitionEdit = dynamic(() => import('@/components/wiki/definition-edit'), { ssr: false });
-const ActivityLogs = dynamic(() => import('@/components/wiki/activity-logs'), { ssr: false });
+const ActivityLogsView = dynamic(() => import('@/components/wiki/activity-logs'), { ssr: false });
 const RecentViewsModal = dynamic(() => import('@/components/wiki/recent-views-modal'), { ssr: false });
 const NewDefinitionModal = dynamic(() => import('@/components/wiki/new-definition-modal'), { ssr: false });
 const TemplatesModal = dynamic(() => import('@/components/wiki/templates-modal'), { ssr: false });
-const TemplateManagement = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
-const ApprovalQueue = dynamic(() => import('@/components/wiki/approval-queue'), { ssr: false });
-const SecurityManagement = dynamic(() => import('@/components/wiki/user-management'), { ssr: false });
-const MasterDataManagement = dynamic(() => import('@/components/wiki/master-data-management'), { ssr: false });
-const SystemConfiguration = dynamic(() => import('@/components/wiki/system-configuration'), { ssr: false });
-const Dashboard = dynamic(() => import('@/components/wiki/dashboard'), { ssr: false });
+const TemplateManagementView = dynamic(() => import('@/components/wiki/template-management'), { ssr: false });
+const ApprovalQueueView = dynamic(() => import('@/components/wiki/approval-queue'), { ssr: false });
+const SecurityManagementView = dynamic(() => import('@/components/wiki/user-management'), { ssr: false });
+const MasterDataManagementView = dynamic(() => import('@/components/wiki/master-data-management'), { ssr: false });
+const SystemConfigurationView = dynamic(() => import('@/components/wiki/system-configuration'), { ssr: false });
+const DashboardView = dynamic(() => import('@/components/wiki/dashboard'), { ssr: false });
 
 type ViewingMode = 'live' | 'draft';
 const LOCK_TIMEOUT_MINUTES = 30;
@@ -713,14 +714,14 @@ export default function Wiki() {
     const safeUsers = Array.isArray(users) ? users : [];
 
     switch (activeView) {
-        case 'dashboard': return <Dashboard definitions={safeDefs} drafts={safeDrafts} users={safeUsers} templates={safeTemplates} onNavigate={handleNavigate} activityLogs={Array.isArray(activityLogs) ? activityLogs : []} approvalHistory={Array.isArray(approvalHistory) ? approvalHistory : []} />;
-        case 'activity-logs': return <div className="p-6 h-full overflow-hidden"><ActivityLogs isAdmin={isAdmin} users={safeUsers} /></div>;
-        case 'template-management': return <div className="p-6"><TemplateManagement templates={safeTemplates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
-        case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagement masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} definitions={safeDefs} templates={safeTemplates} drafts={safeDrafts} /></div>;
-        case 'system-configuration': return <div className="p-6 h-full"><SystemConfiguration config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
+        case 'dashboard': return <DashboardView definitions={safeDefs} drafts={safeDrafts} users={safeUsers} templates={safeTemplates} onNavigate={handleNavigate} activityLogs={Array.isArray(activityLogs) ? activityLogs : []} approvalHistory={Array.isArray(approvalHistory) ? approvalHistory : []} systemConfig={systemConfig} />;
+        case 'activity-logs': return <div className="p-6 h-full overflow-hidden"><ActivityLogsView isAdmin={isAdmin} users={safeUsers} /></div>;
+        case 'template-management': return <div className="p-6"><TemplateManagementView templates={safeTemplates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
+        case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagementView masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} definitions={safeDefs} templates={safeTemplates} drafts={safeDrafts} /></div>;
+        case 'system-configuration': return <div className="p-6 h-full"><SystemConfigurationView config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
         case 'user-management': return (
             <div className="p-6 h-full">
-                <SecurityManagement 
+                <SecurityManagementView 
                     users={safeUsers} 
                     onSaveUsers={setUsers} 
                     currentUser={currentUser}
@@ -731,7 +732,7 @@ export default function Wiki() {
         );
         case 'approval-workflow': return (
             <div className="h-full">
-                <ApprovalQueue 
+                <ApprovalQueueView 
                     pendingDefinitions={categorizedDefinitions.allPending} 
                     history={Array.isArray(approvalHistory) ? approvalHistory : []}
                     allDefinitions={safeDefs}

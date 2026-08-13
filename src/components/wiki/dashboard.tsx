@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
     AlertTriangle, 
@@ -55,7 +55,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 
 type DashboardProps = {
@@ -90,11 +90,13 @@ export default function Dashboard({
   const [drillDownType, setDrillDownType] = useState<DrillDownType>('definitions');
   const [drillDownItems, setDrillDownItems] = useState<any[]>([]);
 
+  // Hydration stable reference for current time
+  const [renderTime] = useState(() => new Date());
   const { toast } = useToast();
 
   const metrics = useMemo(() => {
     const flatten = (items: Definition[]): Definition[] => {
-        return items.flatMap(d => [d, ...(d.children ? flatten(d.children) : [])]);
+        return (Array.isArray(items) ? items : []).flatMap(d => [d, ...(d.children ? flatten(d.children) : [])]);
     };
 
     const allPublished = flatten(definitions).filter(d => !d.isDraft && !d.isPendingApproval && !d.isArchived);
@@ -114,17 +116,17 @@ export default function Dashboard({
     const stalePublishedList = allPublished.filter(d => {
         const lastRevDate = d.revisions[0] ? parseISO(d.revisions[0].date) : parseISO('2000-01-01');
         const staleThreshold = 180; // 6 months
-        return differenceInDays(new Date(), lastRevDate) > staleThreshold;
+        return differenceInDays(renderTime, lastRevDate) > staleThreshold;
     });
 
-    const sixtyDaysAgo = subDays(new Date(), 60);
+    const sixtyDaysAgo = subDays(renderTime, 60);
     const orphansList = draftOnlyList.filter(d => {
         const date = d.submittedAt ? parseISO(d.submittedAt) : (d.revisions?.[0]?.date ? parseISO(d.revisions[0].date) : parseISO('2000-01-01'));
         return date < sixtyDaysAgo;
     });
 
     const approverStats: Record<string, { approved: number, requested: number, rejected: number }> = {};
-    approvalHistory.forEach(h => {
+    (Array.isArray(approvalHistory) ? approvalHistory : []).forEach(h => {
         if (h.action === 'Submitted') return;
         if (!approverStats[h.userName]) approverStats[h.userName] = { approved: 0, requested: 0, rejected: 0 };
         if (h.action === 'Approved') approverStats[h.userName].approved++;
@@ -141,7 +143,7 @@ export default function Dashboard({
         Total: stats.approved + stats.requested + stats.rejected
     })).sort((a, b) => b.Total - a.Total);
 
-    const templateUsage = templates.map(t => {
+    const templateUsage = (Array.isArray(templates) ? templates : []).map(t => {
       const uses = flatten(definitions).filter(d => d.templateId === t.id).length + 
                    safeDrafts.filter(d => d.templateId === t.id).length;
       return {
@@ -153,18 +155,17 @@ export default function Dashboard({
       };
     }).sort((a, b) => b.uses - a.uses);
 
-    const activeTemplatesCount = templates.filter(t => t.isActive).length;
-    const inactiveTemplatesCount = templates.filter(t => !t.isActive).length;
+    const activeTemplatesCount = (Array.isArray(templates) ? templates : []).filter(t => t.isActive).length;
+    const inactiveTemplatesCount = (Array.isArray(templates) ? templates : []).filter(t => !t.isActive).length;
 
-    // SAFE ACCESS: Fixes crash if systemConfig is null or configKeys is missing
     const thresholdDaysStr = systemConfig?.configKeys?.find(k => k.key === 'DASHBOARD_NEEDS_ATTENTION_DAYS')?.value || '5';
     const thresholdDays = parseInt(thresholdDaysStr);
 
     const attentionItems = safeDrafts
         .filter(d => d.isPendingApproval || getLatestFeedbackType(d) === 'change-request')
         .map(d => {
-            const date = d.submittedAt ? parseISO(d.submittedAt) : new Date();
-            const daysWaiting = differenceInDays(new Date(), date);
+            const date = d.submittedAt ? parseISO(d.submittedAt) : renderTime;
+            const daysWaiting = differenceInDays(renderTime, date);
             return {
                 name: d.name,
                 id: d.id,
@@ -221,7 +222,7 @@ export default function Dashboard({
         'Editor': users.filter(u => u.role === 'Admin' || u.role === 'Standard User')
       }
     };
-  }, [definitions, drafts, users, templates, approvalHistory, systemConfig]);
+  }, [definitions, drafts, users, templates, approvalHistory, systemConfig, renderTime]);
 
   const trendData = useMemo(() => {
     try {
@@ -230,17 +231,15 @@ export default function Dashboard({
         if (!isValid(start) || !isValid(end)) return [];
 
         const diffDays = differenceInDays(end, start);
-        
-        // SAMPLE DATA SEEDING: Deterministic based on date to avoid hydration mismatches
         const getSeedValue = (day: Date) => {
             const dayNum = day.getDay();
             const time = day.getTime();
-            const seed = (time % 5) + 1; // Basic deterministic offset
-            if (dayNum === 0 || dayNum === 6) return Math.min(2, seed); // Weekends
-            return 2 + seed; // Workdays
+            const seed = (time % 5) + 1;
+            if (dayNum === 0 || dayNum === 6) return Math.min(2, seed);
+            return 2 + seed;
         };
 
-        if (diffDays <= 14) {
+        if (diffDays <= (parseInt(systemConfig?.configKeys?.find(k => k.key === 'DASHBOARD_CHART_DAY_THRESHOLD')?.value || '14'))) {
             const days = eachDayOfInterval({ start, end });
             return days.map(day => {
                 const dateStr = format(day, 'yyyy-MM-dd');
@@ -248,13 +247,9 @@ export default function Dashboard({
                     log.activityType === 'Definition Created' && 
                     log.occurredDate.startsWith(dateStr)
                 ).length;
-                
-                return {
-                    date: format(day, 'MMM dd'),
-                    count: realCount > 0 ? realCount : getSeedValue(day)
-                };
+                return { date: format(day, 'MMM dd'), count: realCount > 0 ? realCount : getSeedValue(day) };
             });
-        } else if (diffDays <= 60) {
+        } else if (diffDays <= (parseInt(systemConfig?.configKeys?.find(k => k.key === 'DASHBOARD_CHART_WEEK_THRESHOLD')?.value || '60'))) {
             const weeks = eachWeekOfInterval({ start, end });
             return weeks.map(weekStart => {
                 const weekEnd = endOfWeek(weekStart);
@@ -263,11 +258,7 @@ export default function Dashboard({
                     const logDate = parseISO(log.occurredDate);
                     return isWithinInterval(logDate, { start: weekStart, end: weekEnd });
                 }).length;
-
-                return {
-                    date: `Wk of ${format(weekStart, 'MMM dd')}`,
-                    count: realCount > 0 ? realCount : (10 + (weekStart.getTime() % 15))
-                };
+                return { date: `Wk of ${format(weekStart, 'MMM dd')}`, count: realCount > 0 ? realCount : (10 + (weekStart.getTime() % 15)) };
             });
         } else {
             const months = eachMonthOfInterval({ start, end });
@@ -278,18 +269,14 @@ export default function Dashboard({
                     const logDate = parseISO(log.occurredDate);
                     return isWithinInterval(logDate, { start: monthStart, end: monthEnd });
                 }).length;
-
-                return {
-                    date: format(monthStart, 'MMM yyyy'),
-                    count: realCount > 0 ? realCount : (45 + (monthStart.getTime() % 30))
-                };
+                return { date: format(monthStart, 'MMM yyyy'), count: realCount > 0 ? realCount : (45 + (monthStart.getTime() % 30)) };
             });
         }
     } catch (e) {
         console.error("Chart data calculation error:", e);
         return [];
     }
-  }, [activityLogs, chartStartDate, chartEndDate]);
+  }, [activityLogs, chartStartDate, chartEndDate, systemConfig]);
 
   const handleDrillDown = (title: string, type: DrillDownType, items: any[]) => {
     setDrillDownTitle(title);
@@ -602,7 +589,7 @@ export default function Dashboard({
                           const percent = (item.uses / maxUses) * 100;
 
                           const flatten = (items: Definition[]): Definition[] => {
-                              return items.flatMap(d => [d, ...(d.children ? flatten(d.children) : [])]);
+                              return (Array.isArray(items) ? items : []).flatMap(d => [d, ...(d.children ? flatten(d.children) : [])]);
                           };
 
                           const definitionsUsing = [
