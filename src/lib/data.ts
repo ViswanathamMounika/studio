@@ -540,21 +540,21 @@ export const initialDefinitions: Definition[] = [
 ];
 
 export const initialActivityLogs: ActivityLog[] = [
-  { id: '1', userName: 'Dhilip Sagadevan', definitionName: 'System Configuration', activityType: 'System Configuration Updated', occurredDate: new Date(Date.now() - 3600000 * 1).toISOString(), details: 'Updated maximum file upload size to 25MB.' },
+  { id: '1', userName: 'Venkatesan Natarajan', definitionName: 'System Configuration', activityType: 'System Configuration Updated', occurredDate: new Date(Date.now() - 3600000 * 1).toISOString(), details: 'Updated maximum file upload size to 25MB.' },
   { id: '2', userName: 'Sarah Chen', definitionName: 'Auth Decision Date', activityType: 'Definition Updated', occurredDate: new Date(Date.now() - 3600000 * 5).toISOString(), details: 'Updated SLA logic for urgent requests.' },
   { id: '3', userName: 'Elena Rodriguez', definitionName: 'Breast Cancer Screening (BCS)', activityType: 'Approval Decision', occurredDate: new Date(Date.now() - 3600000 * 10).toISOString(), details: 'Approved & Published.' },
-  { id: '4', userName: 'Dhilip Sagadevan', definitionName: 'User Management', activityType: 'User Profile Updated', occurredDate: new Date(Date.now() - 3600000 * 2).toISOString(), details: 'Activated account for Sarah Chen' }
+  { id: '4', userName: 'Venkatesan Natarajan', definitionName: 'User Management', activityType: 'User Profile Updated', occurredDate: new Date(Date.now() - 3600000 * 2).toISOString(), details: 'Activated account for Sarah Chen' }
 ];
 
 export const initialApprovalHistory: ApprovalHistoryEntry[] = [
-  { id: 'h1', definitionId: '1.1.1', definitionName: 'Auth Decision Date', action: 'Approved', userName: 'Dhilip Sagadevan', date: new Date(Date.now() - 3600000 * 24 * 5).toISOString(), comment: 'All metadata verified against EzCAP production schema.' },
+  { id: 'h1', definitionId: '1.1.1', definitionName: 'Auth Decision Date', action: 'Approved', userName: 'Venkatesan Natarajan', date: new Date(Date.now() - 3600000 * 24 * 5).toISOString(), comment: 'All metadata verified against EzCAP production schema.' },
   { id: 'h2', definitionId: '1.1.1', definitionName: 'Auth Decision Date', action: 'Submitted', userName: 'Sarah Chen', date: new Date(Date.now() - 3600000 * 24 * 6).toISOString() },
-  { id: 'h3', definitionId: '1.1.2', definitionName: 'Service Type Mapping', action: 'Changes Requested', userName: 'Dhilip Sagadevan', date: new Date(Date.now() - 3600000 * 24 * 1).toISOString(), comment: 'Duplication identified: This logic overlaps with the Provider Master mapping table.' },
-  { id: 'h4', definitionId: '1.1.2', definitionName: 'Service Type Mapping', action: 'Rejected', userName: 'Dhilip Sagadevan', date: new Date(Date.now() - 3600000 * 24 * 10).toISOString(), comment: 'Formatting issues: Technical SQL snippet is missing required JOIN criteria.' },
+  { id: 'h3', definitionId: '1.1.2', definitionName: 'Service Type Mapping', action: 'Changes Requested', userName: 'Venkatesan Natarajan', date: new Date(Date.now() - 3600000 * 24 * 1).toISOString(), comment: 'Duplication identified: This logic overlaps with the Provider Master mapping table.' },
+  { id: 'h4', definitionId: '1.1.2', definitionName: 'Service Type Mapping', action: 'Rejected', userName: 'Venkatesan Natarajan', date: new Date(Date.now() - 3600000 * 24 * 10).toISOString(), comment: 'Formatting issues: Technical SQL snippet is missing required JOIN criteria.' },
 ];
 
 export const initialUsers: UserAccount[] = [
-  { id: 'u1', name: 'Dhilip Sagadevan', email: 'dhilip.s@medpoint.com', role: 'Super Admin', status: 'Active', lastLogin: new Date().toISOString(), avatar: 'https://picsum.photos/seed/dhilip/40/40', department: 'Executive' },
+  { id: 'u1', name: 'Venkatesan Natarajan', email: 'venkatesan.n@medpoint.com', role: 'Super Admin', status: 'Active', lastLogin: new Date().toISOString(), avatar: 'https://picsum.photos/seed/venkat/40/40', department: 'Executive' },
   { id: 'u2', name: 'Sarah Chen', email: 's.chen@medpoint.com', role: 'Admin', status: 'Active', lastLogin: new Date(Date.now() - 3600000 * 5).toISOString(), avatar: 'https://picsum.photos/seed/sarah/40/40', department: 'Clinical IT' },
   { id: 'u3', name: 'Mark Wilson', email: 'm.wilson@medpoint.com', role: 'Standard User', status: 'Active', lastLogin: new Date(Date.now() - 3600000 * 24).toISOString(), avatar: 'https://picsum.photos/seed/mark/40/40', department: 'Reporting' },
   { id: 'u4', name: 'Elena Rodriguez', email: 'e.rodriguez@medpoint.com', role: 'Approver', status: 'Inactive', lastLogin: new Date(Date.now() - 3600000 * 24 * 3).toISOString(), avatar: 'https://picsum.photos/seed/elena/40/40', department: 'Compliance' },
@@ -580,7 +580,7 @@ export const initialRoles: Role[] = [
 export const defDataTable = {
     headers: ['ID', 'OBJECT_TYPE', 'SERVER_NAME', 'DATABASE_NAME', 'QUERY', 'NAME', 'DESCRIPTION', 'CREATEDBY', 'CREATEDDATE', 'LASTCHANGEDBY', 'LASTCHANGEDDATE'],
     rows: [
-        { ID: 1, OBJECT_TYPE: 1, SERVER_NAME: 'MPM_PROD_SQL', DATABASE_NAME: 'DW_Reporting', QUERY: 'SELECT * FROM vw_AuthDecisionDate', NAME: 'Auth Decision Date View', DESCRIPTION: 'Main view for authorization decision dates.', CREATEDBY: 'Dhilip Sagadevan', CREATEDDATE: '2023-01-01T09:00:00Z', LASTCHANGEDBY: 'Dhilip Sagadevan', LASTCHANGEDDATE: '2023-10-15T14:30:00Z' }
+        { ID: 1, OBJECT_TYPE: 1, SERVER_NAME: 'MPM_PROD_SQL', DATABASE_NAME: 'DW_Reporting', QUERY: 'SELECT * FROM vw_AuthDecisionDate', NAME: 'Auth Decision Date View', DESCRIPTION: 'Main view for authorization decision dates.', CREATEDBY: 'Venkatesan Natarajan', CREATEDDATE: '2023-01-01T09:00:00Z', LASTCHANGEDBY: 'Venkatesan Natarajan', LASTCHANGEDDATE: '2023-10-15T14:30:00Z' }
     ]
 };
 

@@ -49,7 +49,7 @@ const initialNotifications: NotificationType[] = [
     id: '1',
     definitionId: '1.1.1',
     definitionName: 'Auth Decision Date',
-    message: 'The description was updated by Dhilip Sagadevan.',
+    message: 'The description was updated by Venkatesan Natarajan.',
     date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     read: false,
   },
@@ -116,10 +116,10 @@ export default function Wiki() {
     if (impersonatedUser) return impersonatedUser;
     return {
         id: originalAdminState ? "user_admin" : "user_std",
-        name: originalAdminState ? "Dhilip Sagadevan" : "Mark Wilson",
-        avatar: originalAdminState ? "https://picsum.photos/seed/dhilip/40/40" : "https://picsum.photos/seed/mark/40/40",
+        name: originalAdminState ? "Venkatesan Natarajan" : "Mark Wilson",
+        avatar: originalAdminState ? "https://picsum.photos/seed/venkat/40/40" : "https://picsum.photos/seed/mark/40/40",
         role: originalAdminState ? 'Super Admin' : 'Standard User',
-        email: originalAdminState ? 'dhilip.s@medpoint.com' : 'mark.w@medpoint.com',
+        email: originalAdminState ? 'venkatesan.n@medpoint.com' : 'mark.w@medpoint.com',
         status: 'Active' as const
     };
   }, [originalAdminState, impersonatedUser]);
