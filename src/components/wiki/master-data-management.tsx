@@ -46,10 +46,18 @@ import {
     Save
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { MasterDataState, MasterDataItem, MasterDataCategory, Definition, Template } from '@/lib/types';
+import type { MasterDataState, MasterDataItem, MasterDataCategory, Definition, Template, ActivityType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
-import { ScrollArea } from '../ui/scroll-area';
+
+type MasterDataManagementProps = {
+    masterData: MasterDataState;
+    onSaveMasterData: (data: MasterDataState) => void;
+    onLogAction: (type: ActivityType, details?: string) => void;
+    definitions: Definition[];
+    drafts: Definition[];
+    templates: Template[];
+};
 
 const CATEGORY_LABELS: Record<MasterDataCategory, { label: string; icon: any; description: string }> = {
   modules: { label: 'Business Modules', icon: Layers, description: 'High-level functional domains like Authorizations or Claims.' },
@@ -75,7 +83,10 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
     const { toast } = useToast();
 
     const allDefs = useMemo(() => {
-        return [...(Array.isArray(definitions) ? definitions : []), ...(Array.isArray(drafts) ? drafts : [])];
+        const flatten = (items: Definition[]): Definition[] => {
+            return (Array.isArray(items) ? items : []).flatMap(d => [d, ...(d.children ? flatten(d.children) : [])]);
+        };
+        return [...flatten(definitions), ...(Array.isArray(drafts) ? drafts : [])];
     }, [definitions, drafts]);
 
     const isItemReferred = (item: MasterDataItem, category: MasterDataCategory) => {
@@ -86,6 +97,9 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         }
         if (category === 'sourcesOfTruth') {
             return allDefs.some(d => d.sectionValues?.some(v => v.sectionId === '8' && (v.raw === item.name || v.multiValues?.includes(item.name))));
+        }
+        if (category === 'sourceTypes') {
+            return allDefs.some(d => d.sourceType === item.name);
         }
         return false;
     };
@@ -162,9 +176,11 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         const item = masterData[activeCategory].find(i => i.id === id);
         if (!item) return;
 
-        // User requested: "in business modules dont restict the inactive even if it is in use"
-        // We only restrict deactivation for categories OTHER than modules.
-        if (currentStatus === true && activeCategory !== 'modules' && isItemReferred(item, activeCategory)) {
+        // PER REQUIREMENT: Allow soft delete (deactivation) for modules, sources, and types even if referred.
+        // This acts as the alternative to hard deletion which is strictly restricted.
+        const allowedSoftDelete = ['modules', 'sourcesOfTruth', 'sourceTypes'].includes(activeCategory);
+
+        if (currentStatus === true && !allowedSoftDelete && isItemReferred(item, activeCategory)) {
             toast({
                 variant: 'destructive',
                 title: "Deactivation Restricted",
@@ -187,7 +203,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
             toast({
                 variant: 'destructive',
                 title: "Deletion Restricted",
-                description: `"${item.name}" cannot be deleted because it is currently referenced.`
+                description: `"${item.name}" cannot be deleted because it is currently referenced in the library.`
             });
             return;
         }
@@ -434,8 +450,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                     key={item.id} 
                                                     className={cn(
                                                         "h-9 px-3.5 rounded-xl gap-2 font-bold text-sm transition-all group",
-                                                        // Deletion is restricted if in use, but status toggling for modules is allowed
-                                                        (referred && modalCategory !== 'modules') ? "bg-amber-50 text-amber-700 border-amber-100" : 
+                                                        (referred) ? "bg-amber-50 text-amber-700 border-amber-100" : 
                                                         isModalCategoryRestricted ? "bg-slate-100 text-slate-400 border-slate-200" :
                                                         "bg-indigo-50 text-indigo-700 border-indigo-100"
                                                     )}
@@ -449,7 +464,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                             <X className="h-3.5 w-3.5" />
                                                         </button>
                                                     )}
-                                                    {(referred && modalCategory !== 'modules') && <Lock className="h-3 w-3 opacity-40" />}
+                                                    {(referred) && <Lock className="h-3 w-3 opacity-40" />}
                                                 </Badge>
                                             );
                                         })}
