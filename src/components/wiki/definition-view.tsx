@@ -150,12 +150,11 @@ export default function DefinitionView({
         onTabChange('notes');
     };
 
-    // UNRESTRICTED ACCESS: Admin can edit any non-archived item, regardless of approval status.
     const isEditable = !definition.isArchived && (isAdmin || !definition.isPendingApproval);
 
   return (
     <TooltipProvider>
-        <article className="max-w-none">
+        <article className="max-w-none pb-32">
             {isOutdated && (
                 <div className="mb-8 animate-in slide-in-from-top-4 fade-in duration-500">
                     <div className="group relative flex items-center justify-between p-4 rounded-[20px] bg-[#FFF9EB] border border-[#FFE0B2] shadow-sm overflow-hidden">
@@ -412,4 +411,3 @@ export default function DefinitionView({
     </TooltipProvider>
   );
 }
-
