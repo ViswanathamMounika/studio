@@ -360,7 +360,12 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                             </Button>
                                                             <AlertDialog>
                                                                 <AlertDialogTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-red-50 rounded-lg">
+                                                                    <Button 
+                                                                        disabled={referred}
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-red-50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                                                                    >
                                                                         <Trash2 className="h-4 w-4" />
                                                                     </Button>
                                                                 </AlertDialogTrigger>
