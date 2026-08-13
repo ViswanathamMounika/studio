@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -299,25 +300,25 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
             </Card>
 
             <Tabs defaultValue="preferences" className="space-y-6">
-                <TabsList className="bg-white p-1.5 h-auto rounded-2xl border border-slate-200 flex flex-wrap shadow-sm gap-2">
+                <TabsList className="bg-white p-1.5 h-auto rounded-2xl border border-slate-200 flex justify-start shadow-sm gap-2">
                     <TabsTrigger 
                         value="preferences" 
-                        className="rounded-xl px-6 h-10 flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold text-xs gap-3 transition-all data-[state=active]:text-[#3F51B5] group"
+                        className="rounded-xl px-6 h-10 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold text-xs gap-3 transition-all data-[state=active]:text-[#3F51B5] group"
                     >
                         <SlidersHorizontal className="h-4 w-4 group-data-[state=active]:text-[#3F51B5] text-slate-400" />
-                        Web App Config
+                        Web App Configuration
                         <Badge variant="secondary" className="ml-1 h-5 px-2 bg-indigo-50 text-[#3F51B5] border-transparent font-bold text-[10px] rounded-lg">
-                            {sectionCount}
+                            {sectionCount} sections
                         </Badge>
                     </TabsTrigger>
                     <TabsTrigger 
                         value="parameters" 
-                        className="rounded-xl px-6 h-10 flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold text-xs gap-3 transition-all data-[state=active]:text-[#3F51B5] group"
+                        className="rounded-xl px-6 h-10 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold text-xs gap-3 transition-all data-[state=active]:text-[#3F51B5] group"
                     >
                         <TableIcon className="h-4 w-4 group-data-[state=active]:text-[#3F51B5] text-slate-400" />
                         System Parameters
                         <Badge variant="secondary" className="ml-1 h-5 px-2 bg-slate-100 text-slate-500 border-transparent font-bold text-[10px] rounded-lg group-data-[state=active]:bg-indigo-50 group-data-[state=active]:text-[#3F51B5]">
-                            {keysCount}
+                            {keysCount} keys
                         </Badge>
                     </TabsTrigger>
                 </TabsList>
@@ -559,7 +560,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                         </DialogClose>
                         <Button 
                             onClick={handleSaveKeyEntry} 
-                            className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95"
+                            className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold h-11 px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95"
                         >
                             Finalize Parameter
                         </Button>
