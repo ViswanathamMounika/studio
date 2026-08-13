@@ -1,9 +1,9 @@
 
 "use client";
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import type { Definition, Attachment, Template, SectionValue, TemplateSection, MasterDataState } from '@/lib/types';
+import type { Definition, Attachment, Template, SectionValue, TemplateSection, MasterDataState, SQLFunctionParameter, SQLFunctionSpec } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,7 +39,9 @@ type DefinitionEditProps = {
 };
 
 const DATABASE_OPTIONS = ['EzCAp', 'SupportTbls', 'NetApps', 'AuditTables', 'Other'];
-const SOURCE_TYPE_OPTIONS = ['Tables', 'Stored Procedures', 'Views', 'SQL Functions', 'None'];
+const SOURCE_TYPE_OPTIONS = ['Tables', 'Stored Procedures', 'Views', 'SQL Function', 'None'];
+const PARAM_TYPE_OPTIONS = ['int', 'varchar', 'date', 'datetime'];
+const OUTPUT_TYPE_OPTIONS = ['single value', 'json', 'table', 'xml', 'custom type'];
 
 export default function DefinitionEdit({ 
   definition, 
@@ -66,6 +68,13 @@ export default function DefinitionEdit({
   const [sourceType, setSourceType] = useState<string>(definition.sourceType || '');
   const [sourceName, setSourceName] = useState(definition.sourceName || '');
 
+  // SQL Function Specs
+  const [sqlParameters, setSqlParameters] = useState<SQLFunctionParameter[]>(
+    definition.sqlFunctionSpec?.inputParameters || [{ id: '1', name: '', type: 'varchar' }]
+  );
+  const [sqlOutputType, setSqlOutputType] = useState(definition.sqlFunctionSpec?.outputType || 'single value');
+  const [sqlOutputExample, setSqlOutputExample] = useState(definition.sqlFunctionSpec?.outputExample || '');
+
   const modules = useMemo(() => {
     return masterData?.modules.map(m => m.name) || ['Authorizations', 'Claims', 'Provider', 'Member', 'Other'];
   }, [masterData]);
@@ -83,6 +92,19 @@ export default function DefinitionEdit({
         next[idx] = { ...next[idx], ...updates };
         return next;
     });
+  };
+
+  const addSqlParameter = () => {
+    setSqlParameters([...sqlParameters, { id: Date.now().toString(), name: '', type: 'varchar' }]);
+  };
+
+  const updateSqlParameter = (id: string, name: string, type: string) => {
+    setSqlParameters(prev => prev.map(p => p.id === id ? { ...p, name, type } : p));
+  };
+
+  const removeSqlParameter = (id: string) => {
+    if (sqlParameters.length <= 1) return;
+    setSqlParameters(prev => prev.filter(p => p.id !== id));
   };
 
   const isOutdated = useMemo(() => {
@@ -371,7 +393,7 @@ export default function DefinitionEdit({
                         </Tooltip>
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="p-6 space-y-6">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1 relative">
                           <div className="absolute -top-2 left-3 bg-white px-1 z-10">
@@ -412,7 +434,7 @@ export default function DefinitionEdit({
                       </div>
                       <div className="space-y-1 relative">
                         <div className="absolute -top-2 left-3 bg-white px-1 z-10">
-                          <Label className="text-[10px] text-slate-400 font-medium">Source Name</Label>
+                          <Label className="text-[10px] text-slate-400 font-medium">Source Name*</Label>
                         </div>
                         <Input 
                           value={sourceName} 
@@ -421,6 +443,88 @@ export default function DefinitionEdit({
                           className="h-12 border-slate-200 rounded-xl bg-white font-medium" 
                         />
                       </div>
+
+                      {/* SQL FUNCTION SPECIFICATIONS */}
+                      {sourceType === 'SQL Function' && (
+                        <div className="mt-4 p-6 bg-slate-100/50 rounded-[20px] border border-slate-200 space-y-6">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-black uppercase text-indigo-600 tracking-widest">SQL Function Specifications</span>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <Label className="text-[12px] font-bold text-slate-700">Input Parameter(s)</Label>
+                                <div className="space-y-3">
+                                    {sqlParameters.map((param, pIdx) => (
+                                        <div key={param.id} className="grid grid-cols-12 gap-3 items-end">
+                                            <div className="col-span-8 space-y-1.5">
+                                                <Label className="text-[9px] font-black uppercase text-slate-400">Parameter Name</Label>
+                                                <Input 
+                                                    value={param.name} 
+                                                    onChange={e => updateSqlParameter(param.id, e.target.value, param.type)}
+                                                    placeholder="@Name"
+                                                    className="h-11 rounded-xl border-slate-200 bg-white font-medium"
+                                                />
+                                            </div>
+                                            <div className="col-span-3 space-y-1.5">
+                                                <Label className="text-[9px] font-black uppercase text-slate-400">Type</Label>
+                                                <Select value={param.type} onValueChange={v => updateSqlParameter(param.id, param.name, v)}>
+                                                    <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white font-medium">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {PARAM_TYPE_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="col-span-1 flex justify-center pb-1.5">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-9 w-9 text-slate-300 hover:text-red-500"
+                                                    onClick={() => removeSqlParameter(param.id)}
+                                                    disabled={sqlParameters.length <= 1}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="h-9 rounded-xl border-slate-300 text-indigo-600 font-bold px-4 hover:bg-white"
+                                        onClick={addSqlParameter}
+                                    >
+                                        <Plus className="h-3.5 w-3.5 mr-1.5" />
+                                        Add Parameter
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6 pt-2">
+                                <div className="space-y-2">
+                                    <Label className="text-[12px] font-bold text-slate-700">Output Type</Label>
+                                    <Select value={sqlOutputType} onValueChange={setSqlOutputType}>
+                                        <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white font-medium">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {OUTPUT_TYPE_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[12px] font-bold text-slate-700">Output Example</Label>
+                                    <Input 
+                                        value={sqlOutputExample}
+                                        onChange={e => setSqlOutputExample(e.target.value)}
+                                        placeholder="e.g., '2024-01-01' or 42"
+                                        className="h-11 rounded-xl border-slate-200 bg-white font-medium"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </>
@@ -466,8 +570,8 @@ export default function DefinitionEdit({
             </AlertDialogContent>
           </AlertDialog>
           <div className="flex gap-3">
-              <Button variant="secondary" onClick={()=>onSave({...definition, name, module, keywords, attachments, sectionValues, sourceDb: selectedDbs.join(', '), sourceType, sourceName, isDraft: true, isPendingApproval: false})} className="rounded-xl font-bold px-8">Save Draft</Button>
-              <Button onClick={()=>onSave({...definition, name, module, keywords, attachments, sectionValues, sourceDb: selectedDbs.join(', '), sourceType, sourceName, isDraft: isAdmin ? false : true, isPendingApproval: !isAdmin})} disabled={!name.trim()} className="bg-indigo-600 text-white rounded-xl font-bold px-10">{isAdmin ? 'Publish Changes' : 'Submit for Approval'}</Button>
+              <Button variant="secondary" onClick={()=>onSave({...definition, name, module, keywords, attachments, sectionValues, sourceDb: selectedDbs.join(', '), sourceType, sourceName, sqlFunctionSpec: sourceType === 'SQL Function' ? { inputParameters: sqlParameters, outputType: sqlOutputType, outputExample: sqlOutputExample } : undefined, isDraft: true, isPendingApproval: false})} className="rounded-xl font-bold px-8">Save Draft</Button>
+              <Button onClick={()=>onSave({...definition, name, module, keywords, attachments, sectionValues, sourceDb: selectedDbs.join(', '), sourceType, sourceName, sqlFunctionSpec: sourceType === 'SQL Function' ? { inputParameters: sqlParameters, outputType: sqlOutputType, outputExample: sqlOutputExample } : undefined, isDraft: isAdmin ? false : true, isPendingApproval: !isAdmin})} disabled={!name.trim()} className="bg-indigo-600 text-white rounded-xl font-bold px-10">{isAdmin ? 'Publish Changes' : 'Submit for Approval'}</Button>
           </div>
         </div>
         
@@ -476,7 +580,7 @@ export default function DefinitionEdit({
               open={showConflictDiff} 
               onOpenChange={setShowConflictDiff} 
               revision1={{ ticketId: 'LIVE', date: liveVersion.revisions?.[0]?.date || 'Now', developer: liveVersion.revisions?.[0]?.developer || 'System', description: 'Latest Published Version', snapshot: liveVersion }} 
-              revision2={{ ticketId: 'DRAFT', date: 'Current', developer: 'You', description: 'Your Current Draft', snapshot: { ...definition, name, module, keywords, attachments, sectionValues, sourceDb: selectedDbs.join(', '), sourceType, sourceName } }} 
+              revision2={{ ticketId: 'DRAFT', date: 'Current', developer: 'You', description: 'Your Current Draft', snapshot: { ...definition, name, module, keywords, attachments, sectionValues, sourceDb: selectedDbs.join(', '), sourceType, sourceName, sqlFunctionSpec: sourceType === 'SQL Function' ? { inputParameters: sqlParameters, outputType: sqlOutputType, outputExample: sqlOutputExample } : undefined } }} 
               definition={definition} 
               templates={templates} 
             />
@@ -485,4 +589,3 @@ export default function DefinitionEdit({
     </TooltipProvider>
   );
 }
-

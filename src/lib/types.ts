@@ -106,6 +106,18 @@ export interface LockInfo {
   expireAt: string;
 }
 
+export interface SQLFunctionParameter {
+  id: string;
+  name: string;
+  type: string;
+}
+
+export interface SQLFunctionSpec {
+  inputParameters: SQLFunctionParameter[];
+  outputType: string;
+  outputExample: string;
+}
+
 export interface Definition {
   id: string;
   originalId?: string; // Links draft to live version
@@ -131,6 +143,7 @@ export interface Definition {
   relatedDefinitions?: string[];
   publishedSnapshot?: Partial<Omit<Definition, 'revisions' | 'children' | 'notes' | 'discussions'>>;
   lock?: LockInfo;
+  sqlFunctionSpec?: SQLFunctionSpec;
   
   // Backward compatibility fields
   description: string; 
