@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -228,7 +227,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
         setRoles(newRoles);
         logAction(isNew ? 'Role Created' : 'Role Updated', `Role: ${editingRole.name}`);
         setIsRoleModalOpen(false);
-        toast({ title: isNew ? "Role Created" : "Role Saved" });
+        toast({ title: iIsNew ? "Role Created" : "Role Saved" });
     };
 
     const handleDeleteRole = (id: string) => {
@@ -293,7 +292,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
 
     return (
         <TooltipProvider>
-            <div className="space-y-6">
+            <div className="space-y-6 pb-32">
                 {/* HEADER ACTIONS */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2">
                     <div className="space-y-1">
@@ -621,7 +620,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
 
                 <Dialog open={isRoleModalOpen} onOpenChange={setIsRoleModalOpen}>
                     <DialogContent className="max-w-[95vw] sm:max-w-2xl rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><ShieldCheck className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">{!safeRoles.find(r => r.id === editingRole?.id) ? 'Create' : 'Edit'} Security Role</DialogTitle></div></div>
+                        <div className="p-6 border-b bg-white"><div className="flex items-center gap-4"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><ShieldCheck className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">{!safeRoles.find(r => r.id === editingRole?.id) ? 'Create' : 'Edit'} Security Role</DialogTitle></div></div>
                         <div className="p-6 md:p-8 space-y-6 bg-slate-50/30 max-h-[70vh] overflow-y-auto">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Role Name</Label><Input value={editingRole?.name || ''} onChange={e => setEditingRole(p => p ? ({ ...p, name: e.target.value }) : null)} className="rounded-xl border-slate-200 h-11 font-bold bg-white shadow-sm" /></div>

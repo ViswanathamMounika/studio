@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -221,7 +220,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
 
     return (
         <TooltipProvider>
-            <div className="space-y-6">
+            <div className="space-y-6 pb-32">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Master Data Management</h1>
@@ -247,7 +246,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                             <CardTitle className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Registry Explorer</CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 md:p-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-end">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-1.5">
                                         <Label className="text-[11px] font-bold text-slate-500">Master Data Category</Label>

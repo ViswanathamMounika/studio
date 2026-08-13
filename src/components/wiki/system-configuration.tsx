@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -272,7 +271,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
     const keysCount = localConfig.configKeys.length;
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 pb-32">
             <Card className="rounded-[24px] border-slate-200 bg-white p-6 md:p-8 shadow-sm overflow-hidden border-l-4 border-l-indigo-600">
                 <div className="flex flex-wrap items-center gap-6 md:gap-10">
                     <div className="h-16 w-16 rounded-[20px] bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100">
