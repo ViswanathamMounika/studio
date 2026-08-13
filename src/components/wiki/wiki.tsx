@@ -1,9 +1,9 @@
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import AppSidebar from '@/components/layout/sidebar';
 import AppHeader from '@/components/layout/header';
+import TopNavbar from '@/components/layout/top-navbar';
 import { initialDefinitions, initialTemplates, findDefinition, initialApprovalHistory, initialDrafts, initialUsers, initialMasterData, initialSystemConfig, initialActivityLogs } from '@/lib/data';
 import type { Definition, Notification as NotificationType, Template, DiscussionMessage, Note, LockInfo, View, ApprovalHistoryEntry, UserAccount, ActivityLog, MasterDataState, SystemConfigurationState, ActivityType } from '@/lib/types';
 import { Search, ListFilter, Library, Clock, LogOut, AlertTriangle } from 'lucide-react';
@@ -801,116 +801,127 @@ export default function Wiki() {
 
   return (
     <SidebarProvider>
-      <AppSidebar 
-        activeView={activeView} 
-        onNavigate={handleNavigate} 
-        isAdmin={isAdmin} 
-        onToggleAdmin={setOriginalAdminState} 
-        isImpersonating={!!impersonatedUser}
-        systemConfig={systemConfig}
-        currentUser={currentUser}
-      />
-      <SidebarInset>
-        <div className="flex flex-col h-screen bg-background relative overflow-hidden">
-          {impersonatedUser && (
-              <div className="bg-red-600 px-6 py-2.5 flex items-center justify-between text-white shadow-xl z-[100] sticky top-0 shrink-0 border-b border-red-500">
-                  <div className="flex items-center gap-4">
-                      <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center border border-white/20 shadow-inner">
-                          <AlertTriangle className="h-5 w-5 text-white animate-pulse" />
-                      </div>
-                      <div className="flex flex-col">
-                          <p className="text-[14px] font-black uppercase tracking-widest leading-none">Security Override: Act as Session Active</p>
-                          <p className="text-[11px] font-bold text-white/90 mt-1 uppercase tracking-tight">
-                              Proxying Identity: <span className="underline decoration-white/40">{impersonatedUser.name}</span> <span className="mx-2 opacity-40">|</span> Role: <span className="font-black">{impersonatedUser.role}</span>
-                          </p>
-                      </div>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-9 px-6 rounded-xl border-white/40 bg-white/10 hover:bg-white text-white hover:text-red-600 font-black uppercase text-[11px] gap-2 transition-all active:scale-95 shadow-lg"
-                    onClick={() => handleImpersonate('')} 
-                  >
-                      <LogOut className="h-4 w-4" />
-                      Terminate Proxy Session
-                  </Button>
-              </div>
-          )}
-          <AppHeader
-              onRecentClick={() => setIsRecentModalOpen(true)}
-              onNewDefinitionClick={(type) => type === 'template' ? setIsTemplatesModalOpen(true) : setIsNewDefinitionModalOpen(true)}
-              isAdmin={isAdmin}
-              notifications={Array.isArray(notifications) ? notifications : []}
-              setNotifications={setNotifications}
-              onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')}
-              activeView={activeView}
-              currentUser={currentUser}
+      <div className="flex flex-col h-screen w-full overflow-hidden">
+        <TopNavbar 
+            currentUser={currentUser} 
+            onImpersonate={handleImpersonate} 
+            isImpersonating={!!impersonatedUser}
+            isAdmin={isAdmin}
+            onNavigate={handleNavigate}
+        />
+        <div className="flex-1 flex overflow-hidden">
+          <AppSidebar 
+            activeView={activeView} 
+            onNavigate={handleNavigate} 
+            isAdmin={isAdmin} 
+            onToggleAdmin={setOriginalAdminState} 
+            isImpersonating={!!impersonatedUser}
+            systemConfig={systemConfig}
+            currentUser={currentUser}
           />
-          <main className="flex-1 flex overflow-hidden">
-             {activeView === 'definitions' && (
-              <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card relative">
-                  <div className="p-4 flex flex-col gap-4 border-b bg-background sticky top-0 z-30 shadow-sm">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input type="search" placeholder="Search library..." className="w-full h-9 rounded-xl bg-muted/50 pl-8 focus-visible:bg-background border-muted" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                    </div>
-                    <Button variant="outline" className={cn("w-full justify-center h-9 rounded-xl font-bold gap-2 border-slate-200 transition-all", isSelectMode && "bg-primary text-white border-primary")} onClick={() => setIsSelectMode(!isSelectMode)}>
-                      <ListFilter className="h-4 w-4" />
-                      Bulk Actions
-                    </Button>
+          <SidebarInset>
+            <div className="flex flex-col h-full bg-background relative overflow-hidden">
+              {impersonatedUser && (
+                  <div className="bg-red-600 px-6 py-2.5 flex items-center justify-between text-white shadow-xl z-20 shrink-0 border-b border-red-500">
+                      <div className="flex items-center gap-4">
+                          <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center border border-white/20 shadow-inner">
+                              <AlertTriangle className="h-5 w-5 text-white animate-pulse" />
+                          </div>
+                          <div className="flex flex-col">
+                              <p className="text-[14px] font-black uppercase tracking-widest leading-none">Security Override: Act as Session Active</p>
+                              <p className="text-[11px] font-bold text-white/90 mt-1 uppercase tracking-tight">
+                                  Proxying Identity: <span className="underline decoration-white/40">{impersonatedUser.name}</span> <span className="mx-2 opacity-40">|</span> Role: <span className="font-black">{impersonatedUser.role}</span>
+                              </p>
+                          </div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-9 px-6 rounded-xl border-white/40 bg-white/10 hover:bg-white text-white hover:text-red-600 font-black uppercase text-[11px] gap-2 transition-all active:scale-95 shadow-lg"
+                        onClick={() => handleImpersonate('')} 
+                      >
+                          <LogOut className="h-4 w-4" />
+                          Terminate Proxy Session
+                      </Button>
                   </div>
-
-                  <div className="flex-1 overflow-y-auto flex flex-col bg-slate-50/20">
-                      {!isAdmin ? (
-                        <div className="border-b bg-white/50">
-                          <Tabs defaultValue="saved" className="w-full">
-                            <TabsList className="w-full grid grid-cols-2 h-10 bg-transparent rounded-none border-b p-0">
-                              <TabsTrigger value="saved" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none font-bold text-[10px] text-slate-500 uppercase tracking-wider transition-all">
-                                My Saved
-                              </TabsTrigger>
-                              <TabsTrigger value="submitted" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-primary data-[state=active]:text-primary rounded-none font-bold text-[10px] text-slate-500 uppercase tracking-wider transition-all">
-                                Submitted
-                              </TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="saved" className="mt-0 p-3">
-                               <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.userDrafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onDelete={handleDelete} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                            </TabsContent>
-                            <TabsContent value="submitted" className="mt-0 p-3">
-                               <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.userPending} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                            </TabsContent>
-                          </Tabs>
+              )}
+              <AppHeader
+                  onRecentClick={() => setIsRecentModalOpen(true)}
+                  onNewDefinitionClick={(type) => type === 'template' ? setIsTemplatesModalOpen(true) : setIsNewDefinitionModalOpen(true)}
+                  isAdmin={isAdmin}
+                  notifications={Array.isArray(notifications) ? notifications : []}
+                  setNotifications={setNotifications}
+                  onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')}
+                  activeView={activeView}
+                  currentUser={currentUser}
+              />
+              <main className="flex-1 flex overflow-hidden">
+                {activeView === 'definitions' && (
+                  <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card relative">
+                      <div className="p-4 flex flex-col gap-4 border-b bg-background sticky top-0 z-30 shadow-sm">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input type="search" placeholder="Search library..." className="w-full h-9 rounded-xl bg-muted/50 pl-8 focus-visible:bg-background border-muted" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                         </div>
-                      ) : (
-                        <div className="p-4 space-y-3 border-b bg-white/50">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-3.5 w-3.5 text-slate-400" />
-                                  <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Saved Definitions</h2>
+                        <Button variant="outline" className={cn("w-full justify-center h-9 rounded-xl font-bold gap-2 border-slate-200 transition-all", isSelectMode && "bg-primary text-white border-primary")} onClick={() => setIsSelectMode(!isSelectMode)}>
+                          <ListFilter className="h-4 w-4" />
+                          Bulk Actions
+                        </Button>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto flex flex-col bg-slate-50/20">
+                          {!isAdmin ? (
+                            <div className="border-b bg-white/50">
+                              <Tabs defaultValue="saved" className="w-full">
+                                <TabsList className="w-full grid grid-cols-2 h-10 bg-transparent rounded-none border-b p-0">
+                                  <TabsTrigger value="saved" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none font-bold text-[10px] text-slate-500 uppercase tracking-wider transition-all">
+                                    My Saved
+                                  </TabsTrigger>
+                                  <TabsTrigger value="submitted" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-primary data-[state=active]:text-primary rounded-none font-bold text-[10px] text-slate-500 uppercase tracking-wider transition-all">
+                                    Submitted
+                                  </TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="saved" className="mt-0 p-3">
+                                  <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.userDrafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onDelete={handleDelete} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                                </TabsContent>
+                                <TabsContent value="submitted" className="mt-0 p-3">
+                                  <DefinitionTree treeId="submissions" definitions={categorizedDefinitions.userPending} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                                </TabsContent>
+                              </Tabs>
+                            </div>
+                          ) : (
+                            <div className="p-4 space-y-3 border-b bg-white/50">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                                      <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">My Saved Definitions</h2>
+                                    </div>
+                                    {categorizedDefinitions.userDrafts.length > 0 && <Badge className="bg-primary/10 text-primary h-5 px-1.5 rounded-full text-[10px] font-black">{categorizedDefinitions.userDrafts.length}</Badge>}
                                 </div>
-                                {categorizedDefinitions.userDrafts.length > 0 && <Badge className="bg-primary/10 text-primary h-5 px-1.5 rounded-full text-[10px] font-black">{categorizedDefinitions.userDrafts.length}</Badge>}
+                                <div className="pt-1">
+                                    <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.userDrafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onDelete={handleDelete} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
+                                </div>
                             </div>
-                            <div className="pt-1">
-                                <DefinitionTree treeId="drafts" definitions={categorizedDefinitions.userDrafts} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'draft')} onDelete={handleDelete} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={false} activeSection={activeTab} searchQuery="" editLockId={null} />
-                            </div>
-                        </div>
-                      )}
+                          )}
 
-                      <div className="flex-1 p-3">
-                        <div className="flex items-center gap-2 px-2 mb-3">
-                            <Library className="h-3 w-3 text-slate-400" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">MPM Definitions</span>
-                        </div>
-                        <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'live')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={null} />
+                          <div className="flex-1 p-3">
+                            <div className="flex items-center gap-2 px-2 mb-3">
+                                <Library className="h-3 w-3 text-slate-400" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">MPM Definitions</span>
+                            </div>
+                            <DefinitionTree treeId="mpm" definitions={categorizedDefinitions.published} selectedId={selectedDefinitionId} onSelect={(id, sectionId) => handleSelectDefinition(id, sectionId, 'live')} onToggleSelection={toggleSelectionForExport} selectedForExport={selectedForExport} isSelectMode={isSelectMode} activeSection={activeTab} searchQuery={searchQuery} editLockId={null} />
+                          </div>
                       </div>
                   </div>
-              </div>
-             )}
-              <div className={cn("flex-1 w-full bg-slate-50/30", (activeView === 'definitions' || activeView === 'dashboard' || activeView === 'template-management' || activeView === 'user-management' || activeView === 'master-data-management' || activeView === 'system-configuration') ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden")}>
+                )}
+                <div className={cn("flex-1 w-full bg-slate-50/30", (activeView === 'definitions' || activeView === 'dashboard' || activeView === 'template-management' || activeView === 'user-management' || activeView === 'master-data-management' || activeView === 'system-configuration') ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden")}>
                   {renderContent()}
-              </div>
-          </main>
+                </div>
+              </main>
+            </div>
+          </SidebarInset>
         </div>
-      </SidebarInset>
+      </div>
       <RecentViewsModal open={isRecentModalOpen} onOpenChange={setIsRecentModalOpen} onDefinitionClick={(id) => handleSelectDefinition(id, undefined, 'live')} />
       <NewDefinitionModal open={isNewDefinitionModalOpen} onOpenChange={setIsNewDefinitionModalOpen} onSave={handleCreateDefinition} initialData={draftedDefinitionData} templates={Array.isArray(templates) ? templates : []} isAdmin={isAdmin} masterData={masterData} systemConfig={systemConfig} />
       <TemplatesModal open={isTemplatesModalOpen} onOpenChange={setIsTemplatesModalOpen} onUseTemplate={handleUseTemplate} managedTemplates={Array.isArray(templates) ? templates : []} />
