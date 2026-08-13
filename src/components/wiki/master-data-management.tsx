@@ -31,7 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
     Search, 
     Plus, 
-    Trash2, 
+    Ban, 
     Database, 
     Layers, 
     Settings2, 
@@ -67,7 +67,6 @@ const CATEGORY_LABELS: Record<MasterDataCategory, { label: string; icon: any; de
   versionStatuses: { label: 'Version Status', icon: History, description: 'Indicators for superseding or deprecated revisions.' }
 };
 
-// Define categories that are restricted from adding new records and toggling status
 const IMMUTABLE_CATEGORIES: MasterDataCategory[] = ['definitionStatuses', 'versionStatuses'];
 
 export default function MasterDataManagement({ masterData, onSaveMasterData, onLogAction, definitions, drafts, templates }: MasterDataManagementProps) {
@@ -75,7 +74,6 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     
-    // Modal State
     const [modalCategory, setModalCategory] = useState<MasterDataCategory>('modules');
     const [localItems, setLocalItems] = useState<MasterDataItem[]>([]);
     const [newItemName, setNewItemName] = useState('');
@@ -112,7 +110,6 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         );
     }, [masterData, activeCategory, searchQuery]);
 
-    // Sync modal data when opened or category changed
     useEffect(() => {
         if (isModalOpen) {
             setLocalItems([...(masterData[modalCategory] || [])]);
@@ -154,7 +151,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         if (isItemReferred(item, modalCategory)) {
             toast({
                 variant: 'destructive',
-                title: "Deletion Restricted",
+                title: "Action Restricted",
                 description: `"${item.name}" is currently in use and cannot be removed.`
             });
             return;
@@ -176,8 +173,6 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         const item = masterData[activeCategory].find(i => i.id === id);
         if (!item) return;
 
-        // PER REQUIREMENT: Allow soft delete (deactivation) for modules, sources, and types even if referred.
-        // This acts as the alternative to hard deletion which is strictly restricted.
         const allowedSoftDelete = ['modules', 'sourcesOfTruth', 'sourceTypes'].includes(activeCategory);
 
         if (currentStatus === true && !allowedSoftDelete && isItemReferred(item, activeCategory)) {
@@ -195,23 +190,23 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
         toast({ title: "Status Updated" });
     };
 
-    const handleDeleteRecord = (id: string) => {
+    const handleDisableRecord = (id: string) => {
         const item = masterData[activeCategory].find(i => i.id === id);
         if (!item) return;
 
         if (isItemReferred(item, activeCategory)) {
             toast({
                 variant: 'destructive',
-                title: "Deletion Restricted",
-                description: `"${item.name}" cannot be deleted because it is currently referenced in the library.`
+                title: "Action Restricted",
+                description: `"${item.name}" cannot be disabled (removed) because it is currently referenced in the library.`
             });
             return;
         }
 
         const newItems = masterData[activeCategory].filter(i => i.id !== id);
         onSaveMasterData({ ...masterData, [activeCategory]: newItems });
-        onLogAction('Master Data Deleted', `Category: ${activeCategory}, Item: ${item.name}`);
-        toast({ title: "Record Deleted" });
+        onLogAction('Master Data Deleted', `Category: ${activeCategory}, Item: ${item.name} disabled from system registry.`);
+        toast({ title: "Record Disabled" });
     };
 
     const activeLabelConfig = CATEGORY_LABELS[activeCategory];
@@ -355,6 +350,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                                 size="icon" 
                                                                 className={cn("h-8 w-8 rounded-lg", item.isActive ? "text-slate-300 hover:text-amber-600 hover:bg-amber-50" : "text-emerald-300 hover:text-emerald-600 hover:bg-emerald-50")}
                                                                 onClick={() => handleToggleStatus(item.id, item.isActive)}
+                                                                title={item.isActive ? "Deactivate" : "Activate"}
                                                             >
                                                                 {item.isActive ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                                                             </Button>
@@ -364,24 +360,25 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                                         disabled={referred}
                                                                         variant="ghost" 
                                                                         size="icon" 
-                                                                        className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-red-50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                                                                        className="h-8 w-8 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                                                                        title="Disable Record"
                                                                     >
-                                                                        <Trash2 className="h-4 w-4" />
+                                                                        <Ban className="h-4 w-4" />
                                                                     </Button>
                                                                 </AlertDialogTrigger>
                                                                 <AlertDialogContent className="max-w-[90vw] sm:max-w-lg rounded-[32px] border-none p-6 md:p-10 shadow-2xl">
                                                                     <AlertDialogHeader className="space-y-4">
-                                                                        <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
-                                                                            <Trash2 className="h-8 w-8 text-red-600" />
+                                                                        <div className="h-16 w-16 rounded-2xl bg-amber-50 flex items-center justify-center mb-2">
+                                                                            <Ban className="h-8 w-8 text-amber-600" />
                                                                         </div>
-                                                                        <AlertDialogTitle className="text-2xl font-bold text-slate-900">Confirm Deletion</AlertDialogTitle>
+                                                                        <AlertDialogTitle className="text-2xl font-bold text-slate-900">Confirm Disable</AlertDialogTitle>
                                                                         <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed">
-                                                                            Are you sure you want to permanently remove <strong>{item.name}</strong>? This will remove the reference from the global system registry.
+                                                                            Are you sure you want to disable <strong>{item.name}</strong>? This will remove the reference from the global system registry.
                                                                         </AlertDialogDescription>
                                                                     </AlertDialogHeader>
                                                                     <AlertDialogFooter className="mt-10 gap-3">
                                                                         <AlertDialogCancel className="rounded-xl font-bold h-11 px-8">Cancel</AlertDialogCancel>
-                                                                        <AlertDialogAction onClick={() => handleDeleteRecord(item.id)} className="rounded-xl bg-red-600 hover:bg-red-700 font-bold h-11 px-8">Delete Record</AlertDialogAction>
+                                                                        <AlertDialogAction onClick={() => handleDisableRecord(item.id)} className="rounded-xl bg-amber-600 hover:bg-amber-700 font-bold h-11 px-8">Disable Record</AlertDialogAction>
                                                                     </AlertDialogFooter>
                                                                 </AlertDialogContent>
                                                             </AlertDialog>
@@ -465,6 +462,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                         <button 
                                                             onClick={() => removeLocalRecord(item.id)}
                                                             className="hover:text-red-500 transition-colors"
+                                                            title="Remove Chip"
                                                         >
                                                             <X className="h-3.5 w-3.5" />
                                                         </button>
