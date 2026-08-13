@@ -692,7 +692,7 @@ export default function Dashboard({
                         onClick={handleDownloadAudit}
                     >
                         <Download className="h-4 w-4" />
-                        Download Selection Audit
+                        Download
                     </Button>
                 </div>
             </DialogHeader>
