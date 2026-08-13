@@ -64,8 +64,8 @@ const CATEGORY_LABELS: Record<MasterDataCategory, { label: string; icon: any; de
   modules: { label: 'Business Modules', icon: Layers, description: 'High-level functional domains like Authorizations or Claims.' },
   sourcesOfTruth: { label: 'Sources of Truth', icon: Database, description: 'Standardized data origins used for system documentation.' },
   sourceTypes: { label: 'Technical Object Types', icon: Workflow, description: 'Categories for technical entities (Views, Tables, Procs).' },
-  definitionStatuses: { label: 'Documentation Statuses', icon: Settings2, description: 'Lifecycle states used to manage definition workflows.' },
-  versionStatuses: { label: 'Version Indicators', icon: History, description: 'Indicators for superseding or deprecated revisions.' }
+  definitionStatuses: { label: 'Definition Status', icon: Settings2, description: 'Lifecycle states used to manage definition workflows.' },
+  versionStatuses: { label: 'Version Status', icon: History, description: 'Indicators for superseding or deprecated revisions.' }
 };
 
 // Define categories that are restricted from adding new records and toggling status
