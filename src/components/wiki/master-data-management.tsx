@@ -51,19 +51,10 @@ import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { ScrollArea } from '../ui/scroll-area';
 
-type MasterDataManagementProps = {
-  masterData: MasterDataState;
-  onSaveMasterData: (data: MasterDataState) => void;
-  onLogAction: (type: string, details?: string) => void;
-  definitions: Definition[];
-  drafts: Definition[];
-  templates: Template[];
-};
-
 const CATEGORY_LABELS: Record<MasterDataCategory, { label: string; icon: any; description: string }> = {
   modules: { label: 'Business Modules', icon: Layers, description: 'High-level functional domains like Authorizations or Claims.' },
   sourcesOfTruth: { label: 'Sources of Truth', icon: Database, description: 'Standardized data origins used for system documentation.' },
-  sourceTypes: { label: 'Technical Object Types', icon: Workflow, description: 'Categories for technical entities (Views, Tables, Procs).' },
+  sourceTypes: { label: 'Source type', icon: Workflow, description: 'Categories for technical entities (Views, Tables, Procs).' },
   definitionStatuses: { label: 'Definition Status', icon: Settings2, description: 'Lifecycle states used to manage definition workflows.' },
   versionStatuses: { label: 'Version Status', icon: History, description: 'Indicators for superseding or deprecated revisions.' }
 };
@@ -314,7 +305,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                     {filteredItems.map(item => {
                                         const referred = isItemReferred(item, activeCategory);
                                         return (
-                                            <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 h-16">
+                                            <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 h-20">
                                                 <TableCell className="px-8 font-bold text-slate-900">
                                                     <div className="flex items-center gap-2">
                                                         {item.name}
