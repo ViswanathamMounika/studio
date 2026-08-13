@@ -16,7 +16,6 @@ import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
-import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 
 const activityTypes: ActivityType[] = [
@@ -217,8 +216,8 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
     };
 
     return (
-        <div className="space-y-6 h-full flex flex-col">
-            <div className="flex justify-between items-center px-2 shrink-0">
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900">Activity Logs</h1>
                     <p className="text-muted-foreground font-medium">Complete system telemetry and documentation audit trail.</p>
@@ -235,7 +234,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                 </div>
             </div>
 
-            <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white shrink-0">
+            <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
                 <CardHeader className="py-3 px-6 bg-slate-50/80 border-b flex flex-row items-center justify-between">
                     <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Governance Filters</CardTitle>
                     {isAdmin && (
@@ -251,8 +250,8 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                         </div>
                     )}
                 </CardHeader>
-                <CardContent className="p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
+                <CardContent className="p-4 md:p-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
                         <div className="space-y-2">
                             <Label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Definition Name</Label>
                             <div className="relative">
@@ -359,10 +358,10 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                 </CardContent>
             </Card>
 
-            <Card className="rounded-[28px] border-slate-200 shadow-sm overflow-hidden flex flex-col bg-white flex-1 min-h-0">
-                <CardContent className="p-0 overflow-hidden flex-1 relative">
+            <Card className="rounded-[28px] border-slate-200 shadow-sm overflow-hidden bg-white">
+                <CardContent className="p-0">
                     {!appliedFilters ? (
-                        <div className="h-full flex flex-col items-center justify-center text-center p-12 bg-slate-50/30">
+                        <div className="flex flex-col items-center justify-center text-center p-12 bg-slate-50/30 min-h-[300px]">
                             <div className="h-20 w-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
                                 <History className="h-10 w-10 text-slate-300" />
                             </div>
@@ -372,8 +371,8 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                             </p>
                         </div>
                     ) : (
-                        <ScrollArea className="h-[650px] w-full">
-                            <Table className="min-w-[1200px]">
+                        <div className="overflow-x-auto w-full">
+                            <Table className="min-w-[1000px]">
                                 <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-sm">
                                     <TableRow className="hover:bg-transparent border-b">
                                         <TableHead className="py-5 px-8 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('userName')}>
@@ -437,13 +436,12 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                                     )}
                                 </TableBody>
                             </Table>
-                            <ScrollBar orientation="horizontal" />
-                        </ScrollArea>
+                        </div>
                     )}
                 </CardContent>
                 
                 {appliedFilters && filteredAndSortedLogs.length > 0 && (
-                    <div className="flex items-center justify-between p-6 border-t bg-white shrink-0 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
+                    <div className="flex flex-col sm:flex-row items-center justify-between p-6 border-t bg-white gap-4">
                         <div className="text-[11px] font-black uppercase text-slate-400 tracking-widest">
                             Showing {paginatedLogs.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedLogs.length)} of {filteredAndSortedLogs.length} records
                         </div>
@@ -454,8 +452,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                                 className="rounded-xl h-9 px-4 font-bold border-slate-200 transition-all hover:bg-slate-50"
                                 onClick={() => {
                                     setCurrentPage(p => Math.max(1, p - 1));
-                                    const scroll = document.querySelector('[data-radix-scroll-area-viewport]');
-                                    if (scroll) scroll.scrollTop = 0;
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
                                 disabled={currentPage === 1}
                             >
@@ -471,8 +468,7 @@ export default function ActivityLogs({ isAdmin, users }: ActivityLogsProps) {
                                 className="rounded-xl h-9 px-4 font-bold border-slate-200 transition-all hover:bg-slate-50"
                                 onClick={() => {
                                     setCurrentPage(p => Math.min(totalPages, p + 1));
-                                    const scroll = document.querySelector('[data-radix-scroll-area-viewport]');
-                                    if (scroll) scroll.scrollTop = 0;
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
                                 disabled={currentPage >= totalPages}
                             >

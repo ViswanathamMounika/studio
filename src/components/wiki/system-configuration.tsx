@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -271,234 +272,211 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
     const keysCount = localConfig.configKeys.length;
 
     return (
-        <div className="h-full flex flex-col bg-[#F8F9FC]">
-            <div className="bg-white border-b px-8 py-4 flex items-center justify-between shadow-sm shrink-0 z-30">
-                <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.2em] flex items-center gap-1.5">
-                        <Settings2 className="h-3 w-3" />
-                        Configuration
-                    </p>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">System Settings</h1>
+        <div className="space-y-8">
+            <Card className="rounded-[24px] border-slate-200 bg-white p-6 md:p-8 shadow-sm overflow-hidden border-l-4 border-l-indigo-600">
+                <div className="flex flex-wrap items-center gap-6 md:gap-10">
+                    <div className="h-16 w-16 rounded-[20px] bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+                        <Terminal className="h-8 w-8" />
+                    </div>
+                    <div className="flex-1 min-w-[240px] space-y-1.5">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Application Name</Label>
+                        <Input 
+                            value={localConfig.settings.appName} 
+                            onChange={e => updateSettings({ appName: e.target.value })}
+                            className="h-12 rounded-xl bg-slate-50/50 border-slate-200 font-bold text-xl px-4 focus-visible:bg-white transition-colors"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Environment</Label>
+                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 h-10 px-6 rounded-xl font-bold text-sm">
+                            {localConfig.settings.environment}
+                        </Badge>
+                    </div>
+                    <div className="space-y-1.5 hidden sm:block">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Version</Label>
+                        <span className="text-xl font-black text-slate-300 tracking-tight block pt-1">{localConfig.settings.version}</span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-4">
-                    <Button variant="outline" onClick={handleDiscard} className="rounded-xl border-slate-200 h-10 px-6 font-bold bg-white hover:bg-slate-50">
-                        Discard
-                    </Button>
-                    <Button onClick={handleSave} className="bg-[#3F51B5] hover:bg-[#3F51B5]/90 text-white rounded-xl h-10 px-8 gap-2 font-bold shadow-lg shadow-indigo-100 transition-all active:scale-95">
-                        <Save className="h-4 w-4" />
-                        Save All Changes
-                    </Button>
-                </div>
-            </div>
+            </Card>
 
-            <ScrollArea className="flex-1">
-                <div className="p-8 max-w-[1600px] mx-auto space-y-8 pb-32">
-                    <Card className="rounded-[24px] border-slate-200 bg-white p-8 shadow-sm overflow-hidden border-l-4 border-l-indigo-600">
-                        <div className="flex flex-wrap items-center gap-10">
-                            <div className="h-16 w-16 rounded-[20px] bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100">
-                                <Terminal className="h-8 w-8" />
+            <Tabs defaultValue="preferences" className="space-y-6">
+                <TabsList className="bg-white p-1.5 h-auto rounded-2xl border border-slate-200 flex flex-wrap shadow-sm gap-2">
+                    <TabsTrigger 
+                        value="preferences" 
+                        className="rounded-xl px-6 h-10 flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold text-xs gap-3 transition-all data-[state=active]:text-[#3F51B5] group"
+                    >
+                        <SlidersHorizontal className="h-4 w-4 group-data-[state=active]:text-[#3F51B5] text-slate-400" />
+                        Web App Config
+                        <Badge variant="secondary" className="ml-1 h-5 px-2 bg-indigo-50 text-[#3F51B5] border-transparent font-bold text-[10px] rounded-lg">
+                            {sectionCount}
+                        </Badge>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                        value="parameters" 
+                        className="rounded-xl px-6 h-10 flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold text-xs gap-3 transition-all data-[state=active]:text-[#3F51B5] group"
+                    >
+                        <TableIcon className="h-4 w-4 group-data-[state=active]:text-[#3F51B5] text-slate-400" />
+                        System Parameters
+                        <Badge variant="secondary" className="ml-1 h-5 px-2 bg-slate-100 text-slate-500 border-transparent font-bold text-[10px] rounded-lg group-data-[state=active]:bg-indigo-50 group-data-[state=active]:text-[#3F51B5]">
+                            {keysCount}
+                        </Badge>
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="preferences" className="space-y-6 mt-0">
+                    <div className="flex items-center justify-between">
+                        <div className="relative w-full max-w-md">
+                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Input 
+                                placeholder="Find a configuration section..." 
+                                value={prefSearch}
+                                onChange={e => setPrefSearch(e.target.value)}
+                                className="pl-9 h-10 rounded-xl bg-white border-slate-200 shadow-sm"
+                            />
+                        </div>
+                    </div>
+
+                    <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
+                        {filteredPreferences.length > 0 ? (
+                            <Accordion type="multiple" defaultValue={filteredPreferences.map(s => s.id)} className="w-full">
+                                {filteredPreferences.map((section) => (
+                                    <AccordionItem key={section.id} value={section.id} className="border-b last:border-b-0 border-slate-100">
+                                        <AccordionTrigger className="hover:no-underline py-5 px-4 md:px-8 group">
+                                            <div className="flex items-center gap-3 md:gap-5 flex-1">
+                                                <div className="h-10 w-10 rounded-xl bg-[#F3F1FF] flex items-center justify-center border border-indigo-100 group-hover:bg-[#EAE6FF] transition-colors shrink-0">
+                                                    <section.icon className="h-5 w-5 text-[#3F51B5]" />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <h3 className="font-bold text-[14px] md:text-[15px] text-slate-900 leading-tight truncate">{section.title}</h3>
+                                                    <span className="text-[9px] md:text-[11px] font-mono text-slate-400 uppercase tracking-tighter truncate block">{section.key}</span>
+                                                </div>
+                                                <div className="ml-auto flex items-center gap-6">
+                                                    <span className="text-[10px] font-bold text-slate-400 mr-4 hidden sm:block">{section.fields} fields</span>
+                                                </div>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="bg-[#FBFBFF] px-4 md:px-8 py-8 border-t border-slate-50">
+                                            {section.content}
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                                <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center">
+                                    <SearchX className="h-8 w-8 text-slate-300" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-lg font-bold text-slate-900">No matching configuration</p>
+                                    <p className="text-sm text-slate-500">We couldn't find any configuration sections matching your search.</p>
+                                </div>
+                                <Button variant="ghost" className="text-indigo-600 font-bold" onClick={() => setPrefSearch('')}>Clear Search</Button>
                             </div>
-                            <div className="flex-1 min-w-[300px] space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Application Name</Label>
-                                <Input 
-                                    value={localConfig.settings.appName} 
-                                    onChange={e => updateSettings({ appName: e.target.value })}
-                                    className="h-12 rounded-xl bg-slate-50/50 border-slate-200 font-bold text-xl px-4 focus-visible:bg-white transition-colors"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Environment</Label>
-                                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 h-10 px-6 rounded-xl font-bold text-sm">
-                                    {localConfig.settings.environment}
-                                </Badge>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Version</Label>
-                                <span className="text-xl font-black text-slate-300 tracking-tight block pt-1">{localConfig.settings.version}</span>
-                            </div>
+                        )}
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="parameters" className="space-y-6 mt-0">
+                    <div className="flex items-center justify-between">
+                        <div className="relative w-full max-w-md">
+                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Input 
+                                placeholder="Filter parameters..." 
+                                value={configSearch}
+                                onChange={e => setConfigSearch(e.target.value)}
+                                className="pl-9 h-10 rounded-xl bg-white border-slate-200 shadow-sm"
+                            />
+                        </div>
+                    </div>
+
+                    <Card className="rounded-[28px] border-slate-200 shadow-sm overflow-hidden bg-white">
+                        <div className="overflow-x-auto">
+                            <Table className="min-w-[1200px]">
+                                <TableHeader className="bg-slate-50 border-b">
+                                    <TableRow className="h-12 border-none">
+                                        <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-400">SETTING NAME</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">VALUE</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">TYPE</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">EFFECTIVE FROM</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">ACTIVE</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">DESCRIPTION</TableHead>
+                                        <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-400">ACTIONS</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredConfigKeys.map(item => (
+                                        <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 h-20">
+                                            <TableCell className="px-8 py-5">
+                                                <span className="font-bold text-slate-900 text-[15px]">
+                                                    {getSettingName(item)}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Input 
+                                                    value={item.value} 
+                                                    onChange={e => handleUpdateParamValue(item.id, e.target.value)}
+                                                    className="h-10 w-32 rounded-xl bg-white border-slate-200 font-bold text-center focus-visible:ring-indigo-100 focus-visible:border-indigo-300"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary" className="bg-[#F1F3F9] text-slate-500 font-bold text-[11px] px-3.5 h-8 rounded-lg uppercase tracking-tight whitespace-nowrap">
+                                                    {item.type}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col text-[12px] font-medium text-slate-500">
+                                                    <span className="font-bold text-slate-700">{format(parseISO(item.effectiveFrom), 'dd MMM yyyy')}</span>
+                                                    <span className="text-[10px] uppercase text-slate-400">{format(parseISO(item.effectiveFrom), 'hh:mm a')}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Switch 
+                                                    checked={item.active} 
+                                                    onCheckedChange={v => handleToggleParamActive(item.id, v)} 
+                                                    className="data-[state=checked]:bg-emerald-500"
+                                                />
+                                            </TableCell>
+                                            <TableCell className="max-w-md">
+                                                <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
+                                                    {item.description || 'No description provided.'}
+                                                </p>
+                                            </TableCell>
+                                            <TableCell className="text-right px-8">
+                                                <div className="flex justify-end gap-1">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-8 w-8 rounded-lg text-slate-300 hover:text-indigo-600 hover:bg-indigo-50"
+                                                        onClick={() => handleEditParam(item)}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-8 w-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50"
+                                                        onClick={() => handleDeleteParam(item.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                        <div className="p-6 px-8 border-t bg-slate-50/50 flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                                Platform Registry Governance • {filteredConfigKeys.length} ACTIVE KEYS
+                            </span>
                         </div>
                     </Card>
-
-                    <Tabs defaultValue="preferences" className="space-y-6">
-                        <TabsList className="bg-white p-1.5 h-12 rounded-2xl border border-slate-200 inline-flex shadow-sm gap-2">
-                            <TabsTrigger 
-                                value="preferences" 
-                                className="rounded-xl px-6 h-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold text-xs gap-3 transition-all data-[state=active]:text-[#3F51B5] group"
-                            >
-                                <SlidersHorizontal className="h-4 w-4 group-data-[state=active]:text-[#3F51B5] text-slate-400" />
-                                Web App Configuration
-                                <Badge variant="secondary" className="ml-1 h-5 px-2 bg-indigo-50 text-[#3F51B5] border-transparent font-bold text-[10px] rounded-lg">
-                                    {sectionCount} sections
-                                </Badge>
-                            </TabsTrigger>
-                            <TabsTrigger 
-                                value="parameters" 
-                                className="rounded-xl px-6 h-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold text-xs gap-3 transition-all data-[state=active]:text-[#3F51B5] group"
-                            >
-                                <TableIcon className="h-4 w-4 group-data-[state=active]:text-[#3F51B5] text-slate-400" />
-                                System Parameters
-                                <Badge variant="secondary" className="ml-1 h-5 px-2 bg-slate-100 text-slate-500 border-transparent font-bold text-[10px] rounded-lg group-data-[state=active]:bg-indigo-50 group-data-[state=active]:text-[#3F51B5]">
-                                    {keysCount} keys
-                                </Badge>
-                            </TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="preferences" className="space-y-6 mt-0">
-                            <div className="flex items-center justify-between">
-                                <div className="relative w-full max-w-md">
-                                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                    <Input 
-                                        placeholder="Find a configuration section..." 
-                                        value={prefSearch}
-                                        onChange={e => setPrefSearch(e.target.value)}
-                                        className="pl-9 h-10 rounded-xl bg-white border-slate-200 shadow-sm"
-                                    />
-                                </div>
-                            </div>
-
-                            <Card className="rounded-[24px] border-slate-200 overflow-hidden shadow-sm bg-white">
-                                {filteredPreferences.length > 0 ? (
-                                    <Accordion type="multiple" defaultValue={filteredPreferences.map(s => s.id)} className="w-full">
-                                        {filteredPreferences.map((section) => (
-                                            <AccordionItem key={section.id} value={section.id} className="border-b last:border-b-0 border-slate-100">
-                                                <AccordionTrigger className="hover:no-underline py-5 px-8 group">
-                                                    <div className="flex items-center gap-5 flex-1">
-                                                        <div className="h-10 w-10 rounded-xl bg-[#F3F1FF] flex items-center justify-center border border-indigo-100 group-hover:bg-[#EAE6FF] transition-colors">
-                                                            <section.icon className="h-5 w-5 text-[#3F51B5]" />
-                                                        </div>
-                                                        <div className="text-left">
-                                                            <h3 className="font-bold text-[15px] text-slate-900 leading-tight">{section.title}</h3>
-                                                            <span className="text-[11px] font-mono text-slate-400 uppercase tracking-tighter">{section.key}</span>
-                                                        </div>
-                                                        <div className="ml-auto flex items-center gap-6">
-                                                            <span className="text-[11px] font-bold text-slate-400 mr-4">{section.fields} fields</span>
-                                                        </div>
-                                                    </div>
-                                                </AccordionTrigger>
-                                                <AccordionContent className="bg-[#FBFBFF] px-8 py-8 border-t border-slate-50">
-                                                    {section.content}
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        ))}
-                                    </Accordion>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                                        <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center">
-                                            <SearchX className="h-8 w-8 text-slate-300" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-lg font-bold text-slate-900">No matching configuration</p>
-                                            <p className="text-sm text-slate-500">We couldn't find any configuration sections matching your search.</p>
-                                        </div>
-                                        <Button variant="ghost" className="text-indigo-600 font-bold" onClick={() => setPrefSearch('')}>Clear Search</Button>
-                                    </div>
-                                )}
-                            </Card>
-                        </TabsContent>
-
-                        <TabsContent value="parameters" className="space-y-6 mt-0">
-                            <div className="flex items-center justify-between">
-                                <div className="relative w-full max-w-md">
-                                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                    <Input 
-                                        placeholder="Filter parameters..." 
-                                        value={configSearch}
-                                        onChange={e => setConfigSearch(e.target.value)}
-                                        className="pl-9 h-10 rounded-xl bg-white border-slate-200 shadow-sm"
-                                    />
-                                </div>
-                            </div>
-
-                            <Card className="rounded-[28px] border-slate-200 shadow-sm overflow-hidden bg-white">
-                                <div className="overflow-x-auto">
-                                    <Table className="min-w-[1400px]">
-                                        <TableHeader className="bg-slate-50 border-b">
-                                            <TableRow className="h-12 border-none">
-                                                <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-400">SETTING NAME</TableHead>
-                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">VALUE</TableHead>
-                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">TYPE</TableHead>
-                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">EFFECTIVE FROM</TableHead>
-                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">ACTIVE</TableHead>
-                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">DESCRIPTION</TableHead>
-                                                <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-400">ACTIONS</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredConfigKeys.map(item => (
-                                                <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-100 h-20">
-                                                    <TableCell className="px-8 py-5">
-                                                        <span className="font-bold text-slate-900 text-[15px]">
-                                                            {getSettingName(item)}
-                                                        </span>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Input 
-                                                            value={item.value} 
-                                                            onChange={e => handleUpdateParamValue(item.id, e.target.value)}
-                                                            className="h-10 w-32 rounded-xl bg-white border-slate-200 font-bold text-center focus-visible:ring-indigo-100 focus-visible:border-indigo-300"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="secondary" className="bg-[#F1F3F9] text-slate-500 font-bold text-[11px] px-3.5 h-8 rounded-lg uppercase tracking-tight whitespace-nowrap">
-                                                            {item.type}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex flex-col text-[12px] font-medium text-slate-500">
-                                                            <span className="font-bold text-slate-700">{format(parseISO(item.effectiveFrom), 'dd MMM yyyy')}</span>
-                                                            <span className="text-[10px] uppercase text-slate-400">{format(parseISO(item.effectiveFrom), 'hh:mm a')}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Switch 
-                                                            checked={item.active} 
-                                                            onCheckedChange={v => handleToggleParamActive(item.id, v)} 
-                                                            className="data-[state=checked]:bg-emerald-500"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="max-w-md">
-                                                        <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
-                                                            {item.description || 'No description provided.'}
-                                                        </p>
-                                                    </TableCell>
-                                                    <TableCell className="text-right px-8">
-                                                        <div className="flex justify-end gap-1">
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-8 w-8 rounded-lg text-slate-300 hover:text-indigo-600 hover:bg-indigo-50"
-                                                                onClick={() => handleEditParam(item)}
-                                                            >
-                                                                <Pencil className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-8 w-8 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50"
-                                                                onClick={() => handleDeleteParam(item.id)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                                <div className="p-6 px-8 border-t bg-slate-50/50 flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                                        Platform Registry Governance • {filteredConfigKeys.length} ACTIVE KEYS
-                                    </span>
-                                </div>
-                            </Card>
-                        </TabsContent>
-                    </Tabs>
-                </div>
-            </ScrollArea>
+                </TabsContent>
+            </Tabs>
 
             <Dialog open={isKeyModalOpen} onOpenChange={setIsKeyModalOpen}>
-                <DialogContent className="max-w-[500px] rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
+                <DialogContent className="max-w-[95vw] sm:max-w-[500px] rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b bg-white flex items-center gap-4">
                         <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-inner">
                             {editingKeyEntry && localConfig.configKeys.some(k => k.id === editingKeyEntry.id) ? <Pencil className="h-5 w-5 text-indigo-600" /> : <Plus className="h-5 w-5 text-indigo-600" />}
@@ -508,9 +486,9 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-0.5">Define Application Constant</p>
                         </div>
                     </div>
-                    <div className="p-8 space-y-6 bg-slate-50/30">
+                    <div className="p-6 md:p-8 space-y-6 bg-slate-50/30 max-h-[70vh] overflow-y-auto">
                         <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-[11px] font-black uppercase text-slate-500">Parameter Key (System)</Label>
                                     <input 
@@ -534,7 +512,7 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-[11px] font-black uppercase text-slate-500">Current Value</Label>
                                     <Input 
@@ -576,13 +554,13 @@ export default function SystemConfiguration({ config, onSaveConfig, onLogAction 
                             </div>
                         </div>
                     </div>
-                    <DialogFooter className="p-4 bg-white border-t gap-2">
+                    <DialogFooter className="p-4 bg-white border-t gap-2 flex-col sm:flex-row">
                         <DialogClose asChild>
-                            <Button variant="ghost" className="rounded-xl font-bold text-slate-500 px-6 hover:bg-slate-50">Cancel</Button>
+                            <Button variant="ghost" className="w-full sm:w-auto rounded-xl font-bold text-slate-500 px-6 hover:bg-slate-50">Cancel</Button>
                         </DialogClose>
                         <Button 
                             onClick={handleSaveKeyEntry} 
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95"
+                            className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95"
                         >
                             Finalize Parameter
                         </Button>

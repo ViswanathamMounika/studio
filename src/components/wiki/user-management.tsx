@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -58,7 +59,6 @@ import { useToast } from '@/hooks/use-toast';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { initialRoles, initialPermissions } from '@/lib/data';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 type SecurityManagementProps = {
   users: UserAccount[];
@@ -293,35 +293,37 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
 
     return (
         <TooltipProvider>
-            <div className="space-y-6 h-full flex flex-col bg-slate-50/30 p-8 rounded-[32px]">
+            <div className="space-y-6">
                 {/* HEADER ACTIONS */}
-                <div className="flex justify-between items-start px-2">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Security & Access</h1>
                         <p className="text-muted-foreground font-medium">Govern system access, identity proxying, and functional permissions.</p>
                     </div>
-                    {activeArea === 'roles' && (
-                        <Button onClick={handleAddRole} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Create Role
-                        </Button>
-                    )}
-                    {activeArea === 'permissions' && (
-                        <Button onClick={handleAddPermission} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
-                            <Plus className="mr-2 h-4 w-4" />
-                            New Permission
-                        </Button>
-                    )}
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        {activeArea === 'roles' && (
+                            <Button onClick={handleAddRole} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Create Role
+                            </Button>
+                        )}
+                        {activeArea === 'permissions' && (
+                            <Button onClick={handleAddPermission} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-indigo-100 h-11 transition-all active:scale-95">
+                                <Plus className="mr-2 h-4 w-4" />
+                                New Permission
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
-                <div className="space-y-8 flex-1 flex flex-col min-h-0">
+                <div className="space-y-8">
                     {/* CONFIG SELECTOR PANEL */}
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden shrink-0">
+                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
                         <CardHeader className="bg-slate-50/50 border-b py-4 px-6">
                             <CardTitle className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Administrative Panel</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-end">
+                        <CardContent className="p-4 md:p-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-end">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-1.5">
                                         <Label className="text-[11px] font-bold text-slate-500">Security Area</Label>
@@ -361,7 +363,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                         <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                                         <Input 
                                             placeholder="Search directory..." 
-                                            className="pl-10 rounded-xl border-slate-200 h-12 bg-white font-medium" 
+                                            className="pl-10 rounded-xl border-slate-200 h-12 bg-white font-medium shadow-sm" 
                                             value={searchQuery} 
                                             onChange={e => setSearchQuery(e.target.value)} 
                                         />
@@ -372,17 +374,17 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                     </Card>
 
                     {/* DYNAMIC CONTENT AREA */}
-                    <div className="flex-1 min-h-[600px]">
+                    <div>
                         {activeArea === 'users' && (
-                            <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white h-full flex flex-col">
+                            <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <CardHeader className="bg-white border-b py-5 px-8 flex flex-row items-center gap-3">
                                     <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
                                         <UserCircle2 className="h-4.5 w-4.5 text-primary" />
                                     </div>
                                     <CardTitle className="text-xl font-bold text-slate-900">User Directory</CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-0 flex-1 overflow-auto">
-                                    <Table>
+                                <CardContent className="p-0 overflow-x-auto">
+                                    <Table className="min-w-[800px]">
                                         <TableHeader className="bg-slate-50 border-b">
                                             <TableRow>
                                                 <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-500 h-14">Identity</TableHead>
@@ -440,15 +442,15 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                         )}
 
                         {activeArea === 'roles' && (
-                            <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white h-full flex flex-col">
+                            <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <CardHeader className="bg-white border-b py-5 px-8 flex flex-row items-center gap-3">
                                     <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
                                         <ShieldCheck className="h-4.5 w-4.5 text-primary" />
                                     </div>
                                     <CardTitle className="text-xl font-bold text-slate-900">Role Governance</CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-0 flex-1 overflow-auto">
-                                    <Table>
+                                <CardContent className="p-0 overflow-x-auto">
+                                    <Table className="min-w-[800px]">
                                         <TableHeader className="bg-slate-50 border-b">
                                             <TableRow>
                                                 <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-500 h-14">Role Name</TableHead>
@@ -490,16 +492,16 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                         )}
 
                         {activeArea === 'permissions' && (
-                            <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white h-full flex flex-col">
+                            <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white">
                                 <CardHeader className="bg-white border-b py-5 px-8 flex flex-row items-center gap-3">
                                     <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
                                         <KeyRound className="h-4.5 w-4.5 text-primary" />
                                     </div>
                                     <CardTitle className="text-xl font-bold text-slate-900">Functional Permissions</CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
-                                    <div className="flex-1 overflow-auto">
-                                        <Table>
+                                <CardContent className="p-0">
+                                    <div className="overflow-x-auto">
+                                        <Table className="min-w-[800px]">
                                             <TableHeader className="bg-slate-50 border-b">
                                                 <TableRow>
                                                     <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-500 h-14">Permission Key</TableHead>
@@ -534,8 +536,8 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                     </div>
                                     
                                     {filteredPermissions.length > 0 && (
-                                        <div className="p-6 bg-slate-50/50 border-t flex items-center justify-between">
-                                            <div className="flex items-center gap-6">
+                                        <div className="p-6 bg-slate-50/50 border-t flex flex-col sm:flex-row items-center justify-between gap-4">
+                                            <div className="flex flex-col sm:flex-row items-center gap-4 md:gap-6">
                                                 <div className="text-[11px] font-black uppercase text-slate-400 tracking-widest">
                                                     Showing {(permPage - 1) * permPageSize + 1} - {Math.min(permPage * permPageSize, filteredPermissions.length)} of {filteredPermissions.length}
                                                 </div>
@@ -562,7 +564,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
 
                 {/* MODALS */}
                 <Dialog open={isEditUserModalOpen} onOpenChange={setIsEditUserModalOpen}>
-                    <DialogContent className="max-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
+                    <DialogContent className="max-w-[95vw] sm:max-w-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                         <div className="p-6 border-b bg-white">
                           <div className="flex items-center gap-4">
                             <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-inner">
@@ -576,7 +578,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                             </div>
                           </div>
                         </div>
-                        <div className="p-8 space-y-6 bg-slate-50/30">
+                        <div className="p-6 md:p-8 space-y-6 bg-slate-50/30">
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label className="text-[11px] font-black uppercase text-slate-500">Full Name</Label>
@@ -606,11 +608,11 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                 </div>
                             </div>
                         </div>
-                        <DialogFooter className="p-4 bg-white border-t gap-2">
+                        <DialogFooter className="p-4 bg-white border-t gap-2 flex-col sm:flex-row">
                           <DialogClose asChild>
-                            <Button variant="ghost" className="rounded-xl font-bold text-slate-500 px-6 hover:bg-slate-50">Cancel</Button>
+                            <Button variant="ghost" className="w-full sm:w-auto rounded-xl font-bold text-slate-500 px-6 hover:bg-slate-50">Cancel</Button>
                           </DialogClose>
-                          <Button onClick={handleSaveUser} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95">
+                          <Button onClick={handleSaveUser} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95">
                             {safeUsers.some(u => u.id === editingUser?.id) ? 'Save Changes' : 'Create Account'}
                           </Button>
                         </DialogFooter>
@@ -618,10 +620,10 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                 </Dialog>
 
                 <Dialog open={isRoleModalOpen} onOpenChange={setIsRoleModalOpen}>
-                    <DialogContent className="max-w-2xl rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
+                    <DialogContent className="max-w-[95vw] sm:max-w-2xl rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                         <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><ShieldCheck className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">{!safeRoles.find(r => r.id === editingRole?.id) ? 'Create' : 'Edit'} Security Role</DialogTitle></div></div>
-                        <div className="p-8 space-y-6 bg-slate-50/30">
-                            <div className="grid grid-cols-2 gap-6">
+                        <div className="p-6 md:p-8 space-y-6 bg-slate-50/30 max-h-[70vh] overflow-y-auto">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Role Name</Label><Input value={editingRole?.name || ''} onChange={e => setEditingRole(p => p ? ({ ...p, name: e.target.value }) : null)} className="rounded-xl border-slate-200 h-11 font-bold bg-white shadow-sm" /></div>
                                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Status</Label>
                                     <div className="flex items-center justify-between h-11 px-4 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -634,7 +636,7 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                             
                             <div className="space-y-3">
                                 <Label className="text-[11px] font-black uppercase text-slate-500">Functional Permissions Mapping</Label>
-                                <div className="grid grid-cols-2 gap-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-inner">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-inner">
                                     {safePermissions.map(p => (
                                         <div key={p.id} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg group transition-colors">
                                             <Checkbox 
@@ -652,20 +654,20 @@ export default function SecurityManagement({ users, onSaveUsers, currentUser, is
                                 </div>
                             </div>
                         </div>
-                        <DialogFooter className="p-4 bg-white border-t gap-2"><DialogClose asChild><Button variant="outline" className="rounded-xl font-bold border-slate-200">Cancel</Button></DialogClose><Button onClick={handleSaveRole} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-8 shadow-md transition-all active:scale-95">Finalize Role</Button></DialogFooter>
+                        <DialogFooter className="p-4 bg-white border-t gap-2 flex-col sm:flex-row"><DialogClose asChild><Button variant="outline" className="w-full sm:w-auto rounded-xl font-bold border-slate-200">Cancel</Button></DialogClose><Button onClick={handleSaveRole} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-8 shadow-md transition-all active:scale-95">Finalize Role</Button></DialogFooter>
                     </DialogContent>
                 </Dialog>
 
                 <Dialog open={isPermissionModalOpen} onOpenChange={setIsPermissionModalOpen}>
-                    <DialogContent className="max-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
+                    <DialogContent className="max-w-[95vw] sm:max-w-md rounded-[24px] border-none p-0 overflow-hidden shadow-2xl">
                         <div className="p-6 border-b bg-white"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><KeyRound className="h-5 w-5 text-indigo-600" /></div><DialogTitle className="text-xl font-bold">Securable Permission</DialogTitle></div></div>
-                        <div className="p-8 space-y-6 bg-slate-50/30">
+                        <div className="p-6 md:p-8 space-y-6 bg-slate-50/30">
                             <div className="space-y-4">
                                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Permission Name</Label><Input value={editingPermission?.name || ''} onChange={e => setEditingPermission(p => p ? ({ ...p, name: e.target.value }) : null)} className="rounded-xl border-slate-200 h-11 font-bold bg-white shadow-sm" /></div>
                                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-slate-500">Guideline / Scope</Label><Textarea value={editingPermission?.description || ''} onChange={e => setEditingPermission(p => p ? ({ ...p, description: e.target.value }) : null)} className="rounded-xl border-slate-200 min-h-[100px] bg-white shadow-sm resize-none" /></div>
                             </div>
                         </div>
-                        <DialogFooter className="p-4 bg-white border-t gap-2"><DialogClose asChild><Button variant="outline" className="rounded-xl font-bold border-slate-200">Cancel</Button></DialogClose><Button onClick={handleSavePermission} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-8 shadow-md transition-all active:scale-95">Save Securable</Button></DialogFooter>
+                        <DialogFooter className="p-4 bg-white border-t gap-2 flex-col sm:flex-row"><DialogClose asChild><Button variant="outline" className="w-full sm:w-auto rounded-xl font-bold border-slate-200">Cancel</Button></DialogClose><Button onClick={handleSavePermission} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-8 shadow-md transition-all active:scale-95">Save Securable</Button></DialogFooter>
                     </DialogContent>
                 </Dialog>
             </div>

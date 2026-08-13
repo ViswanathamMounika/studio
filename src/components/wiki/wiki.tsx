@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -715,12 +716,12 @@ export default function Wiki() {
 
     switch (activeView) {
         case 'dashboard': return <DashboardView definitions={safeDefs} drafts={safeDrafts} users={safeUsers} templates={safeTemplates} onNavigate={handleNavigate} activityLogs={Array.isArray(activityLogs) ? activityLogs : []} approvalHistory={Array.isArray(approvalHistory) ? approvalHistory : []} systemConfig={systemConfig} />;
-        case 'activity-logs': return <div className="p-6 h-full overflow-hidden"><ActivityLogsView isAdmin={isAdmin} users={safeUsers} /></div>;
-        case 'template-management': return <div className="p-6"><TemplateManagementView templates={safeTemplates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
-        case 'master-data-management': return <div className="p-6 h-full"><MasterDataManagementView masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} definitions={safeDefs} templates={safeTemplates} drafts={safeDrafts} /></div>;
-        case 'system-configuration': return <div className="p-6 h-full"><SystemConfigurationView config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
+        case 'activity-logs': return <div className="p-4 md:p-6"><ActivityLogsView isAdmin={isAdmin} users={safeUsers} /></div>;
+        case 'template-management': return <div className="p-4 md:p-6"><TemplateManagementView templates={safeTemplates} onSaveTemplates={setTemplates} onLogAction={logAction} masterData={masterData} /></div>;
+        case 'master-data-management': return <div className="p-4 md:p-6"><MasterDataManagementView masterData={masterData} onSaveMasterData={setMasterData} onLogAction={logAction} definitions={safeDefs} templates={safeTemplates} drafts={safeDrafts} /></div>;
+        case 'system-configuration': return <div className="p-4 md:p-6"><SystemConfigurationView config={systemConfig} onSaveConfig={setSystemConfig} onLogAction={logAction} /></div>;
         case 'user-management': return (
-            <div className="p-6 h-full">
+            <div className="p-4 md:p-6">
                 <SecurityManagementView 
                     users={safeUsers} 
                     onSaveUsers={setUsers} 
@@ -749,7 +750,7 @@ export default function Wiki() {
             const liveDef = selectedDef?.originalId ? findDefinition(safeDefs, selectedDef.originalId) : null;
 
             return (
-                <div className="relative h-full overflow-y-auto">
+                <div className="relative">
                   {isEditing && selectedDef ? (
                       <DefinitionEdit 
                         definition={selectedDef} 
@@ -764,7 +765,7 @@ export default function Wiki() {
                         masterData={masterData}
                       />
                   ) : selectedDef ? (
-                      <div className="p-6">
+                      <div className="p-4 md:p-6">
                         <DefinitionView 
                           definition={selectedDef} 
                           allDefinitions={safeDefs}
@@ -789,7 +790,7 @@ export default function Wiki() {
                         />
                       </div>
                   ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground font-medium">Select a definition from the sidebar to begin.</div>
+                      <div className="flex items-center justify-center min-h-[400px] text-muted-foreground font-medium">Select a definition from the sidebar to begin.</div>
                   )}
                 </div>
             );
@@ -857,7 +858,7 @@ export default function Wiki() {
               />
               <main className="flex-1 flex overflow-hidden">
                 {activeView === 'definitions' && (
-                  <div className="w-1/4 xl:w-1/5 border-r shrink-0 flex flex-col bg-card relative">
+                  <div className="hidden lg:flex lg:w-1/4 xl:w-1/5 border-r shrink-0 flex-col bg-card relative">
                       <div className="p-4 flex flex-col gap-4 border-b bg-background sticky top-0 z-30 shadow-sm">
                         <div className="relative">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -914,7 +915,7 @@ export default function Wiki() {
                       </div>
                   </div>
                 )}
-                <div className={cn("flex-1 w-full bg-slate-50/30", (activeView === 'definitions' || activeView === 'dashboard' || activeView === 'template-management' || activeView === 'user-management' || activeView === 'master-data-management' || activeView === 'system-configuration') ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden")}>
+                <div className="flex-1 w-full bg-slate-50/30 overflow-y-auto">
                   {renderContent()}
                 </div>
               </main>

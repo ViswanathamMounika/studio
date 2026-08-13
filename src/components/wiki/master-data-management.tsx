@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -220,8 +221,8 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
 
     return (
         <TooltipProvider>
-            <div className="space-y-6 h-full flex flex-col bg-slate-50/30 p-8 rounded-[32px]">
-                <div className="flex justify-between items-start px-2">
+            <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Master Data Management</h1>
                         <p className="text-muted-foreground font-medium">Govern global system constants, business modules, and reference categories.</p>
@@ -240,13 +241,13 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                     )}
                 </div>
 
-                <div className="space-y-8 flex-1 flex flex-col min-h-0">
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden shrink-0">
+                <div className="space-y-8">
+                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
                         <CardHeader className="bg-slate-50/50 border-b py-4 px-6">
                             <CardTitle className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Registry Explorer</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-end">
+                        <CardContent className="p-4 md:p-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-1.5">
                                         <Label className="text-[11px] font-bold text-slate-500">Master Data Category</Label>
@@ -296,8 +297,8 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white flex-1 flex flex-col min-h-[400px]">
-                        <CardHeader className="bg-white border-b py-5 px-8 flex flex-row items-center justify-between shrink-0">
+                    <Card className="rounded-[28px] border-slate-200 overflow-hidden shadow-sm bg-white">
+                        <CardHeader className="bg-white border-b py-5 px-8 flex flex-row items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
                                     <ActiveIcon className="h-4.5 w-4.5 text-primary" />
@@ -308,8 +309,8 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                 {filteredItems.length} Total Records
                             </Badge>
                         </CardHeader>
-                        <CardContent className="p-0 flex-1 overflow-auto">
-                            <Table>
+                        <CardContent className="p-0 overflow-x-auto">
+                            <Table className="min-w-[800px]">
                                 <TableHeader className="bg-slate-50 border-b">
                                     <TableRow>
                                         <TableHead className="px-8 font-black uppercase text-[10px] tracking-widest text-slate-500 h-14">Record Name</TableHead>
@@ -369,7 +370,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                                                                         <Trash2 className="h-4 w-4" />
                                                                     </Button>
                                                                 </AlertDialogTrigger>
-                                                                <AlertDialogContent className="rounded-[32px] border-none p-10 shadow-2xl">
+                                                                <AlertDialogContent className="max-w-[90vw] sm:max-w-lg rounded-[32px] border-none p-6 md:p-10 shadow-2xl">
                                                                     <AlertDialogHeader className="space-y-4">
                                                                         <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center mb-2">
                                                                             <Trash2 className="h-8 w-8 text-red-600" />
@@ -410,8 +411,8 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                 </div>
 
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                    <DialogContent className="max-w-2xl rounded-[32px] border-none p-0 overflow-hidden shadow-2xl">
-                        <div className="p-8 border-b bg-white">
+                    <DialogContent className="max-w-[95vw] sm:max-w-2xl rounded-[32px] border-none p-0 overflow-hidden shadow-2xl">
+                        <div className="p-6 border-b bg-white">
                             <div className="flex items-center gap-4">
                                 <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
                                     <LayoutGrid className="h-6 w-6 text-indigo-600" />
@@ -423,7 +424,7 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                             </div>
                         </div>
 
-                        <div className="p-8 space-y-8 bg-slate-50/50">
+                        <div className="p-6 md:p-8 space-y-8 bg-slate-50/50 max-h-[70vh] overflow-y-auto">
                             <div className="space-y-6">
                                 <div className="space-y-2.5">
                                     <Label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">Target Master Data Table</Label>
@@ -518,13 +519,13 @@ export default function MasterDataManagement({ masterData, onSaveMasterData, onL
                             </div>
                         </div>
 
-                        <DialogFooter className="p-6 bg-white border-t gap-3 flex items-center justify-end">
+                        <DialogFooter className="p-6 bg-white border-t gap-3 flex flex-col sm:flex-row items-center justify-end">
                             <DialogClose asChild>
-                                <Button variant="ghost" className="rounded-xl font-bold text-slate-500 px-6 hover:bg-slate-50">Cancel</Button>
+                                <Button variant="ghost" className="w-full sm:w-auto rounded-xl font-bold text-slate-500 px-6 hover:bg-slate-50">Cancel</Button>
                             </DialogClose>
                             <Button 
                                 onClick={handleSaveModal} 
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold h-11 px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95"
+                                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold h-11 px-10 shadow-lg shadow-indigo-100 transition-all active:scale-95"
                             >
                                 <Save className="mr-2 h-4 w-4" />
                                 Finalize Changes
