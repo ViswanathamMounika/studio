@@ -61,11 +61,6 @@ export default function TopNavbar({ currentUser, onImpersonate, isImpersonating,
                         
                         <DropdownMenuSeparator className="mx-1 my-1.5" />
                         
-                        <DropdownMenuItem className="py-2.5 rounded-xl font-bold text-xs gap-3 cursor-pointer">
-                             <UserCircle className="h-4 w-4 text-slate-400" />
-                             My Profile Settings
-                        </DropdownMenuItem>
-
                         {isAdmin && (
                             <DropdownMenuItem 
                                 className="py-2.5 rounded-xl font-bold text-xs gap-3 text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50 cursor-pointer"
