@@ -690,6 +690,7 @@ export default function Dashboard({
                         size="sm" 
                         className="rounded-xl font-bold h-10 px-6 border-slate-200 gap-2 hover:bg-slate-50 transition-all"
                         onClick={handleDownloadAudit}
+                        disabled={drillDownItems.length === 0}
                     >
                         <Download className="h-4 w-4" />
                         Download
@@ -794,7 +795,7 @@ export default function Dashboard({
                                     {drillDownItems.length === 0 && (
                                         <TableRow>
                                             <TableCell colSpan={4} className="h-48 text-center">
-                                                <div className="flex flex-col items-center justify-center gap-2 opacity-30">
+                                                <div className="flex items-center justify-center gap-2 opacity-30">
                                                     <Search className="h-8 w-8" />
                                                     <p className="text-xs font-bold uppercase tracking-widest">No matching records</p>
                                                 </div>
